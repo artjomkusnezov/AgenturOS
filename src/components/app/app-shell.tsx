@@ -16,7 +16,7 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen bg-zinc-50/80">
       <AppSidebar userDisplayName={userDisplayName} className="hidden lg:flex" />
 
       <MobileNavigation
@@ -31,8 +31,8 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
+          <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10">
             {children}
           </div>
         </main>
