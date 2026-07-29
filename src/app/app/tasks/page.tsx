@@ -12,5 +12,10 @@ export default async function TasksPage() {
     )
   }
 
-  return <TasksWorkspace tasks={result.tasks} />
+  return (
+    <TasksWorkspace
+      openTasks={result.openTasks}
+      completedTasks={result.completedTasks}
+    />
+  )
 }

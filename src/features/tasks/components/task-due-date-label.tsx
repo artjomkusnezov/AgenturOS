@@ -1,0 +1,43 @@
+'use client'
+
+import { useMemo } from 'react'
+
+import {
+  formatDueDateLabel,
+  getTodayDateString,
+  isTaskOpen,
+  isTaskOverdue,
+} from '@/features/tasks/lib/task-status'
+import type { Task } from '@/features/tasks/types/task'
+
+type TaskDueDateLabelProps = {
+  task: Task
+  subdued?: boolean
+}
+
+export function TaskDueDateLabel({ task, subdued = false }: TaskDueDateLabelProps) {
+  const label = useMemo(() => {
+    if (!task.due_date) {
+      return null
+    }
+
+    const today = getTodayDateString()
+    return formatDueDateLabel(task.due_date, today, isTaskOpen(task))
+  }, [task])
+
+  if (!label) {
+    return null
+  }
+
+  const overdue = !subdued && isTaskOverdue(task)
+
+  return (
+    <span
+      className={`text-xs ${
+        overdue ? 'font-medium text-red-600' : subdued ? 'text-zinc-400' : 'text-zinc-500'
+      }`}
+    >
+      {label}
+    </span>
+  )
+}

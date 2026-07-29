@@ -11,13 +11,19 @@ import { TaskList } from '@/features/tasks/components/task-list'
 import type { Task } from '@/features/tasks/types/task'
 
 type TasksWorkspaceProps = {
-  tasks: Task[]
+  openTasks: Task[]
+  completedTasks: Task[]
 }
 
-export function TasksWorkspace({ tasks }: TasksWorkspaceProps) {
+export function TasksWorkspace({ openTasks, completedTasks }: TasksWorkspaceProps) {
   const router = useRouter()
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+
+  const tasks = useMemo(
+    () => [...openTasks, ...completedTasks],
+    [openTasks, completedTasks]
+  )
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
@@ -61,7 +67,12 @@ export function TasksWorkspace({ tasks }: TasksWorkspaceProps) {
     refreshTasks()
   }, [refreshTasks])
 
+  const handleWorkflowChange = useCallback(() => {
+    refreshTasks()
+  }, [refreshTasks])
+
   const showMobileDetail = isCreating || selectedTask !== null
+  const totalCount = tasks.length
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col lg:flex-row lg:gap-6">
@@ -77,9 +88,7 @@ export function TasksWorkspace({ tasks }: TasksWorkspaceProps) {
               Aufgaben
             </h2>
             <p className="mt-1 text-xs text-zinc-500">
-              {tasks.length === 1
-                ? '1 Aufgabe'
-                : `${tasks.length} Aufgaben`}
+              {totalCount === 1 ? '1 Aufgabe' : `${totalCount} Aufgaben`}
             </p>
           </div>
           <button
@@ -91,14 +100,15 @@ export function TasksWorkspace({ tasks }: TasksWorkspaceProps) {
           </button>
         </div>
 
-        {tasks.length === 0 ? (
+        {totalCount === 0 ? (
           <EmptyState
             title="Noch keine Aufgaben"
             description="Erstellen Sie Ihre erste Aufgabe, um mit der Planung zu beginnen."
           />
         ) : (
           <TaskList
-            tasks={tasks}
+            openTasks={openTasks}
+            completedTasks={completedTasks}
             selectedTaskId={selectedTaskId}
             onSelectTask={handleSelectTask}
           />
@@ -122,6 +132,7 @@ export function TasksWorkspace({ tasks }: TasksWorkspaceProps) {
             task={selectedTask}
             onBack={handleBackToList}
             onDeleted={handleDeleted}
+            onWorkflowChange={handleWorkflowChange}
           />
         ) : (
           <TaskEmptyDetail />
