@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 
 import { bootstrapUserAccount } from './bootstrap-user-account'
 
+const SETUP_ERROR_MESSAGE =
+  'Die Konto-Einrichtung ist fehlgeschlagen. Bitte versuchen Sie es erneut.'
+
 export type CompleteAuthenticatedSessionResult =
   | { success: true }
   | { success: false; error: string }
@@ -18,10 +21,16 @@ export async function completeAuthenticatedSession(): Promise<CompleteAuthentica
   }
 
   const supabase = await createClient()
-  await supabase.auth.signOut()
+
+  try {
+    const { error } = await supabase.auth.signOut()
+    void error
+  } catch {
+    // signOut-Fehler dürfen die neutrale Bootstrap-Fehlermeldung nicht überschreiben.
+  }
 
   return {
     success: false,
-    error: bootstrapResult.error,
+    error: SETUP_ERROR_MESSAGE,
   }
 }

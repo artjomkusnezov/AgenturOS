@@ -8,9 +8,10 @@ export async function logoutAction(): Promise<void> {
   const supabase = await createClient()
 
   try {
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    void error
   } catch {
-    // Weiterleitung auch bei Fehlern, damit der Benutzer den Login erneut versuchen kann.
+    // Defensive Absicherung; Weiterleitung erfolgt trotzdem.
   }
 
   redirect('/login')
