@@ -1,10 +1,13 @@
 'use server'
 
+import { redirect } from 'next/navigation'
+
 import {
   hasFieldErrors,
   parseRegistrationFormData,
   validateRegistrationInput,
 } from '../lib/validate-registration'
+import { completeAuthenticatedSession } from '../services/complete-authenticated-session'
 import { signUpUser } from '../services/sign-up-user'
 import type { RegistrationActionState } from '../types/registration'
 
@@ -25,9 +28,18 @@ export async function registerAction(
     return { error: result.error }
   }
 
+  if (result.hasSession) {
+    const sessionResult = await completeAuthenticatedSession()
+
+    if (!sessionResult.success) {
+      return { error: sessionResult.error }
+    }
+
+    redirect('/app')
+  }
+
   return {
     success: true,
     requiresEmailConfirmation: result.requiresEmailConfirmation,
-    hasSession: result.hasSession,
   }
 }

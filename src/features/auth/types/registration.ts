@@ -26,5 +26,4 @@ export type RegistrationActionState = {
   error?: string
   success?: boolean
   requiresEmailConfirmation?: boolean
-  hasSession?: boolean
 }

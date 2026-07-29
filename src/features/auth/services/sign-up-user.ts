@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 
+import { getAuthCallbackUrl } from '../lib/get-site-url'
 import type { RegistrationInput, RegistrationResult } from '../types/registration'
 
 function mapSignUpError(message: string): string {
@@ -28,11 +29,13 @@ export async function signUpUser(
   input: RegistrationInput
 ): Promise<RegistrationResult> {
   const supabase = await createClient()
+  const emailRedirectTo = await getAuthCallbackUrl()
 
   const { data, error } = await supabase.auth.signUp({
     email: input.email.trim().toLowerCase(),
     password: input.password,
     options: {
+      emailRedirectTo,
       data: {
         first_name: input.firstName.trim(),
         last_name: input.lastName.trim(),
