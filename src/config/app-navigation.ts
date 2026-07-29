@@ -1,5 +1,6 @@
 export type AppNavIcon =
   | 'overview'
+  | 'inbox'
   | 'tasks'
   | 'information'
   | 'files'
@@ -19,6 +20,12 @@ export const appNavigation: AppNavItem[] = [
     href: '/app',
     icon: 'overview',
     description: 'Ihr persönlicher Überblick für den Tag.',
+  },
+  {
+    title: 'Eingang',
+    href: '/app/inbox',
+    icon: 'inbox',
+    description: 'Zentraler Eingang für erfasste Inhalte, die später eingeordnet werden.',
   },
   {
     title: 'Aufgaben',

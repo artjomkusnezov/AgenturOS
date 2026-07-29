@@ -27,6 +27,20 @@ export function AppNavIconGlyph({
           <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" />
         </svg>
       )
+    case 'inbox':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          aria-hidden="true"
+        >
+          <path d="M4 8h16l-2 10H6L4 8Z" />
+          <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+        </svg>
+      )
     case 'tasks':
       return (
         <svg
