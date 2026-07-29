@@ -8,11 +8,12 @@ import type { LoginActionState } from '@/features/auth/types/login'
 
 type LoginFormProps = {
   initialError?: string
+  initialMessage?: string
 }
 
 const initialState: LoginActionState = {}
 
-export function LoginForm({ initialError }: LoginFormProps) {
+export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(
     loginAction,
     initialState
@@ -54,7 +55,21 @@ export function LoginForm({ initialError }: LoginFormProps) {
         {state.fieldErrors?.password ? (
           <p className="text-sm text-red-600">{state.fieldErrors.password}</p>
         ) : null}
+        <p className="text-right text-sm">
+          <Link
+            href="/forgot-password"
+            className="font-medium text-zinc-900 underline"
+          >
+            Passwort vergessen?
+          </Link>
+        </p>
       </div>
+
+      {initialMessage ? (
+        <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+          {initialMessage}
+        </p>
+      ) : null}
 
       {errorMessage ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

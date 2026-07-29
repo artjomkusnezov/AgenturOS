@@ -1,13 +1,19 @@
 import { LoginForm } from '@/features/auth/components/login-form'
 import { mapCallbackError } from '@/features/auth/lib/map-login-error'
+import {
+  mapLoginQueryMessage,
+  mapRecoveryQueryError,
+} from '@/features/auth/lib/map-password-recovery-error'
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; message?: string }>
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
-  const initialError = mapCallbackError(params.error)
+  const initialError =
+    mapCallbackError(params.error) ?? mapRecoveryQueryError(params.error)
+  const initialMessage = mapLoginQueryMessage(params.message)
 
   return (
     <div className="flex min-h-full flex-1 items-center justify-center bg-zinc-50 px-4 py-16">
@@ -18,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Melden Sie sich mit Ihrem Benutzerkonto an.
           </p>
         </div>
-        <LoginForm initialError={initialError} />
+        <LoginForm initialError={initialError} initialMessage={initialMessage} />
       </div>
     </div>
   )

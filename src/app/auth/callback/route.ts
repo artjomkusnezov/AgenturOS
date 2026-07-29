@@ -6,8 +6,16 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
+  const type = searchParams.get('type')
+  const isRecovery = type === 'recovery'
 
   if (!code) {
+    if (isRecovery) {
+      return NextResponse.redirect(
+        new URL('/forgot-password?error=recovery', request.url)
+      )
+    }
+
     return NextResponse.redirect(new URL('/login?error=callback', request.url))
   }
 
@@ -16,6 +24,12 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
 
   if (exchangeError) {
+    if (isRecovery) {
+      return NextResponse.redirect(
+        new URL('/forgot-password?error=recovery', request.url)
+      )
+    }
+
     return NextResponse.redirect(new URL('/login?error=callback', request.url))
   }
 
@@ -25,7 +39,17 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser()
 
   if (userError || !user) {
+    if (isRecovery) {
+      return NextResponse.redirect(
+        new URL('/forgot-password?error=recovery', request.url)
+      )
+    }
+
     return NextResponse.redirect(new URL('/login?error=callback', request.url))
+  }
+
+  if (isRecovery) {
+    return NextResponse.redirect(new URL('/reset-password', request.url))
   }
 
   const sessionResult = await completeAuthenticatedSession()
