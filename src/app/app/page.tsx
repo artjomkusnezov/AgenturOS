@@ -1,28 +1,14 @@
 import { EmptyState } from '@/components/app/empty-state'
 import { QuickCaptureButton } from '@/components/app/quick-capture-button'
-import { createClient } from '@/lib/supabase/server'
-import {
-  getGermanDateLabel,
-  getGreetingName,
-} from '@/lib/user/get-display-name'
+import { getGermanDateLabel } from '@/lib/user/get-display-name'
 
-export default async function AppDashboardPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const greetingName = user ? getGreetingName(user) : null
-  const greeting = greetingName
-    ? `Guten Tag, ${greetingName}`
-    : 'Guten Tag'
-
+export default function AppDashboardPage() {
   return (
     <div className="space-y-8">
       <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
         <p className="text-sm font-medium text-zinc-500">{getGermanDateLabel()}</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-          {greeting}
+          Guten Tag
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600">
           Hier sehen Sie später Ihre wichtigsten Aufgaben, Informationen und

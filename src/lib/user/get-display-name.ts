@@ -24,22 +24,6 @@ export function getDisplayName(user: {
   return null
 }
 
-export function getGreetingName(user: {
-  email?: string
-  user_metadata?: Record<string, unknown>
-}): string | null {
-  const firstName =
-    typeof user.user_metadata?.first_name === 'string'
-      ? user.user_metadata.first_name.trim()
-      : ''
-
-  if (firstName) {
-    return firstName
-  }
-
-  return getDisplayName(user)
-}
-
 export function getGermanDateLabel(date = new Date()): string {
   return new Intl.DateTimeFormat('de-DE', {
     weekday: 'long',
