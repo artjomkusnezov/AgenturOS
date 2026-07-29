@@ -109,7 +109,12 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      initialize_current_user_account: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+    }
     Enums: {
       agency_status: AgencyStatus
       membership_role: MembershipRole

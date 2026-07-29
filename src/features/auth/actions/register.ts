@@ -5,7 +5,7 @@ import {
   parseRegistrationFormData,
   validateRegistrationInput,
 } from '../lib/validate-registration'
-import { registerUser } from '../services/register-user'
+import { signUpUser } from '../services/sign-up-user'
 import type { RegistrationActionState } from '../types/registration'
 
 export async function registerAction(
@@ -19,11 +19,15 @@ export async function registerAction(
     return { fieldErrors }
   }
 
-  const result = await registerUser(input)
+  const result = await signUpUser(input)
 
   if (!result.success) {
     return { error: result.error }
   }
 
-  return { success: true }
+  return {
+    success: true,
+    requiresEmailConfirmation: result.requiresEmailConfirmation,
+    hasSession: result.hasSession,
+  }
 }

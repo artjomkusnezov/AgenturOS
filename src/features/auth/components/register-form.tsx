@@ -17,9 +17,17 @@ export function RegisterForm() {
     return (
       <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-900">
         <p className="font-medium">Registrierung erfolgreich</p>
-        <p className="mt-1 text-sm">
-          Ihr Konto und Ihre Agentur wurden angelegt.
-        </p>
+        {state.requiresEmailConfirmation ? (
+          <p className="mt-1 text-sm">
+            Bitte bestätigen Sie Ihre E-Mail-Adresse. Profil und Agentur werden
+            nach der ersten Anmeldung eingerichtet.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm">
+            Ihr Konto wurde angelegt. Profil und Agentur werden nach der
+            Anmeldung über den Login-Schritt eingerichtet.
+          </p>
+        )}
       </div>
     )
   }

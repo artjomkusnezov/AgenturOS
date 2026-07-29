@@ -7,7 +7,11 @@ export type RegistrationInput = {
 }
 
 export type RegistrationResult =
-  | { success: true }
+  | {
+      success: true
+      requiresEmailConfirmation: boolean
+      hasSession: boolean
+    }
   | { success: false; error: string }
 
 export type RegistrationFieldErrors = Partial<
@@ -21,4 +25,6 @@ export type RegistrationActionState = {
   fieldErrors?: RegistrationFieldErrors
   error?: string
   success?: boolean
+  requiresEmailConfirmation?: boolean
+  hasSession?: boolean
 }
