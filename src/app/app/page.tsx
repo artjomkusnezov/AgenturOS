@@ -1,56 +1,79 @@
-import { redirect } from 'next/navigation'
-
-import { LogoutButton } from '@/features/auth/components/logout-button'
+import { EmptyState } from '@/components/app/empty-state'
+import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import { createClient } from '@/lib/supabase/server'
+import {
+  getGermanDateLabel,
+  getGreetingName,
+} from '@/lib/user/get-display-name'
 
-function getDisplayName(user: {
-  email?: string
-  user_metadata?: Record<string, unknown>
-}): string {
-  const firstName =
-    typeof user.user_metadata?.first_name === 'string'
-      ? user.user_metadata.first_name.trim()
-      : ''
-  const lastName =
-    typeof user.user_metadata?.last_name === 'string'
-      ? user.user_metadata.last_name.trim()
-      : ''
-
-  const fullName = [firstName, lastName].filter(Boolean).join(' ')
-
-  if (fullName) {
-    return fullName
-  }
-
-  return user.email ?? 'Benutzer'
-}
-
-export default async function AppPage() {
+export default async function AppDashboardPage() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  const displayName = getDisplayName(user)
+  const greetingName = user ? getGreetingName(user) : null
+  const greeting = greetingName
+    ? `Guten Tag, ${greetingName}`
+    : 'Guten Tag'
 
   return (
-    <div className="flex min-h-full flex-1 items-center justify-center bg-zinc-50 px-4 py-16">
-      <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-zinc-900">AgenturOS</h1>
-        <p className="mt-4 text-sm text-zinc-600">
-          Die Anmeldung war erfolgreich.
+    <div className="space-y-8">
+      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <p className="text-sm font-medium text-zinc-500">{getGermanDateLabel()}</p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+          {greeting}
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600">
+          Hier sehen Sie später Ihre wichtigsten Aufgaben, Informationen und
+          Aktivitäten auf einen Blick.
         </p>
-        <p className="mt-2 text-sm text-zinc-900">
-          Angemeldet als <span className="font-medium">{displayName}</span>
-        </p>
-        <div className="mt-8">
-          <LogoutButton />
+        <div className="mt-6 hidden sm:block">
+          <QuickCaptureButton />
         </div>
-      </div>
+      </section>
+
+      <section aria-labelledby="open-tasks-heading">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 id="open-tasks-heading" className="text-lg font-semibold text-zinc-900">
+            Offene Aufgaben
+          </h2>
+        </div>
+        <EmptyState
+          title="Noch keine offenen Aufgaben"
+          description="Sobald das Aufgabenmodul verfügbar ist, erscheinen hier Ihre nächsten Schritte."
+        />
+      </section>
+
+      <section aria-labelledby="new-information-heading">
+        <div className="mb-4">
+          <h2
+            id="new-information-heading"
+            className="text-lg font-semibold text-zinc-900"
+          >
+            Neue Informationen
+          </h2>
+        </div>
+        <EmptyState
+          title="Neue Informationen erscheinen später hier"
+          description="Die zentrale Informationsablage wird in einem späteren Schritt angebunden."
+        />
+      </section>
+
+      <section aria-labelledby="recent-activity-heading">
+        <div className="mb-4">
+          <h2
+            id="recent-activity-heading"
+            className="text-lg font-semibold text-zinc-900"
+          >
+            Letzte Aktivitäten
+          </h2>
+        </div>
+        <EmptyState
+          title="Noch keine Aktivitäten"
+          description="Aktivitäten werden angezeigt, sobald das Modul verfügbar ist."
+        />
+      </section>
     </div>
   )
 }
