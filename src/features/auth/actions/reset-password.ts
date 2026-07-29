@@ -30,6 +30,9 @@ export async function resetPasswordAction(
 
   const supabase = await createClient()
 
+  // Bewusste Produktentscheidung:
+  // Nach erfolgreichem Passwortwechsel wird die Session beendet,
+  // damit sich der Benutzer mit dem neuen Passwort erneut authentifiziert.
   try {
     const { error } = await supabase.auth.signOut()
     void error
