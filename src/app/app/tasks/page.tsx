@@ -1,7 +1,12 @@
 import { TasksWorkspace } from '@/features/tasks/components/tasks-workspace'
 import { listTasksForCurrentUser } from '@/features/tasks/repositories/tasks-repository'
 
-export default async function TasksPage() {
+type TasksPageProps = {
+  searchParams: Promise<{ taskId?: string }>
+}
+
+export default async function TasksPage({ searchParams }: TasksPageProps) {
+  const { taskId } = await searchParams
   const result = await listTasksForCurrentUser()
 
   if (!result.success) {
@@ -16,6 +21,7 @@ export default async function TasksPage() {
     <TasksWorkspace
       openTasks={result.openTasks}
       completedTasks={result.completedTasks}
+      initialTaskId={taskId ?? null}
     />
   )
 }

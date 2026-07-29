@@ -13,9 +13,14 @@ import type { InboxItem } from '@/features/inbox/types/inbox-item'
 type InboxWorkspaceProps = {
   unprocessedItems: InboxItem[]
   processedItems: InboxItem[]
+  taskRelationsByItemId: Record<string, string>
 }
 
-export function InboxWorkspace({ unprocessedItems, processedItems }: InboxWorkspaceProps) {
+export function InboxWorkspace({
+  unprocessedItems,
+  processedItems,
+  taskRelationsByItemId,
+}: InboxWorkspaceProps) {
   const router = useRouter()
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -130,6 +135,7 @@ export function InboxWorkspace({ unprocessedItems, processedItems }: InboxWorksp
           <InboxDetailPanel
             key={selectedItem.id}
             item={selectedItem}
+            linkedTaskId={taskRelationsByItemId[selectedItem.id] ?? null}
             onBack={handleBackToList}
             onDeleted={handleDeleted}
             onStatusChange={handleStatusChange}

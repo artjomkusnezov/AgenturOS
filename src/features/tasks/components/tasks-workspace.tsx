@@ -13,11 +13,23 @@ import type { Task } from '@/features/tasks/types/task'
 type TasksWorkspaceProps = {
   openTasks: Task[]
   completedTasks: Task[]
+  initialTaskId?: string | null
 }
 
-export function TasksWorkspace({ openTasks, completedTasks }: TasksWorkspaceProps) {
+export function TasksWorkspace({
+  openTasks,
+  completedTasks,
+  initialTaskId = null,
+}: TasksWorkspaceProps) {
   const router = useRouter()
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => {
+    if (!initialTaskId) {
+      return null
+    }
+
+    const allTasks = [...openTasks, ...completedTasks]
+    return allTasks.some((task) => task.id === initialTaskId) ? initialTaskId : null
+  })
   const [isCreating, setIsCreating] = useState(false)
 
   const tasks = useMemo(

@@ -1,7 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState, useEffect, useId, useRef, useState } from 'react'
 
+import { convertInboxToTaskAction } from '@/features/inbox/actions/convert-inbox-to-task'
 import { deleteInboxItemAction } from '@/features/inbox/actions/delete-inbox-item'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
@@ -12,6 +14,7 @@ import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/i
 
 type InboxDetailPanelProps = {
   item: InboxItem
+  linkedTaskId: string | null
   onBack?: () => void
   onDeleted: () => void
   onStatusChange: () => void
@@ -74,8 +77,48 @@ function InboxStatusActionButton({
   )
 }
 
+function ConvertToTaskButton({
+  itemId,
+  onSuccess,
+}: {
+  itemId: string
+  onSuccess: () => void
+}) {
+  const [state, formAction, isPending] = useActionState(convertInboxToTaskAction, initialState)
+  const wasPendingRef = useRef(false)
+  const handledSuccessRef = useRef(false)
+
+  useEffect(() => {
+    handledSuccessRef.current = false
+  }, [itemId])
+
+  useEffect(() => {
+    if (wasPendingRef.current && !isPending && state.success && !handledSuccessRef.current) {
+      handledSuccessRef.current = true
+      onSuccess()
+    }
+
+    wasPendingRef.current = isPending
+  }, [isPending, state.success, onSuccess])
+
+  return (
+    <form action={formAction}>
+      <input type="hidden" name="itemId" value={itemId} />
+      <button
+        type="submit"
+        disabled={isPending}
+        className="rounded-xl bg-accent px-3.5 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+      >
+        {isPending ? 'Wird übernommen …' : 'Als Aufgabe übernehmen'}
+      </button>
+      {state.error ? <p className="mt-2 text-sm text-red-600">{state.error}</p> : null}
+    </form>
+  )
+}
+
 export function InboxDetailPanel({
   item,
+  linkedTaskId,
   onBack,
   onDeleted,
   onStatusChange,
@@ -169,6 +212,22 @@ export function InboxDetailPanel({
           {updateState.success ? (
             <p className="text-sm text-zinc-600">Änderungen gespeichert.</p>
           ) : null}
+
+          <div className="border-t border-zinc-200/70 pt-4">
+            {linkedTaskId ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-zinc-600">✓ In Aufgabe übernommen</span>
+                <Link
+                  href={`/app/tasks?taskId=${linkedTaskId}`}
+                  className="rounded-xl border border-zinc-200/80 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50"
+                >
+                  Aufgabe öffnen
+                </Link>
+              </div>
+            ) : (
+              <ConvertToTaskButton itemId={item.id} onSuccess={onStatusChange} />
+            )}
+          </div>
         </div>
       </form>
 

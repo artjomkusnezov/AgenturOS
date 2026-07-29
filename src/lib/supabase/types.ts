@@ -121,6 +121,45 @@ export type Database = {
         }
         Relationships: []
       }
+      inbox_relations: {
+        Row: {
+          created_at: string
+          id: string
+          inbox_item_id: string
+          relation_id: string
+          relation_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inbox_item_id: string
+          relation_id: string
+          relation_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inbox_item_id?: string
+          relation_id?: string
+          relation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_relations_inbox_item_id_fkey"
+            columns: ["inbox_item_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_relations_relation_id_fkey"
+            columns: ["relation_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -195,6 +234,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_task_from_inbox_item: {
+        Args: { p_inbox_item_id: string }
+        Returns: {
+          already_existed: boolean
+          inbox_item_id: string
+          relation_id: string
+          task_id: string
+        }[]
+      }
       initialize_current_user_account: { Args: never; Returns: string }
     }
     Enums: {

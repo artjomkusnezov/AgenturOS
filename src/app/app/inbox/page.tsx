@@ -16,6 +16,7 @@ export default async function InboxPage() {
     <InboxWorkspace
       unprocessedItems={result.unprocessedItems}
       processedItems={result.processedItems}
+      taskRelationsByItemId={result.taskRelationsByItemId}
     />
   )
 }

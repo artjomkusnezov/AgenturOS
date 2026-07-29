@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { INBOX_RELATION_TYPE_TASK } from '@/features/inbox/lib/inbox-relation'
 import { INBOX_SOURCE_MANUAL_TEXT } from '@/features/inbox/lib/inbox-source'
 import { partitionAndSortInboxItems } from '@/features/inbox/lib/sort-inbox-items'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
@@ -9,7 +10,12 @@ type RepositoryError = {
 }
 
 type ListInboxItemsResult =
-  | { success: true; unprocessedItems: InboxItem[]; processedItems: InboxItem[] }
+  | {
+      success: true
+      unprocessedItems: InboxItem[]
+      processedItems: InboxItem[]
+      taskRelationsByItemId: Record<string, string>
+    }
   | RepositoryError
 
 type InboxItemResult =
@@ -19,6 +25,37 @@ type InboxItemResult =
 type DeleteInboxItemResult =
   | { success: true }
   | RepositoryError
+
+type CreateTaskFromInboxItemResult =
+  | { success: true; inboxItemId: string; taskId: string; relationId: string }
+  | RepositoryError
+
+type CreateTaskFromInboxRpcRow = {
+  inbox_item_id: string
+  task_id: string
+  relation_id: string
+  already_existed: boolean
+}
+
+function mapCreateTaskFromInboxRpcError(message: string): string {
+  if (message.includes('not authenticated')) {
+    return 'Sie sind nicht angemeldet.'
+  }
+
+  if (message.includes('inbox item not found')) {
+    return 'Das Eingangselement wurde nicht gefunden.'
+  }
+
+  if (message.includes('access denied')) {
+    return 'Das Eingangselement wurde nicht gefunden.'
+  }
+
+  if (message.includes('inbox content empty')) {
+    return 'Das Eingangselement enthält keinen gültigen Inhalt.'
+  }
+
+  return 'Das Eingangselement konnte nicht in eine Aufgabe übernommen werden.'
+}
 
 type InboxItemWriteInput = {
   content: string
@@ -68,10 +105,27 @@ export async function listInboxItemsForCurrentUser(): Promise<ListInboxItemsResu
 
   const { unprocessedItems, processedItems } = partitionAndSortInboxItems(data)
 
+  const { data: relations, error: relationsError } = await supabase
+    .from('inbox_relations')
+    .select('inbox_item_id, relation_id')
+    .eq('relation_type', INBOX_RELATION_TYPE_TASK)
+
+  if (relationsError) {
+    return {
+      success: false,
+      error: 'Die Eingangsverknüpfungen konnten nicht geladen werden.',
+    }
+  }
+
+  const taskRelationsByItemId = Object.fromEntries(
+    (relations ?? []).map((relation) => [relation.inbox_item_id, relation.relation_id])
+  )
+
   return {
     success: true,
     unprocessedItems,
     processedItems,
+    taskRelationsByItemId,
   }
 }
 
@@ -264,5 +318,43 @@ export async function deleteInboxItemForCurrentUser(
 
   return {
     success: true,
+  }
+}
+
+export async function createTaskFromInboxItem(
+  itemId: string
+): Promise<CreateTaskFromInboxItemResult> {
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('create_task_from_inbox_item', {
+    p_inbox_item_id: itemId,
+  })
+
+  if (error) {
+    return {
+      success: false,
+      error: mapCreateTaskFromInboxRpcError(error.message),
+    }
+  }
+
+  const row = (Array.isArray(data) ? data[0] : data) as CreateTaskFromInboxRpcRow | null
+
+  if (!row) {
+    return {
+      success: false,
+      error: 'Das Eingangselement konnte nicht in eine Aufgabe übernommen werden.',
+    }
+  }
+
+  return {
+    success: true,
+    inboxItemId: row.inbox_item_id,
+    taskId: row.task_id,
+    relationId: row.relation_id,
   }
 }
