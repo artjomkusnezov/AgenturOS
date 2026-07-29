@@ -4,7 +4,7 @@ create or replace function public.initialize_current_user_account()
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = pg_catalog, public
 as $$
 declare
   v_user_id uuid;
@@ -14,7 +14,9 @@ declare
   v_agency_name text;
   v_display_name text;
   v_profile_exists boolean;
-  v_membership_exists boolean;
+  v_membership_count integer;
+  v_existing_agency_id uuid;
+  v_agency_exists boolean;
   v_agency_id uuid;
   v_slug_base text;
   v_slug text;
@@ -62,81 +64,89 @@ begin
   )
   into v_profile_exists;
 
-  select exists (
-    select 1
-    from public.agency_memberships as m
-    where m.user_id = v_user_id
-  )
-  into v_membership_exists;
+  select count(*)::integer
+  into v_membership_count
+  from public.agency_memberships as m
+  where m.user_id = v_user_id;
 
-  if v_profile_exists and v_membership_exists then
+  if v_profile_exists and v_membership_count = 1 then
     select m.agency_id
-    into v_agency_id
+    into v_existing_agency_id
     from public.agency_memberships as m
-    where m.user_id = v_user_id
-    order by m.created_at
-    limit 1;
+    where m.user_id = v_user_id;
 
-    return v_agency_id;
-  end if;
+    select exists (
+      select 1
+      from public.agencies as a
+      where a.id = v_existing_agency_id
+    )
+    into v_agency_exists;
 
-  if v_profile_exists or v_membership_exists then
+    if v_agency_exists then
+      return v_existing_agency_id;
+    end if;
+
     raise exception 'inconsistent account bootstrap state'
       using errcode = 'P0001';
   end if;
 
-  v_slug_base := lower(
-    regexp_replace(v_agency_name, '[^a-zA-Z0-9]+', '-', 'g')
-  );
-  v_slug_base := trim(both '-' from v_slug_base);
+  if not v_profile_exists and v_membership_count = 0 then
+    v_slug_base := lower(
+      regexp_replace(v_agency_name, '[^a-zA-Z0-9]+', '-', 'g')
+    );
+    v_slug_base := trim(both '-' from v_slug_base);
 
-  if v_slug_base = '' then
-    raise exception 'invalid agency_name'
-      using errcode = 'P0001';
+    if v_slug_base = '' then
+      raise exception 'invalid agency_name'
+        using errcode = 'P0001';
+    end if;
+
+    v_slug := v_slug_base || '-' || substr(replace(v_user_id::text, '-', ''), 1, 8);
+    v_display_name := v_first_name || ' ' || v_last_name;
+
+    insert into public.profiles (
+      id,
+      first_name,
+      last_name,
+      display_name
+    )
+    values (
+      v_user_id,
+      v_first_name,
+      v_last_name,
+      v_display_name
+    );
+
+    insert into public.agencies (
+      name,
+      slug,
+      created_by
+    )
+    values (
+      v_agency_name,
+      v_slug,
+      v_user_id
+    )
+    returning id into v_agency_id;
+
+    insert into public.agency_memberships (
+      agency_id,
+      user_id,
+      role,
+      status
+    )
+    values (
+      v_agency_id,
+      v_user_id,
+      'owner',
+      'active'
+    );
+
+    return v_agency_id;
   end if;
 
-  v_slug := v_slug_base || '-' || substr(replace(v_user_id::text, '-', ''), 1, 8);
-  v_display_name := v_first_name || ' ' || v_last_name;
-
-  insert into public.profiles (
-    id,
-    first_name,
-    last_name,
-    display_name
-  )
-  values (
-    v_user_id,
-    v_first_name,
-    v_last_name,
-    v_display_name
-  );
-
-  insert into public.agencies (
-    name,
-    slug,
-    created_by
-  )
-  values (
-    v_agency_name,
-    v_slug,
-    v_user_id
-  )
-  returning id into v_agency_id;
-
-  insert into public.agency_memberships (
-    agency_id,
-    user_id,
-    role,
-    status
-  )
-  values (
-    v_agency_id,
-    v_user_id,
-    'owner',
-    'active'
-  );
-
-  return v_agency_id;
+  raise exception 'inconsistent account bootstrap state'
+    using errcode = 'P0001';
 end;
 $$;
 
