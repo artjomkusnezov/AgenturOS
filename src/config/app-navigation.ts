@@ -50,7 +50,7 @@ export const appNavigation: AppNavItem[] = [
     title: 'Dateien',
     href: '/app/files',
     icon: 'files',
-    description: 'Hier werden später Dateien und Dokumente übersichtlich verwaltet.',
+    description: 'Hier werden Dateien hochgeladen, heruntergeladen und verwaltet.',
   },
   {
     title: 'Aktivitäten',
