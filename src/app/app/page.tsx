@@ -1,70 +1,64 @@
-import { EmptyState } from '@/components/app/empty-state'
-import { QuickCaptureButton } from '@/components/app/quick-capture-button'
-import { getGermanDateLabel } from '@/lib/user/get-display-name'
+import { createClient } from '@/lib/supabase/server'
+import { DashboardWorkOverview } from '@/features/dashboard/components/dashboard-work-overview'
+import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
+import { listInformationItemsForCurrentUser } from '@/features/information/repositories/information-repository'
+import { listTasksForCurrentUser } from '@/features/tasks/repositories/tasks-repository'
 
-export default function AppDashboardPage() {
+export default async function AppDashboardPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return (
+      <div className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700">
+        Sie sind nicht angemeldet.
+      </div>
+    )
+  }
+
+  const [inboxResult, tasksResult, informationResult] = await Promise.all([
+    listInboxItemsForCurrentUser(),
+    listTasksForCurrentUser(),
+    listInformationItemsForCurrentUser(),
+  ])
+
+  if (!inboxResult.success) {
+    return (
+      <div className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700">
+        {inboxResult.error}
+      </div>
+    )
+  }
+
+  if (!tasksResult.success) {
+    return (
+      <div className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700">
+        {tasksResult.error}
+      </div>
+    )
+  }
+
+  if (!informationResult.success) {
+    return (
+      <div className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700">
+        {informationResult.error}
+      </div>
+    )
+  }
+
+  const totalInboxCount =
+    inboxResult.unprocessedItems.length + inboxResult.processedItems.length
+
   return (
-    <div className="space-y-10">
-      <section className="pb-2">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-          {getGermanDateLabel()}
-        </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900">
-          Guten Tag
-        </h2>
-        <p className="mt-3 max-w-2xl text-[0.9375rem] leading-relaxed text-zinc-500">
-          Hier sehen Sie später Ihre wichtigsten Aufgaben, Informationen und
-          Aktivitäten auf einen Blick.
-        </p>
-        <div className="mt-6 hidden sm:block">
-          <QuickCaptureButton />
-        </div>
-      </section>
-
-      <section aria-labelledby="open-tasks-heading" className="border-t border-zinc-200/80 pt-8">
-        <div className="mb-1 flex items-center justify-between gap-4">
-          <h2
-            id="open-tasks-heading"
-            className="text-sm font-semibold tracking-tight text-zinc-900"
-          >
-            Offene Aufgaben
-          </h2>
-        </div>
-        <EmptyState
-          title="Noch keine offenen Aufgaben"
-          description="Sobald das Aufgabenmodul verfügbar ist, erscheinen hier Ihre nächsten Schritte."
-        />
-      </section>
-
-      <section aria-labelledby="new-information-heading" className="border-t border-zinc-200/80 pt-8">
-        <div className="mb-1">
-          <h2
-            id="new-information-heading"
-            className="text-sm font-semibold tracking-tight text-zinc-900"
-          >
-            Neue Informationen
-          </h2>
-        </div>
-        <EmptyState
-          title="Neue Informationen erscheinen später hier"
-          description="Die zentrale Informationsablage wird in einem späteren Schritt angebunden."
-        />
-      </section>
-
-      <section aria-labelledby="recent-activity-heading" className="border-t border-zinc-200/80 pt-8">
-        <div className="mb-1">
-          <h2
-            id="recent-activity-heading"
-            className="text-sm font-semibold tracking-tight text-zinc-900"
-          >
-            Letzte Aktivitäten
-          </h2>
-        </div>
-        <EmptyState
-          title="Noch keine Aktivitäten"
-          description="Aktivitäten werden angezeigt, sobald das Modul verfügbar ist."
-        />
-      </section>
-    </div>
+    <DashboardWorkOverview
+      user={user}
+      unprocessedInboxCount={inboxResult.unprocessedItems.length}
+      totalInboxCount={totalInboxCount}
+      openTasks={tasksResult.openTasks}
+      informationItems={informationResult.items}
+    />
   )
 }
