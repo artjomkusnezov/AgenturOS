@@ -11,15 +11,22 @@ type FileListProps = {
 
 export function FileList({ files, selectedFileId, onSelectFile }: FileListProps) {
   return (
-    <div className="flex flex-col gap-1 overflow-y-auto pr-1">
-      {files.map((file) => (
-        <FileListItem
-          key={file.id}
-          file={file}
-          isSelected={file.id === selectedFileId}
-          onSelect={onSelectFile}
-        />
-      ))}
-    </div>
+    <nav aria-label="Gespeicherte Dateien">
+      <ul
+        role="listbox"
+        aria-label="Dateiliste"
+        className="flex max-h-[min(32rem,calc(100vh-22rem))] flex-col gap-1 overflow-y-auto pr-1"
+      >
+        {files.map((file) => (
+          <li key={file.id} role="presentation">
+            <FileListItem
+              file={file}
+              isSelected={file.id === selectedFileId}
+              onSelect={onSelectFile}
+            />
+          </li>
+        ))}
+      </ul>
+    </nav>
   )
 }

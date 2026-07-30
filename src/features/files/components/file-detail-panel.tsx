@@ -19,6 +19,7 @@ const initialState: FileMutationState = {}
 export function FileDetailPanel({ file, onBack, onDeleted }: FileDetailPanelProps) {
   const downloadFormId = useId()
   const deleteFormId = useId()
+  const statusRegionId = useId()
   const [downloadState, downloadAction, isDownloadPending] = useActionState(
     downloadFileAction,
     initialState
@@ -52,19 +53,29 @@ export function FileDetailPanel({ file, onBack, onDeleted }: FileDetailPanelProp
   const isPending = isDownloadPending || isDeletePending
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-zinc-200/60 bg-white">
+    <article
+      className="flex h-full flex-col rounded-xl border border-zinc-200/60 bg-white"
+      aria-labelledby={`file-detail-title-${file.id}`}
+    >
       <div className="border-b border-zinc-200/70 px-5 py-4">
         {onBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="mb-2 inline-flex items-center text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 lg:hidden"
+            className="mb-2 inline-flex items-center text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
           >
             ← Zurück zur Liste
           </button>
         ) : null}
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Dateidetails</h2>
-        <p className="mt-1 truncate text-sm text-zinc-700">{file.filename}</p>
+        <h2
+          id={`file-detail-title-${file.id}`}
+          className="text-sm font-semibold tracking-tight text-zinc-900"
+        >
+          Dateidetails
+        </h2>
+        <p className="mt-1 truncate text-sm text-zinc-700" title={file.filename}>
+          {file.filename}
+        </p>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 px-5 py-5">
@@ -87,40 +98,58 @@ export function FileDetailPanel({ file, onBack, onDeleted }: FileDetailPanelProp
           </div>
         </dl>
 
-        {downloadState.error ? (
-          <p className="text-sm text-red-600">{downloadState.error}</p>
-        ) : null}
-        {deleteState.error ? (
-          <p className="text-sm text-red-600">{deleteState.error}</p>
-        ) : null}
+        <div id={statusRegionId} role="status" aria-live="polite" className="space-y-2">
+          {downloadState.error ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm text-red-600">{downloadState.error}</p>
+              <button
+                type="submit"
+                form={downloadFormId}
+                disabled={isPending}
+                className="rounded-lg px-2 py-1 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
+              >
+                Download erneut versuchen
+              </button>
+            </div>
+          ) : null}
+          {deleteState.error ? (
+            <p className="text-sm text-red-600">{deleteState.error}</p>
+          ) : null}
+        </div>
       </div>
 
-      <form id={downloadFormId} action={downloadAction}>
+      <form id={downloadFormId} action={downloadAction} aria-label="Datei herunterladen">
         <input type="hidden" name="fileId" value={file.id} />
       </form>
 
-      <form id={deleteFormId} action={deleteAction}>
+      <form id={deleteFormId} action={deleteAction} aria-label="Datei löschen">
         <input type="hidden" name="fileId" value={file.id} />
       </form>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/70 px-5 py-4">
         <div>
           {confirmDelete ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-zinc-600">Datei wirklich löschen?</span>
+            <div
+              className="flex flex-wrap items-center gap-2"
+              role="group"
+              aria-label="Löschen bestätigen"
+            >
+              <span className="text-sm text-zinc-600">
+                {file.filename} wirklich endgültig löschen?
+              </span>
               <button
                 type="submit"
                 form={deleteFormId}
                 disabled={isPending}
-                className="rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-red-700 disabled:opacity-60"
+                className="rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60"
               >
-                {isDeletePending ? 'Wird gelöscht …' : 'Löschen bestätigen'}
+                {isDeletePending ? 'Wird gelöscht …' : 'Endgültig löschen'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={isPending}
-                className="rounded-xl px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 disabled:opacity-60"
+                className="rounded-xl px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
               >
                 Abbrechen
               </button>
@@ -130,7 +159,8 @@ export function FileDetailPanel({ file, onBack, onDeleted }: FileDetailPanelProp
               type="button"
               onClick={() => setConfirmDelete(true)}
               disabled={isPending}
-              className="rounded-xl px-3 py-1.5 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 disabled:opacity-60"
+              aria-describedby={statusRegionId}
+              className="rounded-xl px-3 py-1.5 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-60"
             >
               Datei löschen
             </button>
@@ -141,11 +171,11 @@ export function FileDetailPanel({ file, onBack, onDeleted }: FileDetailPanelProp
           type="submit"
           form={downloadFormId}
           disabled={isPending}
-          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
         >
           {isDownloadPending ? 'Download wird vorbereitet …' : 'Herunterladen'}
         </button>
       </div>
-    </div>
+    </article>
   )
 }

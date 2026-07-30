@@ -61,26 +61,32 @@ export function FilesWorkspace({ files, initialFileId = null }: FilesWorkspacePr
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col lg:flex-row lg:gap-6">
       <section
-        aria-label="Dateiliste"
+        aria-label="Dateiliste und Upload"
         className={`flex w-full flex-col lg:w-80 lg:shrink-0 ${
           showMobileDetail ? 'hidden lg:flex' : 'flex'
         }`}
       >
         <div className="mb-4">
           <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Dateien</h2>
-          <p className="mt-1 text-xs text-zinc-500">
-            {totalCount === 1 ? '1 Datei' : `${totalCount} Dateien`}
+          <p className="mt-1 text-xs text-zinc-500" aria-live="polite">
+            {totalCount === 0
+              ? 'Noch keine Dateien vorhanden'
+              : totalCount === 1
+                ? '1 Datei'
+                : `${totalCount} Dateien`}
           </p>
         </div>
 
         <FileUploadZone onUploaded={handleUploaded} />
 
-        <div className="mt-5 flex-1">
+        <div className="mt-5 min-h-0 flex-1">
           {totalCount === 0 ? (
-            <EmptyState
-              title="Noch keine Dateien"
-              description="Laden Sie Ihre erste Datei hoch, um sie hier zu verwalten."
-            />
+            <div className="rounded-xl border border-dashed border-zinc-200/80 bg-white/40 px-4 py-5">
+              <EmptyState
+                title="Noch keine Dateien"
+                description="Wählen Sie Dateien aus oder legen Sie sie oben ab. Nach dem Upload erscheinen sie hier."
+              />
+            </div>
           ) : (
             <FileList
               files={files}

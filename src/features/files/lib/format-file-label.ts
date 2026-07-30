@@ -21,3 +21,7 @@ export function formatMimeTypeLabel(mimeType: string): string {
 
   return trimmed
 }
+
+export function formatUploadLimitHint(): string {
+  return 'Maximal 50 MB pro Datei. Mehrere Dateien können nacheinander hochgeladen werden.'
+}

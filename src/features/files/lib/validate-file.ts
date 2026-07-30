@@ -58,6 +58,11 @@ export function hasFileFieldErrors(errors: FileFieldErrors): boolean {
   return Object.keys(errors).length > 0
 }
 
+export function getUploadFileValidationMessage(file: File): string | null {
+  const errors = validateUploadFile(file)
+  return errors.file ?? null
+}
+
 export function parseUploadFormData(formData: FormData): File | null {
   const value = formData.get('file')
 

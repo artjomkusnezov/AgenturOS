@@ -13,3 +13,12 @@ export type FileMutationState = {
   fileId?: string
   downloadUrl?: string
 }
+
+export type PendingUploadStatus = 'queued' | 'uploading' | 'success' | 'error'
+
+export type PendingUploadItem = {
+  clientId: string
+  file: File
+  status: PendingUploadStatus
+  error?: string
+}
