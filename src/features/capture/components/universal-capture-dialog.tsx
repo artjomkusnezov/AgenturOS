@@ -25,7 +25,7 @@ import type {
   CaptureQueueItem,
   CaptureUploadProgress,
 } from '@/features/capture/types/capture'
-import { uploadFileAction } from '@/features/files/actions/upload-file'
+import { uploadCaptureFileAction } from '@/features/capture/actions/upload-capture-file'
 
 type UniversalCaptureDialogProps = {
   isOpen: boolean
@@ -99,13 +99,15 @@ export function UniversalCaptureDialog({
 
       const formData = new FormData()
       formData.set('file', item.file)
-      const uploadResult = await uploadFileAction({}, formData)
+      const uploadResult = await uploadCaptureFileAction(formData)
 
-      if (!uploadResult.success || !uploadResult.fileId) {
+      if (!('success' in uploadResult) || !uploadResult.fileId) {
         const errorMessage =
-          uploadResult.fieldErrors?.file ??
-          uploadResult.error ??
-          'Die Datei konnte nicht hochgeladen werden.'
+          'fieldErrors' in uploadResult
+            ? uploadResult.fieldErrors.file
+            : 'error' in uploadResult
+              ? uploadResult.error
+              : 'Die Datei konnte nicht hochgeladen werden.'
         updateQueueItem(item.clientId, { status: 'error', error: errorMessage })
         return false
       }

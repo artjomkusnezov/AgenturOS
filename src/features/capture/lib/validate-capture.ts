@@ -1,5 +1,5 @@
-import { getUploadFileValidationMessage } from '@/features/files/lib/validate-file'
 import { buildCaptureContent } from '@/features/capture/lib/build-capture-content'
+import { getCaptureFileValidationMessage } from '@/features/capture/lib/validate-capture-file'
 import type { CaptureFieldErrors } from '@/features/capture/types/capture'
 
 export function validateCaptureInput(content: string, files: File[]): CaptureFieldErrors {
@@ -9,7 +9,7 @@ export function validateCaptureInput(content: string, files: File[]): CaptureFie
   const validFiles: File[] = []
 
   for (const file of files) {
-    const validationMessage = getUploadFileValidationMessage(file)
+    const validationMessage = getCaptureFileValidationMessage(file)
 
     if (validationMessage) {
       fileErrors.push(`${file.name}: ${validationMessage}`)
@@ -40,5 +40,5 @@ export function hasCaptureFieldErrors(errors: CaptureFieldErrors): boolean {
 }
 
 export function getValidCaptureFiles(files: File[]): File[] {
-  return files.filter((file) => getUploadFileValidationMessage(file) === null)
+  return files.filter((file) => getCaptureFileValidationMessage(file) === null)
 }

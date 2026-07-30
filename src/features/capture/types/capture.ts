@@ -26,3 +26,8 @@ export type CaptureInboxActionResult =
 export type CaptureLinkFileActionResult = { success: true } | { error: string }
 
 export type CaptureDeleteInboxActionResult = { success: true } | { error: string }
+
+export type CaptureUploadFileActionResult =
+  | { success: true; fileId: string }
+  | { error: string }
+  | { fieldErrors: { file: string } }

@@ -14,7 +14,7 @@ import {
 import { CaptureFileQueueItem } from '@/features/capture/components/capture-file-queue-item'
 import type { CaptureQueueItem } from '@/features/capture/types/capture'
 import { formatUploadLimitHint } from '@/features/files/lib/format-file-label'
-import { getUploadFileValidationMessage } from '@/features/files/lib/validate-file'
+import { getCaptureFileValidationMessage } from '@/features/capture/lib/validate-capture-file'
 
 type CaptureFilePickerProps = {
   items: CaptureQueueItem[]
@@ -65,7 +65,7 @@ export function CaptureFilePicker({
       const nextItems = [...items]
 
       for (const file of incoming) {
-        const validationMessage = getUploadFileValidationMessage(file)
+        const validationMessage = getCaptureFileValidationMessage(file)
         nextItems.push(createQueueItem(file, validationMessage ?? undefined))
       }
 
