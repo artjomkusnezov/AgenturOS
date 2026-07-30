@@ -39,19 +39,6 @@ export function hasCaptureFieldErrors(errors: CaptureFieldErrors): boolean {
   return Boolean(errors.content)
 }
 
-export function parseCaptureFiles(formData: FormData): File[] {
-  return formData
-    .getAll('files')
-    .filter((value): value is File => value instanceof File && value.size > 0)
-}
-
-export function parseCaptureFormData(formData: FormData): { content: string; files: File[] } {
-  return {
-    content: String(formData.get('content') ?? ''),
-    files: parseCaptureFiles(formData),
-  }
-}
-
 export function getValidCaptureFiles(files: File[]): File[] {
   return files.filter((file) => getUploadFileValidationMessage(file) === null)
 }

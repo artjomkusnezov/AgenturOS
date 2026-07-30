@@ -9,8 +9,7 @@ import { LogoutButton } from '@/features/auth/components/logout-button'
 type AppSidebarProps = {
   userDisplayName: string
   className?: string
-  onOpenCapture: () => void
-  captureTriggerRef: React.RefObject<HTMLButtonElement | null>
+  onOpenCapture: (trigger: HTMLButtonElement) => void
 }
 
 const logoutButtonStyles =
@@ -20,7 +19,6 @@ export function AppSidebar({
   userDisplayName,
   className = '',
   onOpenCapture,
-  captureTriggerRef,
 }: AppSidebarProps) {
   return (
     <aside
@@ -36,11 +34,7 @@ export function AppSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <QuickCaptureButton
-          variant="sidebar"
-          onClick={onOpenCapture}
-          buttonRef={captureTriggerRef}
-        />
+        <QuickCaptureButton variant="sidebar" onClick={onOpenCapture} />
         <AppNavigation />
       </div>
 

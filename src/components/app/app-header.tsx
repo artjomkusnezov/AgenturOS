@@ -3,15 +3,12 @@
 import { usePathname } from 'next/navigation'
 
 import { BellIcon, MenuIcon, SearchIcon } from '@/components/app/app-icons'
-import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import { getNavItemByPathname } from '@/config/app-navigation'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 
 type AppHeaderProps = {
   onOpenMobileMenu: () => void
   userDisplayName: string
-  onOpenCapture: () => void
-  captureTriggerRef: React.RefObject<HTMLButtonElement | null>
 }
 
 const iconButtonStyles =
@@ -20,12 +17,7 @@ const iconButtonStyles =
 const logoutButtonStyles =
   '[&_form_button]:rounded-xl [&_form_button]:border [&_form_button]:border-zinc-200/80 [&_form_button]:bg-white [&_form_button]:px-3 [&_form_button]:py-1.5 [&_form_button]:text-sm [&_form_button]:font-medium [&_form_button]:text-zinc-600 [&_form_button]:transition-colors [&_form_button]:duration-150 [&_form_button]:hover:border-zinc-300 [&_form_button]:hover:bg-zinc-50 [&_form_button]:hover:text-zinc-900 [&_form_button]:focus-visible:outline [&_form_button]:focus-visible:outline-2 [&_form_button]:focus-visible:outline-offset-2 [&_form_button]:focus-visible:outline-accent'
 
-export function AppHeader({
-  onOpenMobileMenu,
-  userDisplayName,
-  onOpenCapture,
-  captureTriggerRef,
-}: AppHeaderProps) {
+export function AppHeader({ onOpenMobileMenu, userDisplayName }: AppHeaderProps) {
   const pathname = usePathname()
   const currentNav = getNavItemByPathname(pathname)
 
@@ -51,12 +43,6 @@ export function AppHeader({
             </p>
           ) : null}
         </div>
-
-        <QuickCaptureButton
-          variant="inline"
-          onClick={onOpenCapture}
-          buttonRef={captureTriggerRef}
-        />
 
         <div className="hidden items-center gap-2 md:flex">
           <div

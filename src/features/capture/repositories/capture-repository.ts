@@ -1,11 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { buildCaptureContent } from '@/features/capture/lib/build-capture-content'
-import { getValidCaptureFiles } from '@/features/capture/lib/validate-capture'
-import type { CaptureFailedFile } from '@/features/capture/types/capture'
-import {
-  deleteFileForCurrentUser,
-  uploadFileForCurrentUser,
-} from '@/features/files/repositories/files-repository'
+import { isValidFileId } from '@/features/files/lib/validate-file'
+import { deleteFileForCurrentUser } from '@/features/files/repositories/files-repository'
 import { INBOX_SOURCE_UNIVERSAL_CAPTURE } from '@/features/inbox/lib/inbox-source'
 import {
   createInboxItemForCurrentUser,
@@ -17,19 +13,53 @@ type RepositoryError = {
   error: string
 }
 
-type UniversalCaptureResult =
-  | {
-      success: true
-      itemId: string
-      uploadedFileCount: number
-      failedFiles: CaptureFailedFile[]
-    }
+type CaptureInboxResult =
+  | { success: true; itemId: string }
   | RepositoryError
 
-async function linkInboxItemFileForCurrentUser(
+type LinkCaptureFileResult = { success: true } | RepositoryError
+
+type DeleteCaptureInboxResult = { success: true } | RepositoryError
+
+export async function createCaptureInboxForCurrentUser(input: {
+  content: string
+  filenames: string[]
+}): Promise<CaptureInboxResult> {
+  const resolvedContent = buildCaptureContent(input.content, input.filenames)
+
+  if (!resolvedContent) {
+    return {
+      success: false,
+      error: 'Bitte Text eingeben oder mindestens eine gültige Datei hinzufügen.',
+    }
+  }
+
+  const inboxResult = await createInboxItemForCurrentUser({
+    content: resolvedContent,
+    source: INBOX_SOURCE_UNIVERSAL_CAPTURE,
+  })
+
+  if (!inboxResult.success) {
+    return inboxResult
+  }
+
+  return {
+    success: true,
+    itemId: inboxResult.item.id,
+  }
+}
+
+export async function linkCaptureFileForCurrentUser(
   inboxItemId: string,
   fileId: string
-): Promise<{ success: true } | RepositoryError> {
+): Promise<LinkCaptureFileResult> {
+  if (!isValidFileId(inboxItemId) || !isValidFileId(fileId)) {
+    return {
+      success: false,
+      error: 'Die Datei konnte dem Eingang nicht zugeordnet werden.',
+    }
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -58,88 +88,28 @@ async function linkInboxItemFileForCurrentUser(
   return { success: true }
 }
 
-export async function createUniversalCaptureForCurrentUser(input: {
-  content: string
-  files: File[]
-}): Promise<UniversalCaptureResult> {
-  const validFiles = getValidCaptureFiles(input.files)
-  const content = buildCaptureContent(
-    input.content,
-    validFiles.map((file) => file.name)
-  )
-
-  if (!content) {
+export async function rollbackCaptureFileForCurrentUser(
+  fileId: string
+): Promise<{ success: true } | RepositoryError> {
+  if (!isValidFileId(fileId)) {
     return {
       success: false,
-      error: 'Bitte Text eingeben oder mindestens eine gültige Datei hinzufügen.',
+      error: 'Die Datei konnte nicht entfernt werden.',
     }
   }
 
-  const inboxResult = await createInboxItemForCurrentUser({
-    content,
-    source: INBOX_SOURCE_UNIVERSAL_CAPTURE,
-  })
+  return deleteFileForCurrentUser(fileId)
+}
 
-  if (!inboxResult.success) {
-    return inboxResult
-  }
-
-  if (validFiles.length === 0) {
-    return {
-      success: true,
-      itemId: inboxResult.item.id,
-      uploadedFileCount: 0,
-      failedFiles: [],
-    }
-  }
-
-  const failedFiles: CaptureFailedFile[] = []
-  let uploadedFileCount = 0
-
-  for (const file of validFiles) {
-    const uploadResult = await uploadFileForCurrentUser(file)
-
-    if (!uploadResult.success) {
-      failedFiles.push({
-        filename: file.name,
-        error: uploadResult.error,
-      })
-      continue
-    }
-
-    const linkResult = await linkInboxItemFileForCurrentUser(
-      inboxResult.item.id,
-      uploadResult.file.id
-    )
-
-    if (!linkResult.success) {
-      await deleteFileForCurrentUser(uploadResult.file.id)
-      failedFiles.push({
-        filename: file.name,
-        error: linkResult.error,
-      })
-      continue
-    }
-
-    uploadedFileCount += 1
-  }
-
-  if (uploadedFileCount === 0) {
-    await deleteInboxItemForCurrentUser(inboxResult.item.id)
-
+export async function deleteCaptureInboxForCurrentUser(
+  inboxItemId: string
+): Promise<DeleteCaptureInboxResult> {
+  if (!isValidFileId(inboxItemId)) {
     return {
       success: false,
-      error:
-        failedFiles.length === 1
-          ? failedFiles[0].error
-          : 'Die Dateien konnten nicht gespeichert werden.',
+      error: 'Das Eingangselement konnte nicht gelöscht werden.',
     }
   }
 
-  return {
-    success: true,
-    itemId: inboxResult.item.id,
-    uploadedFileCount,
-    failedFiles,
-  }
+  return deleteInboxItemForCurrentUser(inboxItemId)
 }

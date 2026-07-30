@@ -16,9 +16,10 @@ type AppShellProps = {
 export function AppShell({ children, userDisplayName }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [captureOpen, setCaptureOpen] = useState(false)
-  const captureTriggerRef = useRef<HTMLButtonElement>(null)
+  const captureTriggerRef = useRef<HTMLButtonElement | null>(null)
 
-  const openCapture = () => {
+  const openCapture = (trigger: HTMLButtonElement) => {
+    captureTriggerRef.current = trigger
     setMobileMenuOpen(false)
     setCaptureOpen(true)
   }
@@ -29,36 +30,26 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
         userDisplayName={userDisplayName}
         className="hidden lg:flex"
         onOpenCapture={openCapture}
-        captureTriggerRef={captureTriggerRef}
       />
 
       <MobileNavigation
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         userDisplayName={userDisplayName}
-        onOpenCapture={openCapture}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader
           userDisplayName={userDisplayName}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
-          onOpenCapture={openCapture}
-          captureTriggerRef={captureTriggerRef}
         />
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
-          <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10">
-            {children}
-          </div>
+        <main className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
+          <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10">{children}</div>
         </main>
       </div>
 
-      <QuickCaptureButton
-        variant="floating"
-        onClick={openCapture}
-        buttonRef={captureTriggerRef}
-      />
+      <QuickCaptureButton variant="floating" onClick={openCapture} className="lg:hidden" />
 
       <UniversalCaptureDialog
         isOpen={captureOpen}

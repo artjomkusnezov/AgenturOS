@@ -3,16 +3,16 @@
 import { PlusIcon } from '@/components/app/app-icons'
 
 type QuickCaptureButtonProps = {
-  variant?: 'inline' | 'floating' | 'sidebar'
-  onClick: () => void
-  buttonRef?: React.RefObject<HTMLButtonElement | null>
+  variant?: 'floating' | 'sidebar'
+  onClick: (trigger: HTMLButtonElement) => void
+  className?: string
   disabled?: boolean
 }
 
 export function QuickCaptureButton({
-  variant = 'inline',
+  variant = 'sidebar',
   onClick,
-  buttonRef,
+  className = '',
   disabled = false,
 }: QuickCaptureButtonProps) {
   const baseClasses =
@@ -21,30 +21,14 @@ export function QuickCaptureButton({
   if (variant === 'floating') {
     return (
       <button
-        ref={buttonRef}
         type="button"
-        onClick={onClick}
+        onClick={(event) => onClick(event.currentTarget)}
         disabled={disabled}
         aria-haspopup="dialog"
-        className={`${baseClasses} fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 h-12 min-h-12 border border-accent/20 bg-accent px-4 text-white shadow-lg shadow-accent/20 hover:bg-accent/90 lg:hidden`}
+        aria-label="Neu erfassen"
+        className={`${baseClasses} fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 h-12 min-h-12 border border-accent/20 bg-accent px-4 text-white shadow-lg shadow-accent/20 hover:bg-accent/90 ${className}`}
       >
-        <PlusIcon className="h-4 w-4" />
-        <span>Neu</span>
-      </button>
-    )
-  }
-
-  if (variant === 'sidebar') {
-    return (
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        aria-haspopup="dialog"
-        className={`${baseClasses} mb-3 w-full min-h-11 border border-accent/20 bg-accent px-4 py-2.5 text-white shadow-sm hover:bg-accent/90`}
-      >
-        <PlusIcon className="h-4 w-4" />
+        <PlusIcon className="h-4 w-4" aria-hidden="true" />
         <span>Neu</span>
       </button>
     )
@@ -52,14 +36,13 @@ export function QuickCaptureButton({
 
   return (
     <button
-      ref={buttonRef}
       type="button"
-      onClick={onClick}
+      onClick={(event) => onClick(event.currentTarget)}
       disabled={disabled}
       aria-haspopup="dialog"
-      className={`${baseClasses} hidden min-h-11 border border-accent/20 bg-accent px-4 py-2 text-white shadow-sm hover:bg-accent/90 lg:inline-flex`}
+      className={`${baseClasses} mb-3 w-full min-h-11 border border-accent/20 bg-accent px-4 py-2.5 text-white shadow-sm hover:bg-accent/90 ${className}`}
     >
-      <PlusIcon className="h-4 w-4" />
+      <PlusIcon className="h-4 w-4" aria-hidden="true" />
       <span>Neu</span>
     </button>
   )

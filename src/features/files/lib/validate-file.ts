@@ -6,6 +6,48 @@ const UUID_PATTERN =
 
 const MAX_FILENAME_LENGTH = 255
 
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'heif'])
+
+export function isAllowedUploadMimeType(mimeType: string): boolean {
+  const normalized = mimeType.trim().toLowerCase()
+
+  if (normalized === 'application/pdf') {
+    return true
+  }
+
+  return normalized.startsWith('image/')
+}
+
+function getUploadExtension(filename: string): string | null {
+  const parts = normalizeUploadFilename(filename).split('.')
+
+  if (parts.length < 2) {
+    return null
+  }
+
+  return parts.at(-1)?.toLowerCase() ?? null
+}
+
+export function getUploadMimeValidationMessage(file: File): string | null {
+  const mimeType = resolveUploadMimeType(file)
+
+  if (mimeType === 'application/octet-stream') {
+    const extension = getUploadExtension(file.name)
+
+    if (extension && ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+      return null
+    }
+
+    return 'Dateityp nicht erlaubt. Nur PDF und Bilder sind zulässig.'
+  }
+
+  if (!isAllowedUploadMimeType(mimeType)) {
+    return 'Dateityp nicht erlaubt. Nur PDF und Bilder sind zulässig.'
+  }
+
+  return null
+}
+
 export function isValidFileId(id: string): boolean {
   return UUID_PATTERN.test(id)
 }
@@ -43,6 +85,13 @@ export function validateUploadFile(file: File | null): FileFieldErrors {
 
   if (file.size > MAX_FILE_UPLOAD_BYTES) {
     errors.file = 'Die Datei ist zu groß. Maximal 50 MB sind erlaubt.'
+    return errors
+  }
+
+  const mimeValidationMessage = getUploadMimeValidationMessage(file)
+
+  if (mimeValidationMessage) {
+    errors.file = mimeValidationMessage
     return errors
   }
 
