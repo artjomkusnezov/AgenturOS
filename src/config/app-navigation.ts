@@ -3,6 +3,7 @@ export type AppNavIcon =
   | 'inbox'
   | 'tasks'
   | 'information'
+  | 'contacts'
   | 'files'
   | 'activity'
   | 'settings'
@@ -38,6 +39,12 @@ export const appNavigation: AppNavItem[] = [
     href: '/app/information',
     icon: 'information',
     description: 'Hier entsteht die zentrale Informationsablage von AgenturOS.',
+  },
+  {
+    title: 'Kontakte',
+    href: '/app/contacts',
+    icon: 'contacts',
+    description: 'Hier werden Kontakte erfasst und verwaltet.',
   },
   {
     title: 'Dateien',
