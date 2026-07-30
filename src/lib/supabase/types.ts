@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       agencies: {
@@ -91,39 +116,6 @@ export type Database = {
           },
         ]
       }
-      files: {
-        Row: {
-          created_at: string
-          filename: string
-          id: string
-          mime_type: string
-          size_bytes: number
-          storage_path: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          filename: string
-          id?: string
-          mime_type: string
-          size_bytes: number
-          storage_path: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          filename?: string
-          id?: string
-          mime_type?: string
-          size_bytes?: number
-          storage_path?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       contacts: {
         Row: {
           company: string | null
@@ -163,31 +155,34 @@ export type Database = {
         }
         Relationships: []
       }
-      inbox_items: {
+      files: {
         Row: {
-          content: string
           created_at: string
+          filename: string
           id: string
-          processed_at: string | null
-          source: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          content: string
           created_at?: string
+          filename: string
           id?: string
-          processed_at?: string | null
-          source?: string
+          mime_type: string
+          size_bytes: number
+          storage_path: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          content?: string
           created_at?: string
+          filename?: string
           id?: string
-          processed_at?: string | null
-          source?: string
+          mime_type?: string
+          size_bytes?: number
+          storage_path?: string
           updated_at?: string
           user_id?: string
         }
@@ -228,6 +223,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      inbox_items: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          processed_at: string | null
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       inbox_relations: {
         Row: {
@@ -379,6 +404,14 @@ export type Database = {
         }[]
       }
       initialize_current_user_account: { Args: never; Returns: string }
+      user_has_active_agency_membership: {
+        Args: { p_agency_id: string }
+        Returns: boolean
+      }
+      user_shares_active_agency_with: {
+        Args: { p_other_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       agency_status: "active" | "suspended" | "archived"
@@ -509,6 +542,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       agency_status: ["active", "suspended", "archived"],
