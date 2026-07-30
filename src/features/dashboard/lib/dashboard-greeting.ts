@@ -35,30 +35,41 @@ type WorkSituationInput = {
   informationCount: number
 }
 
+function sanitizeCount(value: number): number {
+  if (!Number.isFinite(value) || value < 0) {
+    return 0
+  }
+
+  return Math.floor(value)
+}
+
 export function getWorkSituationHint({
   unprocessedInboxCount,
   openTaskCount,
   informationCount,
 }: WorkSituationInput): string {
+  const inboxCount = sanitizeCount(unprocessedInboxCount)
+  const tasksCount = sanitizeCount(openTaskCount)
+  const infoCount = sanitizeCount(informationCount)
   const parts: string[] = []
 
-  if (unprocessedInboxCount === 1) {
+  if (inboxCount === 1) {
     parts.push('1 Eingang wartet auf Bearbeitung')
-  } else if (unprocessedInboxCount > 1) {
-    parts.push(`${unprocessedInboxCount} Eingänge warten auf Bearbeitung`)
+  } else if (inboxCount > 1) {
+    parts.push(`${inboxCount} Eingänge warten auf Bearbeitung`)
   }
 
-  if (openTaskCount === 1) {
+  if (tasksCount === 1) {
     parts.push('1 offene Aufgabe')
-  } else if (openTaskCount > 1) {
-    parts.push(`${openTaskCount} offene Aufgaben`)
+  } else if (tasksCount > 1) {
+    parts.push(`${tasksCount} offene Aufgaben`)
   }
 
   if (parts.length > 0) {
     return `${parts.join(' · ')}.`
   }
 
-  if (informationCount > 0) {
+  if (infoCount > 0) {
     return 'Keine offenen Eingänge oder Aufgaben – Sie können in Ihren Informationen weiterarbeiten.'
   }
 
@@ -66,41 +77,48 @@ export function getWorkSituationHint({
 }
 
 export function getInboxCardDescription(unprocessedCount: number, totalCount: number): string {
-  if (unprocessedCount === 0 && totalCount === 0) {
+  const safeUnprocessed = sanitizeCount(unprocessedCount)
+  const safeTotal = sanitizeCount(totalCount)
+
+  if (safeUnprocessed === 0 && safeTotal === 0) {
     return 'Noch nichts erfasst'
   }
 
-  if (unprocessedCount === 0) {
+  if (safeUnprocessed === 0) {
     return 'Alles bearbeitet'
   }
 
-  if (unprocessedCount === 1) {
+  if (safeUnprocessed === 1) {
     return '1 offen zur Bearbeitung'
   }
 
-  return `${unprocessedCount} offen zur Bearbeitung`
+  return `${safeUnprocessed} offen zur Bearbeitung`
 }
 
 export function getTasksCardDescription(openCount: number): string {
-  if (openCount === 0) {
+  const safeOpen = sanitizeCount(openCount)
+
+  if (safeOpen === 0) {
     return 'Keine offenen Aufgaben'
   }
 
-  if (openCount === 1) {
+  if (safeOpen === 1) {
     return '1 offene Aufgabe'
   }
 
-  return `${openCount} offene Aufgaben`
+  return `${safeOpen} offene Aufgaben`
 }
 
 export function getInformationCardDescription(count: number): string {
-  if (count === 0) {
+  const safeCount = sanitizeCount(count)
+
+  if (safeCount === 0) {
     return 'Noch keine Informationen'
   }
 
-  if (count === 1) {
+  if (safeCount === 1) {
     return '1 gespeicherte Information'
   }
 
-  return `${count} gespeicherte Informationen`
+  return `${safeCount} gespeicherte Informationen`
 }

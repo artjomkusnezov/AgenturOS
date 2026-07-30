@@ -1,5 +1,10 @@
 import Link from 'next/link'
 
+import {
+  DashboardPanel,
+  DashboardPanelEmpty,
+} from '@/features/dashboard/components/dashboard-panel'
+import { sanitizeDashboardLabel } from '@/features/dashboard/lib/dashboard-safe-data'
 import { formatInformationDateTime } from '@/features/information/lib/information-status'
 import type { InformationItem } from '@/features/information/types/information-item'
 
@@ -11,45 +16,41 @@ export function DashboardRecentInformation({ items }: DashboardRecentInformation
   const previewItems = items.slice(0, 5)
 
   return (
-    <section aria-labelledby="dashboard-recent-information-heading">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2
-          id="dashboard-recent-information-heading"
-          className="text-sm font-semibold tracking-tight text-zinc-900"
-        >
-          Letzte Informationen
-        </h2>
-        {items.length > 0 ? (
-          <Link
-            href="/app/information"
-            className="text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900"
-          >
-            Alle anzeigen
-          </Link>
-        ) : null}
-      </div>
-
+    <DashboardPanel
+      title="Letzte Informationen"
+      headingId="dashboard-recent-information-heading"
+      href={items.length > 0 ? '/app/information' : undefined}
+    >
       {previewItems.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-200/80 bg-white/50 px-4 py-5 text-sm text-zinc-500">
-          Noch keine Informationen.
-        </p>
+        <DashboardPanelEmpty
+          title="Noch keine Informationen"
+          description="Zuletzt bearbeitete Informationen erscheinen hier zum direkten Weiterarbeiten."
+        />
       ) : (
         <ul className="divide-y divide-zinc-200/70 overflow-hidden rounded-xl border border-zinc-200/60 bg-white">
-          {previewItems.map((item) => (
-            <li key={item.id}>
-              <Link
-                href={`/app/information?itemId=${item.id}`}
-                className="block px-4 py-3 transition-colors duration-150 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
-              >
-                <p className="truncate text-sm font-medium text-zinc-900">{item.title}</p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Geändert am {formatInformationDateTime(item.updated_at)}
-                </p>
-              </Link>
-            </li>
-          ))}
+          {previewItems.map((item) => {
+            const title = sanitizeDashboardLabel(item.title, 'Ohne Titel')
+            const updatedLabel = item.updated_at
+              ? formatInformationDateTime(item.updated_at)
+              : 'Unbekannt'
+
+            return (
+              <li key={item.id}>
+                <Link
+                  href={`/app/information?itemId=${item.id}`}
+                  aria-label={`Information öffnen: ${title}, geändert am ${updatedLabel}`}
+                  className="block px-4 py-3.5 transition-colors duration-150 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent active:bg-zinc-100/80"
+                >
+                  <p className="truncate text-sm font-medium text-zinc-900" title={title}>
+                    {title}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">Geändert am {updatedLabel}</p>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
-    </section>
+    </DashboardPanel>
   )
 }
