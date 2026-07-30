@@ -4,12 +4,14 @@ import { useEffect, useRef } from 'react'
 
 import { AppNavigation } from '@/components/app/app-navigation'
 import { CloseIcon } from '@/components/app/app-icons'
+import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 
 type MobileNavigationProps = {
   isOpen: boolean
   onClose: () => void
   userDisplayName: string
+  onOpenCapture: () => void
 }
 
 const logoutButtonStyles =
@@ -19,6 +21,7 @@ export function MobileNavigation({
   isOpen,
   onClose,
   userDisplayName,
+  onOpenCapture,
 }: MobileNavigationProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -80,6 +83,7 @@ export function MobileNavigation({
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-2">
+          <QuickCaptureButton variant="sidebar" onClick={onOpenCapture} />
           <AppNavigation onNavigate={onClose} />
         </div>
 

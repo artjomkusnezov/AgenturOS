@@ -3,12 +3,15 @@
 import { usePathname } from 'next/navigation'
 
 import { BellIcon, MenuIcon, SearchIcon } from '@/components/app/app-icons'
+import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import { getNavItemByPathname } from '@/config/app-navigation'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 
 type AppHeaderProps = {
   onOpenMobileMenu: () => void
   userDisplayName: string
+  onOpenCapture: () => void
+  captureTriggerRef: React.RefObject<HTMLButtonElement | null>
 }
 
 const iconButtonStyles =
@@ -17,13 +20,18 @@ const iconButtonStyles =
 const logoutButtonStyles =
   '[&_form_button]:rounded-xl [&_form_button]:border [&_form_button]:border-zinc-200/80 [&_form_button]:bg-white [&_form_button]:px-3 [&_form_button]:py-1.5 [&_form_button]:text-sm [&_form_button]:font-medium [&_form_button]:text-zinc-600 [&_form_button]:transition-colors [&_form_button]:duration-150 [&_form_button]:hover:border-zinc-300 [&_form_button]:hover:bg-zinc-50 [&_form_button]:hover:text-zinc-900 [&_form_button]:focus-visible:outline [&_form_button]:focus-visible:outline-2 [&_form_button]:focus-visible:outline-offset-2 [&_form_button]:focus-visible:outline-accent'
 
-export function AppHeader({ onOpenMobileMenu, userDisplayName }: AppHeaderProps) {
+export function AppHeader({
+  onOpenMobileMenu,
+  userDisplayName,
+  onOpenCapture,
+  captureTriggerRef,
+}: AppHeaderProps) {
   const pathname = usePathname()
   const currentNav = getNavItemByPathname(pathname)
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200/70 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/75">
-      <div className="flex h-14 items-center gap-4 px-4 lg:px-8">
+      <div className="flex h-14 items-center gap-3 px-4 lg:gap-4 lg:px-8">
         <button
           type="button"
           onClick={onOpenMobileMenu}
@@ -43,6 +51,12 @@ export function AppHeader({ onOpenMobileMenu, userDisplayName }: AppHeaderProps)
             </p>
           ) : null}
         </div>
+
+        <QuickCaptureButton
+          variant="inline"
+          onClick={onOpenCapture}
+          buttonRef={captureTriggerRef}
+        />
 
         <div className="hidden items-center gap-2 md:flex">
           <div

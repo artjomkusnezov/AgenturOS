@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { INBOX_RELATION_TYPE_TASK } from '@/features/inbox/lib/inbox-relation'
-import { INBOX_SOURCE_MANUAL_TEXT } from '@/features/inbox/lib/inbox-source'
+import { INBOX_SOURCE_MANUAL_TEXT, INBOX_SOURCE_UNIVERSAL_CAPTURE } from '@/features/inbox/lib/inbox-source'
 import { partitionAndSortInboxItems } from '@/features/inbox/lib/sort-inbox-items'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
@@ -59,6 +59,7 @@ function mapCreateTaskFromInboxRpcError(message: string): string {
 
 type InboxItemWriteInput = {
   content: string
+  source?: typeof INBOX_SOURCE_MANUAL_TEXT | typeof INBOX_SOURCE_UNIVERSAL_CAPTURE
 }
 
 async function getAuthenticatedUserId(): Promise<
@@ -144,7 +145,7 @@ export async function createInboxItemForCurrentUser(
     .insert({
       user_id: authResult.userId,
       content: input.content,
-      source: INBOX_SOURCE_MANUAL_TEXT,
+      source: input.source ?? INBOX_SOURCE_MANUAL_TEXT,
     })
     .select('*')
     .single()

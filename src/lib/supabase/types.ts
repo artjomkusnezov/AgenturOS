@@ -193,6 +193,42 @@ export type Database = {
         }
         Relationships: []
       }
+      inbox_item_files: {
+        Row: {
+          created_at: string
+          file_id: string
+          id: string
+          inbox_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_id: string
+          id?: string
+          inbox_item_id: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string
+          id?: string
+          inbox_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_item_files_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_item_files_inbox_item_id_fkey"
+            columns: ["inbox_item_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbox_relations: {
         Row: {
           created_at: string
