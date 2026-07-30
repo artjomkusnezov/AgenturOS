@@ -355,8 +355,11 @@ export type Database = {
       }
       tasks: {
         Row: {
+          agency_id: string
+          assignee_user_id: string | null
           completed_at: string | null
           created_at: string
+          created_by: string
           description: string | null
           due_date: string | null
           id: string
@@ -366,8 +369,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agency_id: string
+          assignee_user_id?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by: string
           description?: string | null
           due_date?: string | null
           id?: string
@@ -377,8 +383,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agency_id?: string
+          assignee_user_id?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string
           description?: string | null
           due_date?: string | null
           id?: string
@@ -387,7 +396,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -406,6 +423,10 @@ export type Database = {
       initialize_current_user_account: { Args: never; Returns: string }
       user_has_active_agency_membership: {
         Args: { p_agency_id: string }
+        Returns: boolean
+      }
+      user_is_active_member_of_agency: {
+        Args: { p_agency_id: string; p_user_id: string }
         Returns: boolean
       }
       user_shares_active_agency_with: {

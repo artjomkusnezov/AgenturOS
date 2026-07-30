@@ -2,6 +2,12 @@ import type { Tables } from '@/lib/supabase/types'
 
 export type Task = Tables<'tasks'>
 
+/** Agentur-Zusammenarbeit: agency_id, created_by, assignee_user_id sind auf Task enthalten. */
+export type TaskCollaborationFields = Pick<
+  Task,
+  'agency_id' | 'created_by' | 'assignee_user_id'
+>
+
 export type TaskPriority = Task['priority']
 
 export type TaskFieldErrors = {

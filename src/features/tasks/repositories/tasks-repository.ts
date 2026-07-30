@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { partitionAndSortTasks } from '@/features/tasks/lib/sort-tasks'
 import type { Task, TaskPriority } from '@/features/tasks/types/task'
+import { createClient } from '@/lib/supabase/server'
 
 type RepositoryError = {
   success: false
@@ -61,10 +62,7 @@ export async function listTasksForCurrentUser(): Promise<ListTasksResult> {
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', authResult.userId)
+  const { data, error } = await supabase.from('tasks').select('*')
 
   if (error) {
     return {
@@ -94,7 +92,6 @@ export async function getTaskForCurrentUser(taskId: string): Promise<TaskResult>
     .from('tasks')
     .select('*')
     .eq('id', taskId)
-    .eq('user_id', authResult.userId)
     .maybeSingle()
 
   if (error) {
@@ -126,11 +123,20 @@ export async function createTaskForCurrentUser(
     return authResult
   }
 
+  const agencyResult = await getCurrentUserAgency()
+
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('tasks')
     .insert({
       user_id: authResult.userId,
+      created_by: authResult.userId,
+      agency_id: agencyResult.agency.id,
+      assignee_user_id: null,
       title: input.title,
       description: input.description,
     })
@@ -171,7 +177,6 @@ export async function updateTaskDetailsForCurrentUser(
       updated_at: new Date().toISOString(),
     })
     .eq('id', taskId)
-    .eq('user_id', authResult.userId)
     .select('*')
     .maybeSingle()
 
@@ -210,7 +215,6 @@ export async function completeTaskForCurrentUser(taskId: string): Promise<TaskRe
       updated_at: new Date().toISOString(),
     })
     .eq('id', taskId)
-    .eq('user_id', authResult.userId)
     .is('completed_at', null)
     .select('*')
     .maybeSingle()
@@ -250,7 +254,6 @@ export async function reopenTaskForCurrentUser(taskId: string): Promise<TaskResu
       updated_at: new Date().toISOString(),
     })
     .eq('id', taskId)
-    .eq('user_id', authResult.userId)
     .not('completed_at', 'is', null)
     .select('*')
     .maybeSingle()
@@ -289,7 +292,6 @@ export async function deleteTaskForCurrentUser(
     .from('tasks')
     .delete()
     .eq('id', taskId)
-    .eq('user_id', authResult.userId)
     .select('id')
     .maybeSingle()
 
