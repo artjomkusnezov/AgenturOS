@@ -353,6 +353,47 @@ export type Database = {
         }
         Relationships: []
       }
+      task_timeline_entries: {
+        Row: {
+          author_user_id: string
+          content: string
+          created_at: string
+          entry_type: string
+          event_key: string | null
+          id: string
+          metadata: Json | null
+          task_id: string
+        }
+        Insert: {
+          author_user_id: string
+          content: string
+          created_at?: string
+          entry_type: string
+          event_key?: string | null
+          id?: string
+          metadata?: Json | null
+          task_id: string
+        }
+        Update: {
+          author_user_id?: string
+          content?: string
+          created_at?: string
+          entry_type?: string
+          event_key?: string | null
+          id?: string
+          metadata?: Json | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_timeline_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           agency_id: string
