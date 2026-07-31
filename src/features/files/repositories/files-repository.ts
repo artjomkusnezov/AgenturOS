@@ -5,7 +5,8 @@ import {
   SIGNED_DOWNLOAD_URL_EXPIRY_SECONDS,
 } from '@/features/files/lib/file-storage'
 import { sortFiles } from '@/features/files/lib/sort-files'
-import { normalizeUploadFilename, resolveUploadMimeType } from '@/features/files/lib/validate-file'
+import { isValidFileId, normalizeUploadFilename, resolveUploadMimeType } from '@/features/files/lib/validate-file'
+import { isValidTaskId } from '@/features/tasks/lib/validate-task'
 import type { FileRecord } from '@/features/files/types/file'
 
 type RepositoryError = {
@@ -116,6 +117,89 @@ export async function getFileForCurrentUser(fileId: string): Promise<FileResult>
   return {
     success: true,
     file: data,
+  }
+}
+
+export async function getFileForTask(taskId: string, fileId: string): Promise<FileResult> {
+  if (!isValidTaskId(taskId) || !isValidFileId(fileId)) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht geladen werden.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data: relation, error: relationError } = await supabase
+    .from('task_file_relations')
+    .select('id')
+    .eq('task_id', taskId)
+    .eq('file_id', fileId)
+    .maybeSingle()
+
+  if (relationError || !relation) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht geladen werden.',
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('files')
+    .select('*')
+    .eq('id', fileId)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht geladen werden.',
+    }
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht geladen werden.',
+    }
+  }
+
+  return {
+    success: true,
+    file: data,
+  }
+}
+
+export async function createSignedDownloadUrlForTaskFile(
+  taskId: string,
+  fileId: string,
+): Promise<DownloadFileResult> {
+  const fileResult = await getFileForTask(taskId, fileId)
+
+  if (!fileResult.success) {
+    return fileResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.storage
+    .from(FILES_STORAGE_BUCKET)
+    .createSignedUrl(fileResult.file.storage_path, SIGNED_DOWNLOAD_URL_EXPIRY_SECONDS)
+
+  if (error || !data?.signedUrl) {
+    return {
+      success: false,
+      error: 'Der Download konnte nicht vorbereitet werden.',
+    }
+  }
+
+  return {
+    success: true,
+    downloadUrl: data.signedUrl,
   }
 }
 
