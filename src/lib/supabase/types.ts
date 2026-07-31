@@ -452,6 +452,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_task: {
+        Args: { p_description?: string; p_title: string }
+        Returns: {
+          agency_id: string
+          assignee_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_task_from_inbox_item: {
         Args: { p_inbox_item_id: string }
         Returns: {
@@ -462,6 +485,10 @@ export type Database = {
         }[]
       }
       initialize_current_user_account: { Args: never; Returns: string }
+      insert_task_created_timeline_entry: {
+        Args: { p_author_user_id: string; p_task_id: string }
+        Returns: undefined
+      }
       user_has_active_agency_membership: {
         Args: { p_agency_id: string }
         Returns: boolean

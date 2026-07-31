@@ -1,4 +1,3 @@
-import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { partitionAndSortTasks } from '@/features/tasks/lib/sort-tasks'
 import type { Task, TaskPriority } from '@/features/tasks/types/task'
 import { createClient } from '@/lib/supabase/server'
@@ -123,25 +122,11 @@ export async function createTaskForCurrentUser(
     return authResult
   }
 
-  const agencyResult = await getCurrentUserAgency()
-
-  if (!agencyResult.success) {
-    return agencyResult
-  }
-
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert({
-      user_id: authResult.userId,
-      created_by: authResult.userId,
-      agency_id: agencyResult.agency.id,
-      assignee_user_id: null,
-      title: input.title,
-      description: input.description,
-    })
-    .select('*')
-    .single()
+  const { data, error } = await supabase.rpc('create_task', {
+    p_title: input.title,
+    p_description: input.description ?? undefined,
+  })
 
   if (error || !data) {
     return {
@@ -152,7 +137,7 @@ export async function createTaskForCurrentUser(
 
   return {
     success: true,
-    task: data,
+    task: data as Task,
   }
 }
 
