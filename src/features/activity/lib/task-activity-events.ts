@@ -1,14 +1,22 @@
 import type { TaskTimelineEntry } from '@/features/tasks/types/task-timeline'
 import type { TaskActivityKind } from '@/features/activity/types/task-activity'
 
-const VISIBLE_SYSTEM_EVENT_KEYS = new Set([
+export const VISIBLE_SYSTEM_EVENT_KEYS_LIST = [
   'task.created',
   'task.assignee_changed',
   'task.completed',
   'task.reopened',
   'task.file_linked',
   'task.information_linked',
-])
+] as const
+
+const VISIBLE_SYSTEM_EVENT_KEYS = new Set<string>(VISIBLE_SYSTEM_EVENT_KEYS_LIST)
+
+export function buildVisibleActivityFeedOrFilter(): string {
+  const eventKeys = VISIBLE_SYSTEM_EVENT_KEYS_LIST.join(',')
+
+  return `entry_type.eq.note,and(entry_type.eq.system,event_key.in.(${eventKeys}))`
+}
 
 const EVENT_KEY_TO_KIND: Record<string, TaskActivityKind> = {
   'task.created': 'task_created',

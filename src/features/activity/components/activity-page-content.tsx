@@ -1,5 +1,5 @@
 import { EmptyState } from '@/components/app/empty-state'
-import { ActivityList } from '@/features/activity/components/activity-list'
+import { ActivityListWithPagination } from '@/features/activity/components/activity-list-with-pagination'
 import { listTaskActivityForCurrentUser } from '@/features/activity/repositories/task-activity-repository'
 
 export async function ActivityPageContent() {
@@ -27,7 +27,11 @@ export async function ActivityPageContent() {
 
   return (
     <div className="rounded-xl border border-zinc-200/60 bg-white px-4 py-4 sm:px-5">
-      <ActivityList items={result.items} />
+      <ActivityListWithPagination
+        initialItems={result.items}
+        initialHasMore={result.hasMore}
+        initialNextCursor={result.nextCursor}
+      />
     </div>
   )
 }

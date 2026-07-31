@@ -18,6 +18,17 @@ export type TaskActivityItem = {
   summary: string
 }
 
+export type TaskActivityCursor = {
+  createdAt: string
+  id: string
+}
+
+export type TaskActivityPage = {
+  items: TaskActivityItem[]
+  hasMore: boolean
+  nextCursor: TaskActivityCursor | null
+}
+
 export type TaskActivityListState =
   | { status: 'ready'; items: TaskActivityItem[] }
   | { status: 'error'; message: string }
@@ -29,3 +40,7 @@ export type ActivityListGroup = {
   label: string
   items: TaskActivityItem[]
 }
+
+export type LoadMoreActivityResult =
+  | ({ success: true } & TaskActivityPage)
+  | { success: false; error: string }
