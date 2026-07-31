@@ -7,6 +7,7 @@ import { completeTaskAction } from '@/features/tasks/actions/complete-task'
 import { deleteTaskAction } from '@/features/tasks/actions/delete-task'
 import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
 import { updateTaskAction } from '@/features/tasks/actions/update-task'
+import { TaskAssigneeSelect } from '@/features/tasks/components/task-assignee-select'
 import { TaskDueDateLabel } from '@/features/tasks/components/task-due-date-label'
 import { TaskLinkedFiles } from '@/features/tasks/components/task-linked-files'
 import { TaskLinkedInformationSection } from '@/features/tasks/components/task-linked-information'
@@ -15,6 +16,7 @@ import { TaskTimeline } from '@/features/tasks/components/task-timeline'
 import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
 import { formatTaskDateTime, isTaskOpen } from '@/features/tasks/lib/task-status'
+import type { AgencyMember } from '@/features/agency/types/agency-member'
 import type { FileRecord } from '@/features/files/types/file'
 import type { InformationItem } from '@/features/information/types/information-item'
 import type { Task, TaskMutationState } from '@/features/tasks/types/task'
@@ -30,6 +32,7 @@ type TaskDetailPanelProps = {
   availableInformation: InformationItem[]
   selectedFileId?: string | null
   memberNameMap: Record<string, string>
+  agencyMembers: AgencyMember[]
   onOpenFile: (fileId: string) => void
   onBack?: () => void
   onDeleted: () => void
@@ -99,6 +102,7 @@ export function TaskDetailPanel({
   availableInformation,
   selectedFileId = null,
   memberNameMap,
+  agencyMembers,
   onOpenFile,
   onBack,
   onDeleted,
@@ -142,7 +146,6 @@ export function TaskDetailPanel({
 
   const isPending = isUpdatePending || isDeletePending
   const creatorName = resolveTaskMemberName(task.created_by, memberNameMap)
-  const assigneeName = resolveTaskMemberName(task.assignee_user_id, memberNameMap)
 
   return (
     <div className="flex h-full min-h-[24rem] flex-col rounded-xl border border-zinc-200/60 bg-white lg:min-h-0">
@@ -177,8 +180,14 @@ export function TaskDetailPanel({
         </div>
 
         <p className="mt-2.5 text-xs text-zinc-500">
-          {creatorName} · {assigneeName} · {formatTaskDateTime(task.created_at)}
+          {creatorName} · {formatTaskDateTime(task.created_at)}
         </p>
+
+        <TaskAssigneeSelect
+          taskId={task.id}
+          assigneeUserId={task.assignee_user_id}
+          members={agencyMembers}
+        />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

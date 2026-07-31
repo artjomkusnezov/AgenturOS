@@ -45,6 +45,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const memberNameMap = membersResult.success
     ? buildMemberNameMap(membersResult.members)
     : {}
+  const agencyMembers = membersResult.success ? membersResult.members : []
 
   const allFiles = allFilesResult.success ? allFilesResult.files : []
   const allInformation = allInformationResult.success ? allInformationResult.items : []
@@ -138,6 +139,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       selectedTaskId={selectedTaskId}
       selectedFileId={selectedFileId}
       memberNameMap={memberNameMap}
+      agencyMembers={agencyMembers}
       detailState={detailState}
       filePreviewState={filePreviewState}
       taskAttachmentNotice={taskAttachmentNotice}

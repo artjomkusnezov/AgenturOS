@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
+import type { AgencyMember } from '@/features/agency/types/agency-member'
 import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
 import { TaskDetailErrorPanel } from '@/features/tasks/components/task-detail-error-panel'
 import { TaskDetailPanel } from '@/features/tasks/components/task-detail-panel'
@@ -21,6 +22,7 @@ type TasksWorkspaceProps = {
   selectedTaskId: string | null
   selectedFileId: string | null
   memberNameMap: Record<string, string>
+  agencyMembers: AgencyMember[]
   detailState: TaskDetailLoadState
   filePreviewState: TaskFilePreviewLoadState
   taskAttachmentNotice?: string | null
@@ -32,6 +34,7 @@ export function TasksWorkspace({
   selectedTaskId,
   selectedFileId,
   memberNameMap,
+  agencyMembers,
   detailState,
   filePreviewState,
   taskAttachmentNotice = null,
@@ -248,6 +251,7 @@ export function TasksWorkspace({
           availableInformation={detailState.availableInformation}
           selectedFileId={selectedFileId}
           memberNameMap={memberNameMap}
+          agencyMembers={agencyMembers}
           onOpenFile={handleOpenFile}
           onBack={handleBackToList}
           onDeleted={handleDeleted}
