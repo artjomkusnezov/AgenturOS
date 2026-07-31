@@ -8,24 +8,31 @@ import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
 import { TaskDetailErrorPanel } from '@/features/tasks/components/task-detail-error-panel'
 import { TaskDetailPanel } from '@/features/tasks/components/task-detail-panel'
 import { TaskEmptyDetail } from '@/features/tasks/components/task-empty-detail'
+import { TaskFilePreview } from '@/features/tasks/components/task-file-preview'
+import { TaskFilePreviewError } from '@/features/tasks/components/task-file-preview-error'
 import { TaskList } from '@/features/tasks/components/task-list'
 import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
+import type { TaskFilePreviewLoadState } from '@/features/tasks/types/task-file-preview'
 import type { Task } from '@/features/tasks/types/task'
 
 type TasksWorkspaceProps = {
   openTasks: Task[]
   completedTasks: Task[]
   selectedTaskId: string | null
+  selectedFileId: string | null
   memberNameMap: Record<string, string>
   detailState: TaskDetailLoadState
+  filePreviewState: TaskFilePreviewLoadState
 }
 
 export function TasksWorkspace({
   openTasks,
   completedTasks,
   selectedTaskId,
+  selectedFileId,
   memberNameMap,
   detailState,
+  filePreviewState,
 }: TasksWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -44,6 +51,13 @@ export function TasksWorkspace({
     [router],
   )
 
+  const navigateToTaskFile = useCallback(
+    (taskId: string, fileId: string) => {
+      router.push(`/app/tasks?task=${taskId}&file=${fileId}`)
+    },
+    [router],
+  )
+
   const navigateToList = useCallback(() => {
     router.push('/app/tasks')
   }, [router])
@@ -55,6 +69,26 @@ export function TasksWorkspace({
     },
     [navigateToTask],
   )
+
+  const handleOpenFile = useCallback(
+    (fileId: string) => {
+      if (!selectedTaskId) {
+        return
+      }
+
+      navigateToTaskFile(selectedTaskId, fileId)
+    },
+    [navigateToTaskFile, selectedTaskId],
+  )
+
+  const handleCloseFilePreview = useCallback(() => {
+    if (!selectedTaskId) {
+      navigateToList()
+      return
+    }
+
+    navigateToTask(selectedTaskId)
+  }, [navigateToList, navigateToTask, selectedTaskId])
 
   const handleStartCreate = useCallback(() => {
     setIsCreating(true)
@@ -88,14 +122,68 @@ export function TasksWorkspace({
     refreshTasks()
   }, [refreshTasks])
 
+  const handleRetryFilePreview = useCallback(() => {
+    refreshTasks()
+  }, [refreshTasks])
+
+  const showFilePreview =
+    selectedFileId !== null &&
+    (filePreviewState.status === 'ready' ||
+      filePreviewState.status === 'error' ||
+      filePreviewState.status === 'invalid' ||
+      filePreviewState.status === 'no_task')
+
   const showMobileDetail =
     isCreating ||
     selectedTaskId !== null ||
+    showFilePreview ||
     detailState.status === 'invalid' ||
     detailState.status === 'not_found' ||
     detailState.status === 'error'
 
   const renderDetailPanel = () => {
+    if (showFilePreview) {
+      if (filePreviewState.status === 'ready' && selectedTaskId) {
+        return (
+          <TaskFilePreview
+            file={filePreviewState.file}
+            previewUrl={filePreviewState.previewUrl}
+            onClose={handleCloseFilePreview}
+          />
+        )
+      }
+
+      if (filePreviewState.status === 'no_task') {
+        return (
+          <TaskFilePreviewError
+            message="Bitte wählen Sie zuerst einen Vorgang aus."
+            onClose={handleBackToList}
+          />
+        )
+      }
+
+      if (filePreviewState.status === 'invalid') {
+        return (
+          <TaskFilePreviewError
+            message="Die ausgewählte Datei ist ungültig."
+            onClose={handleCloseFilePreview}
+          />
+        )
+      }
+
+      return (
+        <TaskFilePreviewError
+          message={
+            filePreviewState.status === 'error'
+              ? filePreviewState.message
+              : 'Die Datei konnte nicht geöffnet werden.'
+          }
+          onClose={handleCloseFilePreview}
+          onRetry={handleRetryFilePreview}
+        />
+      )
+    }
+
     if (isCreating) {
       return (
         <CreateTaskForm onCancel={handleCancelCreate} onCreated={handleCreated} />
@@ -143,7 +231,9 @@ export function TasksWorkspace({
           linkedInformation={detailState.linkedInformation}
           availableFiles={detailState.availableFiles}
           availableInformation={detailState.availableInformation}
+          selectedFileId={selectedFileId}
           memberNameMap={memberNameMap}
+          onOpenFile={handleOpenFile}
           onBack={handleBackToList}
           onDeleted={handleDeleted}
           onWorkflowChange={handleWorkflowChange}
@@ -199,7 +289,7 @@ export function TasksWorkspace({
       </section>
 
       <section
-        aria-label="Vorgangsdetails"
+        aria-label={showFilePreview ? 'Dateivorschau' : 'Vorgangsdetails'}
         className={`min-h-[24rem] flex-1 bg-zinc-50/40 p-4 lg:min-h-0 ${
           showMobileDetail ? 'flex' : 'hidden lg:flex'
         }`}

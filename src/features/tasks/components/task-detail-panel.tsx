@@ -27,7 +27,9 @@ type TaskDetailPanelProps = {
   linkedInformation: TaskLinkedInformation[]
   availableFiles: FileRecord[]
   availableInformation: InformationItem[]
+  selectedFileId?: string | null
   memberNameMap: Record<string, string>
+  onOpenFile: (fileId: string) => void
   onBack?: () => void
   onDeleted: () => void
   onWorkflowChange: () => void
@@ -103,7 +105,9 @@ export function TaskDetailPanel({
   linkedInformation,
   availableFiles,
   availableInformation,
+  selectedFileId = null,
   memberNameMap,
+  onOpenFile,
   onBack,
   onDeleted,
   onWorkflowChange,
@@ -285,6 +289,8 @@ export function TaskDetailPanel({
             taskId={task.id}
             linkedFiles={linkedFiles}
             availableFiles={availableFiles}
+            selectedFileId={selectedFileId}
+            onOpenFile={onOpenFile}
           />
           <TaskLinkedInformationSection
             taskId={task.id}

@@ -3,8 +3,10 @@ import { listFilesForCurrentUser } from '@/features/files/repositories/files-rep
 import { listInformationItemsForCurrentUser } from '@/features/information/repositories/information-repository'
 import { TasksWorkspace } from '@/features/tasks/components/tasks-workspace'
 import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
+import { loadTaskFilePreview } from '@/features/tasks/lib/load-task-file-preview'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { isValidTaskId } from '@/features/tasks/lib/validate-task'
+import { isValidFileId } from '@/features/files/lib/validate-file'
 import {
   listFilesForTask,
   listInformationForTask,
@@ -14,13 +16,14 @@ import {
   getTaskById,
   listTasksForCurrentUser,
 } from '@/features/tasks/repositories/tasks-repository'
+import type { TaskFilePreviewLoadState } from '@/features/tasks/types/task-file-preview'
 
 type TasksPageProps = {
-  searchParams: Promise<{ task?: string; taskId?: string }>
+  searchParams: Promise<{ task?: string; taskId?: string; file?: string }>
 }
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
-  const { task, taskId } = await searchParams
+  const { task, taskId, file: fileParam } = await searchParams
   const selectedTaskParam = task ?? taskId ?? null
 
   const [tasksResult, membersResult, allFilesResult, allInformationResult] = await Promise.all([
@@ -47,6 +50,17 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
 
   let detailState: TaskDetailLoadState = { status: 'none' }
   let selectedTaskId: string | null = null
+  let filePreviewState: TaskFilePreviewLoadState = { status: 'none' }
+  let selectedFileId: string | null = null
+
+  if (fileParam && !selectedTaskParam) {
+    filePreviewState = { status: 'no_task' }
+  } else if (fileParam && !isValidFileId(fileParam)) {
+    filePreviewState = { status: 'invalid' }
+    selectedFileId = fileParam
+  } else if (fileParam) {
+    selectedFileId = fileParam
+  }
 
   if (selectedTaskParam) {
     if (!isValidTaskId(selectedTaskParam)) {
@@ -105,6 +119,10 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
               (item) => !linkedInformationIds.has(item.id),
             ),
           }
+
+          if (selectedFileId) {
+            filePreviewState = await loadTaskFilePreview(selectedTaskParam, selectedFileId)
+          }
         }
       }
     }
@@ -115,8 +133,10 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       openTasks={tasksResult.openTasks}
       completedTasks={tasksResult.completedTasks}
       selectedTaskId={selectedTaskId}
+      selectedFileId={selectedFileId}
       memberNameMap={memberNameMap}
       detailState={detailState}
+      filePreviewState={filePreviewState}
     />
   )
 }
