@@ -14,7 +14,7 @@ type TaskTimelineNoteFormProps = {
 const initialState: TaskTimelineNoteMutationState = {}
 
 const inputClassName =
-  'w-full rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 ring-1 ring-zinc-200/50 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
+  'w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
 
 export function TaskTimelineNoteForm({
   taskId,
@@ -46,35 +46,33 @@ export function TaskTimelineNoteForm({
   }, [state.success, onSuccess, router])
 
   return (
-    <form action={formAction} className="rounded-lg border border-zinc-200/70 bg-zinc-50/40 p-4">
+    <form action={formAction} className="mt-1">
       <input type="hidden" name="taskId" value={taskId} />
 
       <div className="flex flex-col gap-2">
-        <label htmlFor={`timeline-note-${taskId}`} className="text-sm font-medium text-zinc-900">
+        <label htmlFor={`timeline-note-${taskId}`} className="text-xs font-medium text-zinc-500">
           Notiz hinzufügen
         </label>
         <textarea
           ref={textareaRef}
           id={`timeline-note-${taskId}`}
           name="content"
-          rows={3}
+          rows={2}
           disabled={isPending}
           placeholder="Arbeitsvermerk erfassen …"
-          className={`${inputClassName} min-h-[5rem] resize-y`}
+          className={`${inputClassName} min-h-[3.5rem] resize-y`}
         />
         {state.fieldErrors?.content ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.content}</p>
+          <p className="text-xs text-red-600">{state.fieldErrors.content}</p>
         ) : null}
-        {state.error ? (
-          <p className="text-sm text-red-600">{state.error}</p>
-        ) : null}
+        {state.error ? <p className="text-xs text-red-600">{state.error}</p> : null}
       </div>
 
-      <div className="mt-3 flex justify-end">
+      <div className="mt-2 flex justify-end">
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+          className="rounded-lg border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50 disabled:opacity-60"
         >
           {isPending ? 'Wird gespeichert …' : 'Notiz hinzufügen'}
         </button>

@@ -14,28 +14,39 @@ export function TaskTimelineEntryView({
   const authorName = resolveTaskMemberName(entry.author_user_id, memberNameMap)
   const isSystem = entry.entry_type === 'system'
 
+  if (isSystem) {
+    return (
+      <article className="relative">
+        <div
+          className="absolute -left-[calc(1rem+5px)] top-1.5 h-1.5 w-1.5 rounded-full bg-zinc-300"
+          aria-hidden="true"
+        />
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+            System
+          </p>
+          <time className="text-[11px] text-zinc-400" dateTime={entry.created_at}>
+            {formatTaskDateTime(entry.created_at)}
+          </time>
+        </div>
+        <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">{entry.content}</p>
+      </article>
+    )
+  }
+
   return (
-    <article
-      className={`rounded-lg border px-4 py-3 ${
-        isSystem
-          ? 'border-zinc-200/70 bg-zinc-50/80'
-          : 'border-zinc-200/80 bg-white'
-      }`}
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-medium text-zinc-900">
-          {isSystem ? 'Systemereignis' : authorName}
-        </p>
-        <time className="text-xs text-zinc-500" dateTime={entry.created_at}>
+    <article className="relative">
+      <div
+        className="absolute -left-[calc(1rem+6px)] top-2 h-2 w-2 rounded-full bg-accent/50"
+        aria-hidden="true"
+      />
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+        <p className="text-sm font-medium text-zinc-900">{authorName}</p>
+        <time className="text-[11px] text-zinc-400" dateTime={entry.created_at}>
           {formatTaskDateTime(entry.created_at)}
         </time>
       </div>
-
-      <p
-        className={`mt-2 text-sm leading-relaxed whitespace-pre-wrap ${
-          isSystem ? 'text-zinc-600' : 'text-zinc-800'
-        }`}
-      >
+      <p className="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-zinc-800">
         {entry.content}
       </p>
     </article>

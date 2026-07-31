@@ -19,13 +19,13 @@ export function TaskList({
   onSelectTask,
 }: TaskListProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        <h3 className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
           Offen
         </h3>
         {openTasks.length === 0 ? (
-          <p className="px-1 py-3 text-sm text-zinc-500">Keine offenen Aufgaben.</p>
+          <p className="px-1 py-2 text-xs text-zinc-400">Keine offenen Aufgaben.</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {openTasks.map((task) => (
@@ -43,8 +43,8 @@ export function TaskList({
       </div>
 
       {completedTasks.length > 0 ? (
-        <div className="border-t border-zinc-200/70 pt-4">
-          <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        <div className="border-t border-zinc-200/70 pt-3">
+          <h3 className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             Erledigt
           </h3>
           <ul className="flex flex-col gap-1">

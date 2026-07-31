@@ -245,14 +245,14 @@ export function TasksWorkspace({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col border-t border-zinc-200/70 lg:flex-row lg:border-t-0">
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col border-t border-zinc-200/70 lg:h-[calc(100vh-8rem)] lg:flex-row lg:border-t-0">
       <section
         aria-label="Vorgangsliste"
-        className={`flex w-full flex-col border-zinc-200/70 lg:w-[22rem] lg:shrink-0 lg:border-r ${
+        className={`flex w-full flex-col border-zinc-200/70 lg:w-[20rem] lg:shrink-0 lg:border-r ${
           showMobileDetail ? 'hidden lg:flex' : 'flex'
         }`}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-zinc-200/70 px-4 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-zinc-200/70 px-4 py-3">
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
               Vorgänge
@@ -270,7 +270,7 @@ export function TasksWorkspace({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
           {totalCount === 0 ? (
             <EmptyState
               title="Noch keine Vorgänge"
@@ -290,11 +290,11 @@ export function TasksWorkspace({
 
       <section
         aria-label={showFilePreview ? 'Dateivorschau' : 'Vorgangsdetails'}
-        className={`min-h-[24rem] flex-1 bg-zinc-50/40 p-4 lg:min-h-0 ${
-          showMobileDetail ? 'flex' : 'hidden lg:flex'
+        className={`min-h-[24rem] flex-1 bg-zinc-50/30 p-3 lg:min-h-0 lg:overflow-hidden ${
+          showMobileDetail ? 'flex flex-col' : 'hidden lg:flex lg:flex-col'
         }`}
       >
-        <div className="flex min-h-0 w-full flex-1">{renderDetailPanel()}</div>
+        <div className="flex min-h-0 w-full flex-1 flex-col">{renderDetailPanel()}</div>
       </section>
     </div>
   )

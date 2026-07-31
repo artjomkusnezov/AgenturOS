@@ -34,22 +34,15 @@ export function TaskTimeline({
   }
 
   return (
-    <section aria-label="Arbeitschronik" className="flex flex-col gap-4">
-      <div>
-        <h3 className="text-sm font-semibold tracking-tight text-zinc-900">
-          Arbeitschronik
-        </h3>
-        <p className="mt-1 text-xs text-zinc-500">
-          Systemereignisse und manuelle Arbeitsvermerke in chronologischer Reihenfolge.
-        </p>
-      </div>
+    <section aria-label="Arbeitschronik" className="flex flex-col gap-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        Arbeitschronik
+      </h3>
 
       {entries.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-200/80 bg-zinc-50/50 px-4 py-6 text-sm text-zinc-500">
-          Noch keine Einträge vorhanden.
-        </p>
+        <p className="text-xs text-zinc-400">Noch keine Einträge vorhanden.</p>
       ) : (
-        <ol className="flex flex-col gap-3">
+        <ol className="ml-1 space-y-4 border-l border-zinc-200 pl-4">
           {entries.map((entry) => (
             <li key={entry.id}>
               <TaskTimelineEntryView entry={entry} memberNameMap={memberNameMap} />

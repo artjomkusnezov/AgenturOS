@@ -117,12 +117,12 @@ export function TaskListItem({
 
   return (
     <div
-      className={`flex items-start gap-2 rounded-xl px-2 py-2 transition-colors duration-150 ${
+      className={`flex items-start gap-1.5 rounded-lg px-1.5 py-1.5 transition-colors duration-150 ${
         isSelected
-          ? 'bg-white shadow-sm ring-1 ring-zinc-200/80'
+          ? 'bg-white ring-1 ring-zinc-200/80'
           : subdued
-            ? 'hover:bg-white/50'
-            : 'hover:bg-white/70'
+            ? 'hover:bg-white/60'
+            : 'hover:bg-white/80'
       }`}
     >
       <TaskStatusForm taskId={task.id} variant={isOpen ? 'complete' : 'reopen'} />

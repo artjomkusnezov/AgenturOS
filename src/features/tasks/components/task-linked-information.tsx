@@ -51,12 +51,13 @@ function DetachInformationButton({
       <button
         type="submit"
         disabled={isPending}
-        className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-60"
+        aria-label="Verknüpfung entfernen"
+        className="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-60"
       >
         {isPending ? '…' : 'Entfernen'}
       </button>
       {state.error ? (
-        <p className="mt-1 max-w-24 text-[10px] leading-tight text-red-600" role="alert">
+        <p className="mt-0.5 text-[10px] leading-tight text-red-600" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -74,38 +75,36 @@ export function TaskLinkedInformationSection({
   return (
     <section
       aria-label="Informationen"
-      className="flex flex-col gap-3 border-t border-zinc-200/70 pt-5"
+      className="flex flex-col gap-2 border-t border-zinc-200/70 pt-4"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight text-zinc-900">Informationen</h3>
-          <p className="mt-1 text-xs text-zinc-500">
-            Verknüpfte Informationen aus dem Informationsbereich.
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          Informationen
+          {linkedInformation.length > 0 ? (
+            <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
+              ({linkedInformation.length})
+            </span>
+          ) : null}
+        </h3>
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
-          className="shrink-0 rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50"
+          className="shrink-0 rounded-lg border border-zinc-200/80 px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-50"
         >
-          Information verknüpfen
+          Verknüpfen
         </button>
       </div>
 
       {linkedInformation.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-200/80 bg-zinc-50/50 px-4 py-4 text-sm text-zinc-500">
-          Noch keine Informationen verknüpft.
-        </p>
+        <p className="text-xs text-zinc-400">Noch keine Informationen verknüpft.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200/60">
           {linkedInformation.map(({ information }) => (
             <li
               key={information.id}
-              className="flex items-start justify-between gap-3 rounded-lg border border-zinc-200/70 bg-white px-3 py-2.5"
+              className="flex items-center gap-2 px-3 py-2 transition-colors duration-150 hover:bg-zinc-50/80"
             >
-              <p className="min-w-0 truncate text-sm font-medium text-zinc-900">
-                {information.title}
-              </p>
+              <p className="min-w-0 flex-1 truncate text-sm text-zinc-900">{information.title}</p>
               <DetachInformationButton taskId={taskId} informationId={information.id} />
             </li>
           ))}

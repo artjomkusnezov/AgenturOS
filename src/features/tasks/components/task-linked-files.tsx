@@ -54,12 +54,12 @@ function DetachFileButton({ taskId, fileId }: { taskId: string; fileId: string }
         type="submit"
         disabled={isPending}
         aria-label="Verknüpfung entfernen"
-        className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-60"
+        className="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-60"
       >
         {isPending ? '…' : 'Entfernen'}
       </button>
       {state.error ? (
-        <p className="mt-1 max-w-24 text-[10px] leading-tight text-red-600" role="alert">
+        <p className="mt-0.5 text-[10px] leading-tight text-red-600" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -77,52 +77,50 @@ export function TaskLinkedFiles({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   return (
-    <section aria-label="Dateien" className="flex flex-col gap-3 border-t border-zinc-200/70 pt-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight text-zinc-900">Dateien</h3>
-          <p className="mt-1 text-xs text-zinc-500">
-            Verknüpfte Dateien aus dem Dateibereich; es werden keine Kopien erstellt.
-          </p>
-        </div>
+    <section aria-label="Dateien" className="flex flex-col gap-2 border-t border-zinc-200/70 pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          Dateien
+          {linkedFiles.length > 0 ? (
+            <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
+              ({linkedFiles.length})
+            </span>
+          ) : null}
+        </h3>
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
-          className="shrink-0 rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50"
+          className="shrink-0 rounded-lg border border-zinc-200/80 px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-50"
         >
-          Datei verknüpfen
+          Verknüpfen
         </button>
       </div>
 
       {linkedFiles.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-zinc-200/80 bg-zinc-50/50 px-4 py-4 text-sm text-zinc-500">
-          Noch keine Dateien verknüpft.
-        </p>
+        <p className="text-xs text-zinc-400">Noch keine Dateien verknüpft.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200/60">
           {linkedFiles.map(({ file }) => {
             const isSelected = selectedFileId === file.id
 
             return (
               <li key={file.id}>
                 <div
-                  className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
-                    isSelected
-                      ? 'border-accent/40 bg-accent/5 ring-1 ring-accent/20'
-                      : 'border-zinc-200/70 bg-white hover:border-zinc-300 hover:bg-zinc-50/80'
+                  className={`flex items-center gap-2 px-3 py-2 transition-colors duration-150 ${
+                    isSelected ? 'bg-accent/5' : 'hover:bg-zinc-50/80'
                   }`}
                 >
                   <button
                     type="button"
                     onClick={() => onOpenFile(file.id)}
                     aria-current={isSelected ? 'true' : undefined}
-                    className="min-w-0 flex-1 rounded-md text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="min-w-0 flex-1 rounded text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
                   >
-                    <p className="truncate text-sm font-medium text-zinc-900">{file.filename}</p>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <span className="block truncate text-sm text-zinc-900">{file.filename}</span>
+                    <span className="mt-0.5 block text-[11px] text-zinc-400">
                       {formatMimeTypeLabel(file.mime_type)} · {formatFileSize(file.size_bytes)} ·{' '}
                       {formatFileDateTime(file.created_at)}
-                    </p>
+                    </span>
                   </button>
                   <DetachFileButton taskId={taskId} fileId={file.id} />
                 </div>
