@@ -1,8 +1,14 @@
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
+import { listFilesForCurrentUser } from '@/features/files/repositories/files-repository'
+import { listInformationItemsForCurrentUser } from '@/features/information/repositories/information-repository'
 import { TasksWorkspace } from '@/features/tasks/components/tasks-workspace'
 import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { isValidTaskId } from '@/features/tasks/lib/validate-task'
+import {
+  listFilesForTask,
+  listInformationForTask,
+} from '@/features/tasks/repositories/task-relations-repository'
 import { listTimelineForTask } from '@/features/tasks/repositories/task-timeline-repository'
 import {
   getTaskById,
@@ -17,9 +23,11 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const { task, taskId } = await searchParams
   const selectedTaskParam = task ?? taskId ?? null
 
-  const [tasksResult, membersResult] = await Promise.all([
+  const [tasksResult, membersResult, allFilesResult, allInformationResult] = await Promise.all([
     listTasksForCurrentUser(),
     listCurrentAgencyMembers(),
+    listFilesForCurrentUser(),
+    listInformationItemsForCurrentUser(),
   ])
 
   if (!tasksResult.success) {
@@ -33,6 +41,9 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const memberNameMap = membersResult.success
     ? buildMemberNameMap(membersResult.members)
     : {}
+
+  const allFiles = allFilesResult.success ? allFilesResult.files : []
+  const allInformation = allInformationResult.success ? allInformationResult.items : []
 
   let detailState: TaskDetailLoadState = { status: 'none' }
   let selectedTaskId: string | null = null
@@ -54,18 +65,45 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
                 message: 'Der Vorgang konnte nicht geladen werden.',
               }
       } else {
-        const timelineResult = await listTimelineForTask(selectedTaskParam)
+        const [timelineResult, linkedFilesResult, linkedInformationResult] = await Promise.all([
+          listTimelineForTask(selectedTaskParam),
+          listFilesForTask(selectedTaskParam),
+          listInformationForTask(selectedTaskParam),
+        ])
 
         if (!timelineResult.success) {
           detailState = {
             status: 'error',
             message: 'Die Arbeitschronik konnte nicht geladen werden.',
           }
+        } else if (!linkedFilesResult.success) {
+          detailState = {
+            status: 'error',
+            message: 'Die verknüpften Dateien konnten nicht geladen werden.',
+          }
+        } else if (!linkedInformationResult.success) {
+          detailState = {
+            status: 'error',
+            message: 'Die verknüpften Informationen konnten nicht geladen werden.',
+          }
         } else {
+          const linkedFileIds = new Set(
+            linkedFilesResult.files.map((entry) => entry.file.id),
+          )
+          const linkedInformationIds = new Set(
+            linkedInformationResult.information.map((entry) => entry.information.id),
+          )
+
           detailState = {
             status: 'ready',
             task: taskResult.task,
             timelineEntries: timelineResult.entries,
+            linkedFiles: linkedFilesResult.files,
+            linkedInformation: linkedInformationResult.information,
+            availableFiles: allFiles.filter((file) => !linkedFileIds.has(file.id)),
+            availableInformation: allInformation.filter(
+              (item) => !linkedInformationIds.has(item.id),
+            ),
           }
         }
       }

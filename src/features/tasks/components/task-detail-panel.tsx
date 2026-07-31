@@ -7,17 +7,26 @@ import { deleteTaskAction } from '@/features/tasks/actions/delete-task'
 import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
 import { updateTaskAction } from '@/features/tasks/actions/update-task'
 import { TaskDueDateLabel } from '@/features/tasks/components/task-due-date-label'
+import { TaskLinkedFiles } from '@/features/tasks/components/task-linked-files'
+import { TaskLinkedInformationSection } from '@/features/tasks/components/task-linked-information'
 import { TaskPriorityBadge } from '@/features/tasks/components/task-priority-badge'
 import { TaskTimeline } from '@/features/tasks/components/task-timeline'
 import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
 import { formatTaskDateTime, isTaskOpen } from '@/features/tasks/lib/task-status'
+import type { FileRecord } from '@/features/files/types/file'
+import type { InformationItem } from '@/features/information/types/information-item'
 import type { Task, TaskMutationState } from '@/features/tasks/types/task'
+import type { TaskLinkedFile, TaskLinkedInformation } from '@/features/tasks/types/task-relation'
 import type { TaskTimelineEntry } from '@/features/tasks/types/task-timeline'
 
 type TaskDetailPanelProps = {
   task: Task
   timelineEntries: TaskTimelineEntry[]
+  linkedFiles: TaskLinkedFile[]
+  linkedInformation: TaskLinkedInformation[]
+  availableFiles: FileRecord[]
+  availableInformation: InformationItem[]
   memberNameMap: Record<string, string>
   onBack?: () => void
   onDeleted: () => void
@@ -90,6 +99,10 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 export function TaskDetailPanel({
   task,
   timelineEntries,
+  linkedFiles,
+  linkedInformation,
+  availableFiles,
+  availableInformation,
   memberNameMap,
   onBack,
   onDeleted,
@@ -264,6 +277,19 @@ export function TaskDetailPanel({
             entries={timelineEntries}
             memberNameMap={memberNameMap}
             noteFormKey={timelineEntries.length}
+          />
+        </div>
+
+        <div className="space-y-0 px-5 pb-5">
+          <TaskLinkedFiles
+            taskId={task.id}
+            linkedFiles={linkedFiles}
+            availableFiles={availableFiles}
+          />
+          <TaskLinkedInformationSection
+            taskId={task.id}
+            linkedInformation={linkedInformation}
+            availableInformation={availableInformation}
           />
         </div>
       </div>

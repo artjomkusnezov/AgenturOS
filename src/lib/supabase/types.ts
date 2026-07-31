@@ -353,6 +353,104 @@ export type Database = {
         }
         Relationships: []
       }
+      task_file_relations: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          file_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by: string
+          file_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          file_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_file_relations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_file_relations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_file_relations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_information_relations: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          id: string
+          information_id: string
+          task_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          information_id: string
+          task_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          information_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_information_relations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_information_relations_information_id_fkey"
+            columns: ["information_id"]
+            isOneToOne: false
+            referencedRelation: "information_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_information_relations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_timeline_entries: {
         Row: {
           author_user_id: string

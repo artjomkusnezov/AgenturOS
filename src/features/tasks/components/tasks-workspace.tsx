@@ -139,6 +139,10 @@ export function TasksWorkspace({
           key={detailState.task.id}
           task={detailState.task}
           timelineEntries={detailState.timelineEntries}
+          linkedFiles={detailState.linkedFiles}
+          linkedInformation={detailState.linkedInformation}
+          availableFiles={detailState.availableFiles}
+          availableInformation={detailState.availableInformation}
           memberNameMap={memberNameMap}
           onBack={handleBackToList}
           onDeleted={handleDeleted}
