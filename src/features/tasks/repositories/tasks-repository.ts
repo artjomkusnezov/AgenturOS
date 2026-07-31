@@ -80,6 +80,10 @@ export async function listTasksForCurrentUser(): Promise<ListTasksResult> {
 }
 
 export async function getTaskForCurrentUser(taskId: string): Promise<TaskResult> {
+  return getTaskById(taskId)
+}
+
+export async function getTaskById(taskId: string): Promise<TaskResult> {
   const authResult = await getAuthenticatedUserId()
 
   if (!authResult.success) {

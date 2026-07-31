@@ -1,60 +1,65 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
+import { TaskDetailErrorPanel } from '@/features/tasks/components/task-detail-error-panel'
 import { TaskDetailPanel } from '@/features/tasks/components/task-detail-panel'
 import { TaskEmptyDetail } from '@/features/tasks/components/task-empty-detail'
 import { TaskList } from '@/features/tasks/components/task-list'
+import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import type { Task } from '@/features/tasks/types/task'
 
 type TasksWorkspaceProps = {
   openTasks: Task[]
   completedTasks: Task[]
-  initialTaskId?: string | null
+  selectedTaskId: string | null
+  memberNameMap: Record<string, string>
+  detailState: TaskDetailLoadState
 }
 
 export function TasksWorkspace({
   openTasks,
   completedTasks,
-  initialTaskId = null,
+  selectedTaskId,
+  memberNameMap,
+  detailState,
 }: TasksWorkspaceProps) {
   const router = useRouter()
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => {
-    if (!initialTaskId) {
-      return null
-    }
-
-    const allTasks = [...openTasks, ...completedTasks]
-    return allTasks.some((task) => task.id === initialTaskId) ? initialTaskId : null
-  })
   const [isCreating, setIsCreating] = useState(false)
 
-  const tasks = useMemo(
-    () => [...openTasks, ...completedTasks],
-    [openTasks, completedTasks]
-  )
-
-  const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId) ?? null,
-    [tasks, selectedTaskId]
-  )
+  const tasks = [...openTasks, ...completedTasks]
+  const totalCount = tasks.length
 
   const refreshTasks = useCallback(() => {
     router.refresh()
   }, [router])
 
-  const handleSelectTask = useCallback((taskId: string) => {
-    setIsCreating(false)
-    setSelectedTaskId(taskId)
-  }, [])
+  const navigateToTask = useCallback(
+    (taskId: string) => {
+      router.push(`/app/tasks?task=${taskId}`)
+    },
+    [router],
+  )
+
+  const navigateToList = useCallback(() => {
+    router.push('/app/tasks')
+  }, [router])
+
+  const handleSelectTask = useCallback(
+    (taskId: string) => {
+      setIsCreating(false)
+      navigateToTask(taskId)
+    },
+    [navigateToTask],
+  )
 
   const handleStartCreate = useCallback(() => {
-    setSelectedTaskId(null)
     setIsCreating(true)
-  }, [])
+    navigateToList()
+  }, [navigateToList])
 
   const handleCancelCreate = useCallback(() => {
     setIsCreating(false)
@@ -63,44 +68,103 @@ export function TasksWorkspace({
   const handleCreated = useCallback(
     (taskId: string) => {
       setIsCreating(false)
-      setSelectedTaskId(taskId)
+      navigateToTask(taskId)
       refreshTasks()
     },
-    [refreshTasks]
+    [navigateToTask, refreshTasks],
   )
 
   const handleBackToList = useCallback(() => {
-    setSelectedTaskId(null)
     setIsCreating(false)
-  }, [])
+    navigateToList()
+  }, [navigateToList])
 
   const handleDeleted = useCallback(() => {
-    setSelectedTaskId(null)
+    navigateToList()
     refreshTasks()
-  }, [refreshTasks])
+  }, [navigateToList, refreshTasks])
 
   const handleWorkflowChange = useCallback(() => {
     refreshTasks()
   }, [refreshTasks])
 
-  const showMobileDetail = isCreating || selectedTask !== null
-  const totalCount = tasks.length
+  const showMobileDetail =
+    isCreating ||
+    selectedTaskId !== null ||
+    detailState.status === 'invalid' ||
+    detailState.status === 'not_found' ||
+    detailState.status === 'error'
+
+  const renderDetailPanel = () => {
+    if (isCreating) {
+      return (
+        <CreateTaskForm onCancel={handleCancelCreate} onCreated={handleCreated} />
+      )
+    }
+
+    if (!selectedTaskId) {
+      return <TaskEmptyDetail />
+    }
+
+    if (detailState.status === 'invalid') {
+      return (
+        <TaskDetailErrorPanel
+          message="Der ausgewählte Vorgang ist ungültig."
+          onBack={handleBackToList}
+        />
+      )
+    }
+
+    if (detailState.status === 'not_found') {
+      return (
+        <TaskDetailErrorPanel
+          message="Der Vorgang konnte nicht geladen werden."
+          onBack={handleBackToList}
+        />
+      )
+    }
+
+    if (detailState.status === 'error') {
+      return (
+        <TaskDetailErrorPanel
+          message={detailState.message}
+          onBack={handleBackToList}
+        />
+      )
+    }
+
+    if (detailState.status === 'ready') {
+      return (
+        <TaskDetailPanel
+          key={detailState.task.id}
+          task={detailState.task}
+          timelineEntries={detailState.timelineEntries}
+          memberNameMap={memberNameMap}
+          onBack={handleBackToList}
+          onDeleted={handleDeleted}
+          onWorkflowChange={handleWorkflowChange}
+        />
+      )
+    }
+
+    return <TaskEmptyDetail />
+  }
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col lg:flex-row lg:gap-6">
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col border-t border-zinc-200/70 lg:flex-row lg:border-t-0">
       <section
-        aria-label="Aufgabenliste"
-        className={`flex w-full flex-col lg:w-80 lg:shrink-0 ${
+        aria-label="Vorgangsliste"
+        className={`flex w-full flex-col border-zinc-200/70 lg:w-[22rem] lg:shrink-0 lg:border-r ${
           showMobileDetail ? 'hidden lg:flex' : 'flex'
         }`}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border-b border-zinc-200/70 px-4 py-4">
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-              Aufgaben
+              Vorgänge
             </h2>
             <p className="mt-1 text-xs text-zinc-500">
-              {totalCount === 1 ? '1 Aufgabe' : `${totalCount} Aufgaben`}
+              {totalCount === 1 ? '1 Vorgang' : `${totalCount} Vorgänge`}
             </p>
           </div>
           <button
@@ -112,43 +176,31 @@ export function TasksWorkspace({
           </button>
         </div>
 
-        {totalCount === 0 ? (
-          <EmptyState
-            title="Noch keine Aufgaben"
-            description="Erstellen Sie Ihre erste Aufgabe, um mit der Planung zu beginnen."
-          />
-        ) : (
-          <TaskList
-            openTasks={openTasks}
-            completedTasks={completedTasks}
-            selectedTaskId={selectedTaskId}
-            onSelectTask={handleSelectTask}
-          />
-        )}
+        <div className="flex-1 overflow-y-auto px-3 py-3">
+          {totalCount === 0 ? (
+            <EmptyState
+              title="Noch keine Vorgänge"
+              description="Erstellen Sie Ihren ersten Vorgang, um mit der Bearbeitung zu beginnen."
+            />
+          ) : (
+            <TaskList
+              openTasks={openTasks}
+              completedTasks={completedTasks}
+              selectedTaskId={selectedTaskId}
+              memberNameMap={memberNameMap}
+              onSelectTask={handleSelectTask}
+            />
+          )}
+        </div>
       </section>
 
       <section
-        aria-label="Aufgabendetails"
-        className={`min-h-[24rem] flex-1 ${
+        aria-label="Vorgangsdetails"
+        className={`min-h-[24rem] flex-1 bg-zinc-50/40 p-4 lg:min-h-0 ${
           showMobileDetail ? 'flex' : 'hidden lg:flex'
         }`}
       >
-        {isCreating ? (
-          <CreateTaskForm
-            onCancel={handleCancelCreate}
-            onCreated={handleCreated}
-          />
-        ) : selectedTask ? (
-          <TaskDetailPanel
-            key={selectedTask.id}
-            task={selectedTask}
-            onBack={handleBackToList}
-            onDeleted={handleDeleted}
-            onWorkflowChange={handleWorkflowChange}
-          />
-        ) : (
-          <TaskEmptyDetail />
-        )}
+        <div className="flex min-h-0 w-full flex-1">{renderDetailPanel()}</div>
       </section>
     </div>
   )

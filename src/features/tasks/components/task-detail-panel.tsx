@@ -8,12 +8,17 @@ import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
 import { updateTaskAction } from '@/features/tasks/actions/update-task'
 import { TaskDueDateLabel } from '@/features/tasks/components/task-due-date-label'
 import { TaskPriorityBadge } from '@/features/tasks/components/task-priority-badge'
+import { TaskTimeline } from '@/features/tasks/components/task-timeline'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
-import { isTaskOpen } from '@/features/tasks/lib/task-status'
+import { formatTaskDateTime, isTaskOpen } from '@/features/tasks/lib/task-status'
 import type { Task, TaskMutationState } from '@/features/tasks/types/task'
+import type { TaskTimelineEntry } from '@/features/tasks/types/task-timeline'
 
 type TaskDetailPanelProps = {
   task: Task
+  timelineEntries: TaskTimelineEntry[]
+  memberNameMap: Record<string, string>
   onBack?: () => void
   onDeleted: () => void
   onWorkflowChange: () => void
@@ -73,8 +78,19 @@ function WorkflowActionButton({
   )
 }
 
+function MetaItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-medium uppercase tracking-wide text-zinc-400">{label}</dt>
+      <dd className="mt-1 text-sm text-zinc-800">{value}</dd>
+    </div>
+  )
+}
+
 export function TaskDetailPanel({
   task,
+  timelineEntries,
+  memberNameMap,
   onBack,
   onDeleted,
   onWorkflowChange,
@@ -83,11 +99,11 @@ export function TaskDetailPanel({
   const deleteFormId = useId()
   const [updateState, updateAction, isUpdatePending] = useActionState(
     updateTaskAction,
-    initialState
+    initialState,
   )
   const [deleteState, deleteAction, isDeletePending] = useActionState(
     deleteTaskAction,
-    initialState
+    initialState,
   )
   const [confirmDelete, setConfirmDelete] = useState(false)
   const handledDeleteRef = useRef(false)
@@ -101,9 +117,11 @@ export function TaskDetailPanel({
   }, [deleteState.success, onDeleted])
 
   const isPending = isUpdatePending || isDeletePending
+  const creatorName = resolveTaskMemberName(task.created_by, memberNameMap)
+  const assigneeName = resolveTaskMemberName(task.assignee_user_id, memberNameMap)
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-zinc-200/60 bg-white">
+    <div className="flex h-full min-h-[24rem] flex-col rounded-xl border border-zinc-200/60 bg-white lg:min-h-0">
       <div className="flex items-start justify-between gap-4 border-b border-zinc-200/70 px-5 py-4">
         <div className="min-w-0 flex-1">
           {onBack ? (
@@ -115,26 +133,12 @@ export function TaskDetailPanel({
               ← Zurück zur Liste
             </button>
           ) : null}
-          <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-            Aufgabe bearbeiten
-          </h2>
+          <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Vorgang</h2>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <TaskPriorityBadge priority={task.priority} subdued={!isOpen} />
             <TaskDueDateLabel task={task} subdued={!isOpen} />
-            <span className="text-xs text-zinc-500">
-              {isOpen ? 'Offen' : 'Erledigt'}
-            </span>
+            <span className="text-xs text-zinc-500">{isOpen ? 'Offen' : 'Erledigt'}</span>
           </div>
-          <p className="mt-2 text-xs text-zinc-500">
-            Zuletzt geändert am{' '}
-            {new Intl.DateTimeFormat('de-DE', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            }).format(new Date(task.updated_at))}
-          </p>
         </div>
 
         <WorkflowActionButton
@@ -144,107 +148,125 @@ export function TaskDetailPanel({
         />
       </div>
 
-      <form
-        id={updateFormId}
-        action={updateAction}
-        className="flex flex-1 flex-col"
-      >
-        <input type="hidden" name="taskId" value={task.id} />
-
-        <div className="flex flex-1 flex-col gap-4 px-5 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={`task-title-${task.id}`} className="text-sm font-medium text-zinc-900">
-              Titel
-            </label>
-            <input
-              id={`task-title-${task.id}`}
-              name="title"
-              type="text"
-              required
-              defaultValue={task.title}
-              disabled={isPending}
-              className={inputClassName}
+      <div className="flex-1 overflow-y-auto">
+        <div className="border-b border-zinc-200/70 px-5 py-4">
+          <dl className="grid gap-4 sm:grid-cols-3">
+            <MetaItem label="Ersteller" value={creatorName} />
+            <MetaItem label="Verantwortlich" value={assigneeName} />
+            <MetaItem
+              label="Erstellt am"
+              value={formatTaskDateTime(task.created_at)}
             />
-            {updateState.fieldErrors?.title ? (
-              <p className="text-sm text-red-600">{updateState.fieldErrors.title}</p>
-            ) : null}
-          </div>
+          </dl>
+        </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor={`task-priority-${task.id}`}
-                className="text-sm font-medium text-zinc-900"
-              >
-                Priorität
-              </label>
-              <select
-                id={`task-priority-${task.id}`}
-                name="priority"
-                defaultValue={task.priority}
-                disabled={isPending}
-                className={inputClassName}
-              >
-                {TASK_PRIORITIES.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {TASK_PRIORITY_LABELS[priority]}
-                  </option>
-                ))}
-              </select>
-              {updateState.fieldErrors?.priority ? (
-                <p className="text-sm text-red-600">{updateState.fieldErrors.priority}</p>
-              ) : null}
-            </div>
+        <form id={updateFormId} action={updateAction} className="border-b border-zinc-200/70">
+          <input type="hidden" name="taskId" value={task.id} />
 
+          <div className="flex flex-col gap-4 px-5 py-5">
             <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor={`task-due-date-${task.id}`}
-                className="text-sm font-medium text-zinc-900"
-              >
-                Fälligkeitsdatum
-                <span className="font-normal text-zinc-500"> (optional)</span>
+              <label htmlFor={`task-title-${task.id}`} className="text-sm font-medium text-zinc-900">
+                Titel
               </label>
               <input
-                id={`task-due-date-${task.id}`}
-                name="dueDate"
-                type="date"
-                defaultValue={task.due_date ?? ''}
+                id={`task-title-${task.id}`}
+                name="title"
+                type="text"
+                required
+                defaultValue={task.title}
                 disabled={isPending}
                 className={inputClassName}
               />
-              {updateState.fieldErrors?.dueDate ? (
-                <p className="text-sm text-red-600">{updateState.fieldErrors.dueDate}</p>
+              {updateState.fieldErrors?.title ? (
+                <p className="text-sm text-red-600">{updateState.fieldErrors.title}</p>
               ) : null}
             </div>
-          </div>
 
-          <div className="flex flex-1 flex-col gap-1.5">
-            <label
-              htmlFor={`task-description-${task.id}`}
-              className="text-sm font-medium text-zinc-900"
-            >
-              Beschreibung
-              <span className="font-normal text-zinc-500"> (optional)</span>
-            </label>
-            <textarea
-              id={`task-description-${task.id}`}
-              name="description"
-              rows={8}
-              defaultValue={task.description ?? ''}
-              disabled={isPending}
-              placeholder="Weitere Details zur Aufgabe …"
-              className={`${inputClassName} min-h-[10rem] resize-y`}
-            />
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={`task-priority-${task.id}`}
+                  className="text-sm font-medium text-zinc-900"
+                >
+                  Priorität
+                </label>
+                <select
+                  id={`task-priority-${task.id}`}
+                  name="priority"
+                  defaultValue={task.priority}
+                  disabled={isPending}
+                  className={inputClassName}
+                >
+                  {TASK_PRIORITIES.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {TASK_PRIORITY_LABELS[priority]}
+                    </option>
+                  ))}
+                </select>
+                {updateState.fieldErrors?.priority ? (
+                  <p className="text-sm text-red-600">{updateState.fieldErrors.priority}</p>
+                ) : null}
+              </div>
 
-          {updateState.error ? (
-            <p className="text-sm text-red-600">{updateState.error}</p>
-          ) : null}
-          {updateState.success ? (
-            <p className="text-sm text-zinc-600">Änderungen gespeichert.</p>
-          ) : null}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={`task-due-date-${task.id}`}
+                  className="text-sm font-medium text-zinc-900"
+                >
+                  Fälligkeitsdatum
+                  <span className="font-normal text-zinc-500"> (optional)</span>
+                </label>
+                <input
+                  id={`task-due-date-${task.id}`}
+                  name="dueDate"
+                  type="date"
+                  defaultValue={task.due_date ?? ''}
+                  disabled={isPending}
+                  className={inputClassName}
+                />
+                {updateState.fieldErrors?.dueDate ? (
+                  <p className="text-sm text-red-600">{updateState.fieldErrors.dueDate}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`task-description-${task.id}`}
+                className="text-sm font-medium text-zinc-900"
+              >
+                Beschreibung
+                <span className="font-normal text-zinc-500"> (optional)</span>
+              </label>
+              <textarea
+                id={`task-description-${task.id}`}
+                name="description"
+                rows={5}
+                defaultValue={task.description ?? ''}
+                disabled={isPending}
+                placeholder="Weitere Details zum Vorgang …"
+                className={`${inputClassName} min-h-[7rem] resize-y`}
+              />
+            </div>
+
+            {updateState.error ? (
+              <p className="text-sm text-red-600">{updateState.error}</p>
+            ) : null}
+            {updateState.success ? (
+              <p className="text-sm text-zinc-600">Änderungen gespeichert.</p>
+            ) : null}
+          </div>
+        </form>
+
+        <div className="px-5 py-5">
+          <TaskTimeline
+            taskId={task.id}
+            entries={timelineEntries}
+            memberNameMap={memberNameMap}
+            noteFormKey={timelineEntries.length}
+          />
         </div>
-      </form>
+      </div>
 
       <form id={deleteFormId} action={deleteAction}>
         <input type="hidden" name="taskId" value={task.id} />
@@ -254,7 +276,7 @@ export function TaskDetailPanel({
         <div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-zinc-600">Aufgabe wirklich löschen?</span>
+              <span className="text-sm text-zinc-600">Vorgang wirklich löschen?</span>
               <button
                 type="submit"
                 form={deleteFormId}
@@ -279,7 +301,7 @@ export function TaskDetailPanel({
               disabled={isPending}
               className="rounded-xl px-3 py-1.5 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 disabled:opacity-60"
             >
-              Aufgabe löschen
+              Vorgang löschen
             </button>
           )}
           {deleteState.error ? (

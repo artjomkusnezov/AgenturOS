@@ -4,6 +4,31 @@ export function isTaskOpen(task: Task): boolean {
   return task.completed_at === null
 }
 
+export function formatTaskDateTime(value: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Berlin',
+  }).format(new Date(value))
+}
+
+export function formatTaskListDescription(description: string | null): string {
+  const trimmed = description?.trim()
+
+  if (!trimmed) {
+    return 'Keine Beschreibung'
+  }
+
+  if (trimmed.length <= 80) {
+    return trimmed
+  }
+
+  return `${trimmed.slice(0, 80)}…`
+}
+
 export function getTodayDateString(date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Berlin',

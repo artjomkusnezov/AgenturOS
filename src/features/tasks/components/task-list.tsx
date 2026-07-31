@@ -7,6 +7,7 @@ type TaskListProps = {
   openTasks: Task[]
   completedTasks: Task[]
   selectedTaskId: string | null
+  memberNameMap: Record<string, string>
   onSelectTask: (taskId: string) => void
 }
 
@@ -14,6 +15,7 @@ export function TaskList({
   openTasks,
   completedTasks,
   selectedTaskId,
+  memberNameMap,
   onSelectTask,
 }: TaskListProps) {
   return (
@@ -31,6 +33,7 @@ export function TaskList({
                 <TaskListItem
                   task={task}
                   isSelected={task.id === selectedTaskId}
+                  memberNameMap={memberNameMap}
                   onSelect={onSelectTask}
                 />
               </li>
@@ -51,6 +54,7 @@ export function TaskList({
                   task={task}
                   isSelected={task.id === selectedTaskId}
                   subdued
+                  memberNameMap={memberNameMap}
                   onSelect={onSelectTask}
                 />
               </li>

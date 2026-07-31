@@ -7,13 +7,19 @@ import { completeTaskAction } from '@/features/tasks/actions/complete-task'
 import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
 import { TaskDueDateLabel } from '@/features/tasks/components/task-due-date-label'
 import { TaskPriorityBadge } from '@/features/tasks/components/task-priority-badge'
-import { isTaskOpen } from '@/features/tasks/lib/task-status'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
+import {
+  formatTaskDateTime,
+  formatTaskListDescription,
+  isTaskOpen,
+} from '@/features/tasks/lib/task-status'
 import type { Task, TaskMutationState } from '@/features/tasks/types/task'
 
 type TaskListItemProps = {
   task: Task
   isSelected: boolean
   subdued?: boolean
+  memberNameMap: Record<string, string>
   onSelect: (taskId: string) => void
 }
 
@@ -103,9 +109,11 @@ export function TaskListItem({
   task,
   isSelected,
   subdued = false,
+  memberNameMap,
   onSelect,
 }: TaskListItemProps) {
   const isOpen = isTaskOpen(task)
+  const assigneeName = resolveTaskMemberName(task.assignee_user_id, memberNameMap)
 
   return (
     <div
@@ -117,10 +125,7 @@ export function TaskListItem({
             : 'hover:bg-white/70'
       }`}
     >
-      <TaskStatusForm
-        taskId={task.id}
-        variant={isOpen ? 'complete' : 'reopen'}
-      />
+      <TaskStatusForm taskId={task.id} variant={isOpen ? 'complete' : 'reopen'} />
 
       <button
         type="button"
@@ -135,6 +140,15 @@ export function TaskListItem({
         >
           {task.title}
         </p>
+
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">
+          {formatTaskListDescription(task.description)}
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+          <span>{formatTaskDateTime(task.created_at)}</span>
+          <span>{assigneeName}</span>
+        </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <TaskPriorityBadge priority={task.priority} subdued={subdued} />
