@@ -14,6 +14,7 @@ import {
 import { CaptureFileQueueItem } from '@/features/capture/components/capture-file-queue-item'
 import type { CaptureQueueItem } from '@/features/capture/types/capture'
 import { formatUploadLimitHint } from '@/features/files/lib/format-file-label'
+import { getUploadFileValidationMessage } from '@/features/files/lib/validate-file'
 import { getCaptureFileValidationMessage } from '@/features/capture/lib/validate-capture-file'
 
 type CaptureFilePickerProps = {
@@ -22,6 +23,9 @@ type CaptureFilePickerProps = {
   isUploading: boolean
   onRetry: (clientId: string) => void
   locked: boolean
+  validationMode?: 'capture' | 'full'
+  enableDragDrop?: boolean
+  enablePaste?: boolean
 }
 
 function createClientId(): string {
@@ -47,6 +51,9 @@ export function CaptureFilePicker({
   isUploading,
   onRetry,
   locked,
+  validationMode = 'capture',
+  enableDragDrop = true,
+  enablePaste = true,
 }: CaptureFilePickerProps) {
   const inputId = useId()
   const dropZoneId = useId()
@@ -55,6 +62,17 @@ export function CaptureFilePicker({
   const [isDragging, setIsDragging] = useState(false)
 
   const disabled = isUploading || locked
+
+  const validateFile = useCallback(
+    (file: File) => {
+      if (validationMode === 'full') {
+        return getUploadFileValidationMessage(file)
+      }
+
+      return getCaptureFileValidationMessage(file)
+    },
+    [validationMode],
+  )
 
   const addFiles = useCallback(
     (incoming: File[]) => {
@@ -65,13 +83,13 @@ export function CaptureFilePicker({
       const nextItems = [...items]
 
       for (const file of incoming) {
-        const validationMessage = getCaptureFileValidationMessage(file)
+        const validationMessage = validateFile(file)
         nextItems.push(createQueueItem(file, validationMessage ?? undefined))
       }
 
       onItemsChange(nextItems)
     },
-    [disabled, items, onItemsChange]
+    [disabled, items, onItemsChange, validateFile],
   )
 
   const removeItem = useCallback(
@@ -109,14 +127,14 @@ export function CaptureFilePicker({
       event.preventDefault()
       event.stopPropagation()
 
-      if (disabled) {
+      if (disabled || !enableDragDrop) {
         return
       }
 
       dragCounterRef.current += 1
       setIsDragging(true)
     },
-    [disabled]
+    [disabled, enableDragDrop],
   )
 
   const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -142,18 +160,18 @@ export function CaptureFilePicker({
       dragCounterRef.current = 0
       setIsDragging(false)
 
-      if (disabled) {
+      if (disabled || !enableDragDrop) {
         return
       }
 
       addFiles(filesFromFileList(event.dataTransfer.files))
     },
-    [addFiles, disabled]
+    [addFiles, disabled, enableDragDrop],
   )
 
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLDivElement>) => {
-      if (disabled) {
+      if (disabled || !enablePaste) {
         return
       }
 
@@ -188,7 +206,7 @@ export function CaptureFilePicker({
       event.preventDefault()
       addFiles(pastedFiles)
     },
-    [addFiles, disabled]
+    [addFiles, disabled, enablePaste],
   )
 
   const openFileDialog = useCallback(() => {
@@ -215,6 +233,11 @@ export function CaptureFilePicker({
     ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
     : 'border-zinc-300/80 bg-zinc-50/80 hover:border-zinc-400/80'
 
+  const dropHint =
+    validationMode === 'full'
+      ? 'PDF, Bilder, Dokumente und weitere Dateien'
+      : 'PDF, Bild oder Screenshot auswählen · Screenshot mit Strg+V einfügen'
+
   return (
     <div className="space-y-3">
       <input
@@ -222,7 +245,7 @@ export function CaptureFilePicker({
         id={inputId}
         type="file"
         multiple
-        accept="image/*,application/pdf,.pdf"
+        accept={validationMode === 'capture' ? 'image/*,application/pdf,.pdf' : undefined}
         onChange={handleInputChange}
         disabled={disabled}
         className="sr-only"
@@ -233,25 +256,27 @@ export function CaptureFilePicker({
           id={dropZoneId}
           role="button"
           tabIndex={disabled ? -1 : 0}
-          aria-label="Dateien hinzufügen. Klicken, ziehen oder Screenshot einfügen."
+          aria-label={
+            enableDragDrop
+              ? 'Dateien hinzufügen. Klicken, ziehen oder Screenshot einfügen.'
+              : 'Dateien hinzufügen.'
+          }
           aria-disabled={disabled}
           onClick={openFileDialog}
           onKeyDown={handleDropZoneKeyDown}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onPaste={handlePaste}
+          onDragEnter={enableDragDrop ? handleDragEnter : undefined}
+          onDragLeave={enableDragDrop ? handleDragLeave : undefined}
+          onDragOver={enableDragDrop ? handleDragOver : undefined}
+          onDrop={enableDragDrop ? handleDrop : undefined}
+          onPaste={enablePaste ? handlePaste : undefined}
           className={`rounded-xl border-2 border-dashed px-4 py-5 text-center transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${dropZoneClassName} ${
             disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
           }`}
         >
           <p className="text-sm font-medium text-zinc-800">
-            {isDragging ? 'Dateien loslassen' : 'Dateien hier hineinziehen'}
+            {enableDragDrop && isDragging ? 'Dateien loslassen' : 'Dateien auswählen'}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            PDF, Bild oder Screenshot auswählen · Screenshot mit Strg+V einfügen
-          </p>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-500">{dropHint}</p>
           <p className="mt-2 text-xs text-zinc-400">{formatUploadLimitHint()}</p>
         </div>
       ) : null}

@@ -1,12 +1,12 @@
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
+import { parseTaskAttachmentNotice } from '@/features/capture/lib/task-capture-notice'
 import { listFilesForCurrentUser } from '@/features/files/repositories/files-repository'
+import { isValidFileId } from '@/features/files/lib/validate-file'
 import { listInformationItemsForCurrentUser } from '@/features/information/repositories/information-repository'
 import { TasksWorkspace } from '@/features/tasks/components/tasks-workspace'
-import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import { loadTaskFilePreview } from '@/features/tasks/lib/load-task-file-preview'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { isValidTaskId } from '@/features/tasks/lib/validate-task'
-import { isValidFileId } from '@/features/files/lib/validate-file'
 import {
   listFilesForTask,
   listInformationForTask,
@@ -16,14 +16,15 @@ import {
   getTaskById,
   listTasksForCurrentUser,
 } from '@/features/tasks/repositories/tasks-repository'
+import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import type { TaskFilePreviewLoadState } from '@/features/tasks/types/task-file-preview'
 
 type TasksPageProps = {
-  searchParams: Promise<{ task?: string; taskId?: string; file?: string }>
+  searchParams: Promise<{ task?: string; taskId?: string; file?: string; attachments?: string }>
 }
 
 export default async function TasksPage({ searchParams }: TasksPageProps) {
-  const { task, taskId, file: fileParam } = await searchParams
+  const { task, taskId, file: fileParam, attachments } = await searchParams
   const selectedTaskParam = task ?? taskId ?? null
 
   const [tasksResult, membersResult, allFilesResult, allInformationResult] = await Promise.all([
@@ -128,6 +129,8 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     }
   }
 
+  const taskAttachmentNotice = parseTaskAttachmentNotice(selectedTaskId, attachments)
+
   return (
     <TasksWorkspace
       openTasks={tasksResult.openTasks}
@@ -137,6 +140,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
       memberNameMap={memberNameMap}
       detailState={detailState}
       filePreviewState={filePreviewState}
+      taskAttachmentNotice={taskAttachmentNotice}
     />
   )
 }

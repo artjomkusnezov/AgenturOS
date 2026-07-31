@@ -5,8 +5,10 @@ import { useRef, useState } from 'react'
 import { AppHeader } from '@/components/app/app-header'
 import { AppSidebar } from '@/components/app/app-sidebar'
 import { MobileNavigation } from '@/components/app/mobile-navigation'
-import { QuickCaptureButton } from '@/components/app/quick-capture-button'
-import { UniversalCaptureDialog } from '@/features/capture/components/universal-capture-dialog'
+import {
+  UniversalCaptureRoot,
+  type OpenCaptureMenu,
+} from '@/features/capture/components/universal-capture-root'
 
 type AppShellProps = {
   children: React.ReactNode
@@ -15,13 +17,11 @@ type AppShellProps = {
 
 export function AppShell({ children, userDisplayName }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [captureOpen, setCaptureOpen] = useState(false)
-  const captureTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const openCaptureRef = useRef<OpenCaptureMenu>(() => undefined)
 
   const openCapture = (trigger: HTMLButtonElement) => {
-    captureTriggerRef.current = trigger
     setMobileMenuOpen(false)
-    setCaptureOpen(true)
+    openCaptureRef.current(trigger)
   }
 
   return (
@@ -49,12 +49,10 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
         </main>
       </div>
 
-      <QuickCaptureButton variant="floating" onClick={openCapture} className="lg:hidden" />
-
-      <UniversalCaptureDialog
-        isOpen={captureOpen}
-        onClose={() => setCaptureOpen(false)}
-        triggerRef={captureTriggerRef}
+      <UniversalCaptureRoot
+        registerOpener={(openMenu) => {
+          openCaptureRef.current = openMenu
+        }}
       />
     </div>
   )

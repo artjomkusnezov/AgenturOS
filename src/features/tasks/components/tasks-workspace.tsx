@@ -23,6 +23,7 @@ type TasksWorkspaceProps = {
   memberNameMap: Record<string, string>
   detailState: TaskDetailLoadState
   filePreviewState: TaskFilePreviewLoadState
+  taskAttachmentNotice?: string | null
 }
 
 export function TasksWorkspace({
@@ -33,12 +34,26 @@ export function TasksWorkspace({
   memberNameMap,
   detailState,
   filePreviewState,
+  taskAttachmentNotice = null,
 }: TasksWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
+  const [dismissedNoticeForTaskId, setDismissedNoticeForTaskId] = useState<string | null>(null)
+
+  const captureNotice =
+    taskAttachmentNotice && dismissedNoticeForTaskId !== selectedTaskId
+      ? taskAttachmentNotice
+      : null
 
   const tasks = [...openTasks, ...completedTasks]
   const totalCount = tasks.length
+
+  const handleDismissCaptureNotice = useCallback(() => {
+    if (selectedTaskId) {
+      setDismissedNoticeForTaskId(selectedTaskId)
+      router.replace(`/app/tasks?task=${selectedTaskId}`)
+    }
+  }, [router, selectedTaskId])
 
   const refreshTasks = useCallback(() => {
     router.refresh()
@@ -294,6 +309,23 @@ export function TasksWorkspace({
           showMobileDetail ? 'flex flex-col' : 'hidden lg:flex lg:flex-col'
         }`}
       >
+        {captureNotice ? (
+          <div
+            role="status"
+            className="mb-3 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p>{captureNotice}</p>
+              <button
+                type="button"
+                onClick={handleDismissCaptureNotice}
+                className="shrink-0 text-xs font-medium text-amber-800 transition-colors duration-150 hover:text-amber-950"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="flex min-h-0 w-full flex-1 flex-col">{renderDetailPanel()}</div>
       </section>
     </div>
