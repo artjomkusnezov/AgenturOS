@@ -5,15 +5,20 @@ import { useRouter } from 'next/navigation'
 
 import { createInformationItemAction } from '@/features/information/actions/create-information-item'
 import { CaptureDialogShell } from '@/features/capture/components/capture-dialog-shell'
+import {
+  aosBtnGhostLgClassName,
+  aosBtnPrimaryLgClassName,
+  aosFieldErrorSmClassName,
+  aosInputLgClassName,
+  aosTextareaClassName,
+  aosTextLabelClassName,
+} from '@/lib/design-system'
 
 type CaptureInformationDialogProps = {
   isOpen: boolean
   onClose: () => void
   triggerRef: React.RefObject<HTMLButtonElement | null>
 }
-
-const inputClassName =
-  'w-full rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 ring-1 ring-zinc-200/50 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
 
 export function CaptureInformationDialog({
   isOpen,
@@ -92,7 +97,7 @@ export function CaptureInformationDialog({
         type="button"
         onClick={handleClose}
         disabled={isProcessing}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 disabled:opacity-60"
+        className={aosBtnGhostLgClassName}
       >
         Abbrechen
       </button>
@@ -100,7 +105,7 @@ export function CaptureInformationDialog({
         type="submit"
         form="capture-information-form"
         disabled={isProcessing || !title.trim()}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+        className={aosBtnPrimaryLgClassName}
       >
         {isProcessing ? 'Wird erstellt …' : 'Information erstellen'}
       </button>
@@ -124,7 +129,7 @@ export function CaptureInformationDialog({
       >
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="capture-information-title" className="text-sm font-medium text-zinc-900">
+            <label htmlFor="capture-information-title" className={aosTextLabelClassName}>
               Titel
             </label>
             <input
@@ -137,13 +142,13 @@ export function CaptureInformationDialog({
               autoFocus
               maxLength={200}
               placeholder="Worum geht es?"
-              className={inputClassName}
+              className={aosInputLgClassName}
             />
-            {fieldErrors.title ? <p className="text-sm text-red-600">{fieldErrors.title}</p> : null}
+            {fieldErrors.title ? <p className={aosFieldErrorSmClassName}>{fieldErrors.title}</p> : null}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="capture-information-content" className="text-sm font-medium text-zinc-900">
+            <label htmlFor="capture-information-content" className={aosTextLabelClassName}>
               Inhalt
               <span className="font-normal text-zinc-500"> (optional)</span>
             </label>
@@ -155,11 +160,11 @@ export function CaptureInformationDialog({
               onChange={(event) => setContent(event.target.value)}
               disabled={isProcessing}
               placeholder="Details, Notizen oder Links …"
-              className={`${inputClassName} min-h-[7rem] resize-y`}
+              className={`${aosTextareaClassName} min-h-[7rem]`}
             />
           </div>
 
-          {globalError ? <p className="text-sm text-red-600">{globalError}</p> : null}
+          {globalError ? <p className={aosFieldErrorSmClassName}>{globalError}</p> : null}
         </div>
       </form>
     </CaptureDialogShell>

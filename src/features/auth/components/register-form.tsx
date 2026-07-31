@@ -5,6 +5,14 @@ import { useActionState } from 'react'
 
 import { registerAction } from '@/features/auth/actions/register'
 import type { RegistrationActionState } from '@/features/auth/types/registration'
+import {
+  aosAlertErrorClassName,
+  aosAlertSuccessClassName,
+  aosFieldErrorSmClassName,
+  aosInputClassName,
+  aosLinkInlineClassName,
+  aosTextLabelClassName,
+} from '@/lib/design-system'
 
 const initialState: RegistrationActionState = {}
 
@@ -16,7 +24,7 @@ export function RegisterForm() {
 
   if (state.success) {
     return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-900">
+      <div className={aosAlertSuccessClassName}>
         <p className="font-medium">Registrierung erfolgreich</p>
         <p className="mt-1 text-sm">
           Bitte bestätigen Sie Ihre E-Mail-Adresse. Anschließend werden Sie
@@ -29,7 +37,7 @@ export function RegisterForm() {
   return (
     <form action={formAction} className="flex w-full max-w-md flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="firstName" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="firstName" className={aosTextLabelClassName}>
           Vorname
         </label>
         <input
@@ -38,15 +46,15 @@ export function RegisterForm() {
           type="text"
           autoComplete="given-name"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.firstName ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.firstName}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.firstName}</p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="lastName" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="lastName" className={aosTextLabelClassName}>
           Nachname
         </label>
         <input
@@ -55,15 +63,15 @@ export function RegisterForm() {
           type="text"
           autoComplete="family-name"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.lastName ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.lastName}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.lastName}</p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="agencyName" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="agencyName" className={aosTextLabelClassName}>
           Agenturname
         </label>
         <input
@@ -71,15 +79,15 @@ export function RegisterForm() {
           name="agencyName"
           type="text"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.agencyName ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.agencyName}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.agencyName}</p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="email" className={aosTextLabelClassName}>
           E-Mail
         </label>
         <input
@@ -88,15 +96,15 @@ export function RegisterForm() {
           type="email"
           autoComplete="email"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.email ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.email}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.email}</p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="password" className={aosTextLabelClassName}>
           Passwort
         </label>
         <input
@@ -106,15 +114,15 @@ export function RegisterForm() {
           autoComplete="new-password"
           required
           minLength={8}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.password ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.password}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.password}</p>
         ) : null}
       </div>
 
       {state.error ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className={aosAlertErrorClassName}>
           {state.error}
         </p>
       ) : null}
@@ -129,7 +137,7 @@ export function RegisterForm() {
 
       <p className="text-center text-sm text-zinc-600">
         Bereits ein Konto?{' '}
-        <Link href="/login" className="font-medium text-zinc-900 underline">
+        <Link href="/login" className={aosLinkInlineClassName}>
           Anmelden
         </Link>
       </p>

@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation'
 import { updateTaskAssigneeAction } from '@/features/tasks/actions/update-task-assignee-action'
 import type { AgencyMember } from '@/features/agency/types/agency-member'
 import type { TaskMutationState } from '@/features/tasks/types/task'
+import {
+  aosFieldErrorClassName,
+  aosSelectClassName,
+  aosSelectTouchClassName,
+  aosTextLabelSmClassName,
+} from '@/lib/design-system'
 
 type TaskAssigneeSelectProps = {
   taskId: string
@@ -14,9 +20,6 @@ type TaskAssigneeSelectProps = {
 }
 
 const initialState: TaskMutationState = {}
-
-const selectClassName =
-  'min-h-11 w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 transition-colors duration-150 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 disabled:opacity-60'
 
 export function TaskAssigneeSelect({
   taskId,
@@ -47,7 +50,7 @@ export function TaskAssigneeSelect({
       className="mt-2.5 flex flex-col gap-1"
     >
       <input type="hidden" name="taskId" value={taskId} />
-      <label htmlFor={`task-assignee-${taskId}`} className="text-xs font-medium text-zinc-600">
+      <label htmlFor={`task-assignee-${taskId}`} className={aosTextLabelSmClassName}>
         Verantwortlich
       </label>
       <select
@@ -57,7 +60,7 @@ export function TaskAssigneeSelect({
         defaultValue={assigneeUserId ?? ''}
         disabled={isPending}
         onChange={handleAssigneeChange}
-        className={selectClassName}
+        className={`${aosSelectClassName} ${aosSelectTouchClassName}`}
       >
         <option value="">Nicht zugewiesen</option>
         {members.map((member) => (
@@ -69,7 +72,7 @@ export function TaskAssigneeSelect({
       {isPending ? (
         <p className="text-xs text-zinc-400">Wird gespeichert …</p>
       ) : null}
-      {state.error ? <p className="text-xs text-red-600">{state.error}</p> : null}
+      {state.error ? <p className={aosFieldErrorClassName}>{state.error}</p> : null}
     </form>
   )
 }

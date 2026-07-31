@@ -10,6 +10,7 @@ import type {
   TaskLinkedInformation,
   TaskRelationMutationState,
 } from '@/features/tasks/types/task-relation'
+import { aosBtnXsClassName, aosListContainerClassName } from '@/lib/design-system'
 
 type TaskLinkedInformationProps = {
   taskId: string
@@ -89,7 +90,7 @@ export function TaskLinkedInformationSection({
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
-          className="shrink-0 rounded-lg border border-zinc-200/80 px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-50"
+          className={aosBtnXsClassName}
         >
           Verknüpfen
         </button>
@@ -98,7 +99,7 @@ export function TaskLinkedInformationSection({
       {linkedInformation.length === 0 ? (
         <p className="text-xs text-zinc-400">Noch keine Informationen verknüpft.</p>
       ) : (
-        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200/60">
+        <ul className={aosListContainerClassName}>
           {linkedInformation.map(({ information }) => (
             <li
               key={information.id}

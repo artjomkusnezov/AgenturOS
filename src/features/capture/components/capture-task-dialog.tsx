@@ -10,15 +10,20 @@ import { CaptureFilePicker } from '@/features/capture/components/capture-file-pi
 import { uploadFileAction } from '@/features/files/actions/upload-file'
 import { buildTaskUrlWithAttachmentNotice } from '@/features/capture/lib/task-capture-notice'
 import type { CaptureQueueItem, CaptureUploadProgress } from '@/features/capture/types/capture'
+import {
+  aosBtnGhostLgClassName,
+  aosBtnPrimaryLgClassName,
+  aosFieldErrorSmClassName,
+  aosInputLgClassName,
+  aosTextareaClassName,
+  aosTextLabelClassName,
+} from '@/lib/design-system'
 
 type CaptureTaskDialogProps = {
   isOpen: boolean
   onClose: () => void
   triggerRef: React.RefObject<HTMLButtonElement | null>
 }
-
-const inputClassName =
-  'w-full rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 ring-1 ring-zinc-200/50 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
 
 function getPendingItems(items: CaptureQueueItem[]): CaptureQueueItem[] {
   return items.filter((item) => item.status === 'queued' || item.status === 'error')
@@ -142,7 +147,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
         type="button"
         onClick={handleClose}
         disabled={isProcessing}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 disabled:opacity-60"
+        className={aosBtnGhostLgClassName}
       >
         Abbrechen
       </button>
@@ -150,7 +155,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
         type="submit"
         form="capture-task-form"
         disabled={isProcessing || !title.trim()}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+        className={aosBtnPrimaryLgClassName}
       >
         {isProcessing ? 'Wird erstellt …' : 'Aufgabe erstellen'}
       </button>
@@ -170,7 +175,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
       <form id="capture-task-form" onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="capture-task-title" className="text-sm font-medium text-zinc-900">
+            <label htmlFor="capture-task-title" className={aosTextLabelClassName}>
               Titel
             </label>
             <input
@@ -182,13 +187,13 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
               disabled={isProcessing}
               autoFocus
               placeholder="Was soll erledigt werden?"
-              className={inputClassName}
+              className={aosInputLgClassName}
             />
-            {titleError ? <p className="text-sm text-red-600">{titleError}</p> : null}
+            {titleError ? <p className={aosFieldErrorSmClassName}>{titleError}</p> : null}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="capture-task-description" className="text-sm font-medium text-zinc-900">
+            <label htmlFor="capture-task-description" className={aosTextLabelClassName}>
               Beschreibung
               <span className="font-normal text-zinc-500"> (optional)</span>
             </label>
@@ -200,12 +205,12 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
               onChange={(event) => setDescription(event.target.value)}
               disabled={isProcessing}
               placeholder="Weitere Details …"
-              className={`${inputClassName} min-h-[5rem] resize-y`}
+              className={`${aosTextareaClassName} min-h-[5rem]`}
             />
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-medium text-zinc-900">
+            <p className={`mb-2 ${aosTextLabelClassName}`}>
               Dateien
               <span className="font-normal text-zinc-500"> (optional)</span>
             </p>
@@ -225,7 +230,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
                 Datei {uploadProgress.current} von {uploadProgress.total}: {uploadProgress.filename}
               </p>
             ) : null}
-            {globalError ? <p className="text-sm text-red-600">{globalError}</p> : null}
+            {globalError ? <p className={aosFieldErrorSmClassName}>{globalError}</p> : null}
           </div>
         </div>
       </form>

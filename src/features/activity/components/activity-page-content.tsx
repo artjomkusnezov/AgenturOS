@@ -1,16 +1,14 @@
 import { EmptyState } from '@/components/app/empty-state'
 import { ActivityListWithPagination } from '@/features/activity/components/activity-list-with-pagination'
 import { listTaskActivityForCurrentUser } from '@/features/activity/repositories/task-activity-repository'
+import { aosAlertErrorClassName, aosCardPaddedClassName } from '@/lib/design-system'
 
 export async function ActivityPageContent() {
   const result = await listTaskActivityForCurrentUser()
 
   if (!result.success) {
     return (
-      <div
-        className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700"
-        role="alert"
-      >
+      <div className={`${aosAlertErrorClassName} px-5 py-4`} role="alert">
         {result.error}
       </div>
     )
@@ -26,7 +24,7 @@ export async function ActivityPageContent() {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200/60 bg-white px-4 py-4 sm:px-5">
+    <div className={aosCardPaddedClassName}>
       <ActivityListWithPagination
         initialItems={result.items}
         initialHasMore={result.hasMore}

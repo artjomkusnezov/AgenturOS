@@ -8,6 +8,15 @@ import { CloseIcon } from '@/components/app/app-icons'
 import { attachTaskInformationAction } from '@/features/tasks/actions/attach-task-information-action'
 import type { InformationItem } from '@/features/information/types/information-item'
 import type { TaskRelationMutationState } from '@/features/tasks/types/task-relation'
+import {
+  aosCardEmptyClassName,
+  aosDialogOverlayClassName,
+  aosDialogPanelClassName,
+  aosIconButtonClassName,
+  aosPanelHeaderClassName,
+  aosTextCardTitleClassName,
+  aosTextMetaClassName,
+} from '@/lib/design-system'
 
 type TaskLinkInformationDialogProps = {
   taskId: string
@@ -53,7 +62,7 @@ export function TaskLinkInformationDialog({
       <button
         type="button"
         aria-label="Dialog schließen"
-        className="absolute inset-0 bg-zinc-900/40"
+        className={aosDialogOverlayClassName}
         onClick={onClose}
       />
 
@@ -61,21 +70,21 @@ export function TaskLinkInformationDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 flex max-h-[min(32rem,85vh)] w-full max-w-lg flex-col rounded-xl border border-zinc-200/80 bg-white shadow-xl"
+        className={`${aosDialogPanelClassName} relative z-10 max-h-[min(32rem,85vh)] max-w-lg`}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-200/70 px-5 py-4">
+        <div className={`${aosPanelHeaderClassName} flex items-start justify-between gap-3 px-5 py-4`}>
           <div>
-            <h2 id={titleId} className="text-base font-semibold tracking-tight text-zinc-900">
+            <h2 id={titleId} className={aosTextCardTitleClassName}>
               Information verknüpfen
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className={`mt-1 ${aosTextMetaClassName}`}>
               Wählen Sie eine vorhandene Information aus Ihrem Informationsbereich.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900"
+            className={aosIconButtonClassName}
           >
             <CloseIcon className="h-5 w-5" />
           </button>
@@ -83,7 +92,7 @@ export function TaskLinkInformationDialog({
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {availableInformation.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-zinc-200/80 bg-zinc-50/50 px-4 py-6 text-sm text-zinc-500">
+            <p className={`${aosCardEmptyClassName} border border-dashed px-4 py-6 text-sm text-zinc-500`}>
               Keine weiteren Informationen verfügbar.
             </p>
           ) : (

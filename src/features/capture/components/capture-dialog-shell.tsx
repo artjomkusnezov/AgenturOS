@@ -3,6 +3,15 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 
 import { CloseIcon } from '@/components/app/app-icons'
+import {
+  aosDialogOverlayClassName,
+  aosDialogPanelLgClassName,
+  aosIconButtonClassName,
+  aosPanelFooterClassName,
+  aosPanelHeaderClassName,
+  aosTextCardTitleClassName,
+  aosTextMetaClassName,
+} from '@/lib/design-system'
 
 type CaptureDialogShellProps = {
   isOpen: boolean
@@ -100,7 +109,7 @@ export function CaptureDialogShell({
       <button
         type="button"
         aria-label="Dialog schließen"
-        className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px]"
+        className={aosDialogOverlayClassName}
         onClick={onClose}
         disabled={closeDisabled}
         tabIndex={-1}
@@ -112,14 +121,14 @@ export function CaptureDialogShell({
         aria-modal="true"
         aria-labelledby={dialogTitleId}
         aria-describedby={dialogDescriptionId}
-        className="relative flex max-h-[min(92vh,100dvh)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-zinc-200/80 bg-white shadow-2xl ring-1 ring-zinc-200/60 sm:rounded-2xl"
+        className={`${aosDialogPanelLgClassName} max-h-[min(92vh,100dvh)]`}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-200/70 px-5 py-4">
+        <div className={`${aosPanelHeaderClassName} flex items-start justify-between gap-3 px-5 py-4`}>
           <div>
-            <h2 id={dialogTitleId} className="text-base font-semibold tracking-tight text-zinc-900">
+            <h2 id={dialogTitleId} className={aosTextCardTitleClassName}>
               {title}
             </h2>
-            <p id={dialogDescriptionId} className="mt-1 text-sm text-zinc-500">
+            <p id={dialogDescriptionId} className={`mt-1 ${aosTextMetaClassName}`}>
               {description}
             </p>
           </div>
@@ -129,7 +138,7 @@ export function CaptureDialogShell({
             onClick={onClose}
             disabled={closeDisabled}
             aria-label="Dialog schließen"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
+            className={aosIconButtonClassName}
           >
             <CloseIcon className="h-[1.125rem] w-[1.125rem]" />
           </button>
@@ -138,7 +147,7 @@ export function CaptureDialogShell({
         {children}
 
         {footer ? (
-          <div className="border-t border-zinc-200/70 px-5 py-4">{footer}</div>
+          <div className={`${aosPanelFooterClassName} px-5 py-4`}>{footer}</div>
         ) : null}
       </div>
     </div>

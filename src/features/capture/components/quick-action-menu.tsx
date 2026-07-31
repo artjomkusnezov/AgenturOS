@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from 'react'
 
 import { AppNavIconGlyph } from '@/components/app/app-icons'
 import { QUICK_ACTIONS, type CaptureMode } from '@/features/capture/types/capture-mode'
+import { aosDropdownPanelClassName } from '@/lib/design-system'
 
 type QuickActionMenuProps = {
   isOpen: boolean
@@ -66,7 +67,7 @@ export function QuickActionMenu({
       id={menuId}
       role="menu"
       aria-label="Schnellerfassung"
-      className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-4 z-40 w-[min(calc(100vw-2rem),18rem)] overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xl ring-1 ring-zinc-200/60"
+      className={`${aosDropdownPanelClassName} fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-4 z-40 w-[min(calc(100vw-2rem),18rem)]`}
     >
       <ul className="divide-y divide-zinc-100 py-1">
         {QUICK_ACTIONS.map((action) => (

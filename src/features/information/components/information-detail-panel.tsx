@@ -6,6 +6,17 @@ import { deleteInformationItemAction } from '@/features/information/actions/dele
 import { updateInformationItemAction } from '@/features/information/actions/update-information-item'
 import { formatInformationDateTime } from '@/features/information/lib/information-status'
 import type { InformationItem, InformationMutationState } from '@/features/information/types/information-item'
+import {
+  aosBtnDangerClassName,
+  aosBtnGhostLgClassName,
+  aosBtnPrimaryLgClassName,
+  aosCardPanelClassName,
+  aosFieldErrorSmClassName,
+  aosInputClassName,
+  aosPanelFooterClassName,
+  aosTextareaClassName,
+  aosTextLabelClassName,
+} from '@/lib/design-system'
 
 type InformationDetailPanelProps = {
   item: InformationItem
@@ -14,9 +25,6 @@ type InformationDetailPanelProps = {
 }
 
 const initialState: InformationMutationState = {}
-
-const inputClassName =
-  'w-full rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 ring-1 ring-zinc-200/50 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
 
 export function InformationDetailPanel({
   item,
@@ -46,7 +54,7 @@ export function InformationDetailPanel({
   const isPending = isUpdatePending || isDeletePending
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-zinc-200/60 bg-white">
+    <div className={`${aosCardPanelClassName} h-full`}>
       <div className="border-b border-zinc-200/70 px-5 py-4">
         {onBack ? (
           <button
@@ -74,7 +82,7 @@ export function InformationDetailPanel({
 
         <div className="flex flex-1 flex-col gap-4 px-5 py-5">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={`information-title-${item.id}`} className="text-sm font-medium text-zinc-900">
+            <label htmlFor={`information-title-${item.id}`} className={aosTextLabelClassName}>
               Titel
             </label>
             <input
@@ -85,17 +93,17 @@ export function InformationDetailPanel({
               maxLength={200}
               defaultValue={item.title}
               disabled={isPending}
-              className={inputClassName}
+              className={aosInputClassName}
             />
             {updateState.fieldErrors?.title ? (
-              <p className="text-sm text-red-600">{updateState.fieldErrors.title}</p>
+              <p className={aosFieldErrorSmClassName}>{updateState.fieldErrors.title}</p>
             ) : null}
           </div>
 
           <div className="flex flex-1 flex-col gap-1.5">
             <label
               htmlFor={`information-content-${item.id}`}
-              className="text-sm font-medium text-zinc-900"
+              className={aosTextLabelClassName}
             >
               Inhalt
               <span className="font-normal text-zinc-500"> (optional)</span>
@@ -107,12 +115,12 @@ export function InformationDetailPanel({
               defaultValue={item.content ?? ''}
               disabled={isPending}
               placeholder="Details, Notizen, Links oder weiteres Wissen …"
-              className={`${inputClassName} min-h-[12rem] resize-y`}
+              className={`${aosTextareaClassName} min-h-[12rem]`}
             />
           </div>
 
           {updateState.error ? (
-            <p className="text-sm text-red-600">{updateState.error}</p>
+            <p className={aosFieldErrorSmClassName}>{updateState.error}</p>
           ) : null}
           {updateState.success ? (
             <p className="text-sm text-zinc-600">Änderungen gespeichert.</p>
@@ -124,7 +132,7 @@ export function InformationDetailPanel({
         <input type="hidden" name="itemId" value={item.id} />
       </form>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/70 px-5 py-4">
+      <div className={`${aosPanelFooterClassName} flex flex-wrap items-center justify-between gap-3`}>
         <div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -133,7 +141,7 @@ export function InformationDetailPanel({
                 type="submit"
                 form={deleteFormId}
                 disabled={isPending}
-                className="rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-red-700 disabled:opacity-60"
+                className={aosBtnDangerClassName}
               >
                 {isDeletePending ? 'Wird gelöscht …' : 'Löschen bestätigen'}
               </button>
@@ -141,7 +149,7 @@ export function InformationDetailPanel({
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={isPending}
-                className="rounded-xl px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 disabled:opacity-60"
+                className={aosBtnGhostLgClassName}
               >
                 Abbrechen
               </button>
@@ -165,7 +173,7 @@ export function InformationDetailPanel({
           type="submit"
           form={updateFormId}
           disabled={isPending}
-          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+          className={aosBtnPrimaryLgClassName}
         >
           {isUpdatePending ? 'Wird gespeichert …' : 'Speichern'}
         </button>

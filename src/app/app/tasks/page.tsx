@@ -18,6 +18,7 @@ import {
 } from '@/features/tasks/repositories/tasks-repository'
 import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import type { TaskFilePreviewLoadState } from '@/features/tasks/types/task-file-preview'
+import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type TasksPageProps = {
   searchParams: Promise<{ task?: string; taskId?: string; file?: string; attachments?: string }>
@@ -36,7 +37,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
 
   if (!tasksResult.success) {
     return (
-      <div className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700">
+      <div className={`${aosAlertErrorClassName} px-5 py-4`}>
         {tasksResult.error}
       </div>
     )

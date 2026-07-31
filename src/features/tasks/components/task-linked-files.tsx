@@ -15,6 +15,7 @@ import type {
   TaskLinkedFile,
   TaskRelationMutationState,
 } from '@/features/tasks/types/task-relation'
+import { aosBtnXsClassName, aosListContainerClassName } from '@/lib/design-system'
 
 type TaskLinkedFilesProps = {
   taskId: string
@@ -90,7 +91,7 @@ export function TaskLinkedFiles({
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
-          className="shrink-0 rounded-lg border border-zinc-200/80 px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-50"
+          className={aosBtnXsClassName}
         >
           Verknüpfen
         </button>
@@ -99,7 +100,7 @@ export function TaskLinkedFiles({
       {linkedFiles.length === 0 ? (
         <p className="text-xs text-zinc-400">Noch keine Dateien verknüpft.</p>
       ) : (
-        <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200/60">
+        <ul className={aosListContainerClassName}>
           {linkedFiles.map(({ file }) => {
             const isSelected = selectedFileId === file.id
 

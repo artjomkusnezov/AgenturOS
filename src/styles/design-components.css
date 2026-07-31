@@ -1,0 +1,249 @@
+/**
+ * AgenturOS Component Utilities – Punkt 27A
+ * Wiederverwendbare Klassen für einheitliche UI-Elemente.
+ */
+
+@layer components {
+  .aos-focus-ring {
+    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .aos-transition {
+    @apply transition-colors duration-150;
+  }
+
+  /* Typography */
+  .aos-text-display {
+    @apply text-3xl font-semibold tracking-tight text-zinc-900;
+  }
+
+  .aos-text-page-title {
+    @apply text-2xl font-semibold tracking-tight text-zinc-900;
+  }
+
+  .aos-text-section-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-zinc-400;
+  }
+
+  .aos-text-card-title {
+    @apply text-base font-semibold tracking-tight text-zinc-900;
+  }
+
+  .aos-text-body {
+    @apply text-sm leading-relaxed text-zinc-800;
+  }
+
+  .aos-text-small {
+    @apply text-xs text-zinc-500;
+  }
+
+  .aos-text-caption {
+    @apply text-[11px] text-zinc-400;
+  }
+
+  .aos-text-label {
+    @apply text-sm font-medium text-zinc-900;
+  }
+
+  .aos-text-label-sm {
+    @apply text-xs font-medium text-zinc-600;
+  }
+
+  .aos-text-meta {
+    @apply text-xs text-zinc-500;
+  }
+
+  .aos-text-button {
+    @apply text-sm font-medium;
+  }
+
+  /* Form controls */
+  .aos-input {
+    @apply w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 disabled:opacity-60;
+  }
+
+  .aos-input-lg {
+    @apply min-h-11 px-3 py-2.5 ring-1 ring-zinc-200/50;
+  }
+
+  .aos-textarea {
+    @apply w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 disabled:opacity-60;
+  }
+
+  .aos-select {
+    @apply w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors duration-150 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 disabled:opacity-60;
+  }
+
+  .aos-select-touch {
+    @apply min-h-11 py-2.5;
+  }
+
+  /* Buttons */
+  .aos-btn {
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-primary-lg {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-zinc-200/80 bg-white px-3.5 py-1.5 text-sm font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-secondary-lg {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-200/80 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-ghost-lg {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white transition-colors duration-150 hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-btn-sm {
+    @apply rounded-lg border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50;
+  }
+
+  .aos-btn-xs {
+    @apply rounded-lg border border-zinc-200/80 px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-50;
+  }
+
+  .aos-icon-button {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60;
+  }
+
+  /* Surfaces */
+  .aos-card {
+    @apply rounded-xl border border-zinc-200/60 bg-white;
+  }
+
+  .aos-card-padded {
+    @apply rounded-xl border border-zinc-200/60 bg-white px-4 py-4 sm:px-5;
+  }
+
+  .aos-card-panel {
+    @apply flex flex-col rounded-xl border border-zinc-200/60 bg-white;
+  }
+
+  .aos-card-empty {
+    @apply flex items-center justify-center rounded-xl border border-dashed border-zinc-200/60 bg-white/40;
+  }
+
+  .aos-panel-header {
+    @apply shrink-0 border-b border-zinc-200/70 px-4 py-3 lg:px-5;
+  }
+
+  .aos-panel-footer {
+    @apply shrink-0 border-t border-zinc-200/70 px-4 py-3 lg:px-5;
+  }
+
+  .aos-divider {
+    @apply border-zinc-200/70;
+  }
+
+  /* Badges */
+  .aos-badge {
+    @apply inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+
+  .aos-badge-neutral {
+    @apply inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600;
+  }
+
+  .aos-badge-neutral-subdued {
+    @apply inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500;
+  }
+
+  .aos-badge-emphasis {
+    @apply inline-flex items-center rounded-md bg-zinc-200/80 px-2 py-0.5 text-xs font-medium text-zinc-700;
+  }
+
+  /* Alerts */
+  .aos-alert {
+    @apply rounded-lg border px-4 py-3 text-sm;
+  }
+
+  .aos-alert-error {
+    @apply rounded-lg border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700;
+  }
+
+  .aos-alert-warning {
+    @apply rounded-lg border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900;
+  }
+
+  .aos-alert-success {
+    @apply rounded-lg border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-sm text-emerald-900;
+  }
+
+  .aos-alert-info {
+    @apply rounded-lg border border-blue-200/80 bg-blue-50 px-4 py-3 text-sm text-blue-900;
+  }
+
+  /* Links */
+  .aos-link {
+    @apply inline-flex max-w-full rounded-md text-sm font-medium text-accent transition-colors duration-150 hover:text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .aos-link-inline {
+    @apply font-medium text-zinc-900 underline transition-colors duration-150 hover:text-zinc-700;
+  }
+
+  /* Dialogs & overlays */
+  .aos-dialog-overlay {
+    @apply absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px];
+  }
+
+  .aos-dialog-panel {
+    @apply relative flex w-full flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-xl;
+  }
+
+  .aos-dialog-panel-lg {
+    @apply relative flex w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-zinc-200/80 bg-white shadow-2xl ring-1 ring-zinc-200/60 sm:rounded-2xl;
+  }
+
+  .aos-dropdown-panel {
+    @apply overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xl ring-1 ring-zinc-200/60;
+  }
+
+  /* Lists */
+  .aos-list-selected {
+    @apply bg-white shadow-sm ring-1 ring-zinc-200/80;
+  }
+
+  .aos-list-container {
+    @apply divide-y divide-zinc-100 rounded-lg border border-zinc-200/60;
+  }
+
+  /* Empty & loading */
+  .aos-empty-state {
+    @apply flex flex-col items-center px-4 py-10 text-center;
+  }
+
+  .aos-skeleton {
+    @apply animate-pulse rounded bg-zinc-200/80;
+  }
+
+  .aos-skeleton-subtle {
+    @apply animate-pulse rounded bg-zinc-200/60;
+  }
+
+  /* Field errors */
+  .aos-field-error {
+    @apply text-xs text-red-600;
+  }
+
+  .aos-field-error-sm {
+    @apply text-sm text-red-600;
+  }
+}

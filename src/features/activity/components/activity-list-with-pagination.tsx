@@ -12,6 +12,7 @@ import type {
   TaskActivityCursor,
   TaskActivityItem,
 } from '@/features/activity/types/task-activity'
+import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type ActivityListWithPaginationProps = {
   initialItems: TaskActivityItem[]
@@ -57,10 +58,7 @@ export function ActivityListWithPagination({
       <ActivityList items={items} />
 
       {error ? (
-        <div
-          className="mt-4 rounded-lg border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
+        <div className={`mt-4 ${aosAlertErrorClassName}`} role="alert">
           <p>{error}</p>
           <button
             type="button"

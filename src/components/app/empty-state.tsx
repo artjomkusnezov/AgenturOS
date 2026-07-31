@@ -1,3 +1,5 @@
+import { aosEmptyStateClassName } from '@/lib/design-system'
+
 type EmptyStateProps = {
   title: string
   description: string
@@ -21,7 +23,7 @@ function EmptyStateIcon() {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center px-4 py-10 text-center">
+    <div className={aosEmptyStateClassName}>
       <EmptyStateIcon />
       <p className="mt-4 text-sm font-medium text-zinc-800">{title}</p>
       <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-zinc-500">

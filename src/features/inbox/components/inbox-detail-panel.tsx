@@ -11,6 +11,18 @@ import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-ite
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
+import {
+  aosBtnDangerClassName,
+  aosBtnGhostLgClassName,
+  aosBtnPrimaryClassName,
+  aosBtnPrimaryLgClassName,
+  aosBtnSecondaryClassName,
+  aosCardPanelClassName,
+  aosFieldErrorSmClassName,
+  aosPanelFooterClassName,
+  aosTextareaClassName,
+  aosTextLabelClassName,
+} from '@/lib/design-system'
 
 type InboxDetailPanelProps = {
   item: InboxItem
@@ -21,9 +33,6 @@ type InboxDetailPanelProps = {
 }
 
 const initialState: InboxItemMutationState = {}
-
-const inputClassName =
-  'w-full rounded-xl border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 ring-1 ring-zinc-200/50 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
 
 function InboxStatusActionButton({
   itemId,
@@ -58,11 +67,9 @@ function InboxStatusActionButton({
       <button
         type="submit"
         disabled={isPending}
-        className={`rounded-xl px-3.5 py-2 text-sm font-medium transition-colors duration-150 disabled:opacity-60 ${
-          variant === 'process'
-            ? 'bg-accent text-white hover:bg-accent/90'
-            : 'border border-zinc-200/80 bg-white text-zinc-700 hover:bg-zinc-50'
-        }`}
+        className={
+          variant === 'process' ? aosBtnPrimaryClassName : aosBtnSecondaryClassName
+        }
       >
         {isPending
           ? variant === 'process'
@@ -72,7 +79,7 @@ function InboxStatusActionButton({
             ? 'Als bearbeitet markieren'
             : 'Wieder öffnen'}
       </button>
-      {state.error ? <p className="mt-2 text-sm text-red-600">{state.error}</p> : null}
+      {state.error ? <p className={aosFieldErrorSmClassName}>{state.error}</p> : null}
     </form>
   )
 }
@@ -107,11 +114,11 @@ function ConvertToTaskButton({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-xl bg-accent px-3.5 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+        className={aosBtnPrimaryClassName}
       >
         {isPending ? 'Wird übernommen …' : 'Als Aufgabe übernehmen'}
       </button>
-      {state.error ? <p className="mt-2 text-sm text-red-600">{state.error}</p> : null}
+      {state.error ? <p className={aosFieldErrorSmClassName}>{state.error}</p> : null}
     </form>
   )
 }
@@ -147,7 +154,7 @@ export function InboxDetailPanel({
   const isPending = isUpdatePending || isDeletePending
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-zinc-200/60 bg-white">
+    <div className={`${aosCardPanelClassName} h-full`}>
       <div className="flex items-start justify-between gap-4 border-b border-zinc-200/70 px-5 py-4">
         <div className="min-w-0 flex-1">
           {onBack ? (
@@ -189,7 +196,7 @@ export function InboxDetailPanel({
 
         <div className="flex flex-1 flex-col gap-4 px-5 py-5">
           <div className="flex flex-1 flex-col gap-1.5">
-            <label htmlFor={`inbox-content-${item.id}`} className="text-sm font-medium text-zinc-900">
+            <label htmlFor={`inbox-content-${item.id}`} className={aosTextLabelClassName}>
               Inhalt
             </label>
             <textarea
@@ -199,15 +206,15 @@ export function InboxDetailPanel({
               required
               defaultValue={item.content}
               disabled={isPending}
-              className={`${inputClassName} min-h-[14rem] resize-y`}
+              className={`${aosTextareaClassName} min-h-[14rem]`}
             />
             {updateState.fieldErrors?.content ? (
-              <p className="text-sm text-red-600">{updateState.fieldErrors.content}</p>
+              <p className={aosFieldErrorSmClassName}>{updateState.fieldErrors.content}</p>
             ) : null}
           </div>
 
           {updateState.error ? (
-            <p className="text-sm text-red-600">{updateState.error}</p>
+            <p className={aosFieldErrorSmClassName}>{updateState.error}</p>
           ) : null}
           {updateState.success ? (
             <p className="text-sm text-zinc-600">Änderungen gespeichert.</p>
@@ -219,7 +226,7 @@ export function InboxDetailPanel({
                 <span className="text-sm text-zinc-600">✓ In Aufgabe übernommen</span>
                 <Link
                   href={`/app/tasks?taskId=${linkedTaskId}`}
-                  className="rounded-xl border border-zinc-200/80 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 transition-colors duration-150 hover:bg-zinc-50"
+                  className={aosBtnSecondaryClassName}
                 >
                   Aufgabe öffnen
                 </Link>
@@ -235,7 +242,7 @@ export function InboxDetailPanel({
         <input type="hidden" name="itemId" value={item.id} />
       </form>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200/70 px-5 py-4">
+      <div className={`${aosPanelFooterClassName} flex flex-wrap items-center justify-between gap-3`}>
         <div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -244,7 +251,7 @@ export function InboxDetailPanel({
                 type="submit"
                 form={deleteFormId}
                 disabled={isPending}
-                className="rounded-xl bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-red-700 disabled:opacity-60"
+                className={aosBtnDangerClassName}
               >
                 {isDeletePending ? 'Wird gelöscht …' : 'Löschen bestätigen'}
               </button>
@@ -252,7 +259,7 @@ export function InboxDetailPanel({
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={isPending}
-                className="rounded-xl px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 disabled:opacity-60"
+                className={aosBtnGhostLgClassName}
               >
                 Abbrechen
               </button>
@@ -276,7 +283,7 @@ export function InboxDetailPanel({
           type="submit"
           form={updateFormId}
           disabled={isPending}
-          className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+          className={aosBtnPrimaryLgClassName}
         >
           {isUpdatePending ? 'Wird gespeichert …' : 'Speichern'}
         </button>

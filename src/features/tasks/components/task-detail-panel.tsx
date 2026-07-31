@@ -22,6 +22,18 @@ import type { InformationItem } from '@/features/information/types/information-i
 import type { Task, TaskMutationState } from '@/features/tasks/types/task'
 import type { TaskLinkedFile, TaskLinkedInformation } from '@/features/tasks/types/task-relation'
 import type { TaskTimelineEntry } from '@/features/tasks/types/task-timeline'
+import {
+  aosBtnDangerClassName,
+  aosBtnPrimaryClassName,
+  aosBtnSecondaryClassName,
+  aosCardPanelClassName,
+  aosFieldErrorClassName,
+  aosInputClassName,
+  aosPanelFooterClassName,
+  aosPanelHeaderClassName,
+  aosTextareaClassName,
+  aosTextLabelSmClassName,
+} from '@/lib/design-system'
 
 type TaskDetailPanelProps = {
   task: Task
@@ -40,9 +52,6 @@ type TaskDetailPanelProps = {
 }
 
 const initialState: TaskMutationState = {}
-
-const inputClassName =
-  'w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20'
 
 function WorkflowActionButton({
   taskId,
@@ -74,11 +83,9 @@ function WorkflowActionButton({
       <button
         type="submit"
         disabled={isPending}
-        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 disabled:opacity-60 ${
-          variant === 'complete'
-            ? 'bg-accent text-white hover:bg-accent/90'
-            : 'border border-zinc-200/80 bg-white text-zinc-600 hover:bg-zinc-50'
-        }`}
+        className={
+          variant === 'complete' ? aosBtnPrimaryClassName : aosBtnSecondaryClassName
+        }
       >
         {isPending
           ? variant === 'complete'
@@ -88,7 +95,7 @@ function WorkflowActionButton({
             ? 'Als erledigt markieren'
             : 'Wieder öffnen'}
       </button>
-      {state.error ? <p className="mt-1.5 text-xs text-red-600">{state.error}</p> : null}
+      {state.error ? <p className={`mt-1.5 ${aosFieldErrorClassName}`}>{state.error}</p> : null}
     </form>
   )
 }
@@ -148,8 +155,8 @@ export function TaskDetailPanel({
   const creatorName = resolveTaskMemberName(task.created_by, memberNameMap)
 
   return (
-    <div className="flex h-full min-h-[24rem] flex-col rounded-xl border border-zinc-200/60 bg-white lg:min-h-0">
-      <div className="shrink-0 border-b border-zinc-200/70 px-4 py-3 lg:px-5">
+    <div className={`${aosCardPanelClassName} h-full min-h-[24rem] lg:min-h-0`}>
+      <div className={aosPanelHeaderClassName}>
         {onBack ? (
           <button
             type="button"
@@ -215,7 +222,7 @@ export function TaskDetailPanel({
 
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <label htmlFor={`task-title-${task.id}`} className="text-xs font-medium text-zinc-600">
+                <label htmlFor={`task-title-${task.id}`} className={aosTextLabelSmClassName}>
                   Titel
                 </label>
                 <input
@@ -225,10 +232,10 @@ export function TaskDetailPanel({
                   required
                   defaultValue={task.title}
                   disabled={isPending}
-                  className={inputClassName}
+                  className={aosInputClassName}
                 />
                 {updateState.fieldErrors?.title ? (
-                  <p className="text-xs text-red-600">{updateState.fieldErrors.title}</p>
+                  <p className={aosFieldErrorClassName}>{updateState.fieldErrors.title}</p>
                 ) : null}
               </div>
 
@@ -236,7 +243,7 @@ export function TaskDetailPanel({
                 <div className="flex flex-col gap-1">
                   <label
                     htmlFor={`task-priority-${task.id}`}
-                    className="text-xs font-medium text-zinc-600"
+                    className={aosTextLabelSmClassName}
                   >
                     Priorität
                   </label>
@@ -245,7 +252,7 @@ export function TaskDetailPanel({
                     name="priority"
                     defaultValue={task.priority}
                     disabled={isPending}
-                    className={inputClassName}
+                    className={aosInputClassName}
                   >
                     {TASK_PRIORITIES.map((priority) => (
                       <option key={priority} value={priority}>
@@ -254,14 +261,14 @@ export function TaskDetailPanel({
                     ))}
                   </select>
                   {updateState.fieldErrors?.priority ? (
-                    <p className="text-xs text-red-600">{updateState.fieldErrors.priority}</p>
+                    <p className={aosFieldErrorClassName}>{updateState.fieldErrors.priority}</p>
                   ) : null}
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label
                     htmlFor={`task-due-date-${task.id}`}
-                    className="text-xs font-medium text-zinc-600"
+                    className={aosTextLabelSmClassName}
                   >
                     Fälligkeitsdatum
                   </label>
@@ -271,10 +278,10 @@ export function TaskDetailPanel({
                     type="date"
                     defaultValue={task.due_date ?? ''}
                     disabled={isPending}
-                    className={inputClassName}
+                    className={aosInputClassName}
                   />
                   {updateState.fieldErrors?.dueDate ? (
-                    <p className="text-xs text-red-600">{updateState.fieldErrors.dueDate}</p>
+                    <p className={aosFieldErrorClassName}>{updateState.fieldErrors.dueDate}</p>
                   ) : null}
                 </div>
               </div>
@@ -282,7 +289,7 @@ export function TaskDetailPanel({
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor={`task-description-${task.id}`}
-                  className="text-xs font-medium text-zinc-600"
+                  className={aosTextLabelSmClassName}
                 >
                   Beschreibung
                 </label>
@@ -293,12 +300,12 @@ export function TaskDetailPanel({
                   defaultValue={task.description ?? ''}
                   disabled={isPending}
                   placeholder="Weitere Details zum Vorgang …"
-                  className={`${inputClassName} min-h-[5rem] resize-y`}
+                  className={`${aosTextareaClassName} min-h-[5rem]`}
                 />
               </div>
 
               {updateState.error ? (
-                <p className="text-xs text-red-600">{updateState.error}</p>
+                <p className={aosFieldErrorClassName}>{updateState.error}</p>
               ) : null}
             </div>
           </form>
@@ -351,7 +358,7 @@ export function TaskDetailPanel({
         <input type="hidden" name="taskId" value={task.id} />
       </form>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-zinc-200/70 px-4 py-3 lg:px-5">
+      <div className={`${aosPanelFooterClassName} flex flex-wrap items-center justify-between gap-3`}>
         <div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -360,7 +367,7 @@ export function TaskDetailPanel({
                 type="submit"
                 form={deleteFormId}
                 disabled={isPending}
-                className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white transition-colors duration-150 hover:bg-red-700 disabled:opacity-60"
+                className={aosBtnDangerClassName}
               >
                 {isDeletePending ? 'Wird gelöscht …' : 'Löschen'}
               </button>
@@ -393,7 +400,7 @@ export function TaskDetailPanel({
             type="submit"
             form={updateFormId}
             disabled={isPending}
-            className="rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 disabled:opacity-60"
+            className={aosBtnPrimaryClassName}
           >
             {isUpdatePending ? 'Wird gespeichert …' : 'Speichern'}
           </button>

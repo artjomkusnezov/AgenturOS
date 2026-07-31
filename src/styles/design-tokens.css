@@ -1,0 +1,126 @@
+/**
+ * AgenturOS Design Tokens – Punkt 27A
+ * Zentrale Werte für Farbe, Typografie, Spacing, Radius, Schatten und Motion.
+ */
+
+:root {
+  /* Primary */
+  --aos-color-primary: #2563eb;
+  --aos-color-primary-hover: #1d4ed8;
+  --aos-color-primary-muted: #eff6ff;
+
+  /* Surfaces */
+  --aos-color-surface: #ffffff;
+  --aos-color-surface-muted: rgb(255 255 255 / 0.8);
+  --aos-color-background: #fafafa;
+  --aos-color-background-subtle: rgb(250 250 250 / 0.8);
+  --aos-color-background-elevated: #f4f4f5;
+
+  /* Borders */
+  --aos-color-border: rgb(228 228 231 / 0.8);
+  --aos-color-border-subtle: rgb(228 228 231 / 0.6);
+  --aos-color-border-strong: rgb(228 228 231 / 0.7);
+  --aos-color-border-dashed: rgb(228 228 231 / 0.6);
+  --aos-color-divider: rgb(228 228 231 / 0.7);
+
+  /* Text */
+  --aos-color-text: #18181b;
+  --aos-color-text-secondary: #52525b;
+  --aos-color-text-muted: #71717a;
+  --aos-color-text-subtle: #a1a1aa;
+  --aos-color-text-inverse: #ffffff;
+
+  /* Semantic */
+  --aos-color-success: #059669;
+  --aos-color-success-border: rgb(167 243 208 / 0.8);
+  --aos-color-success-bg: #ecfdf5;
+  --aos-color-success-text: #065f46;
+
+  --aos-color-warning: #d97706;
+  --aos-color-warning-border: rgb(253 230 138 / 0.8);
+  --aos-color-warning-bg: #fffbeb;
+  --aos-color-warning-text: #78350f;
+
+  --aos-color-error: #dc2626;
+  --aos-color-error-border: rgb(254 202 202 / 0.8);
+  --aos-color-error-bg: #fef2f2;
+  --aos-color-error-text: #991b1b;
+
+  --aos-color-info: #2563eb;
+  --aos-color-info-border: rgb(191 219 254 / 0.8);
+  --aos-color-info-bg: #eff6ff;
+  --aos-color-info-text: #1e40af;
+
+  /* Overlay */
+  --aos-color-overlay: rgb(24 24 27 / 0.4);
+
+  /* Spacing (4px base) */
+  --aos-space-0: 0;
+  --aos-space-1: 0.25rem;
+  --aos-space-2: 0.5rem;
+  --aos-space-3: 0.75rem;
+  --aos-space-4: 1rem;
+  --aos-space-5: 1.25rem;
+  --aos-space-6: 1.5rem;
+  --aos-space-8: 2rem;
+  --aos-space-10: 2.5rem;
+  --aos-space-12: 3rem;
+
+  /* Border radius */
+  --aos-radius-sm: 0.375rem;
+  --aos-radius-md: 0.5rem;
+  --aos-radius-lg: 0.75rem;
+  --aos-radius-xl: 1rem;
+  --aos-radius-full: 9999px;
+
+  /* Shadows */
+  --aos-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --aos-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --aos-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --aos-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+  --aos-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.18);
+  --aos-shadow-primary: 0 10px 15px -3px rgb(37 99 235 / 0.2);
+
+  /* Typography sizes */
+  --aos-text-display: 1.875rem;
+  --aos-text-page-title: 1.5rem;
+  --aos-text-section-title: 0.75rem;
+  --aos-text-card-title: 1rem;
+  --aos-text-body: 0.875rem;
+  --aos-text-small: 0.75rem;
+  --aos-text-caption: 0.6875rem;
+  --aos-text-label: 0.875rem;
+  --aos-text-button: 0.875rem;
+  --aos-text-meta: 0.75rem;
+
+  /* Line heights */
+  --aos-leading-tight: 1.25;
+  --aos-leading-snug: 1.375;
+  --aos-leading-normal: 1.5;
+  --aos-leading-relaxed: 1.625;
+
+  /* Font weights */
+  --aos-font-normal: 400;
+  --aos-font-medium: 500;
+  --aos-font-semibold: 600;
+
+  /* Icons */
+  --aos-icon-sm: 1rem;
+  --aos-icon-md: 1.125rem;
+  --aos-icon-lg: 1.25rem;
+
+  /* Touch targets */
+  --aos-touch-min: 2.75rem;
+
+  /* Motion */
+  --aos-duration-fast: 150ms;
+  --aos-duration-normal: 200ms;
+  --aos-duration-slow: 300ms;
+  --aos-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Legacy aliases (bestehende Tailwind-Nutzung) */
+  --background: var(--aos-color-background);
+  --foreground: var(--aos-color-text);
+  --accent: var(--aos-color-primary);
+  --accent-muted: var(--aos-color-primary-muted);
+}

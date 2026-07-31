@@ -5,6 +5,14 @@ import { useActionState } from 'react'
 
 import { loginAction } from '@/features/auth/actions/login'
 import type { LoginActionState } from '@/features/auth/types/login'
+import {
+  aosAlertErrorClassName,
+  aosAlertSuccessClassName,
+  aosFieldErrorSmClassName,
+  aosInputClassName,
+  aosLinkInlineClassName,
+  aosTextLabelClassName,
+} from '@/lib/design-system'
 
 type LoginFormProps = {
   initialError?: string
@@ -24,7 +32,7 @@ export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
   return (
     <form action={formAction} className="flex w-full max-w-md flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="email" className={aosTextLabelClassName}>
           E-Mail
         </label>
         <input
@@ -33,15 +41,15 @@ export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
           type="email"
           autoComplete="email"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.email ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.email}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.email}</p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium text-zinc-900">
+        <label htmlFor="password" className={aosTextLabelClassName}>
           Passwort
         </label>
         <input
@@ -50,15 +58,15 @@ export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-md border border-zinc-300 px-3 py-2 text-zinc-900"
+          className={aosInputClassName}
         />
         {state.fieldErrors?.password ? (
-          <p className="text-sm text-red-600">{state.fieldErrors.password}</p>
+          <p className={aosFieldErrorSmClassName}>{state.fieldErrors.password}</p>
         ) : null}
         <p className="text-right text-sm">
           <Link
             href="/forgot-password"
-            className="font-medium text-zinc-900 underline"
+            className={aosLinkInlineClassName}
           >
             Passwort vergessen?
           </Link>
@@ -66,13 +74,13 @@ export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
       </div>
 
       {initialMessage ? (
-        <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p className={aosAlertSuccessClassName}>
           {initialMessage}
         </p>
       ) : null}
 
       {errorMessage ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className={aosAlertErrorClassName}>
           {errorMessage}
         </p>
       ) : null}
@@ -87,7 +95,7 @@ export function LoginForm({ initialError, initialMessage }: LoginFormProps) {
 
       <p className="text-center text-sm text-zinc-600">
         Noch kein Konto?{' '}
-        <Link href="/register" className="font-medium text-zinc-900 underline">
+        <Link href="/register" className={aosLinkInlineClassName}>
           Registrieren
         </Link>
       </p>

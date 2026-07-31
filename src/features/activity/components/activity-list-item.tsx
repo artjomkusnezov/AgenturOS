@@ -5,6 +5,7 @@ import {
   getActivityDateGroupKey,
 } from '@/features/activity/lib/format-activity-date'
 import type { TaskActivityItem } from '@/features/activity/types/task-activity'
+import { aosLinkClassName } from '@/lib/design-system'
 
 type ActivityListItemProps = {
   item: TaskActivityItem
@@ -138,7 +139,7 @@ export function ActivityListItem({ item }: ActivityListItemProps) {
         <p className="mt-1 text-xs text-zinc-500">{timestampLabel}</p>
         <Link
           href={item.taskHref}
-          className="mt-2 inline-flex max-w-full rounded-md text-sm font-medium text-accent transition-colors duration-150 hover:text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={`mt-2 ${aosLinkClassName}`}
         >
           <span className="break-words">{item.taskTitle}</span>
         </Link>
