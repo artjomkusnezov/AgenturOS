@@ -197,18 +197,25 @@ export async function completeTaskForCurrentUser(taskId: string): Promise<TaskRe
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({
-      completed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', taskId)
-    .is('completed_at', null)
-    .select('*')
-    .maybeSingle()
+  const { data, error } = await supabase.rpc('complete_task', {
+    p_task_id: taskId,
+  })
 
   if (error) {
+    if (error.message.includes('task already completed')) {
+      return {
+        success: false,
+        error: 'Die Aufgabe wurde nicht gefunden oder ist bereits erledigt.',
+      }
+    }
+
+    if (error.message.includes('task not found') || error.message.includes('access denied')) {
+      return {
+        success: false,
+        error: 'Die Aufgabe wurde nicht gefunden oder ist bereits erledigt.',
+      }
+    }
+
     return {
       success: false,
       error: 'Die Aufgabe konnte nicht erledigt werden.',
@@ -224,7 +231,7 @@ export async function completeTaskForCurrentUser(taskId: string): Promise<TaskRe
 
   return {
     success: true,
-    task: data,
+    task: data as Task,
   }
 }
 
@@ -236,18 +243,25 @@ export async function reopenTaskForCurrentUser(taskId: string): Promise<TaskResu
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({
-      completed_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', taskId)
-    .not('completed_at', 'is', null)
-    .select('*')
-    .maybeSingle()
+  const { data, error } = await supabase.rpc('reopen_task', {
+    p_task_id: taskId,
+  })
 
   if (error) {
+    if (error.message.includes('task already open')) {
+      return {
+        success: false,
+        error: 'Die Aufgabe wurde nicht gefunden oder ist bereits offen.',
+      }
+    }
+
+    if (error.message.includes('task not found') || error.message.includes('access denied')) {
+      return {
+        success: false,
+        error: 'Die Aufgabe wurde nicht gefunden oder ist bereits offen.',
+      }
+    }
+
     return {
       success: false,
       error: 'Die Aufgabe konnte nicht wieder geöffnet werden.',
@@ -263,7 +277,54 @@ export async function reopenTaskForCurrentUser(taskId: string): Promise<TaskResu
 
   return {
     success: true,
-    task: data,
+    task: data as Task,
+  }
+}
+
+export async function updateTaskAssigneeForCurrentUser(
+  taskId: string,
+  assigneeUserId: string | null,
+): Promise<TaskResult> {
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('update_task_assignee', {
+    p_task_id: taskId,
+    p_assignee_user_id: assigneeUserId ?? undefined,
+  })
+
+  if (error) {
+    if (
+      error.message.includes('task not found')
+      || error.message.includes('access denied')
+      || error.message.includes('assignee not an active agency member')
+    ) {
+      return {
+        success: false,
+        error: 'Die Verantwortung konnte nicht geändert werden.',
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Die Verantwortung konnte nicht geändert werden.',
+    }
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: 'Die Verantwortung konnte nicht geändert werden.',
+    }
+  }
+
+  return {
+    success: true,
+    task: data as Task,
   }
 }
 

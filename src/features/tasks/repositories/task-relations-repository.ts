@@ -1,5 +1,3 @@
-import { getFileForCurrentUser } from '@/features/files/repositories/files-repository'
-import { getInformationItemForCurrentUser } from '@/features/information/repositories/information-repository'
 import {
   validateTaskFileRelationInput,
   validateTaskInformationRelationInput,
@@ -49,9 +47,6 @@ async function getAuthenticatedUserId(): Promise<
   }
 }
 
-function isUniqueViolation(error: { code?: string } | null): boolean {
-  return error?.code === '23505'
-}
 
 export async function listFilesForTask(taskId: string): Promise<ListTaskFilesResult> {
   if (!isValidTaskId(taskId)) {
@@ -113,58 +108,31 @@ export async function attachFileToTask(
     return authResult
   }
 
-  const taskResult = await getTaskById(taskId)
-
-  if (!taskResult.success) {
-    return {
-      success: false,
-      error: 'Der Vorgang konnte nicht gefunden werden.',
-    }
-  }
-
-  const fileResult = await getFileForCurrentUser(fileId)
-
-  if (!fileResult.success) {
-    return {
-      success: false,
-      error: 'Die Datei konnte nicht gefunden werden.',
-    }
-  }
-
   const supabase = await createClient()
-  const { data: existing, error: existingError } = await supabase
-    .from('task_file_relations')
-    .select('id')
-    .eq('task_id', taskId)
-    .eq('file_id', fileId)
-    .maybeSingle()
-
-  if (existingError) {
-    return {
-      success: false,
-      error: 'Die Datei konnte nicht verknüpft werden.',
-    }
-  }
-
-  if (existing) {
-    return {
-      success: false,
-      error: 'Diese Datei ist bereits mit dem Vorgang verknüpft.',
-    }
-  }
-
-  const { error } = await supabase.from('task_file_relations').insert({
-    agency_id: taskResult.task.agency_id,
-    task_id: taskId,
-    file_id: fileId,
-    created_by: authResult.userId,
+  const { error } = await supabase.rpc('attach_file_to_task', {
+    p_task_id: taskId,
+    p_file_id: fileId,
   })
 
   if (error) {
-    if (isUniqueViolation(error)) {
+    if (error.message.includes('file already linked')) {
       return {
         success: false,
         error: 'Diese Datei ist bereits mit dem Vorgang verknüpft.',
+      }
+    }
+
+    if (error.message.includes('file not found')) {
+      return {
+        success: false,
+        error: 'Die Datei konnte nicht gefunden werden.',
+      }
+    }
+
+    if (error.message.includes('task not found') || error.message.includes('access denied')) {
+      return {
+        success: false,
+        error: 'Der Vorgang konnte nicht gefunden werden.',
       }
     }
 
@@ -284,58 +252,31 @@ export async function attachInformationToTask(
     return authResult
   }
 
-  const taskResult = await getTaskById(taskId)
-
-  if (!taskResult.success) {
-    return {
-      success: false,
-      error: 'Der Vorgang konnte nicht gefunden werden.',
-    }
-  }
-
-  const informationResult = await getInformationItemForCurrentUser(informationId)
-
-  if (!informationResult.success) {
-    return {
-      success: false,
-      error: 'Die Information konnte nicht gefunden werden.',
-    }
-  }
-
   const supabase = await createClient()
-  const { data: existing, error: existingError } = await supabase
-    .from('task_information_relations')
-    .select('id')
-    .eq('task_id', taskId)
-    .eq('information_id', informationId)
-    .maybeSingle()
-
-  if (existingError) {
-    return {
-      success: false,
-      error: 'Die Information konnte nicht verknüpft werden.',
-    }
-  }
-
-  if (existing) {
-    return {
-      success: false,
-      error: 'Diese Information ist bereits mit dem Vorgang verknüpft.',
-    }
-  }
-
-  const { error } = await supabase.from('task_information_relations').insert({
-    agency_id: taskResult.task.agency_id,
-    task_id: taskId,
-    information_id: informationId,
-    created_by: authResult.userId,
+  const { error } = await supabase.rpc('attach_information_to_task', {
+    p_task_id: taskId,
+    p_information_id: informationId,
   })
 
   if (error) {
-    if (isUniqueViolation(error)) {
+    if (error.message.includes('information already linked')) {
       return {
         success: false,
         error: 'Diese Information ist bereits mit dem Vorgang verknüpft.',
+      }
+    }
+
+    if (error.message.includes('information not found') || error.message.includes('access denied')) {
+      return {
+        success: false,
+        error: 'Die Information konnte nicht gefunden werden.',
+      }
+    }
+
+    if (error.message.includes('task not found')) {
+      return {
+        success: false,
+        error: 'Der Vorgang konnte nicht gefunden werden.',
       }
     }
 

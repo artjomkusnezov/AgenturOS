@@ -550,6 +550,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      attach_file_to_task: {
+        Args: { p_file_id: string; p_task_id: string }
+        Returns: undefined
+      }
+      attach_information_to_task: {
+        Args: { p_information_id: string; p_task_id: string }
+        Returns: undefined
+      }
+      complete_task: {
+        Args: { p_task_id: string }
+        Returns: {
+          agency_id: string
+          assignee_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_task: {
         Args: { p_description?: string; p_title: string }
         Returns: {
@@ -586,6 +617,70 @@ export type Database = {
       insert_task_created_timeline_entry: {
         Args: { p_author_user_id: string; p_task_id: string }
         Returns: undefined
+      }
+      insert_task_system_timeline_entry: {
+        Args: {
+          p_author_user_id: string
+          p_content: string
+          p_event_key: string
+          p_metadata?: Json
+          p_task_id: string
+        }
+        Returns: undefined
+      }
+      reopen_task: {
+        Args: { p_task_id: string }
+        Returns: {
+          agency_id: string
+          assignee_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      resolve_profile_display_name: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
+      resolve_timeline_actor_name: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
+      update_task_assignee: {
+        Args: { p_assignee_user_id?: string; p_task_id: string }
+        Returns: {
+          agency_id: string
+          assignee_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       user_has_active_agency_membership: {
         Args: { p_agency_id: string }

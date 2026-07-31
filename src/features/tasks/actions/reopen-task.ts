@@ -23,6 +23,7 @@ export async function reopenTaskAction(
   }
 
   revalidatePath('/app/tasks')
+  revalidatePath('/app/activity')
 
   return {
     success: true,

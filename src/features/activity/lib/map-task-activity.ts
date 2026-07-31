@@ -38,6 +38,6 @@ export function mapTaskTimelineEntryToActivity(
     taskId: entry.task_id,
     taskTitle,
     taskHref: `/app/tasks?task=${entry.task_id}`,
-    summary: buildTaskActivitySummary(kind, actorName, taskTitle),
+    summary: buildTaskActivitySummary(kind, actorName, taskTitle, entry.content),
   }
 }

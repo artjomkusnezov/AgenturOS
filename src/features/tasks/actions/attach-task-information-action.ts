@@ -19,6 +19,7 @@ export async function attachTaskInformationAction(
   }
 
   revalidatePath('/app/tasks')
+  revalidatePath('/app/activity')
 
   return { success: true }
 }

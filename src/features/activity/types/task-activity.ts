@@ -1,4 +1,11 @@
-export type TaskActivityKind = 'task_created' | 'note'
+export type TaskActivityKind =
+  | 'task_created'
+  | 'note'
+  | 'task_assignee_changed'
+  | 'task_completed'
+  | 'task_reopened'
+  | 'task_file_linked'
+  | 'task_information_linked'
 
 export type TaskActivityItem = {
   id: string
