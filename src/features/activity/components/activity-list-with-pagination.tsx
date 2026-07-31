@@ -57,13 +57,16 @@ export function ActivityListWithPagination({
       <ActivityList items={items} />
 
       {error ? (
-        <div className="mt-4 rounded-lg border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div
+          className="mt-4 rounded-lg border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700"
+          role="alert"
+        >
           <p>{error}</p>
           <button
             type="button"
             onClick={handleLoadMore}
             disabled={isLoading || !nextCursor}
-            className="mt-2 text-sm font-medium text-red-800 underline underline-offset-2 transition-colors duration-150 hover:text-red-900 disabled:opacity-60"
+            className="mt-2 min-h-11 text-sm font-medium text-red-800 underline underline-offset-2 transition-colors duration-150 hover:text-red-900 disabled:opacity-60"
           >
             Erneut versuchen
           </button>

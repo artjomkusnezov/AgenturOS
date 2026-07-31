@@ -12,8 +12,8 @@ export function ActivityList({ items }: ActivityListProps) {
   return (
     <div className="divide-y divide-zinc-200/70">
       {groups.map((group) => (
-        <section key={group.key} aria-label={group.label} className="py-4 first:pt-0 last:pb-0">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        <section key={group.key} aria-label={group.label} className="py-3.5 first:pt-0 last:pb-0">
+          <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
             {group.label}
           </h2>
           <div>

@@ -34,6 +34,7 @@ export async function createTaskAction(
   }
 
   revalidatePath('/app/tasks')
+  revalidatePath('/app/activity')
 
   return {
     success: true,

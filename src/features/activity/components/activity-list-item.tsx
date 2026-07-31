@@ -128,19 +128,19 @@ export function ActivityListItem({ item }: ActivityListItemProps) {
   const timestampLabel = formatActivityTimestamp(item.occurredAt, groupKey)
 
   return (
-    <article className="flex gap-3 border-b border-zinc-100 py-3 last:border-b-0">
+    <article className="flex gap-3 border-b border-zinc-100 py-3.5 last:border-b-0">
       <div className="mt-0.5 shrink-0 text-zinc-400" aria-hidden="true">
         <ActivityKindIcon kind={item.kind} />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-relaxed text-zinc-800">{item.summary}</p>
+        <p className="text-sm leading-relaxed break-words text-zinc-800">{item.summary}</p>
         <p className="mt-1 text-xs text-zinc-500">{timestampLabel}</p>
         <Link
           href={item.taskHref}
           className="mt-2 inline-flex max-w-full rounded-md text-sm font-medium text-accent transition-colors duration-150 hover:text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <span className="truncate">{item.taskTitle}</span>
+          <span className="break-words">{item.taskTitle}</span>
         </Link>
       </div>
     </article>

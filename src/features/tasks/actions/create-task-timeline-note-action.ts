@@ -37,6 +37,7 @@ export async function createTaskTimelineNoteAction(
   }
 
   revalidatePath('/app/tasks')
+  revalidatePath('/app/activity')
 
   return { success: true }
 }

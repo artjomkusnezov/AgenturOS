@@ -16,7 +16,7 @@ type TaskAssigneeSelectProps = {
 const initialState: TaskMutationState = {}
 
 const selectClassName =
-  'w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors duration-150 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 disabled:opacity-60'
+  'min-h-11 w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 text-sm text-zinc-900 transition-colors duration-150 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 disabled:opacity-60'
 
 export function TaskAssigneeSelect({
   taskId,
