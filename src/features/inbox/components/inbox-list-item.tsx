@@ -7,9 +7,9 @@ import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-i
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { truncateInboxContentPreview } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
-import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import {
   aosListRowClassName,
   aosListRowHoverClassName,
@@ -108,7 +108,7 @@ export function InboxListItem({
   memberNameMap = {},
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
-  const creatorName = resolveTaskMemberName(item.user_id, memberNameMap)
+  const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
 
   return (
     <div

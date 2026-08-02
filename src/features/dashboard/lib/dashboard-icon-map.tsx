@@ -58,6 +58,16 @@ const PREPARED_INBOX_SOURCE_VISUALS: Record<PreparedInboxSourceKey, DashboardVis
     accent: 'blue',
     icon: <DashboardIconPlusCircle className={ICON_LG} />,
   },
+  whatsapp: {
+    label: 'WhatsApp',
+    accent: 'green',
+    icon: <DashboardIconMessage className={ICON_LG} />,
+  },
+  email: {
+    label: 'E-Mail',
+    accent: 'blue',
+    icon: <DashboardIconMail className={ICON_LG} />,
+  },
   mail: {
     label: 'E-Mail',
     accent: 'blue',

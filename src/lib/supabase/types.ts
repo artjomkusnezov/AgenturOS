@@ -518,11 +518,17 @@ export type Database = {
       inbox_items: {
         Row: {
           agency_id: string
+          channel: string
           content: string
           created_at: string
           detected_language: string | null
+          external_id: string | null
           id: string
+          inbound_metadata: Json
+          message_kind: string | null
           processed_at: string | null
+          received_at: string | null
+          sender: Json | null
           source: string
           transcript_text: string | null
           transcription_completed_at: string | null
@@ -536,11 +542,17 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          channel?: string
           content: string
           created_at?: string
           detected_language?: string | null
+          external_id?: string | null
           id?: string
+          inbound_metadata?: Json
+          message_kind?: string | null
           processed_at?: string | null
+          received_at?: string | null
+          sender?: Json | null
           source?: string
           transcript_text?: string | null
           transcription_completed_at?: string | null
@@ -554,11 +566,17 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          channel?: string
           content?: string
           created_at?: string
           detected_language?: string | null
+          external_id?: string | null
           id?: string
+          inbound_metadata?: Json
+          message_kind?: string | null
           processed_at?: string | null
+          received_at?: string | null
+          sender?: Json | null
           source?: string
           transcript_text?: string | null
           transcription_completed_at?: string | null

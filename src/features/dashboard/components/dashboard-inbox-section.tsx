@@ -16,10 +16,10 @@ import {
   dashboardSurfaceClassName,
 } from '@/features/dashboard/lib/dashboard-surface'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
-import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 
 type DashboardInboxSectionProps = {
   items: InboxItem[]
@@ -36,7 +36,7 @@ function DashboardInboxRow({
   const { title } = splitInboxFeedContent(item.content)
   const timeLabel = formatDashboardDateOrTime(item.created_at)
   const isUnprocessed = isInboxItemUnprocessed(item)
-  const creatorName = resolveTaskMemberName(item.user_id, memberNameMap)
+  const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
 
   return (
     <Link
