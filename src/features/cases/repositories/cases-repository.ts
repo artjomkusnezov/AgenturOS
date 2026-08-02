@@ -3,7 +3,10 @@ import type {
   CaseRecord,
   CaseTypeRecord,
 } from '@/features/cases/types/case'
+import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
 import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
+import { partitionAndSortTasks } from '@/features/tasks/lib/sort-tasks'
+import type { Task } from '@/features/tasks/types/task'
 import { createClient } from '@/lib/supabase/server'
 
 type RepositoryError = {
@@ -32,6 +35,11 @@ type MirrorIntegrityResult =
     }
   | RepositoryError
 
+type ListTasksFromCasesResult =
+  | { success: true; openTasks: Task[]; completedTasks: Task[] }
+  | RepositoryError
+
+type TaskFromCaseResult = { success: true; task: Task } | RepositoryError
 async function getAuthenticatedUserId(): Promise<
   { success: true; userId: string } | RepositoryError
 > {
@@ -167,6 +175,102 @@ export async function listCasesForCurrentAgency(
   return {
     success: true,
     cases: data,
+  }
+}
+
+/**
+ * Tasks-Workspace-Liste: liest Cases vom Typ `task` und mappt sie auf Task-DTOs.
+ * `task.id` = `source_task_id` für URL-/Writer-/Relations-Kompatibilität.
+ */
+export async function listTaskCasesForCurrentAgencyAsTasks(): Promise<ListTasksFromCasesResult> {
+  const agencyResult = await getCurrentUserAgency()
+
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('cases')
+    .select('*, case_types!inner(key)')
+    .eq('agency_id', agencyResult.agency.id)
+    .eq('case_types.key', 'task')
+    .not('source_task_id', 'is', null)
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Aufgaben konnten nicht geladen werden.',
+    }
+  }
+
+  try {
+    const tasks = data.map((row) => {
+      const { case_types: _ignored, ...caseRow } = row
+      void _ignored
+      return mapCaseRecordToTask(caseRow)
+    })
+    const { openTasks, completedTasks } = partitionAndSortTasks(tasks)
+
+    return {
+      success: true,
+      openTasks,
+      completedTasks,
+    }
+  } catch {
+    return {
+      success: false,
+      error: 'Die Aufgaben konnten nicht geladen werden.',
+    }
+  }
+}
+
+/**
+ * Tasks-Detail: Case anhand `source_task_id` (= URL `?task=`), Typ `task`.
+ */
+export async function getTaskCaseBySourceTaskIdAsTask(
+  taskId: string,
+): Promise<TaskFromCaseResult> {
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('cases')
+    .select('*, case_types!inner(key)')
+    .eq('source_task_id', taskId)
+    .eq('case_types.key', 'task')
+    .maybeSingle()
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Aufgabe konnte nicht geladen werden.',
+    }
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: 'Die Aufgabe wurde nicht gefunden.',
+    }
+  }
+
+  try {
+    const { case_types: _ignored, ...caseRow } = data
+    void _ignored
+    return {
+      success: true,
+      task: mapCaseRecordToTask(caseRow),
+    }
+  } catch {
+    return {
+      success: false,
+      error: 'Die Aufgabe konnte nicht geladen werden.',
+    }
   }
 }
 

@@ -1,4 +1,8 @@
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
+import {
+  getTaskCaseBySourceTaskIdAsTask,
+  listTaskCasesForCurrentAgencyAsTasks,
+} from '@/features/cases/repositories/cases-repository'
 import { parseTaskAttachmentNotice } from '@/features/capture/lib/task-capture-notice'
 import { listFilesForCurrentUser } from '@/features/files/repositories/files-repository'
 import { isValidFileId } from '@/features/files/lib/validate-file'
@@ -13,10 +17,6 @@ import {
 } from '@/features/tasks/repositories/task-relations-repository'
 import { enrichTaskLinkedFilesWithMediaUrls } from '@/features/tasks/lib/enrich-task-linked-files'
 import { listTimelineForTask } from '@/features/tasks/repositories/task-timeline-repository'
-import {
-  getTaskById,
-  listTasksForCurrentUser,
-} from '@/features/tasks/repositories/tasks-repository'
 import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import type { TaskFilePreviewLoadState } from '@/features/tasks/types/task-file-preview'
 import { aosAlertErrorClassName } from '@/lib/design-system'
@@ -30,7 +30,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   const selectedTaskParam = task ?? taskId ?? null
 
   const [tasksResult, membersResult, allFilesResult, allInformationResult] = await Promise.all([
-    listTasksForCurrentUser(),
+    listTaskCasesForCurrentAgencyAsTasks(),
     listCurrentAgencyMembers(),
     listFilesForCurrentUser(),
     listInformationItemsForCurrentUser(),
@@ -72,7 +72,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
     } else {
       selectedTaskId = selectedTaskParam
 
-      const taskResult = await getTaskById(selectedTaskParam)
+      const taskResult = await getTaskCaseBySourceTaskIdAsTask(selectedTaskParam)
 
       if (!taskResult.success) {
         detailState =
