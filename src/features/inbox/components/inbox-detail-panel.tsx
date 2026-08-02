@@ -6,6 +6,7 @@ import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconCheckSquare, DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
 import { deleteInboxItemAction } from '@/features/inbox/actions/delete-inbox-item'
+import { InboxPromotionMenu } from '@/features/inbox/components/inbox-promotion-menu'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-item'
@@ -86,27 +87,6 @@ function InboxStatusActionButton({
       </button>
       {state.error ? <p className={`mt-1 ${aosFieldErrorSmClassName}`}>{state.error}</p> : null}
     </form>
-  )
-}
-
-function PromotionEntryButton() {
-  const [isOpen, setIsOpen] = useState(false)
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className={aosWorkspaceActionAccentClassName}
-      >
-        Übernehmen als...
-      </button>
-      {isOpen ? (
-        <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
-          Auswahl folgt im nächsten Schritt.
-        </p>
-      ) : null}
-    </div>
   )
 }
 
@@ -227,7 +207,7 @@ export function InboxDetailPanel({
               </Link>
             </div>
           ) : (
-            <PromotionEntryButton />
+            <InboxPromotionMenu />
           )}
         </section>
       </div>
