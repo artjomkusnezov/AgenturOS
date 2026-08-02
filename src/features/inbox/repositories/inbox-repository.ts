@@ -327,6 +327,9 @@ export async function deleteInboxItemForCurrentUser(
   }
 }
 
+/**
+ * Persistenz für Inbox→Task-Promotion. Anwendungsschreibpfad: `case-task-service`.
+ */
 export async function createTaskFromInboxItem(
   itemId: string
 ): Promise<CreateTaskFromInboxItemResult> {

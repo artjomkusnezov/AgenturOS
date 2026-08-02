@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { completeTaskForCurrentUser } from '@/features/tasks/repositories/tasks-repository'
+import { completeTaskCaseForCurrentUser } from '@/features/cases/services/case-task-service'
 import { isValidTaskId } from '@/features/tasks/lib/validate-task'
 import type { TaskMutationState } from '@/features/tasks/types/task'
 
@@ -16,7 +16,7 @@ export async function completeTaskAction(
     return { error: 'Die Aufgabe ist ungültig.' }
   }
 
-  const result = await completeTaskForCurrentUser(taskId)
+  const result = await completeTaskCaseForCurrentUser(taskId)
 
   if (!result.success) {
     return { error: result.error }

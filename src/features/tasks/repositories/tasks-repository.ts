@@ -117,6 +117,10 @@ export async function getTaskById(taskId: string): Promise<TaskResult> {
   }
 }
 
+/**
+ * Persistenz für task-typisierte Cases. Anwendungsschreibpfad: `case-task-service`.
+ * Nicht direkt aus Server Actions aufrufen — Mirror schreibt Cases aus diesen Task-Mutationen.
+ */
 export async function createTaskForCurrentUser(
   input: TaskWriteInput
 ): Promise<TaskResult> {

@@ -2,9 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import {
-  updateTaskDetailsForCurrentUser,
-} from '@/features/tasks/repositories/tasks-repository'
+import { updateTaskCaseDetailsForCurrentUser } from '@/features/cases/services/case-task-service'
 import {
   hasTaskFieldErrors,
   isValidTaskId,
@@ -37,7 +35,7 @@ export async function updateTaskAction(
     return { error: 'Die Priorität ist ungültig.' }
   }
 
-  const result = await updateTaskDetailsForCurrentUser(taskId, {
+  const result = await updateTaskCaseDetailsForCurrentUser(taskId, {
     title: input.title.trim(),
     description: normalizeTaskDescription(input.description),
     priority: input.priority,

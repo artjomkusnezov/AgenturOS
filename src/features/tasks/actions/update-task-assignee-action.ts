@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { updateTaskAssigneeForCurrentUser } from '@/features/tasks/repositories/tasks-repository'
+import { updateTaskCaseAssigneeForCurrentUser } from '@/features/cases/services/case-task-service'
 import {
   parseTaskAssigneeFormData,
   validateTaskAssigneeInput,
@@ -20,7 +20,7 @@ export async function updateTaskAssigneeAction(
     return { error: validationError }
   }
 
-  const result = await updateTaskAssigneeForCurrentUser(input.taskId, input.assigneeUserId)
+  const result = await updateTaskCaseAssigneeForCurrentUser(input.taskId, input.assigneeUserId)
 
   if (!result.success) {
     return { error: result.error }

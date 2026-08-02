@@ -2,9 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import {
-  createTaskForCurrentUser,
-} from '@/features/tasks/repositories/tasks-repository'
+import { createTaskCaseForCurrentUser } from '@/features/cases/services/case-task-service'
 import {
   hasTaskFieldErrors,
   normalizeTaskDescription,
@@ -24,7 +22,7 @@ export async function createTaskAction(
     return { fieldErrors }
   }
 
-  const result = await createTaskForCurrentUser({
+  const result = await createTaskCaseForCurrentUser({
     title: input.title.trim(),
     description: normalizeTaskDescription(input.description),
   })

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { createTaskFromInboxItem } from '@/features/inbox/repositories/inbox-repository'
+import { createTaskCaseFromInboxItem } from '@/features/cases/services/case-task-service'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import type { InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 
@@ -16,7 +16,7 @@ export async function convertInboxToTaskAction(
     return { error: 'Das Eingangselement ist ungültig.' }
   }
 
-  const result = await createTaskFromInboxItem(itemId)
+  const result = await createTaskCaseFromInboxItem(itemId)
 
   if (!result.success) {
     return { error: result.error }

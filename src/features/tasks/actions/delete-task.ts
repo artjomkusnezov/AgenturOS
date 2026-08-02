@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { deleteTaskForCurrentUser } from '@/features/tasks/repositories/tasks-repository'
+import { deleteTaskCaseForCurrentUser } from '@/features/cases/services/case-task-service'
 import { isValidTaskId } from '@/features/tasks/lib/validate-task'
 import type { TaskMutationState } from '@/features/tasks/types/task'
 
@@ -16,7 +16,7 @@ export async function deleteTaskAction(
     return { error: 'Die Aufgabe ist ungültig.' }
   }
 
-  const result = await deleteTaskForCurrentUser(taskId)
+  const result = await deleteTaskCaseForCurrentUser(taskId)
 
   if (!result.success) {
     return { error: result.error }
