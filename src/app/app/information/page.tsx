@@ -1,6 +1,10 @@
 import { InformationWorkspace } from '@/features/information/components/information-workspace'
 import { isValidInformationItemId } from '@/features/information/lib/validate-information-item'
-import { listInformationItemsForCurrentUser } from '@/features/information/repositories/information-repository'
+import {
+  listFilesForInformationItem,
+  listInformationItemsForCurrentUser,
+} from '@/features/information/repositories/information-repository'
+import type { InformationLinkedFile } from '@/features/information/types/information-item'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InformationPageProps = {
@@ -27,10 +31,21 @@ export default async function InformationPage({ searchParams }: InformationPageP
       ? selectedParam
       : null
 
+  let attachments: InformationLinkedFile[] = []
+
+  if (selectedItemId) {
+    const attachmentsResult = await listFilesForInformationItem(selectedItemId)
+
+    if (attachmentsResult.success) {
+      attachments = attachmentsResult.files
+    }
+  }
+
   return (
     <InformationWorkspace
       items={result.items}
       selectedItemId={selectedItemId}
+      attachments={attachments}
     />
   )
 }

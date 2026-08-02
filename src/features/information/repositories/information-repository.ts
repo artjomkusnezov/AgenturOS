@@ -1,6 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { isValidFileId } from '@/features/files/lib/validate-file'
+import { isValidInformationItemId } from '@/features/information/lib/validate-information-item'
 import { sortInformationItems } from '@/features/information/lib/sort-information-items'
-import type { InformationItem } from '@/features/information/types/information-item'
+import type {
+  InformationItem,
+  InformationLinkedFile,
+} from '@/features/information/types/information-item'
+import { createClient } from '@/lib/supabase/server'
 
 type RepositoryError = {
   success: false
@@ -18,6 +23,12 @@ type InformationItemResult =
 type DeleteInformationItemResult =
   | { success: true }
   | RepositoryError
+
+type ListInformationFilesResult =
+  | { success: true; files: InformationLinkedFile[] }
+  | RepositoryError
+
+type RelationMutationResult = { success: true } | RepositoryError
 
 type InformationWriteInput = {
   title: string
@@ -214,6 +225,196 @@ export async function deleteInformationItemForCurrentUser(
     return {
       success: false,
       error: 'Die Information wurde nicht gefunden.',
+    }
+  }
+
+  return {
+    success: true,
+  }
+}
+
+export async function listFilesForInformationItem(
+  informationId: string,
+): Promise<ListInformationFilesResult> {
+  if (!isValidInformationItemId(informationId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie eine gültige Information an.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const ownership = await getInformationItemForCurrentUser(informationId)
+
+  if (!ownership.success) {
+    return ownership
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('information_item_files')
+    .select('id, created_at, display_order, files(*)')
+    .eq('information_id', informationId)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Anhänge konnten nicht geladen werden.',
+    }
+  }
+
+  const files: InformationLinkedFile[] = []
+
+  for (const row of data) {
+    const file = row.files
+
+    files.push({
+      relationId: row.id,
+      linkedAt: row.created_at,
+      displayOrder: row.display_order,
+      file: !file || Array.isArray(file) ? null : file,
+    })
+  }
+
+  return {
+    success: true,
+    files,
+  }
+}
+
+export async function attachFileToInformationItem(
+  informationId: string,
+  fileId: string,
+): Promise<RelationMutationResult> {
+  if (!isValidInformationItemId(informationId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie eine gültige Information an.',
+    }
+  }
+
+  if (!isValidFileId(fileId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie eine gültige Datei an.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const ownership = await getInformationItemForCurrentUser(informationId)
+
+  if (!ownership.success) {
+    return ownership
+  }
+
+  const supabase = await createClient()
+
+  const { data: existingOrders, error: orderError } = await supabase
+    .from('information_item_files')
+    .select('display_order')
+    .eq('information_id', informationId)
+    .order('display_order', { ascending: false })
+    .limit(1)
+
+  if (orderError) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht angehängt werden.',
+    }
+  }
+
+  const nextOrder =
+    existingOrders && existingOrders.length > 0
+      ? existingOrders[0].display_order + 1
+      : 0
+
+  const { error } = await supabase.from('information_item_files').insert({
+    information_id: informationId,
+    file_id: fileId,
+    display_order: nextOrder,
+  })
+
+  if (error) {
+    if (error.code === '23505') {
+      return {
+        success: false,
+        error: 'Diese Datei ist bereits angehängt.',
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht angehängt werden.',
+    }
+  }
+
+  return {
+    success: true,
+  }
+}
+
+export async function detachFileFromInformationItem(
+  informationId: string,
+  fileId: string,
+): Promise<RelationMutationResult> {
+  if (!isValidInformationItemId(informationId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie eine gültige Information an.',
+    }
+  }
+
+  if (!isValidFileId(fileId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie eine gültige Datei an.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const ownership = await getInformationItemForCurrentUser(informationId)
+
+  if (!ownership.success) {
+    return ownership
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('information_item_files')
+    .delete()
+    .eq('information_id', informationId)
+    .eq('file_id', fileId)
+    .select('id')
+    .maybeSingle()
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Verknüpfung konnte nicht entfernt werden.',
+    }
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: 'Die Verknüpfung wurde nicht gefunden.',
     }
   }
 

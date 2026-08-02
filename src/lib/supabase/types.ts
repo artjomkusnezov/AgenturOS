@@ -293,6 +293,45 @@ export type Database = {
           },
         ]
       }
+      information_item_files: {
+        Row: {
+          created_at: string
+          display_order: number
+          file_id: string
+          id: string
+          information_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          file_id: string
+          id?: string
+          information_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          file_id?: string
+          id?: string
+          information_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "information_item_files_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "information_item_files_information_id_fkey"
+            columns: ["information_id"]
+            isOneToOne: false
+            referencedRelation: "information_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       information_items: {
         Row: {
           content: string | null

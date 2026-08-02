@@ -9,17 +9,22 @@ import { CreateInformationForm } from '@/features/information/components/create-
 import { InformationDetailPanel } from '@/features/information/components/information-detail-panel'
 import { InformationEmptyDetail } from '@/features/information/components/information-empty-detail'
 import { InformationList } from '@/features/information/components/information-list'
-import type { InformationItem } from '@/features/information/types/information-item'
+import type {
+  InformationItem,
+  InformationLinkedFile,
+} from '@/features/information/types/information-item'
 import { aosWorkspaceActionAccentClassName } from '@/lib/design-system'
 
 type InformationWorkspaceProps = {
   items: InformationItem[]
   selectedItemId: string | null
+  attachments?: InformationLinkedFile[]
 }
 
 export function InformationWorkspace({
   items,
   selectedItemId,
+  attachments = [],
 }: InformationWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -123,6 +128,7 @@ export function InformationWorkspace({
             <InformationDetailPanel
               key={selectedItem.id}
               item={selectedItem}
+              attachments={attachments}
               onBack={handleBackToList}
               onDeleted={handleDeleted}
             />
