@@ -1,27 +1,25 @@
 import { CasesWorkspacePageContent } from '@/features/cases/components/cases-workspace-page-content'
 
-type TasksPageProps = {
+type CasesPageProps = {
   searchParams: Promise<{
+    view?: string
     task?: string
     taskId?: string
+    case?: string
     file?: string
     attachments?: string
   }>
 }
 
-/**
- * Kompatibilitätsroute: bestehende /app/tasks?task= Links bleiben gültig.
- * Intern dieselbe Case-Workspace-View `tasks`.
- */
-export default async function TasksPage({ searchParams }: TasksPageProps) {
+export default async function CasesPage({ searchParams }: CasesPageProps) {
   const params = await searchParams
 
   return (
     <CasesWorkspacePageContent
-      pathMode="tasks"
-      viewParam="tasks"
+      pathMode="cases"
+      viewParam={params.view ?? null}
       taskParam={params.task ?? params.taskId ?? null}
-      caseParam={null}
+      caseParam={params.case ?? null}
       fileParam={params.file ?? null}
       attachmentsParam={params.attachments ?? null}
     />

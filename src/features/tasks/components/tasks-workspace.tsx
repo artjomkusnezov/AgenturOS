@@ -31,6 +31,13 @@ type TasksWorkspaceProps = {
   detailState: TaskDetailLoadState
   filePreviewState: TaskFilePreviewLoadState
   taskAttachmentNotice?: string | null
+  /** Basis-URL der Liste (Default: /app/tasks). */
+  listHref?: string
+  /** Detail-URL für eine Task-ID. */
+  buildTaskHref?: (taskId: string) => string
+  emptyTitle?: string
+  emptyDescription?: string
+  allowCreate?: boolean
 }
 
 export function TasksWorkspace({
@@ -43,6 +50,11 @@ export function TasksWorkspace({
   detailState,
   filePreviewState,
   taskAttachmentNotice = null,
+  listHref = '/app/tasks',
+  buildTaskHref = (taskId: string) => `/app/tasks?task=${taskId}`,
+  emptyTitle = 'Noch keine Vorgänge',
+  emptyDescription = 'Erstellen Sie Ihren ersten Vorgang, um mit der Bearbeitung zu beginnen.',
+  allowCreate = true,
 }: TasksWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -60,9 +72,9 @@ export function TasksWorkspace({
   const handleDismissCaptureNotice = useCallback(() => {
     if (selectedTaskId) {
       setDismissedNoticeForTaskId(selectedTaskId)
-      router.replace(`/app/tasks?task=${selectedTaskId}`)
+      router.replace(buildTaskHref(selectedTaskId))
     }
-  }, [router, selectedTaskId])
+  }, [buildTaskHref, router, selectedTaskId])
 
   const refreshTasks = useCallback(() => {
     router.refresh()
@@ -70,14 +82,14 @@ export function TasksWorkspace({
 
   const navigateToTask = useCallback(
     (taskId: string) => {
-      router.push(`/app/tasks?task=${taskId}`)
+      router.push(buildTaskHref(taskId))
     },
-    [router],
+    [buildTaskHref, router],
   )
 
   const navigateToList = useCallback(() => {
-    router.push('/app/tasks')
-  }, [router])
+    router.push(listHref)
+  }, [listHref, router])
 
   const handleSelectTask = useCallback(
     (taskId: string) => {
@@ -254,9 +266,11 @@ export function TasksWorkspace({
       compact
       meta={countLabel}
       primary={
-        <button type="button" onClick={handleStartCreate} className={aosWorkspaceActionAccentClassName}>
-          Neu
-        </button>
+        allowCreate ? (
+          <button type="button" onClick={handleStartCreate} className={aosWorkspaceActionAccentClassName}>
+            Neu
+          </button>
+        ) : undefined
       }
     >
       <WorkspaceSplit
@@ -266,8 +280,8 @@ export function TasksWorkspace({
         list={
           totalCount === 0 ? (
             <EmptyState
-              title="Noch keine Vorgänge"
-              description="Erstellen Sie Ihren ersten Vorgang, um mit der Bearbeitung zu beginnen."
+              title={emptyTitle}
+              description={emptyDescription}
             />
           ) : (
             <TaskList

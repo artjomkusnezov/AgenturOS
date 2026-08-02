@@ -1,10 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 
 import { AppHeader } from '@/components/app/app-header'
 import { AppSidebar } from '@/components/app/app-sidebar'
 import { MobileNavigation } from '@/components/app/mobile-navigation'
+import type { AppCaseViewNavItem } from '@/config/app-navigation'
 import {
   UniversalCaptureRoot,
   type OpenCaptureMenu,
@@ -13,9 +14,14 @@ import {
 type AppShellProps = {
   children: React.ReactNode
   userDisplayName: string
+  caseViews?: AppCaseViewNavItem[]
 }
 
-export function AppShell({ children, userDisplayName }: AppShellProps) {
+export function AppShell({
+  children,
+  userDisplayName,
+  caseViews = [],
+}: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const openCaptureRef = useRef<OpenCaptureMenu>(() => undefined)
 
@@ -30,6 +36,7 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
         userDisplayName={userDisplayName}
         className="hidden lg:flex"
         onOpenCapture={openCapture}
+        caseViews={caseViews}
       />
 
       <MobileNavigation
@@ -37,6 +44,7 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
         onClose={() => setMobileMenuOpen(false)}
         userDisplayName={userDisplayName}
         onOpenCapture={openCapture}
+        caseViews={caseViews}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -53,5 +61,14 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
         }}
       />
     </div>
+  )
+}
+
+/** useSearchParams in navigation requires a Suspense boundary in the tree. */
+export function AppShellWithNavSuspense(props: AppShellProps) {
+  return (
+    <Suspense fallback={<AppShell {...props} caseViews={props.caseViews} />}>
+      <AppShell {...props} />
+    </Suspense>
   )
 }

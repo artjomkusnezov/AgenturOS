@@ -20,6 +20,14 @@ export type AppNavGroup = {
   items: AppNavItem[]
 }
 
+export type AppCaseViewNavItem = {
+  key: string
+  name: string
+  icon: string | null
+  href: string
+}
+
+/** Feste Hauptnavigation (ohne dynamische Case-Views). */
 export const appNavigationGroups: AppNavGroup[] = [
   {
     label: 'Arbeit',
@@ -37,8 +45,8 @@ export const appNavigationGroups: AppNavGroup[] = [
         description: 'Zentraler Eingang für erfasste Inhalte.',
       },
       {
-        title: 'Aufgaben',
-        href: '/app/tasks',
+        title: 'Vorgänge',
+        href: '/app/cases',
         icon: 'tasks',
         description: 'Vorgänge erfassen, organisieren und bearbeiten.',
       },
@@ -95,9 +103,35 @@ export function isNavItemActive(pathname: string, href: string): boolean {
     return pathname === '/app'
   }
 
+  if (href === '/app/cases') {
+    return (
+      pathname === '/app/cases'
+      || pathname.startsWith('/app/cases/')
+      || pathname === '/app/tasks'
+      || pathname.startsWith('/app/tasks/')
+    )
+  }
+
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 export function getNavItemByPathname(pathname: string): AppNavItem | undefined {
   return appNavigation.find((item) => isNavItemActive(pathname, item.href))
+}
+
+export function isCaseViewNavActive(
+  pathname: string,
+  searchParams: URLSearchParams,
+  viewKey: string,
+): boolean {
+  if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
+    return viewKey === 'tasks'
+  }
+
+  if (pathname !== '/app/cases' && !pathname.startsWith('/app/cases/')) {
+    return false
+  }
+
+  const currentView = searchParams.get('view') || 'tasks'
+  return currentView === viewKey
 }

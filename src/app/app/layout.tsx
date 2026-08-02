@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 
-import { AppShell } from '@/components/app/app-shell'
+import { AppShellWithNavSuspense } from '@/components/app/app-shell'
+import type { AppCaseViewNavItem } from '@/config/app-navigation'
+import { listNavigationWorkspaceViews } from '@/features/workspace-views/repositories/workspace-views-repository'
 import { createClient } from '@/lib/supabase/server'
 import { getDisplayName } from '@/lib/user/get-display-name'
 
@@ -19,6 +21,19 @@ export default async function AppLayout({
   }
 
   const displayName = getDisplayName(user) ?? 'Benutzer'
+  const navViewsResult = await listNavigationWorkspaceViews()
+  const caseViews: AppCaseViewNavItem[] = navViewsResult.success
+    ? navViewsResult.views.map((view) => ({
+        key: view.key,
+        name: view.name,
+        icon: view.icon,
+        href: `/app/cases?view=${encodeURIComponent(view.key)}`,
+      }))
+    : []
 
-  return <AppShell userDisplayName={displayName}>{children}</AppShell>
+  return (
+    <AppShellWithNavSuspense userDisplayName={displayName} caseViews={caseViews}>
+      {children}
+    </AppShellWithNavSuspense>
+  )
 }

@@ -3,12 +3,12 @@ import { DashboardGreeting } from '@/features/dashboard/components/dashboard-gre
 import { DashboardInboxSection } from '@/features/dashboard/components/dashboard-inbox-section'
 import { DashboardInformationSection } from '@/features/dashboard/components/dashboard-information-section'
 import { DashboardOverviewStrip } from '@/features/dashboard/components/dashboard-overview-strip'
-import { DashboardPriorityTasks } from '@/features/dashboard/components/dashboard-priority-tasks'
-import { DashboardWeeklyGoal } from '@/features/dashboard/components/dashboard-weekly-goal'
 import {
-  countOverdueOpenTasks,
-  selectPriorityTasksForDashboard,
-} from '@/features/dashboard/lib/dashboard-priority-tasks'
+  DashboardViewBuckets,
+  type DashboardViewBucket,
+} from '@/features/dashboard/components/dashboard-view-buckets'
+import { DashboardWeeklyGoal } from '@/features/dashboard/components/dashboard-weekly-goal'
+import { countOverdueOpenTasks } from '@/features/dashboard/lib/dashboard-priority-tasks'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 import type { TaskActivityItem } from '@/features/activity/types/task-activity'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
@@ -24,6 +24,7 @@ type DashboardWorkOverviewProps = {
   informationItems: InformationItem[]
   activityItems: TaskActivityItem[]
   memberNameMap: Record<string, string>
+  viewBuckets?: DashboardViewBucket[]
 }
 
 export function DashboardWorkOverview({
@@ -33,6 +34,7 @@ export function DashboardWorkOverview({
   informationItems,
   activityItems,
   memberNameMap,
+  viewBuckets = [],
 }: DashboardWorkOverviewProps) {
   const safeUnprocessedInboxItems = Array.isArray(unprocessedInboxItems)
     ? unprocessedInboxItems
@@ -45,7 +47,6 @@ export function DashboardWorkOverview({
   const openTaskCount = safeOpenTasks.length
   const informationCount = safeInformationItems.length
   const overdueTaskCount = countOverdueOpenTasks(safeOpenTasks)
-  const priorityTasks = selectPriorityTasksForDashboard(safeOpenTasks)
 
   return (
     <div className="space-y-5 lg:space-y-5">
@@ -68,8 +69,8 @@ export function DashboardWorkOverview({
           <DashboardInboxSection items={safeUnprocessedInboxItems} />
         </div>
         <div className="xl:col-span-3">
-          <DashboardPriorityTasks
-            tasks={priorityTasks}
+          <DashboardViewBuckets
+            buckets={viewBuckets}
             memberNameMap={memberNameMap}
           />
         </div>
