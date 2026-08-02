@@ -261,7 +261,9 @@ export type Database = {
           created_at: string
           created_by: string
           event_type: string
+          file_id: string | null
           id: string
+          metadata: Json | null
         }
         Insert: {
           agency_id: string
@@ -270,7 +272,9 @@ export type Database = {
           created_at?: string
           created_by: string
           event_type: string
+          file_id?: string | null
           id?: string
+          metadata?: Json | null
         }
         Update: {
           agency_id?: string
@@ -279,7 +283,9 @@ export type Database = {
           created_at?: string
           created_by?: string
           event_type?: string
+          file_id?: string | null
           id?: string
+          metadata?: Json | null
         }
         Relationships: [
           {
@@ -294,6 +300,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_timeline_entries_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
             referencedColumns: ["id"]
           },
         ]
@@ -1003,6 +1016,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      attach_file_to_case: {
+        Args: { p_case_id: string; p_file_id: string }
+        Returns: {
+          agency_id: string
+          case_id: string
+          content: string
+          created_at: string
+          created_by: string
+          event_type: string
+          file_id: string | null
+          id: string
+          metadata: Json | null
+        }
+      }
       attach_file_to_task: {
         Args: { p_file_id: string; p_task_id: string }
         Returns: undefined
@@ -1016,6 +1043,7 @@ export type Database = {
         Returns: {
           agency_id: string
           assignee_user_id: string | null
+          case_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string

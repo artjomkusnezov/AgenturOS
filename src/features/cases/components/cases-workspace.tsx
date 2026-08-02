@@ -17,7 +17,7 @@ import {
 } from '@/features/cases/lib/cases-workspace-urls'
 import type { CaseDisplayLookups } from '@/features/cases/lib/case-display'
 import type { CaseRecord } from '@/features/cases/types/case'
-import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
+import type { CaseTimelineEntryView } from '@/features/cases/types/case-timeline'
 import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
 import type { Task } from '@/features/tasks/types/task'
 import type { WorkspaceView } from '@/features/workspace-views/types/workspace-view'
@@ -29,7 +29,7 @@ type CasesWorkspaceProps = {
   /** Direkt geladener Deep-Link-Case (nicht nur aus der gefilterten Liste). */
   selectedCase: CaseRecord | null
   selectedCaseOrigin: CaseInboxOriginView | null
-  selectedCaseTimelineEntries: CaseTimelineEntry[]
+  selectedCaseTimelineEntries: CaseTimelineEntryView[]
   selectedCaseOpenTasks: Task[]
   selectedCaseCompletedTasks: Task[]
   memberNameMap: Record<string, string>

@@ -23,9 +23,8 @@ import {
   DashboardIconInbox,
 } from '@/features/dashboard/components/dashboard-icons'
 import { CaseTimeline } from '@/features/cases/components/case-timeline'
-import { CaseTimelineNoteForm } from '@/features/cases/components/case-timeline-note-form'
 import { CaseTasksSection } from '@/features/cases/components/case-tasks-section'
-import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
+import type { CaseTimelineEntryView } from '@/features/cases/types/case-timeline'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime } from '@/features/inbox/lib/inbox-status'
@@ -52,7 +51,7 @@ type CaseDetailPanelProps = {
   memberNameMap: Record<string, string>
   lookups: CaseDisplayLookups
   origin: CaseInboxOriginView | null
-  timelineEntries: CaseTimelineEntry[]
+  timelineEntries: CaseTimelineEntryView[]
   openTasks: Task[]
   completedTasks: Task[]
   onAddTask: () => void
@@ -191,14 +190,11 @@ export function CaseDetailPanel({
           </section>
         ) : null}
 
-        <CaseTimeline entries={timelineEntries} memberNameMap={memberNameMap} />
-
-        <section aria-label="Notiz hinzufügen" className={aosWorkspaceSectionClassName}>
-          <CaseTimelineNoteForm
-            key={timelineEntries.length}
-            caseId={caseRow.id}
-          />
-        </section>
+        <CaseTimeline
+          caseId={caseRow.id}
+          entries={timelineEntries}
+          memberNameMap={memberNameMap}
+        />
 
         <CaseTasksSection
           openTasks={openTasks}

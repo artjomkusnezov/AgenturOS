@@ -11,7 +11,7 @@ import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
 import { getCaseInboxOriginForCurrentAgency } from '@/features/cases/repositories/case-inbox-origin-repository'
 import { listTimelineForCase } from '@/features/cases/repositories/case-timeline-repository'
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
-import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
+import type { CaseTimelineEntryView } from '@/features/cases/types/case-timeline'
 import {
   getParentCaseIdsForTasks,
   listTasksForCase,
@@ -381,7 +381,7 @@ export async function CasesWorkspacePageContent({
     }
   }
 
-  const selectedCaseTimelineEntries: CaseTimelineEntry[] =
+  const selectedCaseTimelineEntries: CaseTimelineEntryView[] =
     timelineResult && timelineResult.success ? timelineResult.entries : []
 
   const selectedCaseOpenTasks: Task[] =

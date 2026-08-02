@@ -1,8 +1,9 @@
 'use client'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
+import { CaseTimelineComposer } from '@/features/cases/components/case-timeline-composer'
 import { CaseTimelineEntryView } from '@/features/cases/components/case-timeline-entry'
-import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
+import type { CaseTimelineEntryView as CaseTimelineEntryViewModel } from '@/features/cases/types/case-timeline'
 import { DashboardIconActivity } from '@/features/dashboard/components/dashboard-icons'
 import {
   aosTimelineClassName,
@@ -11,7 +12,8 @@ import {
 } from '@/lib/design-system'
 
 type CaseTimelineProps = {
-  entries: CaseTimelineEntry[]
+  caseId: string
+  entries: CaseTimelineEntryViewModel[]
   memberNameMap: Record<string, string>
 }
 
@@ -37,9 +39,12 @@ function formatTimelineDayLabel(isoDate: string): string {
   }).format(date)
 }
 
-function groupEntriesByDay(entries: CaseTimelineEntry[]) {
-  const groups: { dayKey: string; label: string; entries: CaseTimelineEntry[] }[] =
-    []
+function groupEntriesByDay(entries: CaseTimelineEntryViewModel[]) {
+  const groups: {
+    dayKey: string
+    label: string
+    entries: CaseTimelineEntryViewModel[]
+  }[] = []
 
   for (const entry of entries) {
     const dayKey = new Intl.DateTimeFormat('en-CA', {
@@ -64,7 +69,7 @@ function groupEntriesByDay(entries: CaseTimelineEntry[]) {
   return groups
 }
 
-export function CaseTimeline({ entries, memberNameMap }: CaseTimelineProps) {
+export function CaseTimeline({ caseId, entries, memberNameMap }: CaseTimelineProps) {
   const dayGroups = groupEntriesByDay(entries)
 
   return (
@@ -95,6 +100,8 @@ export function CaseTimeline({ entries, memberNameMap }: CaseTimelineProps) {
           ))}
         </div>
       )}
+
+      <CaseTimelineComposer key={entries.length} caseId={caseId} />
     </section>
   )
 }

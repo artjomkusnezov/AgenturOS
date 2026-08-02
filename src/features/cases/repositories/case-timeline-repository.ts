@@ -4,10 +4,23 @@ import {
   normalizeCaseTimelineNoteContent,
   validateCaseTimelineNoteInput,
 } from '@/features/cases/lib/validate-case-timeline-note'
+import {
+  hasCaseTimelineAttachmentFieldErrors,
+  validateAttachCaseFileInput,
+} from '@/features/cases/lib/validate-case-timeline-attachment'
 import type {
-  CreateCaseTimelineNoteInput,
+  AttachCaseFileInput,
   CaseTimelineEntry,
+  CaseTimelineEntryView,
+  CreateCaseTimelineNoteInput,
 } from '@/features/cases/types/case-timeline'
+import { enrichAttachmentsWithMediaUrls } from '@/features/files/lib/enrich-attachments-with-media-urls'
+import {
+  createSignedDownloadUrlForCurrentUser,
+  deleteFileForCurrentUser,
+  uploadFileForCurrentUser,
+} from '@/features/files/repositories/files-repository'
+import type { FileRecord } from '@/features/files/types/file'
 import { createClient } from '@/lib/supabase/server'
 
 type RepositoryError = {
@@ -16,12 +29,16 @@ type RepositoryError = {
 }
 
 type ListTimelineResult =
-  | { success: true; entries: CaseTimelineEntry[] }
+  | { success: true; entries: CaseTimelineEntryView[] }
   | RepositoryError
 
 type TimelineEntryResult =
   | { success: true; entry: CaseTimelineEntry }
   | RepositoryError
+
+type TimelineRowWithFile = CaseTimelineEntry & {
+  files: FileRecord | FileRecord[] | null
+}
 
 async function getAuthenticatedUserId(): Promise<
   { success: true; userId: string } | RepositoryError
@@ -45,6 +62,16 @@ async function getAuthenticatedUserId(): Promise<
   }
 }
 
+function resolveJoinedFile(
+  files: FileRecord | FileRecord[] | null | undefined,
+): FileRecord | null {
+  if (!files) {
+    return null
+  }
+
+  return Array.isArray(files) ? (files[0] ?? null) : files
+}
+
 export async function listTimelineForCase(
   caseId: string,
 ): Promise<ListTimelineResult> {
@@ -58,7 +85,7 @@ export async function listTimelineForCase(
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('case_timeline_entries')
-    .select('*')
+    .select('*, files(*)')
     .eq('case_id', caseId)
     .order('created_at', { ascending: true })
 
@@ -69,9 +96,26 @@ export async function listTimelineForCase(
     }
   }
 
+  const rows = (data ?? []) as TimelineRowWithFile[]
+  const baseEntries = rows.map((row) => {
+    const { files, ...entry } = row
+    return {
+      ...entry,
+      file: resolveJoinedFile(files),
+    }
+  })
+
+  const enriched = await enrichAttachmentsWithMediaUrls(
+    baseEntries,
+    (fileId) => createSignedDownloadUrlForCurrentUser(fileId),
+  )
+
   return {
     success: true,
-    entries: data,
+    entries: enriched.map((entry) => ({
+      ...entry,
+      mediaUrl: entry.mediaUrl ?? null,
+    })),
   }
 }
 
@@ -140,4 +184,74 @@ export async function createCaseTimelineNote(
     success: true,
     entry: data,
   }
+}
+
+export async function attachFileToCase(
+  input: AttachCaseFileInput,
+): Promise<TimelineEntryResult> {
+  const validationErrors = validateAttachCaseFileInput(input)
+
+  if (hasCaseTimelineAttachmentFieldErrors(validationErrors)) {
+    return {
+      success: false,
+      error:
+        validationErrors.fileId ??
+        validationErrors.caseId ??
+        'Die Datei konnte nicht verknüpft werden.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('attach_file_to_case', {
+    p_case_id: input.caseId,
+    p_file_id: input.fileId,
+  })
+
+  if (error || !data) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht zum Vorgang hinzugefügt werden.',
+    }
+  }
+
+  return {
+    success: true,
+    entry: data as CaseTimelineEntry,
+  }
+}
+
+export async function uploadAndAttachFileToCase(
+  caseId: string,
+  file: File,
+): Promise<TimelineEntryResult> {
+  if (!isValidCaseId(caseId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie eine gültige Vorgangs-ID an.',
+    }
+  }
+
+  const uploadResult = await uploadFileForCurrentUser(file)
+
+  if (!uploadResult.success) {
+    return uploadResult
+  }
+
+  const attachResult = await attachFileToCase({
+    caseId,
+    fileId: uploadResult.file.id,
+  })
+
+  if (!attachResult.success) {
+    await deleteFileForCurrentUser(uploadResult.file.id)
+    return attachResult
+  }
+
+  return attachResult
 }
