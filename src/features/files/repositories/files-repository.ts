@@ -120,6 +120,53 @@ export async function getFileForCurrentUser(fileId: string): Promise<FileResult>
   }
 }
 
+/**
+ * Lädt eine Datei, die dem aktuellen Nutzer über RLS sichtbar ist
+ * (Eigentümer, Task-Link oder Case-Ursprung).
+ */
+export async function getAccessibleFileForCurrentUser(
+  fileId: string,
+): Promise<FileResult> {
+  if (!isValidFileId(fileId)) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht geladen werden.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('files')
+    .select('*')
+    .eq('id', fileId)
+    .maybeSingle()
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Datei konnte nicht geladen werden.',
+    }
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: 'Die Datei wurde nicht gefunden.',
+    }
+  }
+
+  return {
+    success: true,
+    file: data,
+  }
+}
+
 export async function getFileForTask(taskId: string, fileId: string): Promise<FileResult> {
   if (!isValidTaskId(taskId) || !isValidFileId(fileId)) {
     return {
@@ -315,7 +362,7 @@ export async function deleteFileFromStorage(
 export async function createSignedDownloadUrlForCurrentUser(
   fileId: string
 ): Promise<DownloadFileResult> {
-  const fileResult = await getFileForCurrentUser(fileId)
+  const fileResult = await getAccessibleFileForCurrentUser(fileId)
 
   if (!fileResult.success) {
     return fileResult

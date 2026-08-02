@@ -11,7 +11,7 @@
  * ohne Actions/UI zu ändern.
  */
 
-import { createTaskFromInboxItem } from '@/features/inbox/repositories/inbox-repository'
+import { createTaskCaseFromInboxItem as createTaskCaseFromInboxItemWriter } from '@/features/cases/services/case-promotion-writers'
 import {
   completeTaskForCurrentUser,
   createTaskForCurrentUser,
@@ -32,7 +32,14 @@ type TaskCaseResult = { success: true; task: Task } | RepositoryError
 type DeleteTaskCaseResult = { success: true } | RepositoryError
 
 type CreateTaskCaseFromInboxResult =
-  | { success: true; inboxItemId: string; taskId: string; relationId: string }
+  | {
+      success: true
+      inboxItemId: string
+      taskId: string
+      relationId: string
+      caseId?: string | null
+      alreadyExisted?: boolean
+    }
   | RepositoryError
 
 type TaskCaseWriteInput = {
@@ -91,5 +98,5 @@ export async function deleteTaskCaseForCurrentUser(
 export async function createTaskCaseFromInboxItem(
   itemId: string,
 ): Promise<CreateTaskCaseFromInboxResult> {
-  return createTaskFromInboxItem(itemId)
+  return createTaskCaseFromInboxItemWriter({ inboxItemId: itemId })
 }

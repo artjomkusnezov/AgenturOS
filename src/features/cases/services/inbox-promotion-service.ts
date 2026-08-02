@@ -1,59 +1,114 @@
 /**
- * Gemeinsame Inbox-Promotion (Punkt 30E).
+ * Gemeinsame Inbox-Promotion (Punkt 31A).
  *
- * Ein Eingang erzeugt künftig Cases nach `case_type` — nicht mehr ausschließlich Tasks.
- * Heute produktiv: `case` + `task` (über CaseTaskService → RPC → Mirror).
- * Weitere Case-Types und Ziel `information` sind als Registry/Target vorbereitet.
- *
- * Keine Spezialfunktionen createOfferFromInbox / createClaimFromInbox:
- * `promoteInboxItem` + Registry entscheiden.
+ * Eine Fassade: Cases nach caseType über Registry/Writer; Information eigener Pfad.
+ * Keine createOfferFromInbox / createClaimFromInbox.
  */
 
-import { createTaskCaseFromInboxItem } from '@/features/cases/services/case-task-service'
+import {
+  createCaseFromInboxItem,
+  createInformationFromInboxItem,
+  createTaskCaseFromInboxItem,
+} from '@/features/cases/services/case-promotion-writers'
 import type { SystemCaseTypeKey } from '@/features/cases/types/case'
-import type {
-  InboxPromotionTarget,
-  PromoteInboxItemInput,
-  PromoteInboxItemResult,
+import {
+  resolvePromotionViewKey,
+  type InboxPromotionTarget,
+  type PromoteInboxItemInput,
+  type PromoteInboxItemResult,
 } from '@/features/cases/types/inbox-promotion'
+import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 
-type CasePromotionContext = {
-  businessAreaKey?: string
-}
+type CasePromotionFields = Extract<InboxPromotionTarget, { kind: 'case' }>
 
 type CasePromoter = (
   inboxItemId: string,
-  context: CasePromotionContext,
+  fields: CasePromotionFields,
 ) => Promise<PromoteInboxItemResult>
 
 async function promoteInboxItemToTaskCase(
   inboxItemId: string,
-  context: CasePromotionContext,
+  fields: CasePromotionFields,
 ): Promise<PromoteInboxItemResult> {
-  void context.businessAreaKey
-  const result = await createTaskCaseFromInboxItem(inboxItemId)
+  const result = await createTaskCaseFromInboxItem({
+    inboxItemId,
+    title: fields.title,
+    description: fields.description,
+    assigneeUserId: fields.assigneeUserId,
+    priority: fields.priority,
+    dueAt: fields.dueAt,
+    businessAreaKey: fields.businessAreaKey,
+  })
 
   if (!result.success) {
     return result
   }
 
-  const target: InboxPromotionTarget = { kind: 'case', caseType: 'task' }
+  const target: InboxPromotionTarget = {
+    kind: 'case',
+    caseType: 'task',
+    businessAreaKey: fields.businessAreaKey,
+    assigneeUserId: fields.assigneeUserId,
+    title: fields.title,
+    description: fields.description,
+    dueAt: fields.dueAt,
+    priority: fields.priority,
+  }
 
   return {
     success: true,
     inboxItemId: result.inboxItemId,
     target,
-    taskId: result.taskId,
     relationId: result.relationId,
+    alreadyExisted: result.alreadyExisted,
+    caseId: result.caseId ?? undefined,
+    caseTypeKey: 'task',
+    sourceTaskId: result.taskId,
+    viewKey: resolvePromotionViewKey('task'),
+  }
+}
+
+async function promoteInboxItemToGenericCase(
+  inboxItemId: string,
+  fields: CasePromotionFields,
+): Promise<PromoteInboxItemResult> {
+  const result = await createCaseFromInboxItem({
+    inboxItemId,
+    caseTypeKey: fields.caseType,
+    businessAreaKey: fields.businessAreaKey,
+    assigneeUserId: fields.assigneeUserId,
+    title: fields.title,
+    description: fields.description,
+    dueAt: fields.dueAt,
+    priority: fields.priority,
+  })
+
+  if (!result.success) {
+    return result
+  }
+
+  return {
+    success: true,
+    inboxItemId: result.inboxItemId,
+    target: fields,
+    relationId: result.relationId,
+    alreadyExisted: result.alreadyExisted,
+    caseId: result.caseId,
+    caseTypeKey: result.caseTypeKey,
+    viewKey: resolvePromotionViewKey(result.caseTypeKey),
   }
 }
 
 /**
  * Registry: Case-Type → Promoter.
- * Fehlende Keys = noch nicht implementiert (kein if/else-Wald pro Typ).
+ * task delegiert an Task-Writer (Mirror); übrige an generischen Case-Writer.
  */
 const CASE_PROMOTERS: Partial<Record<SystemCaseTypeKey, CasePromoter>> = {
   task: promoteInboxItemToTaskCase,
+  offer: promoteInboxItemToGenericCase,
+  claim: promoteInboxItemToGenericCase,
+  follow_up: promoteInboxItemToGenericCase,
+  general: promoteInboxItemToGenericCase,
 }
 
 export async function promoteInboxItem(
@@ -61,10 +116,39 @@ export async function promoteInboxItem(
 ): Promise<PromoteInboxItemResult> {
   const { inboxItemId, target } = input
 
-  if (target.kind === 'information') {
+  if (!isValidInboxItemId(inboxItemId)) {
     return {
       success: false,
-      error: 'Die Übernahme als Information ist noch nicht verfügbar.',
+      error: 'Das Eingangselement ist ungültig.',
+    }
+  }
+
+  if (target.kind === 'information') {
+    const result = await createInformationFromInboxItem({
+      inboxItemId,
+      title: target.title,
+      content: target.content,
+      collectionKey: target.collectionKey,
+    })
+
+    if (!result.success) {
+      return result
+    }
+
+    return {
+      success: true,
+      inboxItemId: result.inboxItemId,
+      target,
+      relationId: result.relationId,
+      alreadyExisted: result.alreadyExisted,
+      informationItemId: result.informationItemId,
+    }
+  }
+
+  if (target.caseType === 'appointment' || target.caseType === 'contract') {
+    return {
+      success: false,
+      error: 'Dieser Vorgangstyp kann noch nicht aus dem Eingang erzeugt werden.',
     }
   }
 
@@ -77,7 +161,5 @@ export async function promoteInboxItem(
     }
   }
 
-  return promoter(inboxItemId, {
-    businessAreaKey: target.businessAreaKey,
-  })
+  return promoter(inboxItemId, target)
 }

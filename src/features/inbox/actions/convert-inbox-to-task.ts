@@ -35,6 +35,6 @@ export async function convertInboxToTaskAction(
   return {
     success: true,
     itemId: result.inboxItemId,
-    taskId: result.taskId,
+    taskId: result.sourceTaskId,
   }
 }

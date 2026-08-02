@@ -32,12 +32,20 @@ type ListInboxFilesResult =
   | RepositoryError
 
 type CreateTaskFromInboxItemResult =
-  | { success: true; inboxItemId: string; taskId: string; relationId: string }
+  | {
+      success: true
+      inboxItemId: string
+      taskId: string
+      relationId: string
+      caseId?: string | null
+      alreadyExisted?: boolean
+    }
   | RepositoryError
 
 type CreateTaskFromInboxRpcRow = {
   inbox_item_id: string
   task_id: string
+  case_id: string | null
   relation_id: string
   already_existed: boolean
 }
@@ -57,6 +65,10 @@ function mapCreateTaskFromInboxRpcError(message: string): string {
 
   if (message.includes('inbox content empty')) {
     return 'Das Eingangselement enthält keinen gültigen Inhalt.'
+  }
+
+  if (message.includes('inbox item already promoted')) {
+    return 'Dieses Eingangselement wurde bereits übernommen.'
   }
 
   return 'Das Eingangselement konnte nicht in eine Aufgabe übernommen werden.'
@@ -365,6 +377,8 @@ export async function createTaskFromInboxItem(
     inboxItemId: row.inbox_item_id,
     taskId: row.task_id,
     relationId: row.relation_id,
+    caseId: row.case_id,
+    alreadyExisted: row.already_existed,
   }
 }
 

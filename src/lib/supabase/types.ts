@@ -517,13 +517,6 @@ export type Database = {
             referencedRelation: "inbox_items"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "inbox_relations_relation_id_fkey"
-            columns: ["relation_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
         ]
       }
       information_item_files: {
@@ -1009,14 +1002,60 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_task_from_inbox_item: {
-        Args: { p_inbox_item_id: string }
+      create_case_from_inbox_item: {
+        Args: {
+          p_inbox_item_id: string
+          p_case_type_key: string
+          p_assignee_user_id?: string
+          p_business_area_key?: string
+          p_description?: string
+          p_due_at?: string
+          p_priority?: string
+          p_title?: string
+        }
         Returns: {
           already_existed: boolean
+          case_id: string
+          case_type_key: string
+          inbox_item_id: string
+          relation_id: string
+        }[]
+      }
+      create_information_from_inbox_item: {
+        Args: {
+          p_inbox_item_id: string
+          p_collection_key?: string
+          p_content?: string
+          p_title?: string
+        }
+        Returns: {
+          already_existed: boolean
+          inbox_item_id: string
+          information_id: string
+          relation_id: string
+        }[]
+      }
+      create_task_from_inbox_item: {
+        Args: {
+          p_inbox_item_id: string
+          p_assignee_user_id?: string
+          p_business_area_key?: string
+          p_description?: string
+          p_due_date?: string
+          p_priority?: string
+          p_title?: string
+        }
+        Returns: {
+          already_existed: boolean
+          case_id: string | null
           inbox_item_id: string
           relation_id: string
           task_id: string
         }[]
+      }
+      derive_inbox_promotion_title: {
+        Args: { p_content: string; p_title?: string }
+        Returns: string
       }
       initialize_current_user_account: { Args: never; Returns: string }
       map_task_to_case_core_status: {
