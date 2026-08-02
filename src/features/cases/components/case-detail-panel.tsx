@@ -22,6 +22,9 @@ import {
   DashboardIconFlag,
   DashboardIconInbox,
 } from '@/features/dashboard/components/dashboard-icons'
+import { CaseTimeline } from '@/features/cases/components/case-timeline'
+import { CaseTimelineNoteForm } from '@/features/cases/components/case-timeline-note-form'
+import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime } from '@/features/inbox/lib/inbox-status'
@@ -47,6 +50,7 @@ type CaseDetailPanelProps = {
   memberNameMap: Record<string, string>
   lookups: CaseDisplayLookups
   origin: CaseInboxOriginView | null
+  timelineEntries: CaseTimelineEntry[]
   onBack: () => void
 }
 
@@ -74,6 +78,7 @@ export function CaseDetailPanel({
   memberNameMap,
   lookups,
   origin,
+  timelineEntries,
   onBack,
 }: CaseDetailPanelProps) {
   const typeLabel = resolveCaseTypeLabel(caseRow.case_type_id, lookups.caseTypesById)
@@ -153,34 +158,41 @@ export function CaseDetailPanel({
         </section>
 
         {origin ? (
-          <>
-            <section aria-label="Ursprünglicher Eingang" className={aosWorkspaceSectionClassName}>
-              <WorkspaceSectionHeading
-                title="Ursprünglicher Eingang"
-                accent="orange"
-                icon={<DashboardIconInbox className="h-4 w-4" />}
-              />
-              <p className={aosWorkspaceMetaClassName}>
-                <span>{getInboxSourceLabel(origin.inboxItem.source)}</span>
-                <span className="mx-1.5 text-zinc-300">·</span>
-                <span>{formatInboxDateTime(origin.inboxItem.created_at)}</span>
-              </p>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">
-                {origin.inboxItem.content}
-              </p>
-              <div className="mt-3">
-                <Link
-                  href={`/app/inbox?item=${encodeURIComponent(origin.inboxItem.id)}`}
-                  className={aosWorkspaceActionAccentClassName}
-                >
-                  Zum Eingang
-                </Link>
-              </div>
-            </section>
-
-            <InboxAttachmentSection attachments={origin.attachments} />
-          </>
+          <section aria-label="Ursprünglicher Eingang" className={aosWorkspaceSectionClassName}>
+            <WorkspaceSectionHeading
+              title="Ursprünglicher Eingang"
+              accent="orange"
+              icon={<DashboardIconInbox className="h-4 w-4" />}
+            />
+            <p className={aosWorkspaceMetaClassName}>
+              <span>{getInboxSourceLabel(origin.inboxItem.source)}</span>
+              <span className="mx-1.5 text-zinc-300">·</span>
+              <span>{formatInboxDateTime(origin.inboxItem.created_at)}</span>
+            </p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">
+              {origin.inboxItem.content}
+            </p>
+            <div className="mt-3">
+              <Link
+                href={`/app/inbox?item=${encodeURIComponent(origin.inboxItem.id)}`}
+                className={aosWorkspaceActionAccentClassName}
+              >
+                Zum Eingang
+              </Link>
+            </div>
+          </section>
         ) : null}
+
+        <CaseTimeline entries={timelineEntries} memberNameMap={memberNameMap} />
+
+        <section aria-label="Notiz hinzufügen" className={aosWorkspaceSectionClassName}>
+          <CaseTimelineNoteForm
+            key={timelineEntries.length}
+            caseId={caseRow.id}
+          />
+        </section>
+
+        {origin ? <InboxAttachmentSection attachments={origin.attachments} /> : null}
       </div>
     </div>
   )

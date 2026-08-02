@@ -17,6 +17,7 @@ import {
 } from '@/features/cases/lib/cases-workspace-urls'
 import type { CaseDisplayLookups } from '@/features/cases/lib/case-display'
 import type { CaseRecord } from '@/features/cases/types/case'
+import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
 import type { WorkspaceView } from '@/features/workspace-views/types/workspace-view'
 
 type CasesWorkspaceProps = {
@@ -26,6 +27,7 @@ type CasesWorkspaceProps = {
   /** Direkt geladener Deep-Link-Case (nicht nur aus der gefilterten Liste). */
   selectedCase: CaseRecord | null
   selectedCaseOrigin: CaseInboxOriginView | null
+  selectedCaseTimelineEntries: CaseTimelineEntry[]
   memberNameMap: Record<string, string>
   lookups: CaseDisplayLookups
   pathMode: CasesWorkspacePathMode
@@ -38,6 +40,7 @@ export function CasesWorkspace({
   selectedCaseId,
   selectedCase,
   selectedCaseOrigin,
+  selectedCaseTimelineEntries,
   memberNameMap,
   lookups,
   pathMode,
@@ -72,6 +75,7 @@ export function CasesWorkspace({
         memberNameMap={memberNameMap}
         lookups={lookups}
         origin={selectedCaseOrigin}
+        timelineEntries={selectedCaseTimelineEntries}
         onBack={handleBackToList}
       />
     )

@@ -9,7 +9,9 @@ import {
 } from '@/features/cases/lib/case-display'
 import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
 import { getCaseInboxOriginForCurrentAgency } from '@/features/cases/repositories/case-inbox-origin-repository'
+import { listTimelineForCase } from '@/features/cases/repositories/case-timeline-repository'
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
+import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
 import {
   getCaseByIdForCurrentUser,
   getTaskCaseBySourceTaskIdAsTask,
@@ -283,6 +285,7 @@ export async function CasesWorkspacePageContent({
     businessAreasResult,
     selectedCaseResult,
     originResult,
+    timelineResult,
   ] = await Promise.all([
     listCasesForWorkspaceViewFilters({
       filters: activeView.filters,
@@ -297,12 +300,23 @@ export async function CasesWorkspacePageContent({
     caseParam
       ? getCaseInboxOriginForCurrentAgency(caseParam)
       : Promise.resolve(null),
+    caseParam
+      ? listTimelineForCase(caseParam)
+      : Promise.resolve(null),
   ])
 
   if (!casesResult.success) {
     return (
       <div className={`${aosAlertErrorClassName} px-5 py-4`}>
         {casesResult.error}
+      </div>
+    )
+  }
+
+  if (timelineResult && !timelineResult.success) {
+    return (
+      <div className={`${aosAlertErrorClassName} px-5 py-4`}>
+        {timelineResult.error}
       </div>
     )
   }
@@ -333,6 +347,9 @@ export async function CasesWorkspacePageContent({
     }
   }
 
+  const selectedCaseTimelineEntries: CaseTimelineEntry[] =
+    timelineResult && timelineResult.success ? timelineResult.entries : []
+
   return (
     <CasesWorkspace
       view={activeView}
@@ -340,6 +357,7 @@ export async function CasesWorkspacePageContent({
       selectedCaseId={caseParam}
       selectedCase={selectedCase}
       selectedCaseOrigin={selectedCaseOrigin}
+      selectedCaseTimelineEntries={selectedCaseTimelineEntries}
       memberNameMap={memberNameMap}
       lookups={lookups}
       pathMode={pathMode}

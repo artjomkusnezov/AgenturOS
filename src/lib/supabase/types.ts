@@ -253,6 +253,51 @@ export type Database = {
           },
         ]
       }
+      case_timeline_entries: {
+        Row: {
+          agency_id: string
+          case_id: string
+          content: string
+          created_at: string
+          created_by: string
+          event_type: string
+          id: string
+        }
+        Insert: {
+          agency_id: string
+          case_id: string
+          content: string
+          created_at?: string
+          created_by: string
+          event_type: string
+          id?: string
+        }
+        Update: {
+          agency_id?: string
+          case_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_timeline_entries_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_timeline_entries_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cases: {
         Row: {
           agency_id: string
