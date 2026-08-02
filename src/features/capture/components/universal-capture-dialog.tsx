@@ -26,6 +26,7 @@ import type {
   CaptureUploadProgress,
 } from '@/features/capture/types/capture'
 import { uploadCaptureFileAction } from '@/features/capture/actions/upload-capture-file'
+import { useMobileViewport } from '@/lib/hooks/use-mobile-viewport'
 import {
   aosAlertSuccessClassName,
   aosAlertWarningClassName,
@@ -62,6 +63,7 @@ export function UniversalCaptureDialog({
   triggerRef,
 }: UniversalCaptureDialogProps) {
   const router = useRouter()
+  const isMobile = useMobileViewport()
   const dialogTitleId = useId()
   const dialogDescriptionId = useId()
   const statusRegionId = useId()
@@ -96,9 +98,18 @@ export function UniversalCaptureDialog({
       return
     }
 
+    if (hasPartialSuccess && inboxItemId) {
+      router.refresh()
+      const targetId = inboxItemId
+      resetForm()
+      onClose()
+      router.push(`/app/inbox?item=${encodeURIComponent(targetId)}`)
+      return
+    }
+
     resetForm()
     onClose()
-  }, [isProcessing, onClose, resetForm])
+  }, [hasPartialSuccess, inboxItemId, isProcessing, onClose, resetForm, router])
 
   const updateQueueItem = useCallback((clientId: string, update: Partial<CaptureQueueItem>) => {
     setQueueItems((previous) =>
@@ -174,11 +185,15 @@ export function UniversalCaptureDialog({
     [uploadSingleFile]
   )
 
-  const finishWithSuccess = useCallback(() => {
-    router.refresh()
-    resetForm()
-    onClose()
-  }, [onClose, resetForm, router])
+  const openCreatedInbox = useCallback(
+    (targetInboxId: string) => {
+      router.refresh()
+      resetForm()
+      onClose()
+      router.push(`/app/inbox?item=${encodeURIComponent(targetInboxId)}`)
+    },
+    [onClose, resetForm, router],
+  )
 
   const runCapture = useCallback(
     async (itemsToUpload: CaptureQueueItem[]) => {
@@ -210,7 +225,7 @@ export function UniversalCaptureDialog({
         }
 
         if (itemsToUpload.length === 0) {
-          finishWithSuccess()
+          openCreatedInbox(targetInboxId)
           return
         }
 
@@ -221,7 +236,7 @@ export function UniversalCaptureDialog({
         }
 
         if (errorCount === 0) {
-          finishWithSuccess()
+          openCreatedInbox(targetInboxId)
           return
         }
 
@@ -252,7 +267,7 @@ export function UniversalCaptureDialog({
         setIsProcessing(false)
       }
     },
-    [content, finishWithSuccess, inboxItemId, router, uploadPendingFiles]
+    [content, inboxItemId, openCreatedInbox, router, uploadPendingFiles],
   )
 
   const handleSubmit = useCallback(
@@ -318,7 +333,7 @@ export function UniversalCaptureDialog({
         )
 
         if (!hasRemainingErrors) {
-          finishWithSuccess()
+          openCreatedInbox(inboxItemId)
         } else {
           setHasPartialSuccess(true)
         }
@@ -328,7 +343,7 @@ export function UniversalCaptureDialog({
         setIsProcessing(false)
       }
     },
-    [finishWithSuccess, inboxItemId, isProcessing, queueItems, router, uploadSingleFile]
+    [inboxItemId, isProcessing, openCreatedInbox, queueItems, router, uploadSingleFile],
   )
 
   useEffect(() => {
@@ -423,15 +438,17 @@ export function UniversalCaptureDialog({
         aria-modal="true"
         aria-labelledby={dialogTitleId}
         aria-describedby={dialogDescriptionId}
-        className={`${aosDialogPanelLgClassName} max-h-[min(92vh,100dvh)]`}
+        className={`${aosDialogPanelLgClassName} max-h-[min(92vh,100dvh)] sm:max-h-[min(92vh,100dvh)]`}
       >
         <div className={`${aosPanelHeaderClassName} flex items-start justify-between gap-3 px-5 py-4`}>
           <div>
             <h2 id={dialogTitleId} className={aosTextCardTitleClassName}>
-              Neu erfassen
+              {isMobile ? 'Neuer Eingang' : 'Neu erfassen'}
             </h2>
             <p id={dialogDescriptionId} className={`mt-1 ${aosTextMetaClassName}`}>
-              Text eingeben oder Dateien hinzufügen – alles landet zunächst im Eingang.
+              {isMobile
+                ? 'Foto, Datei oder kurze Notiz – speichern und direkt prüfen.'
+                : 'Text eingeben oder Dateien hinzufügen – alles landet zunächst im Eingang.'}
             </p>
           </div>
           <button
@@ -447,39 +464,80 @@ export function UniversalCaptureDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="capture-content" className={aosTextLabelClassName}>
-                Text
-              </label>
-              <textarea
-                id="capture-content"
-                name="content"
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                disabled={isProcessing || isLocked}
-                placeholder="Notiz, Idee oder schneller Eingang …"
-                className={`${aosTextareaClassName} min-h-[7rem]`}
-                aria-describedby={statusRegionId}
-              />
-              {fieldErrors.content ? (
-                <p className={aosFieldErrorSmClassName}>{fieldErrors.content}</p>
-              ) : null}
-            </div>
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5">
+            {isMobile ? (
+              <>
+                <div>
+                  <p className="mb-2 text-sm font-medium text-zinc-900">Foto oder Datei</p>
+                  <CaptureFilePicker
+                    items={queueItems}
+                    onItemsChange={setQueueItems}
+                    isUploading={isUploading}
+                    onRetry={handleRetry}
+                    locked={isLocked}
+                    showCameraAction
+                  />
+                  {fieldErrors.files ? (
+                    <p className="mt-2 text-sm text-amber-700">{fieldErrors.files}</p>
+                  ) : null}
+                </div>
 
-            <div>
-              <p className="mb-2 text-sm font-medium text-zinc-900">Dateien</p>
-              <CaptureFilePicker
-                items={queueItems}
-                onItemsChange={setQueueItems}
-                isUploading={isUploading}
-                onRetry={handleRetry}
-                locked={isLocked}
-              />
-              {fieldErrors.files ? (
-                <p className="mt-2 text-sm text-amber-700">{fieldErrors.files}</p>
-              ) : null}
-            </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="capture-content" className={aosTextLabelClassName}>
+                    Notiz
+                    <span className="font-normal text-zinc-500"> (optional)</span>
+                  </label>
+                  <textarea
+                    id="capture-content"
+                    name="content"
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    disabled={isProcessing || isLocked}
+                    placeholder="Kurze Notiz …"
+                    className={`${aosTextareaClassName} min-h-[6.5rem] text-base sm:min-h-[7rem] sm:text-sm`}
+                    aria-describedby={statusRegionId}
+                  />
+                  {fieldErrors.content ? (
+                    <p className={aosFieldErrorSmClassName}>{fieldErrors.content}</p>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="capture-content" className={aosTextLabelClassName}>
+                    Text
+                  </label>
+                  <textarea
+                    id="capture-content"
+                    name="content"
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    disabled={isProcessing || isLocked}
+                    placeholder="Notiz, Idee oder schneller Eingang …"
+                    className={`${aosTextareaClassName} min-h-[7rem]`}
+                    aria-describedby={statusRegionId}
+                  />
+                  {fieldErrors.content ? (
+                    <p className={aosFieldErrorSmClassName}>{fieldErrors.content}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm font-medium text-zinc-900">Dateien</p>
+                  <CaptureFilePicker
+                    items={queueItems}
+                    onItemsChange={setQueueItems}
+                    isUploading={isUploading}
+                    onRetry={handleRetry}
+                    locked={isLocked}
+                  />
+                  {fieldErrors.files ? (
+                    <p className="mt-2 text-sm text-amber-700">{fieldErrors.files}</p>
+                  ) : null}
+                </div>
+              </>
+            )}
 
             <div id={statusRegionId} role="status" aria-live="polite" className="space-y-2">
               {uploadProgress ? (
@@ -523,22 +581,27 @@ export function UniversalCaptureDialog({
             </div>
           </div>
 
-          <div className={`${aosPanelFooterClassName} flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end`}>
+          <div
+            className={`${aosPanelFooterClassName} flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end`}
+            style={
+              isMobile ? { paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' } : undefined
+            }
+          >
             <button
               type="button"
               onClick={handleClose}
               disabled={isProcessing}
-              className={aosBtnGhostLgClassName}
+              className={`${aosBtnGhostLgClassName} min-h-11`}
             >
-              {hasPartialSuccess ? 'Fertig' : 'Abbrechen'}
+              {hasPartialSuccess ? 'Zum Eingang' : 'Abbrechen'}
             </button>
             {!hasPartialSuccess ? (
               <button
                 type="submit"
                 disabled={!(canSubmit || canSubmitTextOnly) || isProcessing}
-                className={aosBtnPrimaryLgClassName}
+                className={`${aosBtnPrimaryLgClassName} min-h-11`}
               >
-                {isProcessing ? 'Wird gespeichert …' : 'Im Eingang speichern'}
+                {isProcessing ? 'Wird gespeichert …' : isMobile ? 'Speichern' : 'Im Eingang speichern'}
               </button>
             ) : null}
           </div>

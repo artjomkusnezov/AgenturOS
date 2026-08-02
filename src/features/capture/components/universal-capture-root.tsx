@@ -32,6 +32,7 @@ export function UniversalCaptureRoot({
   currentUserId = '',
 }: UniversalCaptureRootProps) {
   const captureTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const onMenuOpenChangeRef = useRef(onMenuOpenChange)
   const [phase, setPhase] = useState<CapturePhase>('closed')
   const [focusAttachments, setFocusAttachments] = useState(false)
   const [menuPlacement, setMenuPlacement] = useState<'toolbar' | 'floating'>('floating')
@@ -42,16 +43,21 @@ export function UniversalCaptureRoot({
     const placement =
       trigger.dataset.capturePlacement === 'toolbar' ? 'toolbar' : 'floating'
     setMenuPlacement(placement)
-    setPhase((current) => {
-      const next = current === 'menu' ? 'closed' : 'menu'
-      onMenuOpenChange?.(next === 'menu')
-      return next
-    })
-  }, [onMenuOpenChange])
+    setPhase((current) => (current === 'menu' ? 'closed' : 'menu'))
+  }, [])
 
   useEffect(() => {
     registerOpener?.(openMenu)
   }, [openMenu, registerOpener])
+
+  useEffect(() => {
+    onMenuOpenChangeRef.current = onMenuOpenChange
+  }, [onMenuOpenChange])
+
+  // Sync parent after commit — never call setState on AppShell inside setPhase updaters.
+  useEffect(() => {
+    onMenuOpenChangeRef.current?.(phase === 'menu')
+  }, [phase])
 
   const selectMode = useCallback((mode: CaptureMode) => {
     if (mode === 'file') {
@@ -78,11 +84,12 @@ export function UniversalCaptureRoot({
 
   const closeMenu = useCallback(() => {
     setPhase('closed')
-    onMenuOpenChange?.(false)
-  }, [onMenuOpenChange])
+  }, [])
 
   const defaultAssigneeUserId =
     currentUserId || members[0]?.userId || ''
+
+  const hideFloatingFab = phase !== 'closed' && phase !== 'menu'
 
   return (
     <>
@@ -91,7 +98,7 @@ export function UniversalCaptureRoot({
         variant="floating"
         onClick={openMenu}
         isExpanded={phase === 'menu' && menuPlacement === 'floating'}
-        className="lg:hidden"
+        className={hideFloatingFab ? 'hidden lg:hidden' : 'lg:hidden'}
         data-capture-placement="floating"
       />
 

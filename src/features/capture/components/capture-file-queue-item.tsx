@@ -8,6 +8,7 @@ type CaptureFileQueueItemProps = {
   isUploading: boolean
   onRemove: (clientId: string) => void
   onRetry: (clientId: string) => void
+  touchOptimized?: boolean
 }
 
 function getStatusLabel(item: CaptureQueueItem): string {
@@ -30,10 +31,14 @@ export function CaptureFileQueueItem({
   isUploading,
   onRemove,
   onRetry,
+  touchOptimized = false,
 }: CaptureFileQueueItemProps) {
   const statusLabel = getStatusLabel(item)
   const canRemove = !isUploading && item.status !== 'uploading' && item.status !== 'success'
   const canRetry = !isUploading && item.status === 'error'
+  const actionButtonClassName = touchOptimized
+    ? 'min-h-9 rounded-lg px-3 py-2 text-xs font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+    : 'rounded-lg px-2 py-1 text-xs font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
   return (
     <li className="rounded-xl border border-zinc-200/70 bg-white px-3 py-2.5">
@@ -65,7 +70,7 @@ export function CaptureFileQueueItem({
             <button
               type="button"
               onClick={() => onRetry(item.clientId)}
-              className="rounded-lg px-2 py-1 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className={`${actionButtonClassName} text-accent transition-colors duration-150 hover:bg-accent/10`}
             >
               Erneut
             </button>
@@ -75,7 +80,7 @@ export function CaptureFileQueueItem({
               type="button"
               onClick={() => onRemove(item.clientId)}
               aria-label={`${item.file.name} entfernen`}
-              className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className={`${actionButtonClassName} text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900`}
             >
               Entfernen
             </button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useCallback, useRef, useState } from 'react'
 
 import { AppHeader } from '@/components/app/app-header'
 import { AppSidebar } from '@/components/app/app-sidebar'
@@ -34,6 +34,10 @@ export function AppShell({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [captureMenuOpen, setCaptureMenuOpen] = useState(false)
   const openCaptureRef = useRef<OpenCaptureMenu>(() => undefined)
+
+  const registerOpener = useCallback((openMenu: OpenCaptureMenu) => {
+    openCaptureRef.current = openMenu
+  }, [])
 
   const openCapture = (trigger: HTMLButtonElement) => {
     setMobileMenuOpen(false)
@@ -76,9 +80,7 @@ export function AppShell({
       </div>
 
       <UniversalCaptureRoot
-        registerOpener={(openMenu) => {
-          openCaptureRef.current = openMenu
-        }}
+        registerOpener={registerOpener}
         onMenuOpenChange={setCaptureMenuOpen}
         members={agencyMembers}
         currentUserId={currentUserId}

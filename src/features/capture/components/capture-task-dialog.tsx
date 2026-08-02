@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { attachTaskFileAction } from '@/features/tasks/actions/attach-task-file-action'
 import { createTaskAction } from '@/features/tasks/actions/create-task'
 import { CaptureDialogShell } from '@/features/capture/components/capture-dialog-shell'
 import { CaptureFilePicker } from '@/features/capture/components/capture-file-picker'
+import { deleteFileAction } from '@/features/files/actions/delete-file'
 import { uploadFileAction } from '@/features/files/actions/upload-file'
 import { buildTaskUrlWithAttachmentNotice } from '@/features/capture/lib/task-capture-notice'
 import type { CaptureQueueItem, CaptureUploadProgress } from '@/features/capture/types/capture'
@@ -45,6 +46,7 @@ export function CaptureTaskDialog({
 }: CaptureTaskDialogProps) {
   const router = useRouter()
   const processingRef = useRef(false)
+  const queueItemsRef = useRef<CaptureQueueItem[]>([])
   const defaultAssigneeUserId = currentUserId || members[0]?.userId || UNASSIGNED_ASSIGNEE_VALUE
 
   const [title, setTitle] = useState('')
@@ -58,6 +60,26 @@ export function CaptureTaskDialog({
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState<CaptureUploadProgress | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [createdTaskId, setCreatedTaskId] = useState<string | null>(null)
+
+  useEffect(() => {
+    queueItemsRef.current = queueItems
+  }, [queueItems])
+
+  const updateQueueItem = useCallback((clientId: string, update: Partial<CaptureQueueItem>) => {
+    setQueueItems((previous) => {
+      const next = previous.map((item) =>
+        item.clientId === clientId ? { ...item, ...update } : item,
+      )
+      queueItemsRef.current = next
+      return next
+    })
+  }, [])
+
+  const handleQueueItemsChange = useCallback((items: CaptureQueueItem[]) => {
+    queueItemsRef.current = items
+    setQueueItems(items)
+  }, [])
 
   const resetForm = useCallback(() => {
     setTitle('')
@@ -66,10 +88,12 @@ export function CaptureTaskDialog({
     setPriority('normal')
     setDueDate('')
     setQueueItems([])
+    queueItemsRef.current = []
     setTitleError(null)
     setDueDateError(null)
     setGlobalError(null)
     setUploadProgress(null)
+    setCreatedTaskId(null)
   }, [defaultAssigneeUserId])
 
   const handleClose = useCallback(() => {
@@ -96,6 +120,21 @@ export function CaptureTaskDialog({
         return
       }
 
+      const snapshotItems = queueItemsRef.current
+      const invalidQueued = getPendingItems(snapshotItems).filter((item) => item.error)
+
+      if (invalidQueued.length > 0) {
+        setGlobalError('Bitte entfernen oder ersetzen Sie ungültige Dateien vor dem Speichern.')
+        return
+      }
+
+      const pendingItems = getPendingItems(snapshotItems).filter((item) => item.file.size > 0)
+
+      if (getPendingItems(snapshotItems).length > 0 && pendingItems.length === 0) {
+        setGlobalError('Die ausgewählten Dateien sind leer und können nicht hochgeladen werden.')
+        return
+      }
+
       setTitleError(null)
       setDueDateError(null)
       setGlobalError(null)
@@ -103,38 +142,45 @@ export function CaptureTaskDialog({
       setIsProcessing(true)
 
       try {
-        const formData = new FormData()
-        formData.set('title', trimmedTitle)
-        formData.set('description', description)
-        formData.set('assigneeUserId', assigneeUserId)
-        formData.set('priority', priority)
-        formData.set('dueDate', dueDate)
+        let taskId = createdTaskId
 
-        const createResult = await createTaskAction({}, formData)
+        if (!taskId) {
+          const formData = new FormData()
+          formData.set('title', trimmedTitle)
+          formData.set('description', description)
+          formData.set('assigneeUserId', assigneeUserId)
+          formData.set('priority', priority)
+          formData.set('dueDate', dueDate)
 
-        if (createResult.fieldErrors?.title) {
-          setTitleError(createResult.fieldErrors.title)
-          return
+          const createResult = await createTaskAction({}, formData)
+
+          if (createResult.fieldErrors?.title) {
+            setTitleError(createResult.fieldErrors.title)
+            return
+          }
+
+          if (createResult.fieldErrors?.dueDate) {
+            setDueDateError(createResult.fieldErrors.dueDate)
+            return
+          }
+
+          if (!createResult.success || !createResult.taskId) {
+            setGlobalError(createResult.error ?? 'Die Aufgabe konnte nicht erstellt werden.')
+            return
+          }
+
+          taskId = createResult.taskId
+          setCreatedTaskId(taskId)
         }
 
-        if (createResult.fieldErrors?.dueDate) {
-          setDueDateError(createResult.fieldErrors.dueDate)
-          return
-        }
-
-        if (!createResult.success || !createResult.taskId) {
-          setGlobalError(createResult.error ?? 'Die Aufgabe konnte nicht erstellt werden.')
-          return
-        }
-
-        const taskId = createResult.taskId
-        const pendingItems = getPendingItems(queueItems)
         const totalCount = pendingItems.length
         let attachedCount = 0
+        let lastFailureMessage: string | null = null
 
         for (let index = 0; index < pendingItems.length; index += 1) {
           const item = pendingItems[index]
 
+          updateQueueItem(item.clientId, { status: 'uploading', error: undefined })
           setUploadProgress({
             current: index + 1,
             total: pendingItems.length,
@@ -146,6 +192,14 @@ export function CaptureTaskDialog({
           const uploadResult = await uploadFileAction({}, uploadFormData)
 
           if (!uploadResult.success || !uploadResult.fileId) {
+            lastFailureMessage =
+              uploadResult.error ??
+              uploadResult.fieldErrors?.file ??
+              'Upload fehlgeschlagen.'
+            updateQueueItem(item.clientId, {
+              status: 'error',
+              error: lastFailureMessage,
+            })
             continue
           }
 
@@ -154,12 +208,46 @@ export function CaptureTaskDialog({
           attachFormData.set('fileId', uploadResult.fileId)
           const attachResult = await attachTaskFileAction({}, attachFormData)
 
-          if (attachResult.success) {
-            attachedCount += 1
+          if (!attachResult.success) {
+            const rollbackFormData = new FormData()
+            rollbackFormData.set('fileId', uploadResult.fileId)
+            await deleteFileAction({}, rollbackFormData)
+
+            lastFailureMessage =
+              attachResult.error ?? 'Die Datei konnte nicht mit der Aufgabe verknüpft werden.'
+            updateQueueItem(item.clientId, {
+              status: 'error',
+              error: lastFailureMessage,
+            })
+            continue
           }
+
+          attachedCount += 1
+          // Drop the large blob after a successful attach so the next camera
+          // file is not held alongside already-uploaded originals.
+          updateQueueItem(item.clientId, {
+            status: 'success',
+            error: undefined,
+            fileId: uploadResult.fileId,
+            file: new File([], item.file.name, {
+              type: item.file.type || 'application/octet-stream',
+            }),
+          })
         }
 
         setUploadProgress(null)
+
+        if (totalCount > 0 && attachedCount < totalCount) {
+          setGlobalError(
+            attachedCount === 0
+              ? lastFailureMessage ??
+                  'Die Aufgabe wurde erstellt, aber die Dateien konnten nicht angehängt werden. Bitte erneut versuchen.'
+              : `Aufgabe erstellt. ${attachedCount} von ${totalCount} Dateien wurden angehängt. Fehlgeschlagene Dateien bitte erneut versuchen.`,
+          )
+          router.refresh()
+          return
+        }
+
         router.refresh()
         resetForm()
         onClose()
@@ -172,15 +260,16 @@ export function CaptureTaskDialog({
     },
     [
       assigneeUserId,
+      createdTaskId,
       description,
       dueDate,
       isProcessing,
       onClose,
       priority,
-      queueItems,
       resetForm,
       router,
       title,
+      updateQueueItem,
     ],
   )
 
@@ -200,7 +289,11 @@ export function CaptureTaskDialog({
         disabled={isProcessing || !title.trim()}
         className={aosBtnPrimaryLgClassName}
       >
-        {isProcessing ? 'Wird erstellt …' : 'Aufgabe erstellen'}
+        {isProcessing
+          ? 'Wird erstellt …'
+          : createdTaskId
+            ? 'Dateien erneut anhängen'
+            : 'Aufgabe erstellen'}
       </button>
     </div>
   )
@@ -320,11 +413,12 @@ export function CaptureTaskDialog({
             </p>
             <CaptureFilePicker
               items={queueItems}
-              onItemsChange={setQueueItems}
+              onItemsChange={handleQueueItemsChange}
               isUploading={uploadProgress !== null}
               onRetry={() => undefined}
               locked={false}
               validationMode="full"
+              showCameraAction
             />
           </div>
 

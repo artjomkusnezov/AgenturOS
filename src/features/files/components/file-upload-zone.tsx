@@ -17,13 +17,10 @@ import { FileUploadQueueItem } from '@/features/files/components/file-upload-que
 import { formatUploadLimitHint } from '@/features/files/lib/format-file-label'
 import { getUploadFileValidationMessage } from '@/features/files/lib/validate-file'
 import type { PendingUploadItem } from '@/features/files/types/file'
+import { createClientId } from '@/lib/create-client-id'
 
 type FileUploadZoneProps = {
   onUploaded: (fileId: string) => void
-}
-
-function createClientId(): string {
-  return crypto.randomUUID()
 }
 
 function filesFromFileList(fileList: FileList): File[] {

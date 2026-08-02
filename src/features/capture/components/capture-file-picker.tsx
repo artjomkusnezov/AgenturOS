@@ -18,6 +18,9 @@ import type { CaptureQueueItem } from '@/features/capture/types/capture'
 import { formatUploadLimitHint } from '@/features/files/lib/format-file-label'
 import { getUploadFileValidationMessage } from '@/features/files/lib/validate-file'
 import { getCaptureFileValidationMessage } from '@/features/capture/lib/validate-capture-file'
+import { createClientId } from '@/lib/create-client-id'
+import { useMobileViewport } from '@/lib/hooks/use-mobile-viewport'
+import { aosBtnSecondaryLgClassName } from '@/lib/design-system'
 
 type CaptureFilePickerProps = {
   items: CaptureQueueItem[]
@@ -28,6 +31,8 @@ type CaptureFilePickerProps = {
   validationMode?: 'capture' | 'full'
   enableDragDrop?: boolean
   enablePaste?: boolean
+  /** Enables camera button row (visible below `lg` via CSS) and camera file input. */
+  showCameraAction?: boolean
   /** When set, caps the queue length. Defaults to no extra cap beyond validation. */
   maxFiles?: number
   /** When true, focuses the drop zone after mount (e.g. Datei quick action). */
@@ -36,10 +41,6 @@ type CaptureFilePickerProps = {
 
 function isSameLocalFile(a: File, b: File): boolean {
   return a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
-}
-
-function createClientId(): string {
-  return crypto.randomUUID()
 }
 
 function filesFromFileList(fileList: FileList): File[] {
@@ -62,21 +63,31 @@ export function CaptureFilePicker({
   onRetry,
   locked,
   validationMode = 'capture',
-  enableDragDrop = true,
+  enableDragDrop,
   enablePaste = true,
+  showCameraAction = false,
   maxFiles,
   focusDropZone = false,
 }: CaptureFilePickerProps) {
+  const isMobile = useMobileViewport()
   const inputId = useId()
+  const cameraInputId = useId()
   const dropZoneId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
+  const itemsRef = useRef(items)
   const dragCounterRef = useRef(0)
   const [isDragging, setIsDragging] = useState(false)
   const [limitError, setLimitError] = useState<string | null>(null)
 
+  const dragDropEnabled = enableDragDrop ?? !isMobile
   const disabled = isUploading || locked
   const fileLimit = maxFiles ?? null
+
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
 
   useEffect(() => {
     if (!focusDropZone || disabled || locked) {
@@ -104,7 +115,8 @@ export function CaptureFilePicker({
       }
 
       setLimitError(null)
-      const nextItems = [...items]
+      const currentItems = itemsRef.current
+      const nextItems = [...currentItems]
       let skippedDuplicate = 0
       let skippedLimit = 0
 
@@ -127,15 +139,18 @@ export function CaptureFilePicker({
         setLimitError(
           `Es sind höchstens ${fileLimit ?? MAX_CAPTURE_FILES} Dateien gleichzeitig erlaubt.`,
         )
-      } else if (skippedDuplicate > 0 && nextItems.length === items.length) {
+      } else if (skippedDuplicate > 0 && nextItems.length === currentItems.length) {
         setLimitError('Diese Datei ist bereits ausgewählt.')
       } else if (skippedDuplicate > 0) {
         setLimitError('Doppelte Dateien wurden übersprungen.')
       }
 
-      onItemsChange(nextItems)
+      if (nextItems.length !== currentItems.length) {
+        itemsRef.current = nextItems
+        onItemsChange(nextItems)
+      }
     },
-    [disabled, fileLimit, items, onItemsChange, validateFile],
+    [disabled, fileLimit, onItemsChange, validateFile],
   )
 
   const removeItem = useCallback(
@@ -144,28 +159,35 @@ export function CaptureFilePicker({
         return
       }
 
-      onItemsChange(items.filter((item) => item.clientId !== clientId && item.status !== 'success'))
+      const nextItems = itemsRef.current.filter(
+        (item) => item.clientId !== clientId && item.status !== 'success',
+      )
+      itemsRef.current = nextItems
+      onItemsChange(nextItems)
     },
-    [disabled, items, onItemsChange]
+    [disabled, onItemsChange],
   )
 
   const clearItems = useCallback(() => {
     if (!disabled) {
-      onItemsChange(items.filter((item) => item.status === 'success'))
+      const nextItems = itemsRef.current.filter((item) => item.status === 'success')
+      itemsRef.current = nextItems
+      onItemsChange(nextItems)
     }
-  }, [disabled, items, onItemsChange])
+  }, [disabled, onItemsChange])
 
   const handleInputChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      const selectedFiles = event.target.files
+      const input = event.currentTarget
+      // Copy before reset — Android FileList can empty when value is cleared.
+      const selectedFiles = Array.from(input.files ?? [])
+      input.value = ''
 
-      if (selectedFiles && selectedFiles.length > 0) {
-        addFiles(filesFromFileList(selectedFiles))
+      if (selectedFiles.length > 0) {
+        addFiles(selectedFiles)
       }
-
-      event.target.value = ''
     },
-    [addFiles]
+    [addFiles],
   )
 
   const handleDragEnter = useCallback(
@@ -173,14 +195,14 @@ export function CaptureFilePicker({
       event.preventDefault()
       event.stopPropagation()
 
-      if (disabled || !enableDragDrop) {
+      if (disabled || !dragDropEnabled) {
         return
       }
 
       dragCounterRef.current += 1
       setIsDragging(true)
     },
-    [disabled, enableDragDrop],
+    [disabled, dragDropEnabled],
   )
 
   const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -206,13 +228,13 @@ export function CaptureFilePicker({
       dragCounterRef.current = 0
       setIsDragging(false)
 
-      if (disabled || !enableDragDrop) {
+      if (disabled || !dragDropEnabled) {
         return
       }
 
       addFiles(filesFromFileList(event.dataTransfer.files))
     },
-    [addFiles, disabled, enableDragDrop],
+    [addFiles, disabled, dragDropEnabled],
   )
 
   const handlePaste = useCallback(
@@ -240,7 +262,7 @@ export function CaptureFilePicker({
           pastedFiles.push(
             new File([file], file.name || `Screenshot-${Date.now()}.png`, {
               type: file.type || 'image/png',
-            })
+            }),
           )
         }
       }
@@ -261,6 +283,12 @@ export function CaptureFilePicker({
     }
   }, [disabled])
 
+  const openCamera = useCallback(() => {
+    if (!disabled) {
+      cameraInputRef.current?.click()
+    }
+  }, [disabled])
+
   const handleDropZoneKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
       if (event.key === 'Enter' || event.key === ' ') {
@@ -268,24 +296,36 @@ export function CaptureFilePicker({
         openFileDialog()
       }
     },
-    [openFileDialog]
+    [openFileDialog],
   )
 
   const pendingCount = items.filter(
-    (item) => item.status === 'queued' || item.status === 'error'
+    (item) => item.status === 'queued' || item.status === 'error',
   ).length
 
   const dropZoneClassName = isDragging
     ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
     : 'border-zinc-300/80 bg-zinc-50/80 hover:border-zinc-400/80'
 
-  const dropHint =
-    validationMode === 'full'
-      ? 'PDF, Bilder, Dokumente und weitere Dateien'
-      : 'PDF, Bild oder Screenshot auswählen · Screenshot mit Strg+V einfügen'
+  const dropHint = (() => {
+    if (validationMode === 'full') {
+      return isMobile
+        ? 'PDF, Bilder und Dokumente auswählen'
+        : 'PDF, Bilder, Dokumente und weitere Dateien'
+    }
+
+    if (isMobile) {
+      return 'PDF oder Bild aus der Galerie'
+    }
+
+    return 'PDF, Bild oder Screenshot auswählen · Screenshot mit Strg+V einfügen'
+  })()
+
+  const dropZonePadding = 'px-4 py-6 lg:py-5'
 
   return (
     <div className="space-y-3">
+      {/* Both inputs stay mounted for the picker lifetime — never gate on viewport. */}
       <input
         ref={fileInputRef}
         id={inputId}
@@ -297,38 +337,85 @@ export function CaptureFilePicker({
         className="sr-only"
       />
 
+      <input
+        ref={cameraInputRef}
+        id={cameraInputId}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleInputChange}
+        disabled={disabled}
+        tabIndex={-1}
+        aria-hidden={!showCameraAction}
+        className="sr-only"
+      />
+
       {!locked ? (
-        <div
-          ref={dropZoneRef}
-          id={dropZoneId}
-          role="button"
-          tabIndex={disabled ? -1 : 0}
-          aria-label={
-            enableDragDrop
-              ? 'Dateien hinzufügen. Klicken, ziehen oder Screenshot einfügen.'
-              : 'Dateien hinzufügen.'
-          }
-          aria-disabled={disabled}
-          onClick={openFileDialog}
-          onKeyDown={handleDropZoneKeyDown}
-          onDragEnter={enableDragDrop ? handleDragEnter : undefined}
-          onDragLeave={enableDragDrop ? handleDragLeave : undefined}
-          onDragOver={enableDragDrop ? handleDragOver : undefined}
-          onDrop={enableDragDrop ? handleDrop : undefined}
-          onPaste={enablePaste ? handlePaste : undefined}
-          className={`rounded-xl border-2 border-dashed px-4 py-5 text-center transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${dropZoneClassName} ${
-            disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
-          }`}
-        >
-          <p className="text-sm font-medium text-zinc-800">
-            {enableDragDrop && isDragging ? 'Dateien loslassen' : 'Dateien auswählen'}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-500">{dropHint}</p>
-          <p className="mt-2 text-xs text-zinc-400">
-            {formatUploadLimitHint()}
-            {fileLimit !== null ? ` · Max. ${fileLimit} Dateien` : null}
-          </p>
-        </div>
+        <>
+          {showCameraAction ? (
+            <div className="grid grid-cols-2 gap-2 lg:hidden">
+              <button
+                type="button"
+                onClick={openCamera}
+                disabled={disabled}
+                className={`${aosBtnSecondaryLgClassName} min-h-11 w-full justify-center`}
+              >
+                Foto aufnehmen
+              </button>
+              <button
+                type="button"
+                onClick={openFileDialog}
+                disabled={disabled}
+                className={`${aosBtnSecondaryLgClassName} min-h-11 w-full justify-center`}
+              >
+                Datei auswählen
+              </button>
+            </div>
+          ) : null}
+
+          <div
+            ref={dropZoneRef}
+            id={dropZoneId}
+            role="button"
+            tabIndex={disabled ? -1 : 0}
+            aria-label={
+              dragDropEnabled
+                ? 'Dateien hinzufügen. Klicken, ziehen oder Screenshot einfügen.'
+                : 'Dateien hinzufügen.'
+            }
+            aria-disabled={disabled}
+            onClick={openFileDialog}
+            onKeyDown={handleDropZoneKeyDown}
+            onDragEnter={dragDropEnabled ? handleDragEnter : undefined}
+            onDragLeave={dragDropEnabled ? handleDragLeave : undefined}
+            onDragOver={dragDropEnabled ? handleDragOver : undefined}
+            onDrop={dragDropEnabled ? handleDrop : undefined}
+            onPaste={enablePaste ? handlePaste : undefined}
+            className={`rounded-xl border-2 border-dashed text-center transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${dropZoneClassName} ${dropZonePadding} ${
+              disabled
+                ? 'cursor-not-allowed opacity-70'
+                : 'cursor-pointer'
+            }`}
+          >
+            <p className="text-sm font-medium text-zinc-800">
+              {dragDropEnabled && isDragging ? (
+                'Dateien loslassen'
+              ) : showCameraAction ? (
+                <>
+                  <span className="lg:hidden">Oder hier tippen zum Auswählen</span>
+                  <span className="hidden lg:inline">Dateien auswählen</span>
+                </>
+              ) : (
+                'Dateien auswählen'
+              )}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">{dropHint}</p>
+            <p className="mt-2 text-xs text-zinc-400">
+              {formatUploadLimitHint()}
+              {fileLimit !== null ? ` · Max. ${fileLimit} Dateien` : null}
+            </p>
+          </div>
+        </>
       ) : null}
 
       {limitError ? <p className="text-sm text-red-600">{limitError}</p> : null}
@@ -343,13 +430,16 @@ export function CaptureFilePicker({
               <button
                 type="button"
                 onClick={clearItems}
-                className="text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="min-h-9 rounded-lg px-2 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Auswahl leeren
               </button>
             ) : null}
           </div>
-          <ul className="max-h-40 space-y-2 overflow-y-auto pr-1" aria-label="Ausgewählte Dateien">
+          <ul
+            className={`space-y-2 overflow-y-auto pr-1 ${isMobile ? 'max-h-48' : 'max-h-40'}`}
+            aria-label="Ausgewählte Dateien"
+          >
             {items.map((item) => (
               <CaptureFileQueueItem
                 key={item.clientId}
@@ -357,6 +447,7 @@ export function CaptureFilePicker({
                 isUploading={isUploading}
                 onRemove={removeItem}
                 onRetry={onRetry}
+                touchOptimized={isMobile}
               />
             ))}
           </ul>
