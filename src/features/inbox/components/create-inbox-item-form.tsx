@@ -5,13 +5,13 @@ import { useActionState, useEffect, useRef } from 'react'
 import { createInboxItemAction } from '@/features/inbox/actions/create-inbox-item'
 import type { InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 import {
-  aosBtnGhostLgClassName,
-  aosBtnPrimaryLgClassName,
-  aosCardPanelClassName,
+  aosDocBodyClassName,
   aosFieldErrorSmClassName,
   aosPanelFooterClassName,
-  aosTextareaClassName,
-  aosTextLabelClassName,
+  aosPanelHeaderClassName,
+  aosWorkspaceActionClassName,
+  aosWorkspaceActionEmphasisClassName,
+  aosWorkspaceSurfaceClassName,
 } from '@/lib/design-system'
 
 type CreateInboxItemFormProps = {
@@ -33,41 +33,33 @@ export function CreateInboxItemForm({ onCancel, onCreated }: CreateInboxItemForm
   }, [state.success, state.itemId, onCreated])
 
   return (
-    <div className={`${aosCardPanelClassName} h-full`}>
-      <div className="border-b border-zinc-200/70 px-5 py-4">
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-          Neu erfassen
-        </h2>
-        <p className="mt-1 text-xs text-zinc-500">
-          Erfassen Sie Inhalt für den zentralen Eingang. Sie müssen noch nicht entscheiden, wofür
-          er später verwendet wird.
+    <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
+      <div className={aosPanelHeaderClassName}>
+        <h2 className="text-[15px] font-semibold tracking-tight text-zinc-900">Neu erfassen</h2>
+        <p className="mt-1 text-[11px] text-zinc-400">
+          Die Verwendung entscheiden Sie später.
         </p>
       </div>
 
-      <form action={formAction} className="flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col gap-4 px-5 py-5">
-          <div className="flex flex-1 flex-col gap-1.5">
-            <label htmlFor="create-inbox-content" className={aosTextLabelClassName}>
-              Inhalt
-            </label>
-            <textarea
-              id="create-inbox-content"
-              name="content"
-              rows={10}
-              required
-              autoFocus
-              disabled={isPending}
-              placeholder="Was möchten Sie erfassen?"
-              className={`${aosTextareaClassName} min-h-[12rem]`}
-            />
-            {state.fieldErrors?.content ? (
-              <p className={aosFieldErrorSmClassName}>{state.fieldErrors.content}</p>
-            ) : null}
-          </div>
-
-          {state.error ? (
-            <p className={aosFieldErrorSmClassName}>{state.error}</p>
+      <form action={formAction} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 flex-col px-1 py-4">
+          <label htmlFor="create-inbox-content" className="sr-only">
+            Inhalt
+          </label>
+          <textarea
+            id="create-inbox-content"
+            name="content"
+            rows={12}
+            required
+            autoFocus
+            disabled={isPending}
+            placeholder="Was möchten Sie erfassen?"
+            className={`${aosDocBodyClassName} min-h-[14rem]`}
+          />
+          {state.fieldErrors?.content ? (
+            <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{state.fieldErrors.content}</p>
           ) : null}
+          {state.error ? <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{state.error}</p> : null}
         </div>
 
         <div className={`${aosPanelFooterClassName} flex items-center justify-end gap-2`}>
@@ -75,16 +67,16 @@ export function CreateInboxItemForm({ onCancel, onCreated }: CreateInboxItemForm
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className={aosBtnGhostLgClassName}
+            className={aosWorkspaceActionClassName}
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className={aosBtnPrimaryLgClassName}
+            className={aosWorkspaceActionEmphasisClassName}
           >
-            {isPending ? 'Wird gespeichert …' : 'Speichern'}
+            {isPending ? '…' : 'Speichern'}
           </button>
         </div>
       </form>

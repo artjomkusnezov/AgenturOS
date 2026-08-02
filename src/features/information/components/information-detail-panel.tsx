@@ -2,20 +2,24 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from 'react'
 
+import { WorkspaceSectionHeading } from '@/components/app/workspace'
+import { DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
 import { deleteInformationItemAction } from '@/features/information/actions/delete-information-item'
 import { updateInformationItemAction } from '@/features/information/actions/update-information-item'
 import { formatInformationDateTime } from '@/features/information/lib/information-status'
 import type { InformationItem, InformationMutationState } from '@/features/information/types/information-item'
 import {
   aosBtnDangerClassName,
-  aosBtnGhostLgClassName,
-  aosBtnPrimaryLgClassName,
-  aosCardPanelClassName,
+  aosDocBodyClassName,
+  aosDocTitleClassName,
   aosFieldErrorSmClassName,
-  aosInputClassName,
   aosPanelFooterClassName,
-  aosTextareaClassName,
-  aosTextLabelClassName,
+  aosPanelHeaderClassName,
+  aosWorkspaceActionClassName,
+  aosWorkspaceActionEmphasisClassName,
+  aosWorkspaceMetaClassName,
+  aosWorkspaceSectionClassName,
+  aosWorkspaceSurfaceClassName,
 } from '@/lib/design-system'
 
 type InformationDetailPanelProps = {
@@ -54,78 +58,74 @@ export function InformationDetailPanel({
   const isPending = isUpdatePending || isDeletePending
 
   return (
-    <div className={`${aosCardPanelClassName} h-full`}>
-      <div className="border-b border-zinc-200/70 px-5 py-4">
+    <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
+      <div className={aosPanelHeaderClassName}>
         {onBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="mb-2 inline-flex items-center text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 lg:hidden"
+            className="mb-2 inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800 lg:hidden"
           >
-            ← Zurück zur Liste
+            ← Liste
           </button>
         ) : null}
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-          Information bearbeiten
-        </h2>
-        <p className="mt-2 text-xs text-zinc-500">
-          Zuletzt geändert am {formatInformationDateTime(item.updated_at)}
+        <p className={aosWorkspaceMetaClassName}>
+          Geändert {formatInformationDateTime(item.updated_at)}
         </p>
       </div>
 
       <form
         id={updateFormId}
         action={updateAction}
-        className="flex flex-1 flex-col"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
         <input type="hidden" name="itemId" value={item.id} />
 
-        <div className="flex flex-1 flex-col gap-4 px-5 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={`information-title-${item.id}`} className={aosTextLabelClassName}>
-              Titel
-            </label>
-            <input
-              id={`information-title-${item.id}`}
-              name="title"
-              type="text"
-              required
-              maxLength={200}
-              defaultValue={item.title}
-              disabled={isPending}
-              className={aosInputClassName}
-            />
-            {updateState.fieldErrors?.title ? (
-              <p className={aosFieldErrorSmClassName}>{updateState.fieldErrors.title}</p>
-            ) : null}
-          </div>
+        <section aria-label="Titel" className={`${aosWorkspaceSectionClassName} pb-2`}>
+          <label htmlFor={`information-title-${item.id}`} className="sr-only">
+            Titel
+          </label>
+          <input
+            id={`information-title-${item.id}`}
+            name="title"
+            type="text"
+            required
+            maxLength={200}
+            defaultValue={item.title}
+            disabled={isPending}
+            className={aosDocTitleClassName}
+          />
+          {updateState.fieldErrors?.title ? (
+            <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.title}</p>
+          ) : null}
+        </section>
 
-          <div className="flex flex-1 flex-col gap-1.5">
-            <label
-              htmlFor={`information-content-${item.id}`}
-              className={aosTextLabelClassName}
-            >
-              Inhalt
-              <span className="font-normal text-zinc-500"> (optional)</span>
-            </label>
-            <textarea
-              id={`information-content-${item.id}`}
-              name="content"
-              rows={12}
-              defaultValue={item.content ?? ''}
-              disabled={isPending}
-              placeholder="Details, Notizen, Links oder weiteres Wissen …"
-              className={`${aosTextareaClassName} min-h-[12rem]`}
-            />
-          </div>
+        <section aria-label="Inhalt" className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}>
+          <WorkspaceSectionHeading
+            title="Inhalt"
+            accent="violet"
+            icon={<DashboardIconFileText className="h-4 w-4" />}
+          />
+          <label htmlFor={`information-content-${item.id}`} className="sr-only">
+            Inhalt (optional)
+          </label>
+          <textarea
+            id={`information-content-${item.id}`}
+            name="content"
+            rows={16}
+            defaultValue={item.content ?? ''}
+            disabled={isPending}
+            placeholder="Details, Notizen, Links oder weiteres Wissen …"
+            className={`${aosDocBodyClassName} min-h-[16rem]`}
+          />
 
           {updateState.error ? (
-            <p className={aosFieldErrorSmClassName}>{updateState.error}</p>
+            <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
           ) : null}
           {updateState.success ? (
-            <p className="text-sm text-zinc-600">Änderungen gespeichert.</p>
+            <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
           ) : null}
-        </div>
+        </section>
       </form>
 
       <form id={deleteFormId} action={deleteAction}>
@@ -136,20 +136,20 @@ export function InformationDetailPanel({
         <div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-zinc-600">Information wirklich löschen?</span>
+              <span className={aosWorkspaceMetaClassName}>Wirklich löschen?</span>
               <button
                 type="submit"
                 form={deleteFormId}
                 disabled={isPending}
                 className={aosBtnDangerClassName}
               >
-                {isDeletePending ? 'Wird gelöscht …' : 'Löschen bestätigen'}
+                {isDeletePending ? '…' : 'Löschen'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={isPending}
-                className={aosBtnGhostLgClassName}
+                className={aosWorkspaceActionClassName}
               >
                 Abbrechen
               </button>
@@ -159,13 +159,13 @@ export function InformationDetailPanel({
               type="button"
               onClick={() => setConfirmDelete(true)}
               disabled={isPending}
-              className="rounded-xl px-3 py-1.5 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 disabled:opacity-60"
+              className="text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-red-600 disabled:opacity-60"
             >
-              Information löschen
+              Löschen
             </button>
           )}
           {deleteState.error ? (
-            <p className="mt-2 text-sm text-red-600">{deleteState.error}</p>
+            <p className="mt-1 text-xs text-red-600">{deleteState.error}</p>
           ) : null}
         </div>
 
@@ -173,9 +173,9 @@ export function InformationDetailPanel({
           type="submit"
           form={updateFormId}
           disabled={isPending}
-          className={aosBtnPrimaryLgClassName}
+          className={aosWorkspaceActionEmphasisClassName}
         >
-          {isUpdatePending ? 'Wird gespeichert …' : 'Speichern'}
+          {isUpdatePending ? '…' : 'Speichern'}
         </button>
       </div>
     </div>

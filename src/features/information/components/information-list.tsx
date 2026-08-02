@@ -15,15 +15,16 @@ export function InformationList({
   onSelectItem,
 }: InformationListProps) {
   return (
-    <div className="flex flex-col gap-1 overflow-y-auto pr-1">
+    <ul className="flex flex-col">
       {items.map((item) => (
-        <InformationListItem
-          key={item.id}
-          item={item}
-          isSelected={item.id === selectedItemId}
-          onSelect={onSelectItem}
-        />
+        <li key={item.id}>
+          <InformationListItem
+            item={item}
+            isSelected={item.id === selectedItemId}
+            onSelect={onSelectItem}
+          />
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }

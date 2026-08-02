@@ -6,10 +6,9 @@ import { useRouter } from 'next/navigation'
 import { createTaskTimelineNoteAction } from '@/features/tasks/actions/create-task-timeline-note-action'
 import type { TaskTimelineNoteMutationState } from '@/features/tasks/actions/create-task-timeline-note-action'
 import {
-  aosBtnSmClassName,
+  aosDocBodyClassName,
   aosFieldErrorClassName,
-  aosTextareaClassName,
-  aosTextLabelSmClassName,
+  aosWorkspaceActionEmphasisClassName,
 } from '@/lib/design-system'
 
 type TaskTimelineNoteFormProps = {
@@ -49,21 +48,21 @@ export function TaskTimelineNoteForm({
   }, [state.success, onSuccess, router])
 
   return (
-    <form action={formAction} className="mt-1">
+    <form action={formAction}>
       <input type="hidden" name="taskId" value={taskId} />
 
       <div className="flex flex-col gap-2">
-        <label htmlFor={`timeline-note-${taskId}`} className={aosTextLabelSmClassName}>
+        <label htmlFor={`timeline-note-${taskId}`} className="sr-only">
           Notiz hinzufügen
         </label>
         <textarea
           ref={textareaRef}
           id={`timeline-note-${taskId}`}
           name="content"
-          rows={2}
+          rows={3}
           disabled={isPending}
           placeholder="Arbeitsvermerk erfassen …"
-          className={`${aosTextareaClassName} min-h-[3.5rem]`}
+          className={`${aosDocBodyClassName} min-h-[4.5rem] rounded-md border border-zinc-200/60 bg-zinc-50/40 px-3 py-2.5`}
         />
         {state.fieldErrors?.content ? (
           <p className={aosFieldErrorClassName}>{state.fieldErrors.content}</p>
@@ -71,13 +70,13 @@ export function TaskTimelineNoteForm({
         {state.error ? <p className={aosFieldErrorClassName}>{state.error}</p> : null}
       </div>
 
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2.5 flex justify-end">
         <button
           type="submit"
           disabled={isPending}
-          className={aosBtnSmClassName}
+          className={aosWorkspaceActionEmphasisClassName}
         >
-          {isPending ? 'Wird gespeichert …' : 'Notiz hinzufügen'}
+          {isPending ? '…' : 'Notiz hinzufügen'}
         </button>
       </div>
     </form>

@@ -5,14 +5,14 @@ import { useActionState, useEffect, useRef } from 'react'
 import { createTaskAction } from '@/features/tasks/actions/create-task'
 import type { TaskMutationState } from '@/features/tasks/types/task'
 import {
-  aosBtnGhostLgClassName,
-  aosBtnPrimaryLgClassName,
-  aosCardPanelClassName,
+  aosDocBodyClassName,
+  aosDocTitleClassName,
   aosFieldErrorSmClassName,
-  aosInputClassName,
   aosPanelFooterClassName,
-  aosTextareaClassName,
-  aosTextLabelClassName,
+  aosPanelHeaderClassName,
+  aosWorkspaceActionClassName,
+  aosWorkspaceActionEmphasisClassName,
+  aosWorkspaceSurfaceClassName,
 } from '@/lib/design-system'
 
 type CreateTaskFormProps = {
@@ -34,20 +34,15 @@ export function CreateTaskForm({ onCancel, onCreated }: CreateTaskFormProps) {
   }, [state.success, state.taskId, onCreated])
 
   return (
-    <div className={`${aosCardPanelClassName} h-full`}>
-      <div className="border-b border-zinc-200/70 px-5 py-4">
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-          Neue Aufgabe
-        </h2>
-        <p className="mt-1 text-xs text-zinc-500">
-          Erfassen Sie Titel und optional eine Beschreibung.
-        </p>
+    <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
+      <div className={aosPanelHeaderClassName}>
+        <p className="text-[11px] text-zinc-400">Neue Aufgabe</p>
       </div>
 
-      <form action={formAction} className="flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col gap-4 px-5 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="create-task-title" className={aosTextLabelClassName}>
+      <form action={formAction} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-4 px-1 py-4">
+          <div>
+            <label htmlFor="create-task-title" className="sr-only">
               Titel
             </label>
             <input
@@ -58,34 +53,28 @@ export function CreateTaskForm({ onCancel, onCreated }: CreateTaskFormProps) {
               autoFocus
               disabled={isPending}
               placeholder="Was soll erledigt werden?"
-              className={aosInputClassName}
+              className={aosDocTitleClassName}
             />
             {state.fieldErrors?.title ? (
-              <p className={aosFieldErrorSmClassName}>{state.fieldErrors.title}</p>
+              <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{state.fieldErrors.title}</p>
             ) : null}
           </div>
 
-          <div className="flex flex-1 flex-col gap-1.5">
-            <label
-              htmlFor="create-task-description"
-              className={aosTextLabelClassName}
-            >
-              Beschreibung
-              <span className="font-normal text-zinc-500"> (optional)</span>
+          <div className="flex flex-1 flex-col">
+            <label htmlFor="create-task-description" className="sr-only">
+              Beschreibung (optional)
             </label>
             <textarea
               id="create-task-description"
               name="description"
-              rows={8}
+              rows={10}
               disabled={isPending}
               placeholder="Weitere Details zur Aufgabe …"
-              className={`${aosTextareaClassName} min-h-[10rem]`}
+              className={`${aosDocBodyClassName} min-h-[12rem]`}
             />
           </div>
 
-          {state.error ? (
-            <p className={aosFieldErrorSmClassName}>{state.error}</p>
-          ) : null}
+          {state.error ? <p className={aosFieldErrorSmClassName}>{state.error}</p> : null}
         </div>
 
         <div className={`${aosPanelFooterClassName} flex items-center justify-end gap-2`}>
@@ -93,16 +82,16 @@ export function CreateTaskForm({ onCancel, onCreated }: CreateTaskFormProps) {
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className={aosBtnGhostLgClassName}
+            className={aosWorkspaceActionClassName}
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className={aosBtnPrimaryLgClassName}
+            className={aosWorkspaceActionEmphasisClassName}
           >
-            {isPending ? 'Wird erstellt …' : 'Aufgabe erstellen'}
+            {isPending ? '…' : 'Erstellen'}
           </button>
         </div>
       </form>

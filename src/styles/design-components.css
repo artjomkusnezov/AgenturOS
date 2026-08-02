@@ -1,6 +1,6 @@
-﻿/**
- * AgenturOS Component Utilities ÔÇô Punkt 27A
- * Wiederverwendbare Klassen f├╝r einheitliche UI-Elemente.
+/**
+ * AgenturOS Component Utilities – Punkt 27A
+ * Wiederverwendbare Klassen für einheitliche UI-Elemente.
  */
 
 @layer components {
@@ -135,21 +135,82 @@
   .aos-card-panel {
     @apply flex flex-col rounded-xl border border-zinc-200/60 bg-white;
   }
+
   .aos-workspace-surface {
     @apply flex h-full min-h-0 flex-col bg-white;
   }
 
-
   .aos-card-empty {
-    @apply flex items-center justify-center rounded-xl border border-dashed border-zinc-200/60 bg-white/40;
+    @apply flex items-center justify-center rounded-lg border border-dashed border-zinc-200/50 bg-transparent;
   }
 
   .aos-panel-header {
-    @apply shrink-0 border-b border-zinc-200/70 px-4 py-3 lg:px-5;
+    @apply shrink-0 border-b border-zinc-200/50 px-1 pb-3 pt-1 lg:px-1;
   }
 
   .aos-panel-footer {
-    @apply shrink-0 border-t border-zinc-200/70 px-4 py-3 lg:px-5;
+    @apply shrink-0 border-t border-zinc-200/50 px-1 py-2.5 lg:px-1;
+  }
+
+  .aos-doc-title {
+    @apply w-full border-0 bg-transparent px-0 py-0 text-[1.375rem] font-semibold leading-snug tracking-tight text-zinc-900 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 disabled:opacity-60;
+  }
+
+  .aos-doc-body {
+    @apply w-full flex-1 resize-none border-0 bg-transparent px-0 py-0 text-[15px] leading-[1.7] text-zinc-800 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 disabled:opacity-60;
+  }
+
+  .aos-workspace-section {
+    @apply border-t border-zinc-200/40 px-1 py-5 first:border-t-0 first:pt-4;
+  }
+
+  .aos-workspace-section-title {
+    @apply text-sm font-semibold tracking-tight text-zinc-900;
+  }
+
+  .aos-workspace-meta {
+    @apply text-[11px] leading-relaxed text-zinc-400;
+  }
+
+  .aos-workspace-action {
+    @apply inline-flex items-center justify-center rounded-md border border-transparent px-2 py-1 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-workspace-action-accent {
+    @apply inline-flex items-center justify-center rounded-md border border-transparent px-2 py-1 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-workspace-action-primary {
+    @apply inline-flex items-center justify-center rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors duration-150 hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-workspace-action-emphasis {
+    @apply inline-flex items-center justify-center rounded-md border border-accent/25 bg-accent/5 px-2.5 py-1 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-timeline {
+    @apply relative ml-1;
+  }
+
+  .aos-timeline::before {
+    content: '';
+    @apply absolute bottom-2 left-[6px] top-2 w-px bg-zinc-200;
+  }
+
+  .aos-timeline-item {
+    @apply relative flex gap-3 pb-6 last:pb-1;
+  }
+
+  .aos-timeline-dot {
+    @apply relative z-[1] mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-zinc-300 bg-white;
+  }
+
+  .aos-timeline-dot-note {
+    @apply border-accent/40 bg-accent/10;
+  }
+
+  .aos-timeline-dot-system {
+    @apply border-zinc-200 bg-zinc-100;
   }
 
   .aos-divider {
@@ -222,7 +283,7 @@
 
   /* Lists */
   .aos-list-selected {
-    @apply bg-white shadow-sm ring-1 ring-zinc-200/80;
+    @apply bg-zinc-100/90;
   }
 
   .aos-list-container {
@@ -250,6 +311,7 @@
   .aos-field-error-sm {
     @apply text-sm text-red-600;
   }
+
   /* Workspace shell (27B) */
   .aos-app-sidebar {
     @apply flex w-60 shrink-0 flex-col border-r border-zinc-200/70 bg-white;
@@ -315,6 +377,29 @@
     @apply flex min-h-[24rem] min-w-0 flex-1 flex-col lg:min-h-0 lg:pl-5;
   }
 
+  .aos-list-row {
+    @apply relative flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-100;
+  }
+
+  .aos-list-row-hover {
+    @apply hover:bg-zinc-100/80;
+  }
+
+  .aos-list-row-subdued {
+    @apply text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700;
+  }
+
+  .aos-list-group-label {
+    @apply mb-1 px-2 text-[10px] font-medium uppercase tracking-[0.08em] text-zinc-400;
+  }
+
+  .aos-list-status-btn {
+    @apply inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-transparent text-transparent transition-colors duration-100 hover:border-zinc-500 hover:text-zinc-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60;
+  }
+
+  .aos-list-status-btn-done {
+    @apply border-zinc-300 bg-zinc-100 text-zinc-500 hover:border-zinc-400 hover:bg-white hover:text-zinc-700;
+  }
 
   .aos-nav-group-label {
     @apply px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 first:pt-1;
@@ -347,7 +432,6 @@
   .aos-capture-floating-btn {
     @apply inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 lg:h-10 lg:w-10 lg:px-0;
   }
-
 
   /* Soft accent icon tiles (Dashboard 27C) */
   .aos-icon-tile {

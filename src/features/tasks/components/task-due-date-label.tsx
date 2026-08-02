@@ -33,7 +33,7 @@ export function TaskDueDateLabel({ task, subdued = false }: TaskDueDateLabelProp
 
   return (
     <span
-      className={`text-xs ${
+      className={`text-[11px] ${
         overdue ? 'font-medium text-red-600' : subdued ? 'text-zinc-400' : 'text-zinc-500'
       }`}
     >

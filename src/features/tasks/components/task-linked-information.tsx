@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { WorkspaceSectionHeading } from '@/components/app/workspace'
+import { DashboardIconInfo } from '@/features/dashboard/components/dashboard-icons'
 import { detachTaskInformationAction } from '@/features/tasks/actions/detach-task-information-action'
 import { TaskLinkInformationDialog } from '@/features/tasks/components/task-link-information-dialog'
 import type { InformationItem } from '@/features/information/types/information-item'
@@ -10,7 +12,11 @@ import type {
   TaskLinkedInformation,
   TaskRelationMutationState,
 } from '@/features/tasks/types/task-relation'
-import { aosBtnXsClassName, aosListContainerClassName } from '@/lib/design-system'
+import {
+  aosWorkspaceActionClassName,
+  aosWorkspaceMetaClassName,
+  aosWorkspaceSectionClassName,
+} from '@/lib/design-system'
 
 type TaskLinkedInformationProps = {
   taskId: string
@@ -53,7 +59,7 @@ function DetachInformationButton({
         type="submit"
         disabled={isPending}
         aria-label="Verknüpfung entfernen"
-        className="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-60"
+        className={aosWorkspaceActionClassName}
       >
         {isPending ? '…' : 'Entfernen'}
       </button>
@@ -74,38 +80,35 @@ export function TaskLinkedInformationSection({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   return (
-    <section
-      aria-label="Informationen"
-      className="flex flex-col gap-2 border-t border-zinc-200/70 pt-4"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          Informationen
-          {linkedInformation.length > 0 ? (
-            <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
-              ({linkedInformation.length})
-            </span>
-          ) : null}
-        </h3>
-        <button
-          type="button"
-          onClick={() => setIsDialogOpen(true)}
-          className={aosBtnXsClassName}
-        >
-          Verknüpfen
-        </button>
-      </div>
+    <section aria-label="Informationen" className={aosWorkspaceSectionClassName}>
+      <WorkspaceSectionHeading
+        title="Informationen"
+        accent="violet"
+        count={linkedInformation.length}
+        icon={<DashboardIconInfo className="h-4 w-4" />}
+        trailing={
+          <button
+            type="button"
+            onClick={() => setIsDialogOpen(true)}
+            className={aosWorkspaceActionClassName}
+          >
+            Verknüpfen
+          </button>
+        }
+      />
 
       {linkedInformation.length === 0 ? (
-        <p className="text-xs text-zinc-400">Noch keine Informationen verknüpft.</p>
+        <p className={aosWorkspaceMetaClassName}>Noch keine Informationen verknüpft.</p>
       ) : (
-        <ul className={aosListContainerClassName}>
+        <ul className="divide-y divide-zinc-100">
           {linkedInformation.map(({ information }) => (
             <li
               key={information.id}
-              className="flex items-center gap-2 px-3 py-2 transition-colors duration-150 hover:bg-zinc-50/80"
+              className="flex items-center gap-2 py-2.5 transition-colors duration-150 hover:bg-zinc-50/80"
             >
-              <p className="min-w-0 flex-1 truncate text-sm text-zinc-900">{information.title}</p>
+              <p className="min-w-0 flex-1 truncate px-1 text-[13px] font-medium text-zinc-900">
+                {information.title}
+              </p>
               <DetachInformationButton taskId={taskId} informationId={information.id} />
             </li>
           ))}

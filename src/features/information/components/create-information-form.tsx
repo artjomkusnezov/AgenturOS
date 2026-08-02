@@ -5,14 +5,14 @@ import { useActionState, useEffect, useRef } from 'react'
 import { createInformationItemAction } from '@/features/information/actions/create-information-item'
 import type { InformationMutationState } from '@/features/information/types/information-item'
 import {
-  aosBtnGhostLgClassName,
-  aosBtnPrimaryLgClassName,
-  aosCardPanelClassName,
+  aosDocBodyClassName,
+  aosDocTitleClassName,
   aosFieldErrorSmClassName,
-  aosInputClassName,
   aosPanelFooterClassName,
-  aosTextareaClassName,
-  aosTextLabelClassName,
+  aosPanelHeaderClassName,
+  aosWorkspaceActionClassName,
+  aosWorkspaceActionEmphasisClassName,
+  aosWorkspaceSurfaceClassName,
 } from '@/lib/design-system'
 
 type CreateInformationFormProps = {
@@ -34,20 +34,15 @@ export function CreateInformationForm({ onCancel, onCreated }: CreateInformation
   }, [state.success, state.itemId, onCreated])
 
   return (
-    <div className={`${aosCardPanelClassName} h-full`}>
-      <div className="border-b border-zinc-200/70 px-5 py-4">
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-          Neue Information
-        </h2>
-        <p className="mt-1 text-xs text-zinc-500">
-          Erfassen Sie Titel und optionalen Inhalt für dauerhaftes Wissen.
-        </p>
+    <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
+      <div className={aosPanelHeaderClassName}>
+        <p className="text-[11px] text-zinc-400">Neue Information</p>
       </div>
 
-      <form action={formAction} className="flex flex-1 flex-col">
-        <div className="flex flex-1 flex-col gap-4 px-5 py-5">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="create-information-title" className={aosTextLabelClassName}>
+      <form action={formAction} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-4 px-1 py-4">
+          <div>
+            <label htmlFor="create-information-title" className="sr-only">
               Titel
             </label>
             <input
@@ -58,35 +53,29 @@ export function CreateInformationForm({ onCancel, onCreated }: CreateInformation
               maxLength={200}
               autoFocus
               disabled={isPending}
-              placeholder="Worum geht es?"
-              className={aosInputClassName}
+              placeholder="Titel"
+              className={aosDocTitleClassName}
             />
             {state.fieldErrors?.title ? (
-              <p className={aosFieldErrorSmClassName}>{state.fieldErrors.title}</p>
+              <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{state.fieldErrors.title}</p>
             ) : null}
           </div>
 
-          <div className="flex flex-1 flex-col gap-1.5">
-            <label
-              htmlFor="create-information-content"
-              className={aosTextLabelClassName}
-            >
-              Inhalt
-              <span className="font-normal text-zinc-500"> (optional)</span>
+          <div className="flex flex-1 flex-col">
+            <label htmlFor="create-information-content" className="sr-only">
+              Inhalt (optional)
             </label>
             <textarea
               id="create-information-content"
               name="content"
-              rows={8}
+              rows={10}
               disabled={isPending}
               placeholder="Details, Notizen, Links oder weiteres Wissen …"
-              className={`${aosTextareaClassName} min-h-[10rem]`}
+              className={`${aosDocBodyClassName} min-h-[12rem]`}
             />
           </div>
 
-          {state.error ? (
-            <p className={aosFieldErrorSmClassName}>{state.error}</p>
-          ) : null}
+          {state.error ? <p className={aosFieldErrorSmClassName}>{state.error}</p> : null}
         </div>
 
         <div className={`${aosPanelFooterClassName} flex items-center justify-end gap-2`}>
@@ -94,16 +83,16 @@ export function CreateInformationForm({ onCancel, onCreated }: CreateInformation
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className={aosBtnGhostLgClassName}
+            className={aosWorkspaceActionClassName}
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className={aosBtnPrimaryLgClassName}
+            className={aosWorkspaceActionEmphasisClassName}
           >
-            {isPending ? 'Wird erstellt …' : 'Information erstellen'}
+            {isPending ? '…' : 'Erstellen'}
           </button>
         </div>
       </form>

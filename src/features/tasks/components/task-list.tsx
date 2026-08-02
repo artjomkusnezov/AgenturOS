@@ -2,6 +2,7 @@
 
 import { TaskListItem } from '@/features/tasks/components/task-list-item'
 import type { Task } from '@/features/tasks/types/task'
+import { aosListGroupLabelClassName } from '@/lib/design-system'
 
 type TaskListProps = {
   openTasks: Task[]
@@ -19,15 +20,13 @@ export function TaskList({
   onSelectTask,
 }: TaskListProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
-        <h3 className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-          Offen
-        </h3>
+        <h3 className={aosListGroupLabelClassName}>Offen</h3>
         {openTasks.length === 0 ? (
-          <p className="px-1 py-2 text-xs text-zinc-400">Keine offenen Aufgaben.</p>
+          <p className="px-2 py-1.5 text-[11px] text-zinc-400">Keine offenen Aufgaben.</p>
         ) : (
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col">
             {openTasks.map((task) => (
               <li key={task.id}>
                 <TaskListItem
@@ -43,11 +42,9 @@ export function TaskList({
       </div>
 
       {completedTasks.length > 0 ? (
-        <div className="border-t border-zinc-200/70 pt-3">
-          <h3 className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-            Erledigt
-          </h3>
-          <ul className="flex flex-col gap-1">
+        <div className="border-t border-zinc-200/40 pt-2.5">
+          <h3 className={aosListGroupLabelClassName}>Erledigt</h3>
+          <ul className="flex flex-col">
             {completedTasks.map((task) => (
               <li key={task.id}>
                 <TaskListItem

@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { WorkspaceSectionHeading } from '@/components/app/workspace'
+import { DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
 import { completeTaskAction } from '@/features/tasks/actions/complete-task'
 import { deleteTaskAction } from '@/features/tasks/actions/delete-task'
 import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
@@ -24,15 +26,18 @@ import type { TaskLinkedFile, TaskLinkedInformation } from '@/features/tasks/typ
 import type { TaskTimelineEntry } from '@/features/tasks/types/task-timeline'
 import {
   aosBtnDangerClassName,
-  aosBtnPrimaryClassName,
-  aosBtnSecondaryClassName,
-  aosCardPanelClassName,
   aosFieldErrorClassName,
   aosInputClassName,
   aosPanelFooterClassName,
   aosPanelHeaderClassName,
   aosTextareaClassName,
   aosTextLabelSmClassName,
+  aosWorkspaceActionClassName,
+  aosWorkspaceActionEmphasisClassName,
+  aosWorkspaceActionPrimaryClassName,
+  aosWorkspaceMetaClassName,
+  aosWorkspaceSectionClassName,
+  aosWorkspaceSurfaceClassName,
 } from '@/lib/design-system'
 
 type TaskDetailPanelProps = {
@@ -84,15 +89,15 @@ function WorkflowActionButton({
         type="submit"
         disabled={isPending}
         className={
-          variant === 'complete' ? aosBtnPrimaryClassName : aosBtnSecondaryClassName
+          variant === 'complete'
+            ? aosWorkspaceActionEmphasisClassName
+            : aosWorkspaceActionPrimaryClassName
         }
       >
         {isPending
-          ? variant === 'complete'
-            ? 'Wird erledigt …'
-            : 'Wird geöffnet …'
+          ? '…'
           : variant === 'complete'
-            ? 'Als erledigt markieren'
+            ? 'Erledigt'
             : 'Wieder öffnen'}
       </button>
       {state.error ? <p className={`mt-1.5 ${aosFieldErrorClassName}`}>{state.error}</p> : null}
@@ -155,27 +160,31 @@ export function TaskDetailPanel({
   const creatorName = resolveTaskMemberName(task.created_by, memberNameMap)
 
   return (
-    <div className={`${aosCardPanelClassName} h-full min-h-[24rem] lg:min-h-0`}>
+    <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
       <div className={aosPanelHeaderClassName}>
         {onBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="mb-2 inline-flex items-center text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 lg:hidden"
+            className="mb-2 inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800 lg:hidden"
           >
-            ← Zurück zur Liste
+            ← Liste
           </button>
         ) : null}
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold leading-snug tracking-tight text-zinc-900">
+            <h2 className="text-[1.375rem] font-semibold leading-snug tracking-tight text-zinc-900">
               {task.title}
             </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className={`mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 ${aosWorkspaceMetaClassName}`}>
               <TaskPriorityBadge priority={task.priority} subdued={!isOpen} />
               <TaskDueDateLabel task={task} subdued={!isOpen} />
-              <span className="text-xs text-zinc-400">{isOpen ? 'Offen' : 'Erledigt'}</span>
+              <span>{isOpen ? 'Offen' : 'Erledigt'}</span>
+              <span className="text-zinc-300">·</span>
+              <span>
+                {creatorName} · {formatTaskDateTime(task.created_at)}
+              </span>
             </div>
           </div>
 
@@ -185,40 +194,38 @@ export function TaskDetailPanel({
             onSuccess={onWorkflowChange}
           />
         </div>
+      </div>
 
-        <p className="mt-2.5 text-xs text-zinc-500">
-          {creatorName} · {formatTaskDateTime(task.created_at)}
-        </p>
-
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <TaskAssigneeSelect
           taskId={task.id}
           assigneeUserId={task.assignee_user_id}
           members={agencyMembers}
         />
-      </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {isEditing ? (
           <form
             id={updateFormId}
             action={updateAction}
-            className="shrink-0 border-b border-zinc-200/70 px-4 py-4 lg:px-5"
+            className={aosWorkspaceSectionClassName}
           >
             <input type="hidden" name="taskId" value={task.id} />
 
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Bearbeiten
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                disabled={isPending}
-                className="text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-800 disabled:opacity-60"
-              >
-                Abbrechen
-              </button>
-            </div>
+            <WorkspaceSectionHeading
+              title="Inhalt"
+              accent="blue"
+              icon={<DashboardIconFileText className="h-4 w-4" />}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isPending}
+                  className={aosWorkspaceActionClassName}
+                >
+                  Abbrechen
+                </button>
+              }
+            />
 
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
@@ -310,48 +317,51 @@ export function TaskDetailPanel({
             </div>
           </form>
         ) : (
-          <div className="shrink-0 border-b border-zinc-200/70 px-4 py-3 lg:px-5">
+          <section aria-label="Inhalt" className={aosWorkspaceSectionClassName}>
+            <WorkspaceSectionHeading
+              title="Inhalt"
+              accent="blue"
+              icon={<DashboardIconFileText className="h-4 w-4" />}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isPending}
+                  className={aosWorkspaceActionClassName}
+                >
+                  Bearbeiten
+                </button>
+              }
+            />
             {task.description ? (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-700">
+              <p className="text-[15px] leading-[1.7] whitespace-pre-wrap text-zinc-800">
                 {task.description}
               </p>
             ) : (
-              <p className="text-sm text-zinc-400">Keine Beschreibung hinterlegt.</p>
+              <p className={aosWorkspaceMetaClassName}>Keine Beschreibung hinterlegt.</p>
             )}
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              disabled={isPending}
-              className="mt-2 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-800 disabled:opacity-60"
-            >
-              Bearbeiten
-            </button>
-          </div>
+          </section>
         )}
 
-        <div className="border-b border-zinc-200/70 px-4 py-4 lg:px-5">
-          <TaskTimeline
-            taskId={task.id}
-            entries={timelineEntries}
-            memberNameMap={memberNameMap}
-            noteFormKey={timelineEntries.length}
-          />
-        </div>
+        <TaskTimeline
+          taskId={task.id}
+          entries={timelineEntries}
+          memberNameMap={memberNameMap}
+          noteFormKey={timelineEntries.length}
+        />
 
-        <div className="space-y-0 px-4 pb-4 lg:px-5">
-          <TaskLinkedFiles
-            taskId={task.id}
-            linkedFiles={linkedFiles}
-            availableFiles={availableFiles}
-            selectedFileId={selectedFileId}
-            onOpenFile={onOpenFile}
-          />
-          <TaskLinkedInformationSection
-            taskId={task.id}
-            linkedInformation={linkedInformation}
-            availableInformation={availableInformation}
-          />
-        </div>
+        <TaskLinkedFiles
+          taskId={task.id}
+          linkedFiles={linkedFiles}
+          availableFiles={availableFiles}
+          selectedFileId={selectedFileId}
+          onOpenFile={onOpenFile}
+        />
+        <TaskLinkedInformationSection
+          taskId={task.id}
+          linkedInformation={linkedInformation}
+          availableInformation={availableInformation}
+        />
       </div>
 
       <form id={deleteFormId} action={deleteAction}>
@@ -362,20 +372,20 @@ export function TaskDetailPanel({
         <div>
           {confirmDelete ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-zinc-500">Vorgang wirklich löschen?</span>
+              <span className={aosWorkspaceMetaClassName}>Vorgang wirklich löschen?</span>
               <button
                 type="submit"
                 form={deleteFormId}
                 disabled={isPending}
                 className={aosBtnDangerClassName}
               >
-                {isDeletePending ? 'Wird gelöscht …' : 'Löschen'}
+                {isDeletePending ? '…' : 'Löschen'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={isPending}
-                className="rounded-lg px-2.5 py-1 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 disabled:opacity-60"
+                className={aosWorkspaceActionClassName}
               >
                 Abbrechen
               </button>
@@ -387,7 +397,7 @@ export function TaskDetailPanel({
               disabled={isPending}
               className="text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-red-600 disabled:opacity-60"
             >
-              Vorgang löschen
+              Löschen
             </button>
           )}
           {deleteState.error ? (
@@ -400,12 +410,12 @@ export function TaskDetailPanel({
             type="submit"
             form={updateFormId}
             disabled={isPending}
-            className={aosBtnPrimaryClassName}
+            className={aosWorkspaceActionEmphasisClassName}
           >
-            {isUpdatePending ? 'Wird gespeichert …' : 'Speichern'}
+            {isUpdatePending ? '…' : 'Speichern'}
           </button>
         ) : updateState.success ? (
-          <span className="text-xs text-zinc-400">Gespeichert.</span>
+          <span className={aosWorkspaceMetaClassName}>Gespeichert.</span>
         ) : null}
       </div>
     </div>

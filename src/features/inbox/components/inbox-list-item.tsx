@@ -7,8 +7,16 @@ import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-i
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { truncateInboxContentPreview } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
+import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
+import {
+  aosListRowClassName,
+  aosListRowHoverClassName,
+  aosListRowSubduedClassName,
+  aosListSelectedClassName,
+  aosListStatusBtnClassName,
+  aosListStatusBtnDoneClassName,
+} from '@/lib/design-system'
 
 type InboxListItemProps = {
   item: InboxItem
@@ -46,7 +54,7 @@ function InboxStatusForm({
   }, [isPending, state.success, router])
 
   return (
-    <div className="flex shrink-0 flex-col items-center gap-1">
+    <div className="flex shrink-0 flex-col items-center">
       <form
         action={formAction}
         onClick={(event) => event.stopPropagation()}
@@ -61,35 +69,22 @@ function InboxStatusForm({
               ? 'Als bearbeitet markieren'
               : 'Eingangselement wieder öffnen'
           }
-          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60 ${
-            variant === 'process'
-              ? 'border-zinc-200/80 bg-white text-zinc-500 hover:border-accent/40 hover:text-accent'
-              : 'border-zinc-200/80 bg-zinc-50 text-zinc-600 hover:bg-white hover:text-zinc-900'
-          }`}
+          className={
+            variant === 'process' ? aosListStatusBtnClassName : aosListStatusBtnDoneClassName
+          }
         >
           {isPending ? (
-            <span className="text-xs">…</span>
-          ) : variant === 'process' ? (
+            <span className="text-[8px] text-zinc-400">…</span>
+          ) : (
             <svg
-              className="h-4 w-4"
+              className="h-2.5 w-2.5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
               aria-hidden="true"
             >
               <path d="M5 12l5 5L20 7" />
-            </svg>
-          ) : (
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="M3 12h18M3 6h18M3 18h10" />
             </svg>
           )}
         </button>
@@ -113,12 +108,12 @@ export function InboxListItem({
 
   return (
     <div
-      className={`flex items-start gap-2 rounded-xl px-2 py-2 transition-colors duration-150 ${
+      className={`${aosListRowClassName} ${
         isSelected
-          ? 'bg-white shadow-sm ring-1 ring-zinc-200/80'
+          ? aosListSelectedClassName
           : subdued
-            ? 'hover:bg-white/50'
-            : 'hover:bg-white/70'
+            ? aosListRowSubduedClassName
+            : aosListRowHoverClassName
       }`}
     >
       <InboxStatusForm
@@ -130,22 +125,21 @@ export function InboxListItem({
         type="button"
         onClick={() => onSelect(item.id)}
         aria-current={isSelected ? 'true' : undefined}
-        className="min-w-0 flex-1 rounded-lg px-1 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <p
-          className={`line-clamp-2 text-sm font-medium ${
-            subdued ? 'text-zinc-600' : 'text-zinc-900'
+          className={`truncate text-[13px] leading-snug ${
+            subdued ? 'font-normal text-zinc-500' : 'font-medium text-zinc-900'
           }`}
         >
           {truncateInboxContentPreview(item.content)}
         </p>
 
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-zinc-500">{getInboxSourceLabel(item.source)}</span>
-          <span className={`text-xs ${subdued ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            {formatInboxDateTime(item.created_at)}
-          </span>
-        </div>
+        <p className="mt-0.5 truncate text-[11px] leading-none text-zinc-400">
+          <span>{getInboxSourceLabel(item.source)}</span>
+          <span className="mx-1 text-zinc-300">·</span>
+          <span>{formatInboxListDate(item.created_at)}</span>
+        </p>
       </button>
     </div>
   )

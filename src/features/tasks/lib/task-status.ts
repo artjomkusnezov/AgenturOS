@@ -15,6 +15,14 @@ export function formatTaskDateTime(value: string): string {
   }).format(new Date(value))
 }
 
+export function formatTaskListDate(value: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Europe/Berlin',
+  }).format(new Date(value))
+}
+
 export function formatTaskListDescription(description: string | null): string {
   const trimmed = description?.trim()
 

@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { WorkspaceSectionHeading } from '@/components/app/workspace'
+import { DashboardIconFile } from '@/features/dashboard/components/dashboard-icons'
 import { detachTaskFileAction } from '@/features/tasks/actions/detach-task-file-action'
 import { TaskLinkFileDialog } from '@/features/tasks/components/task-link-file-dialog'
 import {
@@ -15,7 +17,11 @@ import type {
   TaskLinkedFile,
   TaskRelationMutationState,
 } from '@/features/tasks/types/task-relation'
-import { aosBtnXsClassName, aosListContainerClassName } from '@/lib/design-system'
+import {
+  aosWorkspaceActionClassName,
+  aosWorkspaceMetaClassName,
+  aosWorkspaceSectionClassName,
+} from '@/lib/design-system'
 
 type TaskLinkedFilesProps = {
   taskId: string
@@ -55,7 +61,7 @@ function DetachFileButton({ taskId, fileId }: { taskId: string; fileId: string }
         type="submit"
         disabled={isPending}
         aria-label="Verknüpfung entfernen"
-        className="shrink-0 rounded px-2 py-1 text-[11px] font-medium text-zinc-400 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-60"
+        className={aosWorkspaceActionClassName}
       >
         {isPending ? '…' : 'Entfernen'}
       </button>
@@ -78,36 +84,34 @@ export function TaskLinkedFiles({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   return (
-    <section aria-label="Dateien" className="flex flex-col gap-2 border-t border-zinc-200/70 pt-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          Dateien
-          {linkedFiles.length > 0 ? (
-            <span className="ml-1.5 font-normal normal-case tracking-normal text-zinc-400">
-              ({linkedFiles.length})
-            </span>
-          ) : null}
-        </h3>
-        <button
-          type="button"
-          onClick={() => setIsDialogOpen(true)}
-          className={aosBtnXsClassName}
-        >
-          Verknüpfen
-        </button>
-      </div>
+    <section aria-label="Dateien" className={aosWorkspaceSectionClassName}>
+      <WorkspaceSectionHeading
+        title="Dateien"
+        accent="neutral"
+        count={linkedFiles.length}
+        icon={<DashboardIconFile className="h-4 w-4" />}
+        trailing={
+          <button
+            type="button"
+            onClick={() => setIsDialogOpen(true)}
+            className={aosWorkspaceActionClassName}
+          >
+            Verknüpfen
+          </button>
+        }
+      />
 
       {linkedFiles.length === 0 ? (
-        <p className="text-xs text-zinc-400">Noch keine Dateien verknüpft.</p>
+        <p className={aosWorkspaceMetaClassName}>Noch keine Dateien verknüpft.</p>
       ) : (
-        <ul className={aosListContainerClassName}>
+        <ul className="divide-y divide-zinc-100">
           {linkedFiles.map(({ file }) => {
             const isSelected = selectedFileId === file.id
 
             return (
               <li key={file.id}>
                 <div
-                  className={`flex items-center gap-2 px-3 py-2 transition-colors duration-150 ${
+                  className={`flex items-center gap-2 py-2.5 transition-colors duration-150 ${
                     isSelected ? 'bg-accent/5' : 'hover:bg-zinc-50/80'
                   }`}
                 >
@@ -115,10 +119,12 @@ export function TaskLinkedFiles({
                     type="button"
                     onClick={() => onOpenFile(file.id)}
                     aria-current={isSelected ? 'true' : undefined}
-                    className="min-w-0 flex-1 rounded text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+                    className="min-w-0 flex-1 rounded px-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
                   >
-                    <span className="block truncate text-sm text-zinc-900">{file.filename}</span>
-                    <span className="mt-0.5 block text-[11px] text-zinc-400">
+                    <span className="block truncate text-[13px] font-medium text-zinc-900">
+                      {file.filename}
+                    </span>
+                    <span className={`mt-0.5 block ${aosWorkspaceMetaClassName}`}>
                       {formatMimeTypeLabel(file.mime_type)} · {formatFileSize(file.size_bytes)} ·{' '}
                       {formatFileDateTime(file.created_at)}
                     </span>

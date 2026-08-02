@@ -4,29 +4,24 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
+import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
 import { CreateInformationForm } from '@/features/information/components/create-information-form'
 import { InformationDetailPanel } from '@/features/information/components/information-detail-panel'
 import { InformationEmptyDetail } from '@/features/information/components/information-empty-detail'
 import { InformationList } from '@/features/information/components/information-list'
 import type { InformationItem } from '@/features/information/types/information-item'
+import { aosWorkspaceActionAccentClassName } from '@/lib/design-system'
 
 type InformationWorkspaceProps = {
   items: InformationItem[]
-  initialItemId?: string | null
+  selectedItemId: string | null
 }
 
 export function InformationWorkspace({
   items,
-  initialItemId = null,
+  selectedItemId,
 }: InformationWorkspaceProps) {
   const router = useRouter()
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(() => {
-    if (!initialItemId) {
-      return null
-    }
-
-    return items.some((item) => item.id === initialItemId) ? initialItemId : null
-  })
   const [isCreating, setIsCreating] = useState(false)
 
   const selectedItem = useMemo(
@@ -38,15 +33,29 @@ export function InformationWorkspace({
     router.refresh()
   }, [router])
 
-  const handleSelectItem = useCallback((itemId: string) => {
-    setIsCreating(false)
-    setSelectedItemId(itemId)
-  }, [])
+  const navigateToItem = useCallback(
+    (itemId: string) => {
+      router.push(`/app/information?item=${itemId}`)
+    },
+    [router]
+  )
+
+  const navigateToList = useCallback(() => {
+    router.push('/app/information')
+  }, [router])
+
+  const handleSelectItem = useCallback(
+    (itemId: string) => {
+      setIsCreating(false)
+      navigateToItem(itemId)
+    },
+    [navigateToItem]
+  )
 
   const handleStartCreate = useCallback(() => {
-    setSelectedItemId(null)
     setIsCreating(true)
-  }, [])
+    navigateToList()
+  }, [navigateToList])
 
   const handleCancelCreate = useCallback(() => {
     setIsCreating(false)
@@ -55,87 +64,73 @@ export function InformationWorkspace({
   const handleCreated = useCallback(
     (itemId: string) => {
       setIsCreating(false)
-      setSelectedItemId(itemId)
+      navigateToItem(itemId)
       refreshItems()
     },
-    [refreshItems]
+    [navigateToItem, refreshItems]
   )
 
   const handleBackToList = useCallback(() => {
-    setSelectedItemId(null)
     setIsCreating(false)
-  }, [])
+    navigateToList()
+  }, [navigateToList])
 
   const handleDeleted = useCallback(() => {
-    setSelectedItemId(null)
+    navigateToList()
     refreshItems()
-  }, [refreshItems])
+  }, [navigateToList, refreshItems])
 
   const showMobileDetail = isCreating || selectedItem !== null
   const totalCount = items.length
+  const countLabel =
+    totalCount === 1 ? '1 Information' : `${totalCount} Informationen`
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col lg:flex-row lg:gap-6">
-      <section
-        aria-label="Informationsliste"
-        className={`flex w-full flex-col lg:w-80 lg:shrink-0 ${
-          showMobileDetail ? 'hidden lg:flex' : 'flex'
-        }`}
-      >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-              Informationen
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              {totalCount === 1 ? '1 Information' : `${totalCount} Informationen`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleStartCreate}
-            className="rounded-xl bg-accent px-3.5 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90"
-          >
-            Neu erstellen
-          </button>
-        </div>
-
-        {totalCount === 0 ? (
-          <EmptyState
-            title="Noch keine Informationen"
-            description="Erstellen Sie dauerhaftes Wissen wie Prozesse, Leitfäden oder Notizen."
-          />
-        ) : (
-          <InformationList
-            items={items}
-            selectedItemId={selectedItemId}
-            onSelectItem={handleSelectItem}
-          />
-        )}
-      </section>
-
-      <section
-        aria-label="Informationsdetails"
-        className={`min-h-[24rem] flex-1 ${
-          showMobileDetail ? 'flex' : 'hidden lg:flex'
-        }`}
-      >
-        {isCreating ? (
-          <CreateInformationForm
-            onCancel={handleCancelCreate}
-            onCreated={handleCreated}
-          />
-        ) : selectedItem ? (
-          <InformationDetailPanel
-            key={selectedItem.id}
-            item={selectedItem}
-            onBack={handleBackToList}
-            onDeleted={handleDeleted}
-          />
-        ) : (
-          <InformationEmptyDetail />
-        )}
-      </section>
-    </div>
+    <WorkspaceFrame
+      compact
+      meta={countLabel}
+      primary={
+        <button type="button" onClick={handleStartCreate} className={aosWorkspaceActionAccentClassName}>
+          Neu
+        </button>
+      }
+    >
+      <WorkspaceSplit
+        listLabel="Informationsliste"
+        detailLabel="Informationsdetails"
+        showMobileDetail={showMobileDetail}
+        list={
+          totalCount === 0 ? (
+            <EmptyState
+              title="Noch keine Informationen"
+              description="Erstellen Sie dauerhaftes Wissen wie Prozesse, Leitfäden oder Notizen."
+            />
+          ) : (
+            <InformationList
+              items={items}
+              selectedItemId={selectedItemId}
+              onSelectItem={handleSelectItem}
+            />
+          )
+        }
+        detail={
+          isCreating ? (
+            <CreateInformationForm
+              onCancel={handleCancelCreate}
+              onCreated={handleCreated}
+            />
+          ) : selectedItem ? (
+            <InformationDetailPanel
+              key={selectedItem.id}
+              item={selectedItem}
+              onBack={handleBackToList}
+              onDeleted={handleDeleted}
+            />
+          ) : (
+            <InformationEmptyDetail />
+          )
+        }
+      />
+    </WorkspaceFrame>
   )
 }

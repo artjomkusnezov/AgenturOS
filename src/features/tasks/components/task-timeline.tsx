@@ -2,9 +2,16 @@
 
 import { useEffect, useRef } from 'react'
 
+import { WorkspaceSectionHeading } from '@/components/app/workspace'
+import { DashboardIconActivity, DashboardIconMessage } from '@/features/dashboard/components/dashboard-icons'
 import { TaskTimelineEntryView } from '@/features/tasks/components/task-timeline-entry'
 import { TaskTimelineNoteForm } from '@/features/tasks/components/task-timeline-note-form'
 import type { TaskTimelineEntry } from '@/features/tasks/types/task-timeline'
+import {
+  aosTimelineClassName,
+  aosWorkspaceMetaClassName,
+  aosWorkspaceSectionClassName,
+} from '@/lib/design-system'
 
 type TaskTimelineProps = {
   taskId: string
@@ -34,30 +41,41 @@ export function TaskTimeline({
   }
 
   return (
-    <section aria-label="Arbeitschronik" className="flex flex-col gap-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-        Arbeitschronik
-      </h3>
+    <section aria-label="Arbeitschronik" className={aosWorkspaceSectionClassName}>
+      <WorkspaceSectionHeading
+        title="Arbeitschronik"
+        accent="blue"
+        icon={<DashboardIconActivity className="h-4 w-4" />}
+      />
 
       {entries.length === 0 ? (
-        <p className="text-xs text-zinc-400">Noch keine Einträge vorhanden.</p>
+        <p className={aosWorkspaceMetaClassName}>Noch keine Einträge vorhanden.</p>
       ) : (
-        <ol className="ml-1 space-y-4 border-l border-zinc-200 pl-4">
+        <ol className={aosTimelineClassName}>
           {entries.map((entry) => (
-            <li key={entry.id}>
-              <TaskTimelineEntryView entry={entry} memberNameMap={memberNameMap} />
-            </li>
+            <TaskTimelineEntryView
+              key={entry.id}
+              entry={entry}
+              memberNameMap={memberNameMap}
+            />
           ))}
         </ol>
       )}
 
       <div ref={endRef} aria-hidden="true" />
 
-      <TaskTimelineNoteForm
-        key={noteFormKey}
-        taskId={taskId}
-        onSuccess={handleNoteSuccess}
-      />
+      <div className="mt-2 border-t border-zinc-200/40 pt-4">
+        <WorkspaceSectionHeading
+          title="Notiz hinzufügen"
+          accent="blue"
+          icon={<DashboardIconMessage className="h-4 w-4" />}
+        />
+        <TaskTimelineNoteForm
+          key={noteFormKey}
+          taskId={taskId}
+          onSuccess={handleNoteSuccess}
+        />
+      </div>
     </section>
   )
 }

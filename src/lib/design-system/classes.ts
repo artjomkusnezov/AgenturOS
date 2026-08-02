@@ -1,5 +1,5 @@
-﻿/**
- * AgenturOS Design System ÔÇô zentrale Klassen-Konstanten f├╝r TypeScript-Komponenten.
+/**
+ * AgenturOS Design System – zentrale Klassen-Konstanten für TypeScript-Komponenten.
  * Entspricht den Utilities in src/styles/design-components.css.
  */
 
@@ -42,6 +42,20 @@ export const aosWorkspaceSurfaceClassName = 'aos-workspace-surface'
 export const aosCardEmptyClassName = 'aos-card-empty'
 export const aosPanelHeaderClassName = 'aos-panel-header'
 export const aosPanelFooterClassName = 'aos-panel-footer'
+export const aosDocTitleClassName = 'aos-doc-title'
+export const aosDocBodyClassName = 'aos-doc-body'
+export const aosWorkspaceSectionClassName = 'aos-workspace-section'
+export const aosWorkspaceSectionTitleClassName = 'aos-workspace-section-title'
+export const aosWorkspaceMetaClassName = 'aos-workspace-meta'
+export const aosWorkspaceActionClassName = 'aos-workspace-action'
+export const aosWorkspaceActionAccentClassName = 'aos-workspace-action-accent'
+export const aosWorkspaceActionPrimaryClassName = 'aos-workspace-action-primary'
+export const aosWorkspaceActionEmphasisClassName = 'aos-workspace-action-emphasis'
+export const aosTimelineClassName = 'aos-timeline'
+export const aosTimelineItemClassName = 'aos-timeline-item'
+export const aosTimelineDotClassName = 'aos-timeline-dot'
+export const aosTimelineDotNoteClassName = 'aos-timeline-dot aos-timeline-dot-note'
+export const aosTimelineDotSystemClassName = 'aos-timeline-dot aos-timeline-dot-system'
 
 export const aosBadgeClassName = 'aos-badge'
 export const aosBadgeNeutralClassName = 'aos-badge-neutral'
@@ -63,6 +77,12 @@ export const aosDropdownPanelClassName = 'aos-dropdown-panel'
 
 export const aosListSelectedClassName = 'aos-list-selected'
 export const aosListContainerClassName = 'aos-list-container'
+export const aosListRowClassName = 'aos-list-row'
+export const aosListRowHoverClassName = 'aos-list-row-hover'
+export const aosListRowSubduedClassName = 'aos-list-row-subdued'
+export const aosListGroupLabelClassName = 'aos-list-group-label'
+export const aosListStatusBtnClassName = 'aos-list-status-btn'
+export const aosListStatusBtnDoneClassName = 'aos-list-status-btn aos-list-status-btn-done'
 
 export const aosEmptyStateClassName = 'aos-empty-state'
 export const aosSkeletonClassName = 'aos-skeleton'

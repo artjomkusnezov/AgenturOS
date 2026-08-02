@@ -1,22 +1,36 @@
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
+import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
+import { aosAlertErrorClassName } from '@/lib/design-system'
 
-export default async function InboxPage() {
+type InboxPageProps = {
+  searchParams: Promise<{ item?: string }>
+}
+
+export default async function InboxPage({ searchParams }: InboxPageProps) {
+  const { item } = await searchParams
   const result = await listInboxItemsForCurrentUser()
 
   if (!result.success) {
     return (
-      <div className="rounded-xl border border-red-200/80 bg-red-50 px-5 py-4 text-sm text-red-700">
+      <div className={`${aosAlertErrorClassName} px-5 py-4`}>
         {result.error}
       </div>
     )
   }
+
+  const allItems = [...result.unprocessedItems, ...result.processedItems]
+  const selectedItemId =
+    item && isValidInboxItemId(item) && allItems.some((entry) => entry.id === item)
+      ? item
+      : null
 
   return (
     <InboxWorkspace
       unprocessedItems={result.unprocessedItems}
       processedItems={result.processedItems}
       taskRelationsByItemId={result.taskRelationsByItemId}
+      selectedItemId={selectedItemId}
     />
   )
 }

@@ -1,3 +1,5 @@
+import { aosPanelHeaderClassName, aosWorkspaceSurfaceClassName } from '@/lib/design-system'
+
 type TaskDetailErrorPanelProps = {
   message: string
   onBack?: () => void
@@ -8,20 +10,20 @@ export function TaskDetailErrorPanel({
   onBack,
 }: TaskDetailErrorPanelProps) {
   return (
-    <div className="flex h-full min-h-[20rem] flex-col rounded-xl border border-zinc-200/60 bg-white">
+    <div className={`${aosWorkspaceSurfaceClassName} min-h-[12rem]`}>
       {onBack ? (
-        <div className="border-b border-zinc-200/70 px-5 py-4 lg:hidden">
+        <div className={`${aosPanelHeaderClassName} lg:hidden`}>
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900"
+            className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
           >
-            ← Zurück zur Liste
+            ← Liste
           </button>
         </div>
       ) : null}
-      <div className="flex flex-1 items-center justify-center px-5 py-8">
-        <p className="max-w-sm text-center text-sm text-zinc-600">{message}</p>
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
+        <p className="max-w-sm text-center text-sm text-zinc-500">{message}</p>
       </div>
     </div>
   )

@@ -8,3 +8,12 @@ export function formatInformationDateTime(value: string): string {
     timeZone: 'Europe/Berlin',
   }).format(new Date(value))
 }
+
+export function formatInformationListDate(value: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Europe/Berlin',
+  }).format(new Date(value))
+}

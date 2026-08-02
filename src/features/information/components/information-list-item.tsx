@@ -1,8 +1,13 @@
 'use client'
 
 import { truncateInformationContentPreview } from '@/features/information/lib/format-information-content'
-import { formatInformationDateTime } from '@/features/information/lib/information-status'
+import { formatInformationListDate } from '@/features/information/lib/information-status'
 import type { InformationItem } from '@/features/information/types/information-item'
+import {
+  aosListRowClassName,
+  aosListRowHoverClassName,
+  aosListSelectedClassName,
+} from '@/lib/design-system'
 
 type InformationListItemProps = {
   item: InformationItem
@@ -22,20 +27,21 @@ export function InformationListItem({
       type="button"
       onClick={() => onSelect(item.id)}
       aria-current={isSelected ? 'true' : undefined}
-      className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-        isSelected
-          ? 'bg-white shadow-sm ring-1 ring-zinc-200/80'
-          : 'hover:bg-white/70'
-      }`}
+      className={`${aosListRowClassName} flex-col items-stretch gap-0.5 ${
+        isSelected ? aosListSelectedClassName : aosListRowHoverClassName
+      } focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
-      <p className="truncate text-sm font-medium text-zinc-900">{item.title}</p>
-
-      {preview ? (
-        <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{preview}</p>
-      ) : null}
-
-      <p className="mt-2 text-xs text-zinc-500">
-        Geändert am {formatInformationDateTime(item.updated_at)}
+      <p className="w-full truncate text-[13px] font-medium leading-snug text-zinc-900">
+        {item.title}
+      </p>
+      <p className="w-full truncate text-[11px] leading-none text-zinc-400">
+        <span>{formatInformationListDate(item.updated_at)}</span>
+        {preview ? (
+          <>
+            <span className="mx-1 text-zinc-300">·</span>
+            <span className="text-zinc-500">{preview}</span>
+          </>
+        ) : null}
       </p>
     </button>
   )

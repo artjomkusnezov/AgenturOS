@@ -6,14 +6,21 @@ import { useRouter } from 'next/navigation'
 import { completeTaskAction } from '@/features/tasks/actions/complete-task'
 import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
 import { TaskDueDateLabel } from '@/features/tasks/components/task-due-date-label'
-import { TaskPriorityBadge } from '@/features/tasks/components/task-priority-badge'
 import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
+import { TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
 import {
-  formatTaskDateTime,
-  formatTaskListDescription,
+  formatTaskListDate,
   isTaskOpen,
 } from '@/features/tasks/lib/task-status'
 import type { Task, TaskMutationState } from '@/features/tasks/types/task'
+import {
+  aosListRowClassName,
+  aosListRowHoverClassName,
+  aosListRowSubduedClassName,
+  aosListSelectedClassName,
+  aosListStatusBtnClassName,
+  aosListStatusBtnDoneClassName,
+} from '@/lib/design-system'
 
 type TaskListItemProps = {
   task: Task
@@ -52,7 +59,7 @@ function TaskStatusForm({
   }, [isPending, state.success, router])
 
   return (
-    <div className="flex shrink-0 flex-col items-center gap-1">
+    <div className="flex shrink-0 flex-col items-center">
       <form
         action={formAction}
         onClick={(event) => event.stopPropagation()}
@@ -63,35 +70,22 @@ function TaskStatusForm({
           type="submit"
           disabled={isPending}
           aria-label={variant === 'complete' ? 'Aufgabe erledigen' : 'Aufgabe wieder öffnen'}
-          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60 ${
-            variant === 'complete'
-              ? 'border-zinc-200/80 bg-white text-zinc-500 hover:border-accent/40 hover:text-accent'
-              : 'border-zinc-200/80 bg-zinc-50 text-zinc-600 hover:bg-white hover:text-zinc-900'
-          }`}
+          className={
+            variant === 'complete' ? aosListStatusBtnClassName : aosListStatusBtnDoneClassName
+          }
         >
           {isPending ? (
-            <span className="text-xs">…</span>
-          ) : variant === 'complete' ? (
+            <span className="text-[8px] text-zinc-400">…</span>
+          ) : (
             <svg
-              className="h-4 w-4"
+              className="h-2.5 w-2.5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
               aria-hidden="true"
             >
               <path d="M5 12l5 5L20 7" />
-            </svg>
-          ) : (
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="M3 12h18M3 6h18M3 18h10" />
             </svg>
           )}
         </button>
@@ -114,15 +108,16 @@ export function TaskListItem({
 }: TaskListItemProps) {
   const isOpen = isTaskOpen(task)
   const assigneeName = resolveTaskMemberName(task.assignee_user_id, memberNameMap)
+  const showPriority = task.priority === 'high' || task.priority === 'low'
 
   return (
     <div
-      className={`flex items-start gap-1.5 rounded-lg px-1.5 py-1.5 transition-colors duration-150 ${
+      className={`${aosListRowClassName} ${
         isSelected
-          ? 'bg-white ring-1 ring-zinc-200/80'
+          ? aosListSelectedClassName
           : subdued
-            ? 'hover:bg-white/60'
-            : 'hover:bg-white/80'
+            ? aosListRowSubduedClassName
+            : aosListRowHoverClassName
       }`}
     >
       <TaskStatusForm taskId={task.id} variant={isOpen ? 'complete' : 'reopen'} />
@@ -131,27 +126,34 @@ export function TaskListItem({
         type="button"
         onClick={() => onSelect(task.id)}
         aria-current={isSelected ? 'true' : undefined}
-        className="min-w-0 flex-1 rounded-lg px-1 py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <p
-          className={`truncate text-sm font-medium ${
-            subdued ? 'text-zinc-600' : 'text-zinc-900'
+          className={`truncate text-[13px] leading-snug ${
+            subdued ? 'font-normal text-zinc-500' : 'font-medium text-zinc-900'
           }`}
         >
           {task.title}
         </p>
 
-        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">
-          {formatTaskListDescription(task.description)}
-        </p>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-          <span>{formatTaskDateTime(task.created_at)}</span>
-          <span>{assigneeName}</span>
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <TaskPriorityBadge priority={task.priority} subdued={subdued} />
+        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-none text-zinc-400">
+          <span className="truncate">{formatTaskListDate(task.created_at)}</span>
+          <span className="text-zinc-300">·</span>
+          <span className="truncate">{assigneeName}</span>
+          {showPriority ? (
+            <>
+              <span className="text-zinc-300">·</span>
+              <span
+                className={
+                  task.priority === 'high' && !subdued
+                    ? 'font-medium text-zinc-600'
+                    : undefined
+                }
+              >
+                {TASK_PRIORITY_LABELS[task.priority]}
+              </span>
+            </>
+          ) : null}
           <TaskDueDateLabel task={task} subdued={subdued || !isOpen} />
         </div>
       </button>

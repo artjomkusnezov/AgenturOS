@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
+import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
 import type { AgencyMember } from '@/features/agency/types/agency-member'
 import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
 import { TaskDetailErrorPanel } from '@/features/tasks/components/task-detail-error-panel'
@@ -15,6 +16,10 @@ import { TaskList } from '@/features/tasks/components/task-list'
 import type { TaskDetailLoadState } from '@/features/tasks/types/task-detail'
 import type { TaskFilePreviewLoadState } from '@/features/tasks/types/task-file-preview'
 import type { Task } from '@/features/tasks/types/task'
+import {
+  aosAlertWarningClassName,
+  aosWorkspaceActionAccentClassName,
+} from '@/lib/design-system'
 
 type TasksWorkspaceProps = {
   openTasks: Task[]
@@ -50,6 +55,7 @@ export function TasksWorkspace({
 
   const tasks = [...openTasks, ...completedTasks]
   const totalCount = tasks.length
+  const countLabel = totalCount === 1 ? '1 Vorgang' : `${totalCount} Vorgänge`
 
   const handleDismissCaptureNotice = useCallback(() => {
     if (selectedTaskId) {
@@ -264,33 +270,21 @@ export function TasksWorkspace({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col border-t border-zinc-200/70 lg:h-[calc(100vh-8rem)] lg:flex-row lg:border-t-0">
-      <section
-        aria-label="Vorgangsliste"
-        className={`flex w-full flex-col border-zinc-200/70 lg:w-[20rem] lg:shrink-0 lg:border-r ${
-          showMobileDetail ? 'hidden lg:flex' : 'flex'
-        }`}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-zinc-200/70 px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-              Vorgänge
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              {totalCount === 1 ? '1 Vorgang' : `${totalCount} Vorgänge`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleStartCreate}
-            className="rounded-xl bg-accent px-3.5 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90"
-          >
-            Neu
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-          {totalCount === 0 ? (
+    <WorkspaceFrame
+      compact
+      meta={countLabel}
+      primary={
+        <button type="button" onClick={handleStartCreate} className={aosWorkspaceActionAccentClassName}>
+          Neu
+        </button>
+      }
+    >
+      <WorkspaceSplit
+        listLabel="Vorgangsliste"
+        detailLabel={showFilePreview ? 'Dateivorschau' : 'Vorgangsdetails'}
+        showMobileDetail={showMobileDetail}
+        list={
+          totalCount === 0 ? (
             <EmptyState
               title="Noch keine Vorgänge"
               description="Erstellen Sie Ihren ersten Vorgang, um mit der Bearbeitung zu beginnen."
@@ -303,35 +297,28 @@ export function TasksWorkspace({
               memberNameMap={memberNameMap}
               onSelectTask={handleSelectTask}
             />
-          )}
-        </div>
-      </section>
-
-      <section
-        aria-label={showFilePreview ? 'Dateivorschau' : 'Vorgangsdetails'}
-        className={`min-h-[24rem] flex-1 bg-zinc-50/30 p-3 lg:min-h-0 lg:overflow-hidden ${
-          showMobileDetail ? 'flex flex-col' : 'hidden lg:flex lg:flex-col'
-        }`}
-      >
-        {captureNotice ? (
-          <div
-            role="status"
-            className="mb-3 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p>{captureNotice}</p>
-              <button
-                type="button"
-                onClick={handleDismissCaptureNotice}
-                className="shrink-0 text-xs font-medium text-amber-800 transition-colors duration-150 hover:text-amber-950"
-              >
-                Schließen
-              </button>
-            </div>
-          </div>
-        ) : null}
-        <div className="flex min-h-0 w-full flex-1 flex-col">{renderDetailPanel()}</div>
-      </section>
-    </div>
+          )
+        }
+        detail={
+          <>
+            {captureNotice ? (
+              <div role="status" className={`mb-3 ${aosAlertWarningClassName}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <p>{captureNotice}</p>
+                  <button
+                    type="button"
+                    onClick={handleDismissCaptureNotice}
+                    className="shrink-0 text-xs font-medium text-amber-800 transition-colors duration-150 hover:text-amber-950"
+                  >
+                    Schließen
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <div className="flex min-h-0 w-full flex-1 flex-col">{renderDetailPanel()}</div>
+          </>
+        }
+      />
+    </WorkspaceFrame>
   )
 }
