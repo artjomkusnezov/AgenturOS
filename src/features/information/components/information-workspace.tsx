@@ -13,26 +13,35 @@ import type {
   InformationItem,
   InformationLinkedFile,
 } from '@/features/information/types/information-item'
-import { aosWorkspaceActionAccentClassName } from '@/lib/design-system'
+import {
+  aosAlertWarningClassName,
+  aosWorkspaceActionAccentClassName,
+} from '@/lib/design-system'
 
 type InformationWorkspaceProps = {
   items: InformationItem[]
   selectedItemId: string | null
   attachments?: InformationLinkedFile[]
+  attachmentNotice?: string | null
 }
 
 export function InformationWorkspace({
   items,
   selectedItemId,
   attachments = [],
+  attachmentNotice = null,
 }: InformationWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
+  const [dismissedNoticeForItemId, setDismissedNoticeForItemId] = useState<string | null>(null)
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === selectedItemId) ?? null,
-    [items, selectedItemId]
+    [items, selectedItemId],
   )
+
+  const captureNotice =
+    attachmentNotice && dismissedNoticeForItemId !== selectedItemId ? attachmentNotice : null
 
   const refreshItems = useCallback(() => {
     router.refresh()
@@ -42,19 +51,26 @@ export function InformationWorkspace({
     (itemId: string) => {
       router.push(`/app/information?item=${itemId}`)
     },
-    [router]
+    [router],
   )
 
   const navigateToList = useCallback(() => {
     router.push('/app/information')
   }, [router])
 
+  const handleDismissCaptureNotice = useCallback(() => {
+    if (selectedItemId) {
+      setDismissedNoticeForItemId(selectedItemId)
+      router.replace(`/app/information?item=${selectedItemId}`)
+    }
+  }, [router, selectedItemId])
+
   const handleSelectItem = useCallback(
     (itemId: string) => {
       setIsCreating(false)
       navigateToItem(itemId)
     },
-    [navigateToItem]
+    [navigateToItem],
   )
 
   const handleStartCreate = useCallback(() => {
@@ -72,7 +88,7 @@ export function InformationWorkspace({
       navigateToItem(itemId)
       refreshItems()
     },
-    [navigateToItem, refreshItems]
+    [navigateToItem, refreshItems],
   )
 
   const handleBackToList = useCallback(() => {
@@ -87,8 +103,7 @@ export function InformationWorkspace({
 
   const showMobileDetail = isCreating || selectedItem !== null
   const totalCount = items.length
-  const countLabel =
-    totalCount === 1 ? '1 Information' : `${totalCount} Informationen`
+  const countLabel = totalCount === 1 ? '1 Information' : `${totalCount} Informationen`
 
   return (
     <WorkspaceFrame
@@ -119,22 +134,40 @@ export function InformationWorkspace({
           )
         }
         detail={
-          isCreating ? (
-            <CreateInformationForm
-              onCancel={handleCancelCreate}
-              onCreated={handleCreated}
-            />
-          ) : selectedItem ? (
-            <InformationDetailPanel
-              key={selectedItem.id}
-              item={selectedItem}
-              attachments={attachments}
-              onBack={handleBackToList}
-              onDeleted={handleDeleted}
-            />
-          ) : (
-            <InformationEmptyDetail />
-          )
+          <>
+            {captureNotice ? (
+              <div role="status" className={`mb-3 ${aosAlertWarningClassName}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <p>{captureNotice}</p>
+                  <button
+                    type="button"
+                    onClick={handleDismissCaptureNotice}
+                    className="shrink-0 text-xs font-medium text-amber-800 transition-colors duration-150 hover:text-amber-950"
+                  >
+                    Schließen
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <div className="flex min-h-0 w-full flex-1 flex-col">
+              {isCreating ? (
+                <CreateInformationForm
+                  onCancel={handleCancelCreate}
+                  onCreated={handleCreated}
+                />
+              ) : selectedItem ? (
+                <InformationDetailPanel
+                  key={selectedItem.id}
+                  item={selectedItem}
+                  attachments={attachments}
+                  onBack={handleBackToList}
+                  onDeleted={handleDeleted}
+                />
+              ) : (
+                <InformationEmptyDetail />
+              )}
+            </div>
+          </>
         }
       />
     </WorkspaceFrame>

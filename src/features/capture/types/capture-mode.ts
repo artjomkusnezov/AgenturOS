@@ -28,7 +28,7 @@ export const QUICK_ACTIONS: QuickActionDefinition[] = [
   {
     mode: 'information',
     label: 'Neue Information',
-    description: 'Wissen direkt festhalten',
+    description: 'Wissen mit optionalen Anhängen festhalten',
     icon: 'information',
   },
   {
@@ -40,7 +40,7 @@ export const QUICK_ACTIONS: QuickActionDefinition[] = [
   {
     mode: 'file',
     label: 'Datei hochladen',
-    description: 'Direkt in den Dateibereich',
+    description: 'Als Information mit Anhang erfassen',
     icon: 'files',
   },
 ]

@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -12,6 +13,7 @@ import {
 } from 'react'
 
 import { CaptureFileQueueItem } from '@/features/capture/components/capture-file-queue-item'
+import { MAX_CAPTURE_FILES } from '@/features/capture/lib/capture-file-limits'
 import type { CaptureQueueItem } from '@/features/capture/types/capture'
 import { formatUploadLimitHint } from '@/features/files/lib/format-file-label'
 import { getUploadFileValidationMessage } from '@/features/files/lib/validate-file'
@@ -26,6 +28,14 @@ type CaptureFilePickerProps = {
   validationMode?: 'capture' | 'full'
   enableDragDrop?: boolean
   enablePaste?: boolean
+  /** When set, caps the queue length. Defaults to no extra cap beyond validation. */
+  maxFiles?: number
+  /** When true, focuses the drop zone after mount (e.g. Datei quick action). */
+  focusDropZone?: boolean
+}
+
+function isSameLocalFile(a: File, b: File): boolean {
+  return a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
 }
 
 function createClientId(): string {
@@ -54,14 +64,27 @@ export function CaptureFilePicker({
   validationMode = 'capture',
   enableDragDrop = true,
   enablePaste = true,
+  maxFiles,
+  focusDropZone = false,
 }: CaptureFilePickerProps) {
   const inputId = useId()
   const dropZoneId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dropZoneRef = useRef<HTMLDivElement>(null)
   const dragCounterRef = useRef(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [limitError, setLimitError] = useState<string | null>(null)
 
   const disabled = isUploading || locked
+  const fileLimit = maxFiles ?? null
+
+  useEffect(() => {
+    if (!focusDropZone || disabled || locked) {
+      return
+    }
+
+    dropZoneRef.current?.focus()
+  }, [disabled, focusDropZone, locked])
 
   const validateFile = useCallback(
     (file: File) => {
@@ -80,16 +103,39 @@ export function CaptureFilePicker({
         return
       }
 
+      setLimitError(null)
       const nextItems = [...items]
+      let skippedDuplicate = 0
+      let skippedLimit = 0
 
       for (const file of incoming) {
+        if (nextItems.some((item) => isSameLocalFile(item.file, file))) {
+          skippedDuplicate += 1
+          continue
+        }
+
+        if (fileLimit !== null && nextItems.length >= fileLimit) {
+          skippedLimit += 1
+          continue
+        }
+
         const validationMessage = validateFile(file)
         nextItems.push(createQueueItem(file, validationMessage ?? undefined))
       }
 
+      if (skippedLimit > 0) {
+        setLimitError(
+          `Es sind höchstens ${fileLimit ?? MAX_CAPTURE_FILES} Dateien gleichzeitig erlaubt.`,
+        )
+      } else if (skippedDuplicate > 0 && nextItems.length === items.length) {
+        setLimitError('Diese Datei ist bereits ausgewählt.')
+      } else if (skippedDuplicate > 0) {
+        setLimitError('Doppelte Dateien wurden übersprungen.')
+      }
+
       onItemsChange(nextItems)
     },
-    [disabled, items, onItemsChange, validateFile],
+    [disabled, fileLimit, items, onItemsChange, validateFile],
   )
 
   const removeItem = useCallback(
@@ -253,6 +299,7 @@ export function CaptureFilePicker({
 
       {!locked ? (
         <div
+          ref={dropZoneRef}
           id={dropZoneId}
           role="button"
           tabIndex={disabled ? -1 : 0}
@@ -277,9 +324,14 @@ export function CaptureFilePicker({
             {enableDragDrop && isDragging ? 'Dateien loslassen' : 'Dateien auswählen'}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">{dropHint}</p>
-          <p className="mt-2 text-xs text-zinc-400">{formatUploadLimitHint()}</p>
+          <p className="mt-2 text-xs text-zinc-400">
+            {formatUploadLimitHint()}
+            {fileLimit !== null ? ` · Max. ${fileLimit} Dateien` : null}
+          </p>
         </div>
       ) : null}
+
+      {limitError ? <p className="text-sm text-red-600">{limitError}</p> : null}
 
       {items.length > 0 ? (
         <div className="space-y-2">

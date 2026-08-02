@@ -1,3 +1,4 @@
+import { parseInformationAttachmentNotice } from '@/features/capture/lib/information-capture-notice'
 import { InformationWorkspace } from '@/features/information/components/information-workspace'
 import { enrichInformationAttachmentsWithMediaUrls } from '@/features/information/lib/enrich-information-attachments'
 import { isValidInformationItemId } from '@/features/information/lib/validate-information-item'
@@ -9,11 +10,11 @@ import type { InformationLinkedFile } from '@/features/information/types/informa
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InformationPageProps = {
-  searchParams: Promise<{ item?: string; itemId?: string }>
+  searchParams: Promise<{ item?: string; itemId?: string; attachments?: string }>
 }
 
 export default async function InformationPage({ searchParams }: InformationPageProps) {
-  const { item, itemId } = await searchParams
+  const { item, itemId, attachments: attachmentsParam } = await searchParams
   const selectedParam = item ?? itemId ?? null
   const result = await listInformationItemsForCurrentUser()
 
@@ -42,11 +43,14 @@ export default async function InformationPage({ searchParams }: InformationPageP
     }
   }
 
+  const attachmentNotice = parseInformationAttachmentNotice(selectedItemId, attachmentsParam)
+
   return (
     <InformationWorkspace
       items={result.items}
       selectedItemId={selectedItemId}
       attachments={attachments}
+      attachmentNotice={attachmentNotice}
     />
   )
 }

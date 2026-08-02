@@ -17,7 +17,7 @@ function getStatusLabel(item: CaptureQueueItem): string {
     case 'uploading':
       return 'Wird hochgeladen …'
     case 'success':
-      return 'Im Eingang gespeichert'
+      return 'Gespeichert'
     case 'error':
       return item.error ?? 'Upload fehlgeschlagen'
     default:

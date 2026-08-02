@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { QuickCaptureButton } from '@/components/app/quick-capture-button'
-import { CaptureFileDialog } from '@/features/capture/components/capture-file-dialog'
 import { CaptureInformationDialog } from '@/features/capture/components/capture-information-dialog'
 import { CaptureTaskDialog } from '@/features/capture/components/capture-task-dialog'
 import { QuickActionMenu } from '@/features/capture/components/quick-action-menu'
@@ -25,6 +24,7 @@ export function UniversalCaptureRoot({
 }: UniversalCaptureRootProps) {
   const captureTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [phase, setPhase] = useState<CapturePhase>('closed')
+  const [focusAttachments, setFocusAttachments] = useState(false)
 
   const openMenu = useCallback((trigger: HTMLButtonElement) => {
     captureTriggerRef.current = trigger
@@ -36,10 +36,18 @@ export function UniversalCaptureRoot({
   }, [openMenu, registerOpener])
 
   const selectMode = useCallback((mode: CaptureMode) => {
+    if (mode === 'file') {
+      setFocusAttachments(true)
+      setPhase('information')
+      return
+    }
+
+    setFocusAttachments(false)
     setPhase(mode)
   }, [])
 
   const closeAll = useCallback(() => {
+    setFocusAttachments(false)
     setPhase('closed')
   }, [])
 
@@ -81,12 +89,7 @@ export function UniversalCaptureRoot({
         isOpen={phase === 'information'}
         onClose={closeAll}
         triggerRef={captureTriggerRef}
-      />
-
-      <CaptureFileDialog
-        isOpen={phase === 'file'}
-        onClose={closeAll}
-        triggerRef={captureTriggerRef}
+        focusAttachments={focusAttachments}
       />
     </>
   )

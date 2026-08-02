@@ -28,6 +28,11 @@ export type InformationMutationState = {
   itemId?: string
 }
 
+export type InformationRelationMutationState = {
+  error?: string
+  success?: boolean
+}
+
 export type InformationInput = {
   title: string
   content: string
