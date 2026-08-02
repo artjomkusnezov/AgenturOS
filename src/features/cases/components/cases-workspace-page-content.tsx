@@ -6,6 +6,7 @@ import {
 import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
 import {
+  getCaseByIdForCurrentUser,
   getTaskCaseBySourceTaskIdAsTask,
 } from '@/features/cases/repositories/cases-repository'
 import { CasesWorkspace } from '@/features/cases/components/cases-workspace'
@@ -267,12 +268,15 @@ export async function CasesWorkspacePageContent({
     )
   }
 
-  const [casesResult, membersResult] = await Promise.all([
+  const [casesResult, membersResult, selectedCaseResult] = await Promise.all([
     listCasesForWorkspaceViewFilters({
       filters: activeView.filters,
       sort: activeView.sort,
     }),
     listCurrentAgencyMembers(),
+    caseParam
+      ? getCaseByIdForCurrentUser(caseParam)
+      : Promise.resolve(null),
   ])
 
   if (!casesResult.success) {
@@ -287,11 +291,17 @@ export async function CasesWorkspacePageContent({
     ? buildMemberNameMap(membersResult.members)
     : {}
 
+  const selectedCase =
+    selectedCaseResult && selectedCaseResult.success
+      ? selectedCaseResult.case
+      : null
+
   return (
     <CasesWorkspace
       view={activeView}
       cases={casesResult.cases}
       selectedCaseId={caseParam}
+      selectedCase={selectedCase}
       memberNameMap={memberNameMap}
       pathMode={pathMode}
       emptyMessage={getWorkspaceViewEmptyMessage(activeView.key, activeView.name)}

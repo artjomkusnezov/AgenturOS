@@ -19,6 +19,8 @@ type CasesWorkspaceProps = {
   view: WorkspaceView
   cases: CaseRecord[]
   selectedCaseId: string | null
+  /** Direkt geladener Deep-Link-Case (nicht nur aus der gefilterten Liste). */
+  selectedCase: CaseRecord | null
   memberNameMap: Record<string, string>
   pathMode: CasesWorkspacePathMode
   emptyMessage: string
@@ -28,6 +30,7 @@ export function CasesWorkspace({
   view,
   cases,
   selectedCaseId,
+  selectedCase,
   memberNameMap,
   pathMode,
   emptyMessage,
@@ -35,10 +38,6 @@ export function CasesWorkspace({
   const router = useRouter()
   const listHref = buildCasesListHref(pathMode, view.key)
   const countLabel = cases.length === 1 ? '1 Vorgang' : `${cases.length} Vorgänge`
-  const selectedCase =
-    selectedCaseId !== null
-      ? cases.find((entry) => entry.id === selectedCaseId) ?? null
-      : null
 
   const handleSelectCase = useCallback(
     (caseId: string) => {
