@@ -24,6 +24,7 @@ import {
   type ActiveVoiceRecording,
   type SilenceMonitor,
 } from '@/features/capture/lib/voice-recording'
+import { startTranscriptionAfterVoiceCaptureAction } from '@/features/transcription/transcription-actions'
 import {
   aosAlertWarningClassName,
   aosBtnGhostLgClassName,
@@ -341,6 +342,9 @@ export function VoiceCaptureDialog({ onClose, triggerRef }: VoiceCaptureDialogPr
         setPhase('review')
         return
       }
+
+      // Audio und Eingang sind gespeichert — Transkription darf Speichern nicht rückgängig machen.
+      await startTranscriptionAfterVoiceCaptureAction(targetInboxId)
 
       const destination = `/app/inbox?item=${encodeURIComponent(targetInboxId)}`
       // Prevent unmount cleanup from deleting the saved inbox.

@@ -30,6 +30,16 @@ type DownloadFileResult =
   | { success: true; downloadUrl: string }
   | RepositoryError
 
+type DownloadFileBytesResult =
+  | {
+      success: true
+      bytes: ArrayBuffer
+      mimeType: string
+      filename: string
+      sizeBytes: number
+    }
+  | RepositoryError
+
 type FileMetadataInput = {
   filename: string
   storage_path: string
@@ -383,6 +393,42 @@ export async function createSignedDownloadUrlForCurrentUser(
   return {
     success: true,
     downloadUrl: data.signedUrl,
+  }
+}
+
+/**
+ * Lädt private Dateibytes serverseitig über den authentifizierten Storage-Client (RLS).
+ * Kein service_role, keine öffentliche URL.
+ */
+export async function downloadFileBytesForCurrentUser(
+  fileId: string,
+): Promise<DownloadFileBytesResult> {
+  const fileResult = await getAccessibleFileForCurrentUser(fileId)
+
+  if (!fileResult.success) {
+    return fileResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.storage
+    .from(FILES_STORAGE_BUCKET)
+    .download(fileResult.file.storage_path)
+
+  if (error || !data) {
+    return {
+      success: false,
+      error: 'Die Audiodatei konnte nicht aus dem Speicher geladen werden.',
+    }
+  }
+
+  const bytes = await data.arrayBuffer()
+
+  return {
+    success: true,
+    bytes,
+    mimeType: fileResult.file.mime_type,
+    filename: fileResult.file.filename,
+    sizeBytes: fileResult.file.size_bytes,
   }
 }
 

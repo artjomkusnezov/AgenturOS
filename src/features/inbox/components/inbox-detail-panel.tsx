@@ -18,6 +18,7 @@ import type {
   InboxItemMutationState,
   InboxLinkedFile,
 } from '@/features/inbox/types/inbox-item'
+import { InboxTranscriptionSection } from '@/features/transcription/components/inbox-transcription-section'
 import {
   aosBtnDangerClassName,
   aosDocBodyClassName,
@@ -189,6 +190,12 @@ export function InboxDetailPanel({
         </form>
 
         <InboxAttachmentSection attachments={attachments} />
+
+        <InboxTranscriptionSection
+          item={item}
+          attachments={attachments}
+          onStatusChange={onStatusChange}
+        />
 
         <section aria-label="Aufgabe" className={aosWorkspaceSectionClassName}>
           <WorkspaceSectionHeading

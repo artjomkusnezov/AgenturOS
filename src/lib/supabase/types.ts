@@ -519,27 +519,51 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          detected_language: string | null
           id: string
           processed_at: string | null
           source: string
+          transcript_text: string | null
+          transcription_completed_at: string | null
+          transcription_error: string | null
+          transcription_model: string | null
+          transcription_provider: string | null
+          transcription_started_at: string | null
+          transcription_status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           content: string
           created_at?: string
+          detected_language?: string | null
           id?: string
           processed_at?: string | null
           source?: string
+          transcript_text?: string | null
+          transcription_completed_at?: string | null
+          transcription_error?: string | null
+          transcription_model?: string | null
+          transcription_provider?: string | null
+          transcription_started_at?: string | null
+          transcription_status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           content?: string
           created_at?: string
+          detected_language?: string | null
           id?: string
           processed_at?: string | null
           source?: string
+          transcript_text?: string | null
+          transcription_completed_at?: string | null
+          transcription_error?: string | null
+          transcription_model?: string | null
+          transcription_provider?: string | null
+          transcription_started_at?: string | null
+          transcription_status?: string
           updated_at?: string
           user_id?: string
         }
