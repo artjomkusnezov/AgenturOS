@@ -207,7 +207,7 @@ export function InboxDetailPanel({
               </Link>
             </div>
           ) : (
-            <InboxPromotionMenu />
+            <InboxPromotionMenu itemId={item.id} />
           )}
         </section>
       </div>
