@@ -65,6 +65,57 @@ export function hasTaskFieldErrors(errors: TaskFieldErrors): boolean {
   return Object.keys(errors).length > 0
 }
 
+export type TaskCreateInput = {
+  title: string
+  description: string
+  assigneeUserId?: string | null
+  priority?: string
+  dueDate?: string
+}
+
+export function parseTaskCreateFormData(formData: FormData): TaskCreateInput {
+  const hasAssigneeField = formData.has('assigneeUserId')
+  const assigneeRaw = String(formData.get('assigneeUserId') ?? '').trim()
+  let assigneeUserId: string | null | undefined
+
+  if (hasAssigneeField) {
+    assigneeUserId =
+      assigneeRaw === '' || assigneeRaw === '__unassigned__' ? null : assigneeRaw
+  }
+
+  return {
+    title: String(formData.get('title') ?? ''),
+    description: String(formData.get('description') ?? ''),
+    assigneeUserId,
+    priority: String(formData.get('priority') ?? ''),
+    dueDate: String(formData.get('dueDate') ?? ''),
+  }
+}
+
+export function validateTaskCreateInput(input: TaskCreateInput): TaskFieldErrors {
+  const errors = validateTaskInput(input)
+
+  if (input.priority && input.priority.trim() && !isTaskPriority(input.priority)) {
+    errors.priority = 'Bitte wählen Sie eine gültige Priorität.'
+  }
+
+  const dueDate = normalizeTaskDueDate(input.dueDate ?? '')
+
+  if (dueDate !== null && !isValidCalendarDate(dueDate)) {
+    errors.dueDate = 'Bitte geben Sie ein gültiges Fälligkeitsdatum ein.'
+  }
+
+  if (
+    input.assigneeUserId !== undefined &&
+    input.assigneeUserId !== null &&
+    !isValidTaskId(input.assigneeUserId)
+  ) {
+    errors.assigneeUserId = 'Der Verantwortliche ist ungültig.'
+  }
+
+  return errors
+}
+
 export function parseTaskFormData(formData: FormData): TaskInput {
   return {
     title: String(formData.get('title') ?? ''),

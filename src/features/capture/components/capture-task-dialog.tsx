@@ -10,32 +10,51 @@ import { CaptureFilePicker } from '@/features/capture/components/capture-file-pi
 import { uploadFileAction } from '@/features/files/actions/upload-file'
 import { buildTaskUrlWithAttachmentNotice } from '@/features/capture/lib/task-capture-notice'
 import type { CaptureQueueItem, CaptureUploadProgress } from '@/features/capture/types/capture'
+import type { AgencyMember } from '@/features/agency/types/agency-member'
+import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
 import {
   aosBtnGhostLgClassName,
   aosBtnPrimaryLgClassName,
   aosFieldErrorSmClassName,
   aosInputLgClassName,
+  aosSelectClassName,
   aosTextareaClassName,
   aosTextLabelClassName,
 } from '@/lib/design-system'
+
+const UNASSIGNED_ASSIGNEE_VALUE = '__unassigned__'
 
 type CaptureTaskDialogProps = {
   isOpen: boolean
   onClose: () => void
   triggerRef: React.RefObject<HTMLButtonElement | null>
+  members: AgencyMember[]
+  currentUserId: string
 }
 
 function getPendingItems(items: CaptureQueueItem[]): CaptureQueueItem[] {
   return items.filter((item) => item.status === 'queued' || item.status === 'error')
 }
 
-export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDialogProps) {
+export function CaptureTaskDialog({
+  isOpen,
+  onClose,
+  triggerRef,
+  members,
+  currentUserId,
+}: CaptureTaskDialogProps) {
   const router = useRouter()
   const processingRef = useRef(false)
+  const defaultAssigneeUserId = currentUserId || members[0]?.userId || UNASSIGNED_ASSIGNEE_VALUE
+
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [assigneeUserId, setAssigneeUserId] = useState(defaultAssigneeUserId)
+  const [priority, setPriority] = useState('normal')
+  const [dueDate, setDueDate] = useState('')
   const [queueItems, setQueueItems] = useState<CaptureQueueItem[]>([])
   const [titleError, setTitleError] = useState<string | null>(null)
+  const [dueDateError, setDueDateError] = useState<string | null>(null)
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState<CaptureUploadProgress | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -43,11 +62,15 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
   const resetForm = useCallback(() => {
     setTitle('')
     setDescription('')
+    setAssigneeUserId(defaultAssigneeUserId)
+    setPriority('normal')
+    setDueDate('')
     setQueueItems([])
     setTitleError(null)
+    setDueDateError(null)
     setGlobalError(null)
     setUploadProgress(null)
-  }, [])
+  }, [defaultAssigneeUserId])
 
   const handleClose = useCallback(() => {
     if (isProcessing) {
@@ -74,6 +97,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
       }
 
       setTitleError(null)
+      setDueDateError(null)
       setGlobalError(null)
       processingRef.current = true
       setIsProcessing(true)
@@ -82,11 +106,19 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
         const formData = new FormData()
         formData.set('title', trimmedTitle)
         formData.set('description', description)
+        formData.set('assigneeUserId', assigneeUserId)
+        formData.set('priority', priority)
+        formData.set('dueDate', dueDate)
 
         const createResult = await createTaskAction({}, formData)
 
         if (createResult.fieldErrors?.title) {
           setTitleError(createResult.fieldErrors.title)
+          return
+        }
+
+        if (createResult.fieldErrors?.dueDate) {
+          setDueDateError(createResult.fieldErrors.dueDate)
           return
         }
 
@@ -138,7 +170,18 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
         setUploadProgress(null)
       }
     },
-    [description, isProcessing, onClose, queueItems, resetForm, router, title],
+    [
+      assigneeUserId,
+      description,
+      dueDate,
+      isProcessing,
+      onClose,
+      priority,
+      queueItems,
+      resetForm,
+      router,
+      title,
+    ],
   )
 
   const footer = (
@@ -166,7 +209,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
     <CaptureDialogShell
       isOpen={isOpen}
       title="Neue Aufgabe"
-      description="Titel und optional Beschreibung erfassen. Dateien können direkt angehängt werden."
+      description="Aufgabe vollständig erfassen – Verantwortlicher, Priorität und Fälligkeit optional."
       onClose={handleClose}
       closeDisabled={isProcessing}
       triggerRef={triggerRef}
@@ -176,7 +219,7 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="capture-task-title" className={aosTextLabelClassName}>
-              Titel
+              Titel <span className="text-red-600">*</span>
             </label>
             <input
               id="capture-task-title"
@@ -207,6 +250,67 @@ export function CaptureTaskDialog({ isOpen, onClose, triggerRef }: CaptureTaskDi
               placeholder="Weitere Details …"
               className={`${aosTextareaClassName} min-h-[5rem]`}
             />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label htmlFor="capture-task-assignee" className={aosTextLabelClassName}>
+                Verantwortlicher
+              </label>
+              <select
+                id="capture-task-assignee"
+                name="assigneeUserId"
+                value={assigneeUserId}
+                onChange={(event) => setAssigneeUserId(event.target.value)}
+                disabled={isProcessing}
+                className={aosSelectClassName}
+              >
+                <option value={UNASSIGNED_ASSIGNEE_VALUE}>Nicht zugeordnet</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.displayName}
+                    {member.userId === currentUserId ? ' (Ich)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="capture-task-priority" className={aosTextLabelClassName}>
+                Priorität
+              </label>
+              <select
+                id="capture-task-priority"
+                name="priority"
+                value={priority}
+                onChange={(event) => setPriority(event.target.value)}
+                disabled={isProcessing}
+                className={aosSelectClassName}
+              >
+                {TASK_PRIORITIES.map((value) => (
+                  <option key={value} value={value}>
+                    {TASK_PRIORITY_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="capture-task-due" className={aosTextLabelClassName}>
+                Fälligkeit
+                <span className="font-normal text-zinc-500"> (optional)</span>
+              </label>
+              <input
+                id="capture-task-due"
+                name="dueDate"
+                type="date"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                disabled={isProcessing}
+                className={aosInputLgClassName}
+              />
+              {dueDateError ? <p className={aosFieldErrorSmClassName}>{dueDateError}</p> : null}
+            </div>
           </div>
 
           <div>

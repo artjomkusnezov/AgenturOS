@@ -23,6 +23,9 @@ type TaskWriteInput = {
   title: string
   description: string | null
   caseId?: string | null
+  assigneeUserId?: string | null
+  priority?: TaskPriority
+  dueDate?: string | null
 }
 
 type TaskDetailWriteInput = {
@@ -136,6 +139,10 @@ export async function createTaskForCurrentUser(
     p_title: input.title,
     p_description: input.description ?? undefined,
     p_case_id: input.caseId ?? undefined,
+    p_assignee_user_id:
+      input.assigneeUserId === undefined ? undefined : input.assigneeUserId,
+    p_priority: input.priority ?? undefined,
+    p_due_date: input.dueDate ?? undefined,
   })
 
   if (error || !data) {

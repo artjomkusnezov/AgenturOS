@@ -1063,7 +1063,14 @@ export type Database = {
         }
       }
       create_task: {
-        Args: { p_case_id?: string; p_description?: string; p_title: string }
+        Args: {
+          p_assignee_user_id?: string | null
+          p_case_id?: string
+          p_description?: string
+          p_due_date?: string
+          p_priority?: string
+          p_title: string
+        }
         Returns: {
           agency_id: string
           assignee_user_id: string | null

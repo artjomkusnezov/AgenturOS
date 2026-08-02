@@ -15,6 +15,7 @@ export type TaskFieldErrors = {
   description?: string
   priority?: string
   dueDate?: string
+  assigneeUserId?: string
 }
 
 export type TaskMutationState = {

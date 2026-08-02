@@ -113,6 +113,8 @@ export function UniversalCaptureRoot({
         isOpen={phase === 'task'}
         onClose={closeAll}
         triggerRef={captureTriggerRef}
+        members={members}
+        currentUserId={currentUserId}
       />
 
       <CaptureInformationDialog

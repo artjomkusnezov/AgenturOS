@@ -46,6 +46,9 @@ type TaskCaseWriteInput = {
   title: string
   description: string | null
   caseId?: string | null
+  assigneeUserId?: string | null
+  priority?: TaskPriority
+  dueDate?: string | null
 }
 
 type TaskCaseDetailWriteInput = {
