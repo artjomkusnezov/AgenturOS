@@ -3,13 +3,21 @@ import {
   DEFAULT_CASES_VIEW_KEY,
   type CasesWorkspacePathMode,
 } from '@/features/cases/lib/cases-workspace-urls'
+import {
+  buildBusinessAreaLookup,
+  buildCaseTypeLookup,
+} from '@/features/cases/lib/case-display'
 import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
+import { getCaseInboxOriginForCurrentAgency } from '@/features/cases/repositories/case-inbox-origin-repository'
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
 import {
   getCaseByIdForCurrentUser,
   getTaskCaseBySourceTaskIdAsTask,
+  listActiveBusinessAreasForCurrentAgency,
+  listActiveCaseTypesForCurrentUser,
 } from '@/features/cases/repositories/cases-repository'
 import { CasesWorkspace } from '@/features/cases/components/cases-workspace'
+import type { CaseInboxOriginView } from '@/features/cases/components/case-detail-panel'
 import { parseTaskAttachmentNotice } from '@/features/capture/lib/task-capture-notice'
 import { listFilesForCurrentUser } from '@/features/files/repositories/files-repository'
 import { isValidFileId } from '@/features/files/lib/validate-file'
@@ -268,14 +276,26 @@ export async function CasesWorkspacePageContent({
     )
   }
 
-  const [casesResult, membersResult, selectedCaseResult] = await Promise.all([
+  const [
+    casesResult,
+    membersResult,
+    caseTypesResult,
+    businessAreasResult,
+    selectedCaseResult,
+    originResult,
+  ] = await Promise.all([
     listCasesForWorkspaceViewFilters({
       filters: activeView.filters,
       sort: activeView.sort,
     }),
     listCurrentAgencyMembers(),
+    listActiveCaseTypesForCurrentUser(),
+    listActiveBusinessAreasForCurrentAgency(),
     caseParam
       ? getCaseByIdForCurrentUser(caseParam)
+      : Promise.resolve(null),
+    caseParam
+      ? getCaseInboxOriginForCurrentAgency(caseParam)
       : Promise.resolve(null),
   ])
 
@@ -291,10 +311,27 @@ export async function CasesWorkspacePageContent({
     ? buildMemberNameMap(membersResult.members)
     : {}
 
+  const lookups = {
+    caseTypesById: caseTypesResult.success
+      ? buildCaseTypeLookup(caseTypesResult.caseTypes)
+      : {},
+    businessAreasById: businessAreasResult.success
+      ? buildBusinessAreaLookup(businessAreasResult.businessAreas)
+      : {},
+  }
+
   const selectedCase =
     selectedCaseResult && selectedCaseResult.success
       ? selectedCaseResult.case
       : null
+
+  let selectedCaseOrigin: CaseInboxOriginView | null = null
+  if (originResult && originResult.success && originResult.origin) {
+    selectedCaseOrigin = {
+      inboxItem: originResult.origin.inboxItem,
+      attachments: originResult.origin.attachments,
+    }
+  }
 
   return (
     <CasesWorkspace
@@ -302,7 +339,9 @@ export async function CasesWorkspacePageContent({
       cases={casesResult.cases}
       selectedCaseId={caseParam}
       selectedCase={selectedCase}
+      selectedCaseOrigin={selectedCaseOrigin}
       memberNameMap={memberNameMap}
+      lookups={lookups}
       pathMode={pathMode}
       emptyMessage={getWorkspaceViewEmptyMessage(activeView.key, activeView.name)}
     />

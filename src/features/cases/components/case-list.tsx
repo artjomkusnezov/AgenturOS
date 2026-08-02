@@ -1,5 +1,6 @@
 'use client'
 
+import type { CaseDisplayLookups } from '@/features/cases/lib/case-display'
 import type { CaseRecord } from '@/features/cases/types/case'
 import { CaseListItem } from '@/features/cases/components/case-list-item'
 
@@ -7,6 +8,7 @@ type CaseListProps = {
   cases: CaseRecord[]
   selectedCaseId: string | null
   memberNameMap: Record<string, string>
+  lookups: CaseDisplayLookups
   onSelectCase: (caseId: string) => void
 }
 
@@ -14,6 +16,7 @@ export function CaseList({
   cases,
   selectedCaseId,
   memberNameMap,
+  lookups,
   onSelectCase,
 }: CaseListProps) {
   return (
@@ -24,6 +27,7 @@ export function CaseList({
             caseRow={caseRow}
             isSelected={caseRow.id === selectedCaseId}
             memberNameMap={memberNameMap}
+            lookups={lookups}
             onSelect={onSelectCase}
           />
         </li>
