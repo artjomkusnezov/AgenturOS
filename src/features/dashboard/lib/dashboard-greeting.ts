@@ -43,6 +43,14 @@ function sanitizeCount(value: number): number {
   return Math.floor(value)
 }
 
+function formatSentence(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    return ''
+  }
+  return trimmed.endsWith('.') ? trimmed : `${trimmed}.`
+}
+
 export function getWorkSituationHint({
   unprocessedInboxCount,
   openTaskCount,
@@ -51,29 +59,31 @@ export function getWorkSituationHint({
   const inboxCount = sanitizeCount(unprocessedInboxCount)
   const tasksCount = sanitizeCount(openTaskCount)
   const infoCount = sanitizeCount(informationCount)
-  const parts: string[] = []
+  const sentences: string[] = []
 
   if (inboxCount === 1) {
-    parts.push('1 Eingang wartet auf Bearbeitung')
+    sentences.push('Heute wartet 1 neuer Eingang auf dich')
   } else if (inboxCount > 1) {
-    parts.push(`${inboxCount} Eingänge warten auf Bearbeitung`)
+    sentences.push(`Heute warten ${inboxCount} neue Eingänge auf dich`)
   }
 
   if (tasksCount === 1) {
-    parts.push('1 offene Aufgabe')
+    sentences.push('Eine Aufgabe ist offen')
   } else if (tasksCount > 1) {
-    parts.push(`${tasksCount} offene Aufgaben`)
+    sentences.push(`${tasksCount} Aufgaben sind offen`)
   }
 
-  if (parts.length > 0) {
-    return `${parts.join(' · ')}.`
+  if (infoCount === 1) {
+    sentences.push('Eine Information wurde hinterlegt')
+  } else if (infoCount > 1) {
+    sentences.push(`${infoCount} Informationen sind hinterlegt`)
   }
 
-  if (infoCount > 0) {
-    return 'Keine offenen Eingänge oder Aufgaben – Sie können in Ihren Informationen weiterarbeiten.'
+  if (sentences.length === 0) {
+    return 'Alles ruhig für den Moment. Starte mit einem Eingang, einer Aufgabe oder einer Information.'
   }
 
-  return 'Legen Sie mit einem Eingang, einer Aufgabe oder einer Information los.'
+  return sentences.map(formatSentence).join(' ')
 }
 
 export function getInboxCardDescription(unprocessedCount: number, totalCount: number): string {

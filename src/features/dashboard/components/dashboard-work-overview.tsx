@@ -1,14 +1,17 @@
-import { getGermanDateLabel } from '@/lib/user/get-display-name'
+import { DashboardActivityPreview } from '@/features/dashboard/components/dashboard-activity-preview'
+import { DashboardGreeting } from '@/features/dashboard/components/dashboard-greeting'
+import { DashboardInboxSection } from '@/features/dashboard/components/dashboard-inbox-section'
+import { DashboardInformationSection } from '@/features/dashboard/components/dashboard-information-section'
+import { DashboardOverviewStrip } from '@/features/dashboard/components/dashboard-overview-strip'
+import { DashboardPriorityTasks } from '@/features/dashboard/components/dashboard-priority-tasks'
+import { DashboardWeeklyGoal } from '@/features/dashboard/components/dashboard-weekly-goal'
 import {
-  getFirstNameFromUser,
-  getTimeOfDayGreeting,
-  getWorkSituationHint,
-} from '@/features/dashboard/lib/dashboard-greeting'
-import { DashboardOpenTasks } from '@/features/dashboard/components/dashboard-open-tasks'
-import { DashboardQuickActions } from '@/features/dashboard/components/dashboard-quick-actions'
-import { DashboardRecentInformation } from '@/features/dashboard/components/dashboard-recent-information'
-import { DashboardSummaryCards } from '@/features/dashboard/components/dashboard-summary-cards'
+  countOverdueOpenTasks,
+  selectPriorityTasksForDashboard,
+} from '@/features/dashboard/lib/dashboard-priority-tasks'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
+import type { TaskActivityItem } from '@/features/activity/types/task-activity'
+import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import type { InformationItem } from '@/features/information/types/information-item'
 import type { Task } from '@/features/tasks/types/task'
 
@@ -16,63 +19,72 @@ type DashboardWorkOverviewProps = {
   user: {
     user_metadata?: Record<string, unknown>
   }
-  unprocessedInboxCount: number
-  totalInboxCount: number
+  unprocessedInboxItems: InboxItem[]
   openTasks: Task[]
   informationItems: InformationItem[]
+  activityItems: TaskActivityItem[]
+  memberNameMap: Record<string, string>
 }
 
 export function DashboardWorkOverview({
   user,
-  unprocessedInboxCount,
-  totalInboxCount,
+  unprocessedInboxItems,
   openTasks,
   informationItems,
+  activityItems,
+  memberNameMap,
 }: DashboardWorkOverviewProps) {
-  const safeUnprocessedInboxCount = sanitizeDashboardCount(unprocessedInboxCount)
-  const safeTotalInboxCount = sanitizeDashboardCount(totalInboxCount)
+  const safeUnprocessedInboxItems = Array.isArray(unprocessedInboxItems)
+    ? unprocessedInboxItems
+    : []
   const safeOpenTasks = Array.isArray(openTasks) ? openTasks : []
   const safeInformationItems = Array.isArray(informationItems) ? informationItems : []
+  const safeActivityItems = Array.isArray(activityItems) ? activityItems : []
 
-  const greeting = getTimeOfDayGreeting()
-  const firstName = getFirstNameFromUser(user)
-  const situationHint = getWorkSituationHint({
-    unprocessedInboxCount: safeUnprocessedInboxCount,
-    openTaskCount: safeOpenTasks.length,
-    informationCount: safeInformationItems.length,
-  })
+  const unprocessedInboxCount = sanitizeDashboardCount(safeUnprocessedInboxItems.length)
+  const openTaskCount = safeOpenTasks.length
+  const informationCount = safeInformationItems.length
+  const overdueTaskCount = countOverdueOpenTasks(safeOpenTasks)
+  const priorityTasks = selectPriorityTasksForDashboard(safeOpenTasks)
 
   return (
-    <div className="space-y-8 lg:space-y-10">
-      <header className="space-y-2 pb-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-          {getGermanDateLabel()}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
-          {greeting}
-          {firstName ? `, ${firstName}` : ''}
-        </h1>
-        <p
-          className="max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-[0.9375rem]"
-          aria-live="polite"
-        >
-          {situationHint}
-        </p>
-      </header>
-
-      <DashboardSummaryCards
-        unprocessedInboxCount={safeUnprocessedInboxCount}
-        totalInboxCount={safeTotalInboxCount}
-        openTaskCount={safeOpenTasks.length}
-        informationCount={safeInformationItems.length}
+    <div className="space-y-5 lg:space-y-5">
+      <DashboardGreeting
+        user={user}
+        unprocessedInboxCount={unprocessedInboxCount}
+        openTaskCount={openTaskCount}
+        informationCount={informationCount}
       />
 
-      <div className="grid gap-6 md:grid-cols-2 md:items-stretch xl:gap-8">
-        <DashboardOpenTasks tasks={safeOpenTasks} />
-        <DashboardRecentInformation items={safeInformationItems} />
+      <DashboardOverviewStrip
+        unprocessedInboxCount={unprocessedInboxCount}
+        openTaskCount={openTaskCount}
+        overdueTaskCount={overdueTaskCount}
+        informationCount={informationCount}
+      />
+
+      <div className="grid items-start gap-4 xl:grid-cols-12 xl:gap-4">
+        <div className="xl:col-span-6">
+          <DashboardInboxSection items={safeUnprocessedInboxItems} />
+        </div>
+        <div className="xl:col-span-3">
+          <DashboardPriorityTasks
+            tasks={priorityTasks}
+            memberNameMap={memberNameMap}
+          />
+        </div>
+        <div className="xl:col-span-3">
+          <DashboardInformationSection
+            items={safeInformationItems}
+            memberNameMap={memberNameMap}
+          />
+        </div>
       </div>
 
-      <DashboardQuickActions />
+      <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-4">
+        <DashboardWeeklyGoal />
+        <DashboardActivityPreview items={safeActivityItems} />
+      </div>
     </div>
   )
 }

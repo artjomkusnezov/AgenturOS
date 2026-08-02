@@ -349,4 +349,64 @@
   }
 
 
+  /* Soft accent icon tiles (Dashboard 27C) */
+  .aos-icon-tile {
+    @apply inline-flex shrink-0 items-center justify-center rounded-xl;
+  }
+
+  .aos-icon-tile-sm {
+    @apply h-8 w-8 rounded-lg;
+  }
+
+  .aos-icon-tile-md {
+    @apply h-10 w-10 rounded-xl;
+  }
+
+  .aos-icon-tile-kpi {
+    @apply h-10 w-10 rounded-xl;
+  }
+
+  .aos-icon-tile-blue {
+    background-color: var(--aos-color-soft-blue-bg);
+    color: var(--aos-color-soft-blue);
+  }
+
+  .aos-icon-tile-green {
+    background-color: var(--aos-color-soft-green-bg);
+    color: var(--aos-color-soft-green);
+  }
+
+  .aos-icon-tile-violet {
+    background-color: var(--aos-color-soft-violet-bg);
+    color: var(--aos-color-soft-violet);
+  }
+
+  .aos-icon-tile-orange {
+    background-color: var(--aos-color-soft-orange-bg);
+    color: var(--aos-color-soft-orange);
+  }
+
+  .aos-icon-tile-neutral {
+    @apply bg-zinc-100 text-zinc-500;
+  }
+
+  .aos-icon-accent-blue {
+    color: var(--aos-color-soft-blue);
+  }
+
+  .aos-icon-accent-green {
+    color: var(--aos-color-soft-green);
+  }
+
+  .aos-icon-accent-violet {
+    color: var(--aos-color-soft-violet);
+  }
+
+  .aos-icon-accent-orange {
+    color: var(--aos-color-soft-orange);
+  }
+
+  .aos-icon-accent-danger {
+    color: var(--aos-color-error);
+  }
 }
