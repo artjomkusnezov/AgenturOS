@@ -1,7 +1,5 @@
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
 import {
-  buildCasesItemHref,
-  buildCasesListHref,
   DEFAULT_CASES_VIEW_KEY,
   type CasesWorkspacePathMode,
 } from '@/features/cases/lib/cases-workspace-urls'
@@ -102,10 +100,6 @@ export async function CasesWorkspacePageContent({
     activeView.key,
     activeView.filters.case_type_keys,
   )
-
-  const listHref = buildCasesListHref(pathMode, activeView.key)
-  const buildTaskHref = (taskId: string) =>
-    buildCasesItemHref(pathMode, activeView.key, { taskId })
 
   if (useTaskWorkspace) {
     const [
@@ -264,8 +258,8 @@ export async function CasesWorkspacePageContent({
         detailState={detailState}
         filePreviewState={filePreviewState}
         taskAttachmentNotice={taskAttachmentNotice}
-        listHref={listHref}
-        buildTaskHref={buildTaskHref}
+        pathMode={pathMode}
+        viewKey={activeView.key}
         emptyTitle={getWorkspaceViewEmptyMessage(activeView.key, activeView.name)}
         emptyDescription="Neue Vorgänge erscheinen hier, sobald sie erfasst wurden."
         allowCreate={activeView.key === 'tasks'}

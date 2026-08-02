@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation'
 import { EmptyState } from '@/components/app/empty-state'
 import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
 import type { AgencyMember } from '@/features/agency/types/agency-member'
+import {
+  buildCasesItemHref,
+  buildCasesListHref,
+  type CasesWorkspacePathMode,
+} from '@/features/cases/lib/cases-workspace-urls'
 import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
 import { TaskDetailErrorPanel } from '@/features/tasks/components/task-detail-error-panel'
 import { TaskDetailPanel } from '@/features/tasks/components/task-detail-panel'
@@ -31,10 +36,10 @@ type TasksWorkspaceProps = {
   detailState: TaskDetailLoadState
   filePreviewState: TaskFilePreviewLoadState
   taskAttachmentNotice?: string | null
-  /** Basis-URL der Liste (Default: /app/tasks). */
-  listHref?: string
-  /** Detail-URL für eine Task-ID. */
-  buildTaskHref?: (taskId: string) => string
+  /** URL-Modus: `/app/tasks` Alias oder `/app/cases?view=…`. */
+  pathMode?: CasesWorkspacePathMode
+  /** Aktive Workspace-View (für `/app/cases?view=`). */
+  viewKey?: string
   emptyTitle?: string
   emptyDescription?: string
   allowCreate?: boolean
@@ -50,8 +55,8 @@ export function TasksWorkspace({
   detailState,
   filePreviewState,
   taskAttachmentNotice = null,
-  listHref = '/app/tasks',
-  buildTaskHref = (taskId: string) => `/app/tasks?task=${taskId}`,
+  pathMode = 'tasks',
+  viewKey = 'tasks',
   emptyTitle = 'Noch keine Vorgänge',
   emptyDescription = 'Erstellen Sie Ihren ersten Vorgang, um mit der Bearbeitung zu beginnen.',
   allowCreate = true,
@@ -59,6 +64,8 @@ export function TasksWorkspace({
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
   const [dismissedNoticeForTaskId, setDismissedNoticeForTaskId] = useState<string | null>(null)
+
+  const listHref = buildCasesListHref(pathMode, viewKey)
 
   const captureNotice =
     taskAttachmentNotice && dismissedNoticeForTaskId !== selectedTaskId
@@ -72,9 +79,9 @@ export function TasksWorkspace({
   const handleDismissCaptureNotice = useCallback(() => {
     if (selectedTaskId) {
       setDismissedNoticeForTaskId(selectedTaskId)
-      router.replace(buildTaskHref(selectedTaskId))
+      router.replace(buildCasesItemHref(pathMode, viewKey, { taskId: selectedTaskId }))
     }
-  }, [buildTaskHref, router, selectedTaskId])
+  }, [pathMode, router, selectedTaskId, viewKey])
 
   const refreshTasks = useCallback(() => {
     router.refresh()
@@ -82,9 +89,9 @@ export function TasksWorkspace({
 
   const navigateToTask = useCallback(
     (taskId: string) => {
-      router.push(buildTaskHref(taskId))
+      router.push(buildCasesItemHref(pathMode, viewKey, { taskId }))
     },
-    [buildTaskHref, router],
+    [pathMode, router, viewKey],
   )
 
   const navigateToList = useCallback(() => {
