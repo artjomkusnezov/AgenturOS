@@ -132,3 +132,48 @@ export function classifyMediaKind(
 
   return 'other'
 }
+
+const INLINE_IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+])
+
+const INLINE_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif'])
+
+function isInlineImage(mimeType: string | null | undefined, filename?: string | null): boolean {
+  const mime = (mimeType ?? '').trim().toLowerCase()
+
+  if (mime === 'image/jpg' || INLINE_IMAGE_MIME_TYPES.has(mime)) {
+    return true
+  }
+
+  if (!mime || mime === 'application/octet-stream') {
+    const extension = extensionFromFilename(filename)
+    return extension !== null && INLINE_IMAGE_EXTENSIONS.has(extension)
+  }
+
+  return false
+}
+
+/**
+ * Ob eine Datei im Informationsdokument inline dargestellt werden soll.
+ * Nutzt classifyMediaKind; Bilder nur JPEG/PNG/WebP/GIF.
+ */
+export function isInlineDocumentMedia(
+  mimeType: string | null | undefined,
+  filename?: string | null,
+): boolean {
+  const kind = classifyMediaKind(mimeType, filename)
+
+  if (kind === 'pdf' || kind === 'audio' || kind === 'video') {
+    return true
+  }
+
+  if (kind === 'image') {
+    return isInlineImage(mimeType, filename)
+  }
+
+  return false
+}

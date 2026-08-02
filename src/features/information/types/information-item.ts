@@ -9,6 +9,11 @@ export type InformationLinkedFile = {
   displayOrder: number
   /** null, wenn die Dateimetadaten nicht geladen werden konnten. */
   file: FileRecord | null
+  /**
+   * Kurzlebige Signed URL für Inline-Darstellung.
+   * Nur gesetzt, wenn die Datei inline gerendert werden soll und die URL erzeugt werden konnte.
+   */
+  mediaUrl?: string | null
 }
 
 export type InformationFieldErrors = {

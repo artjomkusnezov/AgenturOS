@@ -1,4 +1,5 @@
 import { InformationWorkspace } from '@/features/information/components/information-workspace'
+import { enrichInformationAttachmentsWithMediaUrls } from '@/features/information/lib/enrich-information-attachments'
 import { isValidInformationItemId } from '@/features/information/lib/validate-information-item'
 import {
   listFilesForInformationItem,
@@ -37,7 +38,7 @@ export default async function InformationPage({ searchParams }: InformationPageP
     const attachmentsResult = await listFilesForInformationItem(selectedItemId)
 
     if (attachmentsResult.success) {
-      attachments = attachmentsResult.files
+      attachments = await enrichInformationAttachmentsWithMediaUrls(attachmentsResult.files)
     }
   }
 
