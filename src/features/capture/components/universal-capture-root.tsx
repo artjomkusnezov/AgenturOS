@@ -8,6 +8,7 @@ import { CaptureInformationDialog } from '@/features/capture/components/capture-
 import { CaptureTaskDialog } from '@/features/capture/components/capture-task-dialog'
 import { QuickActionMenu } from '@/features/capture/components/quick-action-menu'
 import { UniversalCaptureDialog } from '@/features/capture/components/universal-capture-dialog'
+import { VoiceCaptureDialog } from '@/features/capture/components/voice-capture-dialog'
 import type { AgencyMember } from '@/features/agency/types/agency-member'
 import {
   isDirectCaseCaptureMode,
@@ -115,6 +116,10 @@ export function UniversalCaptureRoot({
         onClose={closeAll}
         triggerRef={captureTriggerRef}
       />
+
+      {phase === 'voice' ? (
+        <VoiceCaptureDialog onClose={closeAll} triggerRef={captureTriggerRef} />
+      ) : null}
 
       <CaptureTaskDialog
         isOpen={phase === 'task'}

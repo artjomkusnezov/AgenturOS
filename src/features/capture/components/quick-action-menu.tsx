@@ -7,6 +7,7 @@ import {
   DashboardIconCalendar,
   DashboardIconFileText,
   DashboardIconFlag,
+  DashboardIconMic,
 } from '@/features/dashboard/components/dashboard-icons'
 import {
   QUICK_ACTION_GROUPS,
@@ -45,6 +46,10 @@ function QuickActionIconGlyph({
 
   if (icon === 'follow_up') {
     return <DashboardIconCalendar className={className} />
+  }
+
+  if (icon === 'voice') {
+    return <DashboardIconMic className={className} />
   }
 
   const navIcon =

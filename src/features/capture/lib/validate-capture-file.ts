@@ -13,18 +13,45 @@ const ALLOWED_CAPTURE_EXTENSIONS = new Set([
   'webp',
   'heic',
   'heif',
+  // Voice recording (33B.1) — concrete container types only
+  'webm',
+  'm4a',
+  'mp4',
+  'mp3',
+  'ogg',
+  'wav',
+  'aac',
 ])
 
-const CAPTURE_MIME_ERROR = 'Dateityp nicht erlaubt. Nur PDF und Bilder sind zulässig.'
+const ALLOWED_CAPTURE_AUDIO_MIME_TYPES = new Set([
+  'audio/webm',
+  'audio/mp4',
+  'audio/mpeg',
+  'audio/ogg',
+  'audio/wav',
+  'audio/wave',
+  'audio/x-wav',
+  'audio/aac',
+  'audio/x-m4a',
+  'audio/mp4a-latm',
+])
+
+const CAPTURE_MIME_ERROR =
+  'Dateityp nicht erlaubt. Nur PDF, Bilder und Audioaufnahmen sind zulässig.'
 
 export function isAllowedCaptureMimeType(mimeType: string): boolean {
   const normalized = mimeType.trim().toLowerCase()
+  const baseType = normalized.split(';')[0]?.trim() ?? normalized
 
-  if (normalized === 'application/pdf') {
+  if (baseType === 'application/pdf') {
     return true
   }
 
-  return normalized.startsWith('image/')
+  if (baseType.startsWith('image/')) {
+    return true
+  }
+
+  return ALLOWED_CAPTURE_AUDIO_MIME_TYPES.has(baseType)
 }
 
 function getCaptureFileExtension(filename: string): string | null {

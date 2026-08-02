@@ -1,5 +1,6 @@
 export type CaptureMode =
   | 'inbox'
+  | 'voice'
   | 'task'
   | 'offer'
   | 'claim'
@@ -9,17 +10,17 @@ export type CaptureMode =
 
 export type CapturePhase = 'closed' | 'menu' | CaptureMode
 
-/** Reserved for future quick actions – not implemented in Punkt 25. */
+/** Reserved for future quick actions – not implemented yet. */
 export type FutureCaptureMode =
   | 'photo'
   | 'camera'
-  | 'voice'
   | 'email'
   | 'whatsapp'
   | 'scan'
 
 export type QuickActionIcon =
   | 'inbox'
+  | 'voice'
   | 'tasks'
   | 'offer'
   | 'claim'
@@ -46,6 +47,12 @@ export const QUICK_ACTION_GROUPS: QuickActionGroup[] = [
         label: 'Neuer Eingang',
         description: 'Schnellnotiz oder Datei zum Sortieren',
         icon: 'inbox',
+      },
+      {
+        mode: 'voice',
+        label: 'Sprachnotiz',
+        description: 'Sprechen und als Eingang speichern',
+        icon: 'voice',
       },
     ],
   },

@@ -47,3 +47,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local HTTPS certs (next --experimental-https / mkcert)
+certificates
