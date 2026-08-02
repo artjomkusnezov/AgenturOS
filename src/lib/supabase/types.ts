@@ -517,6 +517,7 @@ export type Database = {
       }
       inbox_items: {
         Row: {
+          agency_id: string
           content: string
           created_at: string
           detected_language: string | null
@@ -534,6 +535,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agency_id: string
           content: string
           created_at?: string
           detected_language?: string | null
@@ -551,6 +553,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agency_id?: string
           content?: string
           created_at?: string
           detected_language?: string | null
@@ -567,7 +570,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inbox_relations: {
         Row: {

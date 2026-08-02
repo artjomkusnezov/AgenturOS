@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import {
@@ -17,34 +18,29 @@ type InboxItemResult =
 
 type ClaimResult =
   | { success: true; item: InboxItem }
-  | { success: false; error: string; reason: 'already_processing' | 'completed' | 'not_found' | 'auth' | 'update' }
+  | {
+      success: false
+      error: string
+      reason: 'already_processing' | 'completed' | 'not_found' | 'auth' | 'update'
+    }
 
 const CLAIMABLE_STATUSES: TranscriptionStatus[] = ['none', 'pending', 'failed']
 
-async function getAuthenticatedUserId(): Promise<
-  { success: true; userId: string } | RepositoryError
-> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
+function isTranscriptionStatus(value: string): value is TranscriptionStatus {
+  return (TRANSCRIPTION_STATUSES as readonly string[]).includes(value)
+}
 
-  if (error || !user) {
-    return {
-      success: false,
-      error: 'Sie sind nicht angemeldet.',
-    }
+async function getCurrentAgencyId(): Promise<{ success: true; agencyId: string } | RepositoryError> {
+  const agencyResult = await getCurrentUserAgency()
+
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   return {
     success: true,
-    userId: user.id,
+    agencyId: agencyResult.agency.id,
   }
-}
-
-function isTranscriptionStatus(value: string): value is TranscriptionStatus {
-  return (TRANSCRIPTION_STATUSES as readonly string[]).includes(value)
 }
 
 export async function getInboxItemForTranscription(
@@ -57,10 +53,10 @@ export async function getInboxItemForTranscription(
     }
   }
 
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentAgencyId()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -68,7 +64,7 @@ export async function getInboxItemForTranscription(
     .from('inbox_items')
     .select('*')
     .eq('id', inboxItemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agencyId)
     .maybeSingle()
 
   if (error) {
@@ -101,10 +97,10 @@ export async function markInboxTranscriptionPending(
     }
   }
 
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentAgencyId()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -116,7 +112,7 @@ export async function markInboxTranscriptionPending(
       updated_at: new Date().toISOString(),
     })
     .eq('id', inboxItemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agencyId)
     .in('transcription_status', ['none', 'failed', 'pending'])
     .select('*')
     .maybeSingle()
@@ -129,7 +125,6 @@ export async function markInboxTranscriptionPending(
   }
 
   if (!data) {
-    // Bereits processing/completed oder nicht gefunden — Item erneut laden für klare Meldung.
     const current = await getInboxItemForTranscription(inboxItemId)
     if (!current.success) {
       return current
@@ -162,12 +157,12 @@ export async function claimInboxTranscriptionProcessing(
     }
   }
 
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentAgencyId()
 
-  if (!authResult.success) {
+  if (!agencyResult.success) {
     return {
       success: false,
-      error: authResult.error,
+      error: agencyResult.error,
       reason: 'auth',
     }
   }
@@ -222,7 +217,7 @@ export async function claimInboxTranscriptionProcessing(
       updated_at: startedAt,
     })
     .eq('id', inboxItemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agencyId)
     .in('transcription_status', CLAIMABLE_STATUSES)
     .select('*')
     .maybeSingle()
@@ -258,10 +253,10 @@ export async function markInboxTranscriptionCompleted(
     model: string
   },
 ): Promise<InboxItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentAgencyId()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const completedAt = new Date().toISOString()
@@ -279,7 +274,7 @@ export async function markInboxTranscriptionCompleted(
       updated_at: completedAt,
     })
     .eq('id', inboxItemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agencyId)
     .eq('transcription_status', 'processing')
     .select('*')
     .maybeSingle()
@@ -305,10 +300,10 @@ export async function markInboxTranscriptionFailed(
     model?: string | null
   },
 ): Promise<InboxItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentAgencyId()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const completedAt = new Date().toISOString()
@@ -324,7 +319,7 @@ export async function markInboxTranscriptionFailed(
       updated_at: completedAt,
     })
     .eq('id', inboxItemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agencyId)
     .in('transcription_status', ['processing', 'pending', 'none', 'failed'])
     .select('*')
     .maybeSingle()

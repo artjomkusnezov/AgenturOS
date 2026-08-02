@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { INBOX_RELATION_TYPE_TASK } from '@/features/inbox/lib/inbox-relation'
 import { INBOX_SOURCE_MANUAL_TEXT, INBOX_SOURCE_UNIVERSAL_CAPTURE } from '@/features/inbox/lib/inbox-source'
 import { partitionAndSortInboxItems } from '@/features/inbox/lib/sort-inbox-items'
@@ -104,17 +105,17 @@ async function getAuthenticatedUserId(): Promise<
 type InboxCountResult = { success: true; count: number } | RepositoryError
 
 export async function countUnprocessedInboxItemsForCurrentUser(): Promise<InboxCountResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
   const { count, error } = await supabase
     .from('inbox_items')
     .select('*', { count: 'exact', head: true })
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .is('processed_at', null)
 
   if (error) {
@@ -131,17 +132,17 @@ export async function countUnprocessedInboxItemsForCurrentUser(): Promise<InboxC
 }
 
 export async function listInboxItemsForCurrentUser(): Promise<ListInboxItemsResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('inbox_items')
     .select('*')
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
 
   if (error) {
     return {
@@ -152,21 +153,27 @@ export async function listInboxItemsForCurrentUser(): Promise<ListInboxItemsResu
 
   const { unprocessedItems, processedItems } = partitionAndSortInboxItems(data)
 
-  const { data: relations, error: relationsError } = await supabase
-    .from('inbox_relations')
-    .select('inbox_item_id, relation_id')
-    .eq('relation_type', INBOX_RELATION_TYPE_TASK)
+  const inboxItemIds = data.map((item) => item.id)
+  let taskRelationsByItemId: Record<string, string> = {}
 
-  if (relationsError) {
-    return {
-      success: false,
-      error: 'Die Eingangsverknüpfungen konnten nicht geladen werden.',
+  if (inboxItemIds.length > 0) {
+    const { data: relations, error: relationsError } = await supabase
+      .from('inbox_relations')
+      .select('inbox_item_id, relation_id')
+      .eq('relation_type', INBOX_RELATION_TYPE_TASK)
+      .in('inbox_item_id', inboxItemIds)
+
+    if (relationsError) {
+      return {
+        success: false,
+        error: 'Die Eingangsverknüpfungen konnten nicht geladen werden.',
+      }
     }
-  }
 
-  const taskRelationsByItemId = Object.fromEntries(
-    (relations ?? []).map((relation) => [relation.inbox_item_id, relation.relation_id])
-  )
+    taskRelationsByItemId = Object.fromEntries(
+      (relations ?? []).map((relation) => [relation.inbox_item_id, relation.relation_id]),
+    )
+  }
 
   return {
     success: true,
@@ -185,11 +192,18 @@ export async function createInboxItemForCurrentUser(
     return authResult
   }
 
+  const agencyResult = await getCurrentUserAgency()
+
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('inbox_items')
     .insert({
       user_id: authResult.userId,
+      agency_id: agencyResult.agency.id,
       content: input.content,
       source: input.source ?? INBOX_SOURCE_MANUAL_TEXT,
     })
@@ -213,10 +227,10 @@ export async function updateInboxItemContentForCurrentUser(
   itemId: string,
   input: InboxItemWriteInput
 ): Promise<InboxItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -227,7 +241,7 @@ export async function updateInboxItemContentForCurrentUser(
       updated_at: new Date().toISOString(),
     })
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .select('*')
     .maybeSingle()
 
@@ -252,10 +266,10 @@ export async function updateInboxItemContentForCurrentUser(
 }
 
 export async function processInboxItemForCurrentUser(itemId: string): Promise<InboxItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -266,7 +280,7 @@ export async function processInboxItemForCurrentUser(itemId: string): Promise<In
       updated_at: new Date().toISOString(),
     })
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .is('processed_at', null)
     .select('*')
     .maybeSingle()
@@ -292,10 +306,10 @@ export async function processInboxItemForCurrentUser(itemId: string): Promise<In
 }
 
 export async function reopenInboxItemForCurrentUser(itemId: string): Promise<InboxItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -306,7 +320,7 @@ export async function reopenInboxItemForCurrentUser(itemId: string): Promise<Inb
       updated_at: new Date().toISOString(),
     })
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .not('processed_at', 'is', null)
     .select('*')
     .maybeSingle()
@@ -334,10 +348,10 @@ export async function reopenInboxItemForCurrentUser(itemId: string): Promise<Inb
 export async function deleteInboxItemForCurrentUser(
   itemId: string
 ): Promise<DeleteInboxItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -345,7 +359,7 @@ export async function deleteInboxItemForCurrentUser(
     .from('inbox_items')
     .delete()
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .select('id')
     .maybeSingle()
 
@@ -421,10 +435,10 @@ export async function listFilesForInboxItem(
     }
   }
 
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -432,7 +446,7 @@ export async function listFilesForInboxItem(
     .from('inbox_items')
     .select('id')
     .eq('id', inboxItemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .maybeSingle()
 
   if (inboxError) {
