@@ -526,10 +526,12 @@ export type Database = {
           id: string
           inbound_metadata: Json
           message_kind: string | null
+          origin: Json | null
           processed_at: string | null
           received_at: string | null
           sender: Json | null
           source: string
+          title: string | null
           transcript_text: string | null
           transcription_completed_at: string | null
           transcription_error: string | null
@@ -550,10 +552,12 @@ export type Database = {
           id?: string
           inbound_metadata?: Json
           message_kind?: string | null
+          origin?: Json | null
           processed_at?: string | null
           received_at?: string | null
           sender?: Json | null
           source?: string
+          title?: string | null
           transcript_text?: string | null
           transcription_completed_at?: string | null
           transcription_error?: string | null
@@ -574,10 +578,12 @@ export type Database = {
           id?: string
           inbound_metadata?: Json
           message_kind?: string | null
+          origin?: Json | null
           processed_at?: string | null
           received_at?: string | null
           sender?: Json | null
           source?: string
+          title?: string | null
           transcript_text?: string | null
           transcription_completed_at?: string | null
           transcription_error?: string | null

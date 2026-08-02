@@ -10,10 +10,12 @@ export type InboundCreatedItemInput = {
   agencyId: string
   actorUserId: string
   content: string
+  title: string | null
   source: string
   channel: InboundChannel
   externalId: string
   sender: InboundSenderRecord
+  origin: InboundSenderRecord | null
   receivedAt: string
   itemKind: InboundItemKind | null
   metadata: Record<string, unknown>
@@ -22,7 +24,7 @@ export type InboundCreatedItemInput = {
 /**
  * Persistenz-Port für den Intake-Kern.
  * Adapter und Tests injizieren Implementierungen.
- * Spätere Webhooks: Store mit service_role — nicht Teil der Foundation-UI.
+ * Webhooks: Store mit service_role (siehe createServiceRoleInboundIntakeStore).
  */
 export type InboundIntakeStore = {
   findByExternalIdentity: (input: {

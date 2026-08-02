@@ -66,6 +66,88 @@ Quelle
 
 **Stabilitätsregel:** Neue Quellen ausschließlich durch neue Adapter. Inbox, Files, Promotion und Intake-Kern bleiben unverändert.
 
+## Architekturgrundsatz: Adapter ohne Businesslogik
+
+Adapter enthalten **niemals** Businesslogik.
+
+Ein Adapter hat ausschließlich eine Aufgabe: die jeweilige Quelle in einen kanalneutralen `InboundItem` zu übersetzen.
+
+Ein Adapter darf ausdrücklich **nicht**:
+
+- Aufgaben erzeugen
+- Vorgänge erzeugen
+- Prioritäten vergeben
+- KI aufrufen
+- Kunden suchen
+- Promotion durchführen
+- Entscheidungen treffen
+
+Diese Logik gehört ausschließlich in den gemeinsamen Intake-Kern oder spätere Services.
+
+**Produktregel:**
+
+```text
+Adapter = Übersetzung
+Intake  = Verarbeitung
+Inbox   = Arbeit
+```
+
+## Architekturgrundsatz: Ursprungsquelle unverändert
+
+AgenturOS verändert **niemals** die Ursprungsquelle.
+
+Eine E-Mail wird nicht beantwortet, verschoben oder in der Quell-Mailbox verändert.  
+AgenturOS übernimmt ausschließlich eine **Arbeitskopie** der Information in den eigenen Eingang.
+
+Dasselbe Prinzip gilt für WhatsApp, Formulare, Landingpages, APIs, Scanner und alle weiteren Quellen:
+
+- keine Antwort aus AgenturOS an die Quelle (sofern nicht später bewusst als eigener Produktpunkt)
+- keine Steuerung der Quell-App / des Quell-Postfachs
+- keine Sync-Zurückschreibung in die Quelle
+
+```text
+Quelle bleibt Quelle.
+AgenturOS hält eine Arbeitskopie.
+```
+
+## Produktentscheidung: konfigurierbare Inbound-Adresse (E-Mail)
+
+Die AgenturOS-Inbound-E-Mail-Adresse ist **nicht** fest verdrahtet.
+
+Produktseitig handelt es sich um eine **konfigurierbare** Inbound-Adresse pro Agency / Quellen-Verbindung.
+
+Für die erste Agentur wird zunächst verwendet:
+
+```text
+info@artkus.de
+```
+
+Die Architektur bleibt offen für andere Adressen (z. B. später `eingang@…` oder agency-spezifische Adressen).  
+Die bestehende Agentur-Fachadresse (z. B. Allianz-Mailbox) bleibt unabhängig.
+
+V1-Workflow:
+
+```text
+beliebige E-Mail
+  → Weiterleiten an konfigurierte Inbound-Adresse
+  → E-Mail-Adapter
+  → InboundItem
+  → Intake
+  → Inbox
+```
+
+Kein IMAP, keine Microsoft-Graph-Integration, keine automatische Postfachüberwachung in V1.
+
+## Produktentscheidung: Übermittler vs. Ursprung
+
+Am Inbound-Kern:
+
+- **`sender`** = wer die Information an AgenturOS übermittelt hat (z. B. Weiterleitender)
+- **`origin`** = optionaler ursprünglicher Urheber der Information (z. B. Kunde in weitergeleiteter Mail)
+
+Begriff **`origin`** (nicht `originalSender`): kanalneutral für E-Mail, WhatsApp, Formulare, APIs, Scanner usw.  
+Shape analog zu `sender` (`displayName`, `address`, `addressKind`).
+
 ## Persistenz-Leitplanken
 
 - Eine Inbox: `inbox_items`
@@ -75,10 +157,15 @@ Quelle
 
 ## Kernvertrag
 
-`InboundItem`: `channel`, `externalId`, `sender`, `receivedAt`, `content`, optional `kind` / `attachments` / `metadata`.
+`InboundItem`: `channel`, `externalId`, `sender`, `receivedAt`, `content`, optional `title` / `origin` / `kind` / `attachments` / `metadata`.
 
-## Abgrenzung 36C.1
+- `title` = optionaler Titel (z. B. E-Mail-Betreff), generisch
+- `origin` = optionaler ursprünglicher Urheber (Shape wie `sender`)
+
+## Abgrenzung 36C.1 / 37C
 
 Umgesetzt in 36C.1: Foundation (Vertrag, Intake, additive Persistenz, bestehende Inbox).
 
-Nicht in 36C.1: WhatsApp-/Outlook-Adapter, Webhooks, externe APIs, UI „Einstellungen → Quellen“.
+Umgesetzt in 37C (Code): `title`/`origin`, providerneutraler E-Mail-Adapter, Resend-Transport, Webhook-Route.
+
+Nicht produktiv aktiviert in 37C: IONOS-Weiterleitung, Resend-Secrets, echte `info@artkus.de`-Verdrahtung.

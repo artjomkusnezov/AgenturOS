@@ -39,16 +39,21 @@ export function normalizeInboundSender(sender: InboundSender): InboundSenderReco
 }
 
 /**
- * Baut den Inbox-Inhalt aus dem InboundItem.
- * Primär `content`; sonst Anhänge / Absender-Fallback.
+ * Baut den persistierten Inbox-Inhalt.
+ * Primär `content`, dann `title`, sonst Anhänge / Absender-Fallback.
  */
 export function buildInboundInboxContent(
-  item: Pick<InboundItem, 'content' | 'attachments' | 'kind' | 'sender'>,
+  item: Pick<InboundItem, 'content' | 'title' | 'attachments' | 'kind' | 'sender'>,
 ): string {
   const trimmedContent = item.content?.trim() ?? ''
 
   if (trimmedContent.length > 0) {
     return trimmedContent
+  }
+
+  const trimmedTitle = item.title?.trim() ?? ''
+  if (trimmedTitle.length > 0) {
+    return trimmedTitle
   }
 
   const filenames = (item.attachments ?? [])
@@ -74,7 +79,7 @@ export function buildInboundInboxContent(
   return `Eingehende Information (${kind})`
 }
 
-/** Externe Quellen: Absender aus `sender`, nicht Mitgliedsname. */
+/** Externe Quellen: Absender aus `sender`/`origin`, nicht Mitgliedsname. */
 export function isExternalInboundChannel(channel: string | null | undefined): boolean {
   return channel === 'whatsapp' || channel === 'email'
 }

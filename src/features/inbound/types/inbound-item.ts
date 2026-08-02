@@ -1,17 +1,14 @@
 /**
- * AgenturOS Inbound Foundation (Punkt 36C.1)
+ * AgenturOS Inbound Foundation (Punkt 36C.1 / 37C)
  *
  * Produktprinzip:
  * AgenturOS verarbeitet keine Messenger, E-Mails oder Formulare.
  * AgenturOS verarbeitet ausschließlich eingehende Informationen.
  *
- * Quelle = alles, was Informationen in AgenturOS erzeugen kann
- * (Capture, WhatsApp, Outlook, Formular, API, Scanner, …).
+ * Quelle = alles, was Informationen in AgenturOS erzeugen kann.
  *
  * Architektur:
  * Quelle → Adapter → InboundItem → Intake → Inbox
- *
- * Neue Quellen = nur neue Adapter. Intake/Inbox/Files/Promotion bleiben stabil.
  */
 
 /** Quellfamilie am InboundItem (erweiterbar). Keine Quellen-Sonderlogik. */
@@ -57,7 +54,11 @@ export type InboundItem = {
   channel: InboundChannel
   externalId: string
   sender: InboundSender
+  /** Optionaler ursprünglicher Urheber (nicht der Übermittler). */
+  origin?: InboundSender | null
   receivedAt: string
+  /** Optionaler Titel (z. B. Betreff) — generisch. */
+  title?: string | null
   content?: string | null
   kind?: InboundItemKind | null
   attachments?: InboundAttachmentInput[]

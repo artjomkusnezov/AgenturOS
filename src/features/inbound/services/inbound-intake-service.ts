@@ -72,7 +72,11 @@ export async function ingestInboundItem(
   }
 
   const content = buildInboundInboxContent(input.item)
+  const title = input.item.title?.trim() || null
   const sender = normalizeInboundSender(input.item.sender)
+  const origin = input.item.origin
+    ? normalizeInboundSender(input.item.origin)
+    : null
   const source = mapInboundChannelToInboxSource(input.item.channel)
   const metadata = input.item.metadata ?? {}
   const itemKind = input.item.kind ?? null
@@ -84,10 +88,12 @@ export async function ingestInboundItem(
       agencyId,
       actorUserId,
       content,
+      title,
       source,
       channel: input.item.channel,
       externalId,
       sender,
+      origin,
       receivedAt: input.item.receivedAt,
       itemKind,
       metadata,
