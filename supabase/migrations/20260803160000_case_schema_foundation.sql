@@ -333,6 +333,7 @@ begin
   from public.inbox_relations as ir
   where ir.relation_type = 'task'
     and ir.relation_id = p_task.id
+  order by ir.created_at asc, ir.id asc
   limit 1;
 
   update public.cases as c
@@ -348,7 +349,7 @@ begin
     priority = p_task.priority,
     due_at = p_task.due_date,
     completed_at = p_task.completed_at,
-    source_inbox_item_id = v_inbox_item_id,
+    source_inbox_item_id = coalesce(c.source_inbox_item_id, v_inbox_item_id),
     updated_at = p_task.updated_at
   where c.source_task_id = p_task.id;
 
@@ -394,7 +395,7 @@ end;
 $$;
 
 comment on function public.sync_case_from_task(public.tasks) is
-  'Spiegelt einen Task verlustfrei in cases (Insert oder Update über source_task_id).';
+  'Spiegelt einen Task verlustfrei in cases. source_inbox_item_id bleibt stabil (erster Ursprung).';
 
 revoke all on function public.sync_case_from_task(public.tasks) from public;
 revoke all on function public.sync_case_from_task(public.tasks) from anon;
@@ -441,9 +442,7 @@ begin
       source_inbox_item_id = new.inbox_item_id,
       updated_at = now()
     where source_task_id = new.relation_id
-      and (
-        source_inbox_item_id is distinct from new.inbox_item_id
-      );
+      and source_inbox_item_id is null;
   end if;
 
   return new;
@@ -451,7 +450,7 @@ end;
 $$;
 
 comment on function public.mirror_inbox_relation_to_case_trigger() is
-  'Setzt cases.source_inbox_item_id, wenn eine Task-Inbox-Relation angelegt wird.';
+  'Setzt cases.source_inbox_item_id nur einmal, wenn noch kein Ursprung gesetzt ist.';
 
 create trigger inbox_relations_mirror_to_cases
   after insert on public.inbox_relations
