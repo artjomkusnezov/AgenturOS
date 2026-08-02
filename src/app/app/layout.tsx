@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { AppShellWithNavSuspense } from '@/components/app/app-shell'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
+import { getCachedNavigationBadgeCounts } from '@/features/navigation/lib/get-cached-navigation-badge-counts'
+import { EMPTY_NAVIGATION_BADGE_COUNTS } from '@/features/navigation/types/navigation-badges'
 import { listNavigationWorkspaceViews } from '@/features/workspace-views/repositories/workspace-views-repository'
 import { createClient } from '@/lib/supabase/server'
 import { getDisplayName } from '@/lib/user/get-display-name'
@@ -22,9 +24,10 @@ export default async function AppLayout({
   }
 
   const displayName = getDisplayName(user) ?? 'Benutzer'
-  const [navViewsResult, membersResult] = await Promise.all([
+  const [navViewsResult, membersResult, badgeCountsResult] = await Promise.all([
     listNavigationWorkspaceViews(),
     listCurrentAgencyMembers(),
+    getCachedNavigationBadgeCounts(),
   ])
 
   const caseViews: AppCaseViewNavItem[] = navViewsResult.success
@@ -37,6 +40,7 @@ export default async function AppLayout({
     : []
 
   const agencyMembers = membersResult.success ? membersResult.members : []
+  const badgeCounts = badgeCountsResult.counts ?? EMPTY_NAVIGATION_BADGE_COUNTS
 
   return (
     <AppShellWithNavSuspense
@@ -44,6 +48,7 @@ export default async function AppLayout({
       caseViews={caseViews}
       agencyMembers={agencyMembers}
       currentUserId={user.id}
+      badgeCounts={badgeCounts}
     >
       {children}
     </AppShellWithNavSuspense>

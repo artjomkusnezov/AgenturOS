@@ -8,6 +8,7 @@ import { CloseIcon } from '@/components/app/app-icons'
 import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
+import type { NavigationBadgeCounts } from '@/features/navigation/types/navigation-badges'
 import {
   aosAppSidebarClassName,
   aosDialogOverlayClassName,
@@ -23,6 +24,7 @@ type MobileNavigationProps = {
   userDisplayName: string
   onOpenCapture: (trigger: HTMLButtonElement) => void
   caseViews?: AppCaseViewNavItem[]
+  badgeCounts?: NavigationBadgeCounts
 }
 
 export function MobileNavigation({
@@ -31,6 +33,7 @@ export function MobileNavigation({
   userDisplayName,
   onOpenCapture,
   caseViews = [],
+  badgeCounts,
 }: MobileNavigationProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -104,7 +107,7 @@ export function MobileNavigation({
               onClose()
             }}
           />
-          <AppNavigation onNavigate={onClose} caseViews={caseViews} />
+          <AppNavigation onNavigate={onClose} caseViews={caseViews} badgeCounts={badgeCounts} />
         </div>
 
         <div className={`${aosSidebarUserClassName} pb-[max(1rem,env(safe-area-inset-bottom))]`}>

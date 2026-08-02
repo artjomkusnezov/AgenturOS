@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AppNavigation } from '@/components/app/app-navigation'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
+import type { NavigationBadgeCounts } from '@/features/navigation/types/navigation-badges'
 import {
   aosAppSidebarClassName,
   aosSidebarUserClassName,
@@ -16,12 +17,14 @@ type AppSidebarProps = {
   userDisplayName: string
   className?: string
   caseViews?: AppCaseViewNavItem[]
+  badgeCounts?: NavigationBadgeCounts
 }
 
 export function AppSidebar({
   userDisplayName,
   className = '',
   caseViews = [],
+  badgeCounts,
 }: AppSidebarProps) {
   return (
     <aside className={`${aosAppSidebarClassName} ${className}`}>
@@ -35,7 +38,7 @@ export function AppSidebar({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4">
-        <AppNavigation caseViews={caseViews} />
+        <AppNavigation caseViews={caseViews} badgeCounts={badgeCounts} />
       </div>
 
       <div className={aosSidebarUserClassName}>

@@ -101,6 +101,35 @@ async function getAuthenticatedUserId(): Promise<
   }
 }
 
+type InboxCountResult = { success: true; count: number } | RepositoryError
+
+export async function countUnprocessedInboxItemsForCurrentUser(): Promise<InboxCountResult> {
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('inbox_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', authResult.userId)
+    .is('processed_at', null)
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Eingangselemente konnten nicht gezählt werden.',
+    }
+  }
+
+  return {
+    success: true,
+    count: count ?? 0,
+  }
+}
+
 export async function listInboxItemsForCurrentUser(): Promise<ListInboxItemsResult> {
   const authResult = await getAuthenticatedUserId()
 

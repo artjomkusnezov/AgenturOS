@@ -8,6 +8,7 @@ import { MobileNavigation } from '@/components/app/mobile-navigation'
 import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
 import type { AgencyMember } from '@/features/agency/types/agency-member'
+import type { NavigationBadgeCounts } from '@/features/navigation/types/navigation-badges'
 import {
   UniversalCaptureRoot,
   type OpenCaptureMenu,
@@ -19,6 +20,7 @@ type AppShellProps = {
   caseViews?: AppCaseViewNavItem[]
   agencyMembers?: AgencyMember[]
   currentUserId?: string
+  badgeCounts?: NavigationBadgeCounts
 }
 
 export function AppShell({
@@ -27,6 +29,7 @@ export function AppShell({
   caseViews = [],
   agencyMembers = [],
   currentUserId = '',
+  badgeCounts,
 }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [captureMenuOpen, setCaptureMenuOpen] = useState(false)
@@ -43,6 +46,7 @@ export function AppShell({
         userDisplayName={userDisplayName}
         className="hidden lg:flex"
         caseViews={caseViews}
+        badgeCounts={badgeCounts}
       />
 
       <MobileNavigation
@@ -51,6 +55,7 @@ export function AppShell({
         userDisplayName={userDisplayName}
         onOpenCapture={openCapture}
         caseViews={caseViews}
+        badgeCounts={badgeCounts}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
