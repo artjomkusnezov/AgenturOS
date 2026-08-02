@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from 'reac
 import { useRouter } from 'next/navigation'
 
 import { buildCasesItemHref } from '@/features/cases/lib/cases-workspace-urls'
+import { convertInboxToClaimAction } from '@/features/inbox/actions/convert-inbox-to-claim'
 import { convertInboxToOfferAction } from '@/features/inbox/actions/convert-inbox-to-offer'
 import { convertInboxToTaskAction } from '@/features/inbox/actions/convert-inbox-to-task'
 import {
@@ -65,6 +66,20 @@ const initialState: InboxItemMutationState = {}
 const optionButtonClassName =
   'flex min-h-11 w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150 hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-70'
 
+type CasePromotionKind = 'offer' | 'claim'
+
+function resolveCasePromotionSuccess(
+  states: InboxItemMutationState[],
+): InboxItemMutationState | null {
+  for (const state of states) {
+    if (state.success && state.caseId && state.promotionKind) {
+      return state
+    }
+  }
+
+  return null
+}
+
 export function InboxPromotionMenu({ itemId }: { itemId: string }) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
@@ -76,21 +91,24 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
     convertInboxToOfferAction,
     initialState,
   )
+  const [claimState, claimFormAction, isClaimPending] = useActionState(
+    convertInboxToClaimAction,
+    initialState,
+  )
   const [isNavigating, startNavigation] = useTransition()
   const handledSuccessKeyRef = useRef<string | null>(null)
 
-  const isBusy = isTaskPending || isOfferPending || isNavigating
+  const isBusy = isTaskPending || isOfferPending || isClaimPending || isNavigating
   const showMenuPanel = isOpen && !isBusy
+  const caseSuccess = resolveCasePromotionSuccess([offerState, claimState])
   const activeSuccess =
     taskState.success && taskState.taskId
       ? taskState
-      : offerState.success && offerState.caseId
-        ? offerState
-        : null
+      : caseSuccess
   const activeError = activeSuccess
     ? null
-    : !isBusy && (taskState.error || offerState.error)
-      ? taskState.error || offerState.error || null
+    : !isBusy && (taskState.error || offerState.error || claimState.error)
+      ? taskState.error || offerState.error || claimState.error || null
       : null
 
   useEffect(() => {
@@ -99,8 +117,8 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
     }
 
     const successKey =
-      activeSuccess.promotionKind === 'offer' && activeSuccess.caseId
-        ? `${itemId}:offer:${activeSuccess.caseId}`
+      activeSuccess.promotionKind && activeSuccess.caseId
+        ? `${itemId}:${activeSuccess.promotionKind}:${activeSuccess.caseId}`
         : activeSuccess.taskId
           ? `${itemId}:task:${activeSuccess.taskId}`
           : null
@@ -112,11 +130,22 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
     handledSuccessKeyRef.current = successKey
 
     startNavigation(() => {
-      if (activeSuccess.promotionKind === 'offer' && activeSuccess.caseId) {
+      if (
+        activeSuccess.caseId
+        && (activeSuccess.promotionKind === 'offer'
+          || activeSuccess.promotionKind === 'claim')
+      ) {
+        const fallbackView: Record<CasePromotionKind, string> = {
+          offer: 'offers',
+          claim: 'claims',
+        }
+
         router.push(
-          buildCasesItemHref('cases', activeSuccess.viewKey ?? 'offers', {
-            caseId: activeSuccess.caseId,
-          }),
+          buildCasesItemHref(
+            'cases',
+            activeSuccess.viewKey ?? fallbackView[activeSuccess.promotionKind],
+            { caseId: activeSuccess.caseId },
+          ),
         )
       } else if (activeSuccess.taskId) {
         router.push(`/app/tasks?task=${encodeURIComponent(activeSuccess.taskId)}`)
@@ -148,6 +177,22 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
     setIsOpen(false)
   }
 
+  function formActionForOption(key: PromotionOption['key']) {
+    if (key === 'task') {
+      return taskFormAction
+    }
+
+    if (key === 'offer') {
+      return offerFormAction
+    }
+
+    if (key === 'claim') {
+      return claimFormAction
+    }
+
+    return null
+  }
+
   return (
     <div className="relative max-w-full">
       <button
@@ -169,6 +214,10 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
         <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Angebot erstellt</p>
       ) : null}
 
+      {activeSuccess?.promotionKind === 'claim' ? (
+        <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Schaden erstellt</p>
+      ) : null}
+
       {activeError ? (
         <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{activeError}</p>
       ) : null}
@@ -183,14 +232,13 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
       >
         {PROMOTION_OPTIONS.map((option) => {
           const Icon = option.icon
-          const isTask = option.key === 'task'
-          const isOffer = option.key === 'offer'
+          const formAction = formActionForOption(option.key)
 
-          if (isTask || isOffer) {
+          if (formAction) {
             return (
               <form
                 key={option.key}
-                action={isTask ? taskFormAction : offerFormAction}
+                action={formAction}
                 onSubmit={handlePromotionSubmit}
                 className="w-full"
               >

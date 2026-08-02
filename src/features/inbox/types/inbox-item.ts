@@ -24,7 +24,7 @@ export type InboxItemMutationState = {
   caseId?: string
   caseTypeKey?: string
   viewKey?: string
-  promotionKind?: 'task' | 'offer'
+  promotionKind?: 'task' | 'offer' | 'claim'
 }
 
 export type InboxItemInput = {
