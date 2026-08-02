@@ -1,3 +1,4 @@
+import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { isValidFileId } from '@/features/files/lib/validate-file'
 import { isValidInformationItemId } from '@/features/information/lib/validate-information-item'
 import { sortInformationItems } from '@/features/information/lib/sort-information-items'
@@ -5,6 +6,7 @@ import type {
   InformationItem,
   InformationLinkedFile,
 } from '@/features/information/types/information-item'
+import { resolveDefaultKnowledgeCollectionForCurrentAgency } from '@/features/knowledge/repositories/knowledge-collections-repository'
 import { createClient } from '@/lib/supabase/server'
 
 type RepositoryError = {
@@ -33,6 +35,8 @@ type RelationMutationResult = { success: true } | RepositoryError
 type InformationWriteInput = {
   title: string
   content: string | null
+  /** Optional; Standard ist die Collection „Allgemein“. */
+  knowledgeCollectionId?: string
 }
 
 async function getAuthenticatedUserId(): Promise<
@@ -57,18 +61,22 @@ async function getAuthenticatedUserId(): Promise<
   }
 }
 
+/**
+ * Listet Knowledge der aktuellen Agentur.
+ * Funktionsname bleibt für UI-Kompatibilität; Scope ist agency-weit (30G).
+ */
 export async function listInformationItemsForCurrentUser(): Promise<ListInformationItemsResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('information_items')
     .select('*')
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
 
   if (error) {
     return {
@@ -86,10 +94,10 @@ export async function listInformationItemsForCurrentUser(): Promise<ListInformat
 export async function getInformationItemForCurrentUser(
   itemId: string
 ): Promise<InformationItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -97,7 +105,7 @@ export async function getInformationItemForCurrentUser(
     .from('information_items')
     .select('*')
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .maybeSingle()
 
   if (error) {
@@ -129,11 +137,30 @@ export async function createInformationItemForCurrentUser(
     return authResult
   }
 
+  const agencyResult = await getCurrentUserAgency()
+
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
+  let collectionId = input.knowledgeCollectionId ?? null
+
+  if (!collectionId) {
+    const defaultCollection = await resolveDefaultKnowledgeCollectionForCurrentAgency()
+    if (!defaultCollection.success) {
+      return defaultCollection
+    }
+    collectionId = defaultCollection.collection.id
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('information_items')
     .insert({
       user_id: authResult.userId,
+      created_by: authResult.userId,
+      agency_id: agencyResult.agency.id,
+      knowledge_collection_id: collectionId,
       title: input.title,
       content: input.content,
     })
@@ -157,22 +184,33 @@ export async function updateInformationItemForCurrentUser(
   itemId: string,
   input: InformationWriteInput
 ): Promise<InformationItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
+  const updatePayload: {
+    title: string
+    content: string | null
+    updated_at: string
+    knowledge_collection_id?: string
+  } = {
+    title: input.title,
+    content: input.content,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (input.knowledgeCollectionId) {
+    updatePayload.knowledge_collection_id = input.knowledgeCollectionId
+  }
+
   const { data, error } = await supabase
     .from('information_items')
-    .update({
-      title: input.title,
-      content: input.content,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .select('*')
     .maybeSingle()
 
@@ -199,10 +237,10 @@ export async function updateInformationItemForCurrentUser(
 export async function deleteInformationItemForCurrentUser(
   itemId: string
 ): Promise<DeleteInformationItemResult> {
-  const authResult = await getAuthenticatedUserId()
+  const agencyResult = await getCurrentUserAgency()
 
-  if (!authResult.success) {
-    return authResult
+  if (!agencyResult.success) {
+    return agencyResult
   }
 
   const supabase = await createClient()
@@ -210,7 +248,7 @@ export async function deleteInformationItemForCurrentUser(
     .from('information_items')
     .delete()
     .eq('id', itemId)
-    .eq('user_id', authResult.userId)
+    .eq('agency_id', agencyResult.agency.id)
     .select('id')
     .maybeSingle()
 
@@ -241,12 +279,6 @@ export async function listFilesForInformationItem(
       success: false,
       error: 'Bitte geben Sie eine gültige Information an.',
     }
-  }
-
-  const authResult = await getAuthenticatedUserId()
-
-  if (!authResult.success) {
-    return authResult
   }
 
   const ownership = await getInformationItemForCurrentUser(informationId)
@@ -305,12 +337,6 @@ export async function attachFileToInformationItem(
       success: false,
       error: 'Bitte geben Sie eine gültige Datei an.',
     }
-  }
-
-  const authResult = await getAuthenticatedUserId()
-
-  if (!authResult.success) {
-    return authResult
   }
 
   const ownership = await getInformationItemForCurrentUser(informationId)
@@ -381,12 +407,6 @@ export async function detachFileFromInformationItem(
       success: false,
       error: 'Bitte geben Sie eine gültige Datei an.',
     }
-  }
-
-  const authResult = await getAuthenticatedUserId()
-
-  if (!authResult.success) {
-    return authResult
   }
 
   const ownership = await getInformationItemForCurrentUser(informationId)

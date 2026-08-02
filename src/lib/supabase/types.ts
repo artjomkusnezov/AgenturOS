@@ -160,6 +160,55 @@ export type Database = {
           },
         ]
       }
+      case_information_relations: {
+        Row: {
+          agency_id: string
+          case_id: string
+          created_at: string
+          created_by: string
+          id: string
+          information_id: string
+        }
+        Insert: {
+          agency_id: string
+          case_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          information_id: string
+        }
+        Update: {
+          agency_id?: string
+          case_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          information_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_information_relations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_information_relations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_information_relations_information_id_fkey"
+            columns: ["information_id"]
+            isOneToOne: false
+            referencedRelation: "information_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_types: {
         Row: {
           agency_id: string | null
@@ -518,30 +567,101 @@ export type Database = {
       }
       information_items: {
         Row: {
+          agency_id: string
           content: string | null
           created_at: string
+          created_by: string
           id: string
+          knowledge_collection_id: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          agency_id: string
           content?: string | null
           created_at?: string
+          created_by: string
           id?: string
+          knowledge_collection_id: string
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          agency_id?: string
           content?: string | null
           created_at?: string
+          created_by?: string
           id?: string
+          knowledge_collection_id?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "information_items_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "information_items_knowledge_collection_id_fkey"
+            columns: ["knowledge_collection_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_collections: {
+        Row: {
+          agency_id: string
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_collections_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -948,9 +1068,25 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      seed_default_business_areas_for_agency: {
+        Args: { p_agency_id: string }
+        Returns: undefined
+      }
+      seed_default_knowledge_collections_for_agency: {
+        Args: { p_agency_id: string }
+        Returns: undefined
+      }
       seed_default_workspace_views_for_agency: {
         Args: { p_agency_id: string; p_created_by?: string }
         Returns: undefined
+      }
+      resolve_agency_business_area_id: {
+        Args: { p_agency_id: string; p_key: string }
+        Returns: string
+      }
+      resolve_agency_knowledge_collection_id: {
+        Args: { p_agency_id: string; p_key: string }
+        Returns: string
       }
       update_task_assignee: {
         Args: { p_assignee_user_id?: string; p_task_id: string }
