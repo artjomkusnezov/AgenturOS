@@ -79,6 +79,14 @@ export async function linkCaptureFileForCurrentUser(
   })
 
   if (error) {
+    console.error('[capture] inbox_item_files insert failed', {
+      inboxItemId,
+      fileId,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    })
     return {
       success: false,
       error: 'Die Datei konnte dem Eingang nicht zugeordnet werden.',
