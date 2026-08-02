@@ -12,10 +12,13 @@ import type { DashboardAttentionItem } from '@/features/dashboard/lib/dashboard-
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import { dashboardMetaIconClassName } from '@/features/dashboard/lib/dashboard-icon-map'
 import {
+  dashboardAccentBorderOverdue,
+  dashboardAccentBorderSoon,
+  dashboardAccentBorderToday,
   dashboardMetaClassName,
   dashboardRowClassName,
   dashboardSectionPaddingClassName,
-  dashboardSurfaceEmphasizedClassName,
+  dashboardSurfaceClassName,
 } from '@/features/dashboard/lib/dashboard-surface'
 import {
   aosIconAccentDangerClassName,
@@ -24,8 +27,17 @@ import {
 
 type DashboardAttentionSectionProps = {
   items: DashboardAttentionItem[]
-  /** Gesamtzahl (kann > items.length sein bei Limit). */
   totalCount?: number
+}
+
+function accentBorderClass(bucket: DashboardAttentionItem['bucket']): string {
+  if (bucket === 'overdue') {
+    return dashboardAccentBorderOverdue
+  }
+  if (bucket === 'today') {
+    return dashboardAccentBorderToday
+  }
+  return dashboardAccentBorderSoon
 }
 
 function bucketTone(bucket: DashboardAttentionItem['bucket']): string {
@@ -35,7 +47,7 @@ function bucketTone(bucket: DashboardAttentionItem['bucket']): string {
   if (bucket === 'today') {
     return aosIconAccentOrangeClassName
   }
-  return 'text-zinc-500'
+  return 'text-amber-600'
 }
 
 function DashboardAttentionRow({ item }: { item: DashboardAttentionItem }) {
@@ -44,30 +56,31 @@ function DashboardAttentionRow({ item }: { item: DashboardAttentionItem }) {
   const showHigh = item.priority === 'high'
 
   return (
-    <Link href={item.href} className={dashboardRowClassName}>
+    <Link
+      href={item.href}
+      className={`${dashboardRowClassName} ${accentBorderClass(item.bucket)} pl-2`}
+    >
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-1 text-[0.9375rem] font-semibold leading-snug text-zinc-900">
+        <span className="line-clamp-1 text-[0.8125rem] font-medium leading-snug text-zinc-900">
           {item.title}
         </span>
         <span className={dashboardMetaClassName}>
           <span className={`font-medium ${tone}`}>{item.bucketLabel}</span>
           <span>{item.typeLabel}</span>
           {showDue && item.dueLabel ? (
-            <span className={`inline-flex items-center gap-1 ${tone}`}>
+            <span className={`inline-flex items-center gap-0.5 ${tone}`}>
               <DashboardIconCalendar className={dashboardMetaIconClassName} />
               {item.dueLabel}
             </span>
           ) : null}
+          <span>{item.assigneeName}</span>
           {showHigh ? (
             <span
-              className={`inline-flex items-center gap-1 font-medium ${aosIconAccentDangerClassName}`}
+              className={`inline-flex items-center gap-0.5 font-medium ${aosIconAccentDangerClassName}`}
             >
               <DashboardIconFlag className={dashboardMetaIconClassName} />
               Hoch
             </span>
-          ) : null}
-          {item.bucket === 'waiting' && !showDue ? (
-            <span>{item.statusLabel}</span>
           ) : null}
         </span>
       </span>
@@ -89,16 +102,16 @@ export function DashboardAttentionSection({
       titleId="dashboard-attention-heading"
       href="/app/cases"
       hrefLabel="Alle Vorgänge anzeigen"
-      className={dashboardSurfaceEmphasizedClassName}
+      className={dashboardSurfaceClassName}
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
     >
       {items.length === 0 ? (
         <div className={dashboardSectionPaddingClassName}>
-          <DashboardSectionEmpty message="Nichts Dringendes. Alle Vorgänge sind im Plan." />
+          <DashboardSectionEmpty message="Aktuell braucht kein Vorgang besondere Aufmerksamkeit." />
         </div>
       ) : (
-        <div className={`${dashboardSectionPaddingClassName} space-y-0.5 pb-1`}>
+        <div className={`${dashboardSectionPaddingClassName} divide-y divide-zinc-100/80 pb-1`}>
           {items.map((item) => (
             <DashboardAttentionRow key={item.caseId} item={item} />
           ))}

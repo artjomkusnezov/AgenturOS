@@ -1,4 +1,3 @@
-import { listTaskActivityForCurrentUser } from '@/features/activity/repositories/task-activity-repository'
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
 import {
   buildCaseTypeLookup,
@@ -12,6 +11,12 @@ import {
   selectAttentionCasesForDashboard,
 } from '@/features/dashboard/lib/dashboard-attention'
 import { selectMyWorkForDashboard } from '@/features/dashboard/lib/dashboard-my-work'
+import {
+  buildOpenTaskItemsFromCases,
+  countMyOpenTasks,
+  selectMyTasksForDashboard,
+  selectTeamTasksForDashboard,
+} from '@/features/dashboard/lib/dashboard-tasks'
 import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { createClient } from '@/lib/supabase/server'
@@ -30,13 +35,11 @@ export async function DashboardPageContent() {
   const [
     inboxResult,
     membersResult,
-    activityResult,
     openCasesResult,
     caseTypesResult,
   ] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
-    listTaskActivityForCurrentUser({ limit: 3 }),
     listCasesForWorkspaceViewFilters({
       filters: {
         core_statuses: ['open', 'in_progress', 'waiting'],
@@ -60,12 +63,23 @@ export async function DashboardPageContent() {
 
   const caseTypesById = buildCaseTypeLookup(caseTypesResult.caseTypes)
   const openCases = openCasesResult.cases
+  const members = membersResult.success ? membersResult.members : []
+  const memberNameMap = membersResult.success
+    ? buildMemberNameMap(membersResult.members)
+    : {}
 
-  const attentionItems = selectAttentionCasesForDashboard(openCases, caseTypesById)
+  const attentionItems = selectAttentionCasesForDashboard(openCases, caseTypesById, {
+    memberNameMap,
+  })
   const attentionCount = countAttentionCases(openCases)
   const attentionCaseIds = new Set(attentionItems.map((item) => item.caseId))
 
-  const { myOpenCases, myOpenTasks, recentlyUpdated } = selectMyWorkForDashboard(
+  const openTaskItems = buildOpenTaskItemsFromCases(openCases, caseTypesById)
+  const myTasks = selectMyTasksForDashboard(openTaskItems, user.id)
+  const myOpenTaskCount = countMyOpenTasks(openTaskItems, user.id)
+  const teamTasks = selectTeamTasksForDashboard(openTaskItems, members, user.id)
+
+  const { caseTypeCounts, recentlyUpdated } = selectMyWorkForDashboard(
     openCases,
     caseTypesById,
     {
@@ -74,22 +88,17 @@ export async function DashboardPageContent() {
     },
   )
 
-  const memberNameMap = membersResult.success
-    ? buildMemberNameMap(membersResult.members)
-    : {}
-  const activityItems = activityResult.success ? activityResult.items : []
-
   return (
     <DashboardWorkOverview
       user={user}
       unprocessedInboxItems={inboxResult.unprocessedItems}
       attentionItems={attentionItems}
       attentionCount={attentionCount}
-      myOpenCases={myOpenCases}
-      myOpenTasks={myOpenTasks}
+      myTasks={myTasks}
+      myOpenTaskCount={myOpenTaskCount}
+      teamTasks={teamTasks}
+      caseTypeCounts={caseTypeCounts}
       recentlyUpdated={recentlyUpdated}
-      activityItems={activityItems}
-      memberNameMap={memberNameMap}
     />
   )
 }

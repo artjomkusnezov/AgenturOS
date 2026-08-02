@@ -11,7 +11,6 @@ import {
   DashboardIconImage,
   DashboardIconInbox,
   DashboardIconInfo,
-  DashboardIconListChecks,
   DashboardIconMail,
   DashboardIconMessage,
   DashboardIconMic,
@@ -161,6 +160,8 @@ export type DashboardSectionKey =
   | 'attention'
   | 'myWork'
   | 'tasks'
+  | 'team'
+  | 'goals'
   | 'information'
   | 'weeklyGoal'
   | 'activity'
@@ -187,9 +188,21 @@ export function resolveSectionVisual(section: DashboardSectionKey): DashboardVis
       }
     case 'tasks':
       return {
-        label: 'Heute wichtig',
+        label: 'Meine Aufgaben',
         accent: 'green',
-        icon: <DashboardIconListChecks className={ICON_MD} />,
+        icon: <DashboardIconCheckSquare className={ICON_MD} />,
+      }
+    case 'team':
+      return {
+        label: 'Team',
+        accent: 'violet',
+        icon: <DashboardIconUsers className={ICON_MD} />,
+      }
+    case 'goals':
+      return {
+        label: 'Ziele',
+        accent: 'green',
+        icon: <DashboardIconTarget className={ICON_MD} />,
       }
     case 'information':
       return {

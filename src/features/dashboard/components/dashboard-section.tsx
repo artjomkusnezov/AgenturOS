@@ -48,7 +48,7 @@ export function DashboardSection({
   return (
     <section aria-labelledby={titleId} className={`flex flex-col ${className}`}>
       <div
-        className={`${dashboardSectionPaddingClassName} flex items-center justify-between gap-3 pt-4`}
+        className={`${dashboardSectionPaddingClassName} flex items-center justify-between gap-2 pt-3`}
       >
         <div className="flex min-w-0 items-center gap-2">
           {icon ? (
@@ -66,7 +66,7 @@ export function DashboardSection({
       <div className="pt-1">{children}</div>
 
       {href && hrefLabel ? (
-        <div className={`${dashboardSectionPaddingClassName} pb-4 pt-1.5`}>
+        <div className={`${dashboardSectionPaddingClassName} pb-3 pt-1`}>
           <Link
             href={href}
             className={`text-sm transition-opacity duration-150 hover:opacity-80 ${aosLinkClassName}`}
@@ -84,5 +84,5 @@ type DashboardSectionEmptyProps = {
 }
 
 export function DashboardSectionEmpty({ message }: DashboardSectionEmptyProps) {
-  return <p className="py-2 text-sm text-zinc-500">{message}</p>
+  return <p className="py-1.5 text-xs leading-relaxed text-zinc-500">{message}</p>
 }

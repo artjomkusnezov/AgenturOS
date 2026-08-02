@@ -1,148 +1,109 @@
 import Link from 'next/link'
-import type { ReactNode } from 'react'
 
-import type { TaskActivityItem } from '@/features/activity/types/task-activity'
-import { DashboardActivityPreview } from '@/features/dashboard/components/dashboard-activity-preview'
-import { DashboardPriorityTaskRow } from '@/features/dashboard/components/dashboard-priority-task-row'
 import {
   DashboardSection,
   DashboardSectionEmpty,
 } from '@/features/dashboard/components/dashboard-section'
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
-import type { DashboardMyWorkCaseItem } from '@/features/dashboard/lib/dashboard-my-work'
+import type {
+  DashboardCaseTypeCount,
+  DashboardMyWorkCaseItem,
+} from '@/features/dashboard/lib/dashboard-my-work'
 import {
+  dashboardCompactRowClassName,
   dashboardMetaClassName,
-  dashboardRowClassName,
   dashboardSectionPaddingClassName,
   dashboardSurfaceClassName,
 } from '@/features/dashboard/lib/dashboard-surface'
-import type { Task } from '@/features/tasks/types/task'
 
 type DashboardMyWorkSectionProps = {
-  myOpenCases: DashboardMyWorkCaseItem[]
-  myOpenTasks: Task[]
+  caseTypeCounts: DashboardCaseTypeCount[]
   recentlyUpdated: DashboardMyWorkCaseItem[]
-  activityItems: TaskActivityItem[]
-  memberNameMap: Record<string, string>
 }
 
-function MyWorkCaseRow({ item }: { item: DashboardMyWorkCaseItem }) {
+function RecentCaseRow({ item }: { item: DashboardMyWorkCaseItem }) {
   return (
-    <Link href={item.href} className={dashboardRowClassName}>
+    <Link href={item.href} className={dashboardCompactRowClassName}>
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-1 text-sm font-medium leading-snug text-zinc-900">
+        <span className="line-clamp-1 text-[0.8125rem] font-medium leading-snug text-zinc-900">
           {item.title}
         </span>
         <span className={dashboardMetaClassName}>
           <span>{item.typeLabel}</span>
+          <span>{item.updatedLabel}</span>
         </span>
       </span>
     </Link>
   )
 }
 
-function MyWorkSubsection({
-  title,
-  titleId,
-  emptyMessage,
-  children,
-  hasItems,
-}: {
-  title: string
-  titleId: string
-  emptyMessage: string
-  children: ReactNode
-  hasItems: boolean
-}) {
-  return (
-    <div className={`${dashboardSectionPaddingClassName} pb-3`}>
-      <h3 id={titleId} className="pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
-        {title}
-      </h3>
-      {hasItems ? (
-        <div className="space-y-0.5" aria-labelledby={titleId}>
-          {children}
-        </div>
-      ) : (
-        <DashboardSectionEmpty message={emptyMessage} />
-      )}
-    </div>
-  )
-}
-
 export function DashboardMyWorkSection({
-  myOpenCases,
-  myOpenTasks,
+  caseTypeCounts,
   recentlyUpdated,
-  activityItems,
-  memberNameMap,
 }: DashboardMyWorkSectionProps) {
   const sectionVisual = resolveSectionVisual('myWork')
-  const hasAnyWork =
-    myOpenCases.length > 0 || myOpenTasks.length > 0 || recentlyUpdated.length > 0
+  const hasContent = caseTypeCounts.length > 0 || recentlyUpdated.length > 0
 
   return (
-    <div className="space-y-4">
-      <DashboardSection
-        title="Meine Arbeit"
-        titleId="dashboard-my-work-heading"
-        href="/app/cases"
-        hrefLabel="Zum Arbeitsbereich"
-        className={dashboardSurfaceClassName}
-        icon={sectionVisual.icon}
-        iconAccent={sectionVisual.accent}
-      >
-        {!hasAnyWork ? (
-          <div className={dashboardSectionPaddingClassName}>
-            <DashboardSectionEmpty message="Keine offenen Punkte unter deiner Verantwortung." />
-          </div>
-        ) : (
-          <div className="divide-y divide-zinc-100/80">
-            <MyWorkSubsection
-              title="Meine offenen Vorgänge"
-              titleId="dashboard-my-cases-heading"
-              emptyMessage="Keine offenen Vorgänge zugewiesen."
-              hasItems={myOpenCases.length > 0}
-            >
-              {myOpenCases.map((item) => (
-                <MyWorkCaseRow key={item.caseId} item={item} />
-              ))}
-            </MyWorkSubsection>
-
-            <MyWorkSubsection
-              title="Meine offenen Aufgaben"
-              titleId="dashboard-my-tasks-heading"
-              emptyMessage="Keine offenen Aufgaben zugewiesen."
-              hasItems={myOpenTasks.length > 0}
-            >
-              {myOpenTasks.map((task) => (
-                <DashboardPriorityTaskRow
-                  key={task.id}
-                  task={task}
-                  memberNameMap={memberNameMap}
-                />
-              ))}
-            </MyWorkSubsection>
-
-            <MyWorkSubsection
-              title="Zuletzt bearbeitet"
-              titleId="dashboard-recent-heading"
-              emptyMessage="Noch keine kürzlichen Änderungen."
-              hasItems={recentlyUpdated.length > 0}
-            >
-              {recentlyUpdated.map((item) => (
-                <MyWorkCaseRow key={item.caseId} item={item} />
-              ))}
-            </MyWorkSubsection>
-          </div>
-        )}
-      </DashboardSection>
-
-      {activityItems.length > 0 ? (
-        <div className="opacity-90">
-          <DashboardActivityPreview items={activityItems} />
+    <DashboardSection
+      title="Meine Arbeit"
+      titleId="dashboard-my-work-heading"
+      href="/app/cases"
+      hrefLabel="Zum Arbeitsbereich"
+      className={dashboardSurfaceClassName}
+      icon={sectionVisual.icon}
+      iconAccent={sectionVisual.accent}
+    >
+      {!hasContent ? (
+        <div className={dashboardSectionPaddingClassName}>
+          <DashboardSectionEmpty message="Keine offenen Vorgänge unter deiner Verantwortung." />
         </div>
-      ) : null}
-    </div>
+      ) : (
+        <div className={`${dashboardSectionPaddingClassName} space-y-3 pb-1`}>
+          {caseTypeCounts.length > 0 ? (
+            <div>
+              <h3
+                id="dashboard-my-cases-by-type-heading"
+                className="px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400"
+              >
+                Meine offenen Vorgänge
+              </h3>
+              <ul
+                className="mt-1.5 space-y-0.5"
+                aria-labelledby="dashboard-my-cases-by-type-heading"
+              >
+                {caseTypeCounts.map((entry) => (
+                  <li
+                    key={entry.typeKey}
+                    className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-[0.8125rem]"
+                  >
+                    <span className="text-zinc-700">{entry.typeLabel}</span>
+                    <span className="tabular-nums font-medium text-zinc-900">
+                      {entry.count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {recentlyUpdated.length > 0 ? (
+            <div className="border-t border-zinc-100/80 pt-2">
+              <h3
+                id="dashboard-recent-cases-heading"
+                className="px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400"
+              >
+                Zuletzt bearbeitet
+              </h3>
+              <div className="mt-1 divide-y divide-zinc-100/80" aria-labelledby="dashboard-recent-cases-heading">
+                {recentlyUpdated.map((item) => (
+                  <RecentCaseRow key={item.caseId} item={item} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </DashboardSection>
   )
 }

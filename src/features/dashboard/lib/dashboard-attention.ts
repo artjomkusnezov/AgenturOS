@@ -40,6 +40,8 @@ export type DashboardAttentionItem = {
   priority: CasePriority
   coreStatus: CaseCoreStatus
   statusLabel: string
+  assigneeUserId: string | null
+  assigneeName: string
 }
 
 function parseDateOnly(value: string): Date {
@@ -128,10 +130,15 @@ function compareAttentionItems(a: DashboardAttentionItem, b: DashboardAttentionI
 export function selectAttentionCasesForDashboard(
   cases: CaseRecord[],
   caseTypesById: Record<string, CaseTypeLookup>,
-  options: { today?: string; limit?: number } = {},
+  options: {
+    today?: string
+    limit?: number
+    memberNameMap?: Record<string, string>
+  } = {},
 ): DashboardAttentionItem[] {
   const today = options.today ?? getTodayDateString()
-  const limit = options.limit ?? 12
+  const limit = options.limit ?? 8
+  const memberNameMap = options.memberNameMap ?? {}
 
   const items: DashboardAttentionItem[] = []
 
@@ -146,6 +153,10 @@ export function selectAttentionCasesForDashboard(
     const dueLabel = caseRow.due_at
       ? formatCaseDueAtLabel(caseRow.due_at, today, isCaseOpenForDue(caseRow))
       : null
+    const assigneeUserId = caseRow.assignee_user_id
+    const assigneeName = assigneeUserId
+      ? memberNameMap[assigneeUserId] ?? 'Unbekannt'
+      : 'Nicht zugewiesen'
 
     items.push({
       caseId: caseRow.id,
@@ -160,6 +171,8 @@ export function selectAttentionCasesForDashboard(
       priority: caseRow.priority,
       coreStatus: caseRow.core_status,
       statusLabel: formatCaseCoreStatusLabel(caseRow.core_status),
+      assigneeUserId,
+      assigneeName,
     })
   }
 

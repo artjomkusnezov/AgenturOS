@@ -3,11 +3,9 @@ import {
   resolveCaseTypeLabel,
   type CaseTypeLookup,
 } from '@/features/cases/lib/case-display'
-import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
 import type { CaseRecord } from '@/features/cases/types/case'
 import { buildDashboardCaseHref } from '@/features/dashboard/lib/dashboard-case-href'
-import { isTaskOpen } from '@/features/tasks/lib/task-status'
-import type { Task } from '@/features/tasks/types/task'
+import { formatDashboardDateOrTime } from '@/features/dashboard/lib/dashboard-format'
 
 export type DashboardMyWorkCaseItem = {
   caseId: string
@@ -16,15 +14,19 @@ export type DashboardMyWorkCaseItem = {
   typeKey: string | null
   href: string
   updatedAt: string
+  updatedLabel: string
   dueAt: string | null
+}
+
+export type DashboardCaseTypeCount = {
+  typeKey: string
+  typeLabel: string
+  count: number
 }
 
 type SelectMyWorkOptions = {
   currentUserId: string
-  /** Case-IDs, die bereits in „Braucht Aufmerksamkeit“ stehen – keine Doppelanzeige. */
   excludeCaseIds?: ReadonlySet<string>
-  caseLimit?: number
-  taskLimit?: number
   recentLimit?: number
 }
 
@@ -42,6 +44,7 @@ function toMyWorkItem(
     typeKey,
     href: buildDashboardCaseHref(caseRow, typeKey),
     updatedAt: caseRow.updated_at,
+    updatedLabel: formatDashboardDateOrTime(caseRow.updated_at),
     dueAt: caseRow.due_at,
   }
 }
@@ -58,68 +61,68 @@ function isTaskType(
 }
 
 /**
- * „Meine Arbeit“: offene Vorgänge / Aufgaben des Users + zuletzt bearbeitet.
- * Keine Doppelanzeige mit Attention-Liste.
+ * Gruppiert offene Vorgänge des Users nach Typ (ohne Aufgaben-Cases).
+ */
+export function groupMyOpenCasesByType(
+  cases: DashboardMyWorkCaseItem[],
+): DashboardCaseTypeCount[] {
+  const counts = new Map<string, DashboardCaseTypeCount>()
+
+  for (const item of cases) {
+    const key = item.typeKey ?? 'general'
+    const existing = counts.get(key)
+
+    if (existing) {
+      existing.count += 1
+      continue
+    }
+
+    counts.set(key, {
+      typeKey: key,
+      typeLabel: item.typeLabel,
+      count: 1,
+    })
+  }
+
+  return Array.from(counts.values()).sort((a, b) =>
+    a.typeLabel.localeCompare(b.typeLabel, 'de'),
+  )
+}
+
+/**
+ * „Meine Arbeit“: Vorgangsüberblick ohne Aufgaben (die leben in Meine/Team-Aufgaben).
  */
 export function selectMyWorkForDashboard(
   openCases: CaseRecord[],
   caseTypesById: Record<string, CaseTypeLookup>,
   options: SelectMyWorkOptions,
 ): {
-  myOpenCases: DashboardMyWorkCaseItem[]
-  myOpenTasks: Task[]
+  myOpenCaseItems: DashboardMyWorkCaseItem[]
+  caseTypeCounts: DashboardCaseTypeCount[]
   recentlyUpdated: DashboardMyWorkCaseItem[]
 } {
   const excludeCaseIds = options.excludeCaseIds ?? new Set<string>()
-  const caseLimit = options.caseLimit ?? 5
-  const taskLimit = options.taskLimit ?? 5
   const recentLimit = options.recentLimit ?? 3
   const userId = options.currentUserId
 
-  const available = openCases.filter((caseRow) => !excludeCaseIds.has(caseRow.id))
-
-  const myOpenCases = available
+  const myCases = openCases
     .filter(
       (caseRow) =>
-        isAssignedToUser(caseRow, userId) && !isTaskType(caseRow, caseTypesById),
-    )
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, caseLimit)
-    .map((caseRow) => toMyWorkItem(caseRow, caseTypesById))
-
-  const shownCaseIds = new Set(myOpenCases.map((item) => item.caseId))
-
-  const myOpenTasks = available
-    .filter(
-      (caseRow) =>
+        !excludeCaseIds.has(caseRow.id) &&
         isAssignedToUser(caseRow, userId) &&
-        isTaskType(caseRow, caseTypesById) &&
-        Boolean(caseRow.source_task_id),
+        !isTaskType(caseRow, caseTypesById),
     )
-    .map((caseRow) => mapCaseRecordToTask(caseRow))
-    .filter(isTaskOpen)
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, taskLimit)
-
-  const shownTaskCaseIds = new Set(
-    available
-      .filter(
-        (caseRow) =>
-          caseRow.source_task_id !== null &&
-          myOpenTasks.some((task) => task.id === caseRow.source_task_id),
-      )
-      .map((caseRow) => caseRow.id),
-  )
-
-  for (const id of shownTaskCaseIds) {
-    shownCaseIds.add(id)
-  }
-
-  const recentlyUpdated = available
-    .filter((caseRow) => !shownCaseIds.has(caseRow.id))
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, recentLimit)
     .map((caseRow) => toMyWorkItem(caseRow, caseTypesById))
 
-  return { myOpenCases, myOpenTasks, recentlyUpdated }
+  const caseTypeCounts = groupMyOpenCasesByType(myCases)
+
+  const recentlyUpdated = [...myCases]
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, recentLimit)
+
+  return {
+    myOpenCaseItems: myCases,
+    caseTypeCounts,
+    recentlyUpdated,
+  }
 }

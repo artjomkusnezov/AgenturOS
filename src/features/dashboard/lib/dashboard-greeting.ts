@@ -32,7 +32,8 @@ export function getFirstNameFromUser(user: {
 type WorkSituationInput = {
   unprocessedInboxCount: number
   attentionCount: number
-  myOpenWorkCount: number
+  myOpenTaskCount: number
+  teamOpenTaskCount: number
 }
 
 function sanitizeCount(value: number): number {
@@ -54,17 +55,19 @@ function formatSentence(text: string): string {
 export function getWorkSituationHint({
   unprocessedInboxCount,
   attentionCount,
-  myOpenWorkCount,
+  myOpenTaskCount,
+  teamOpenTaskCount,
 }: WorkSituationInput): string {
   const inboxCount = sanitizeCount(unprocessedInboxCount)
   const needsAttention = sanitizeCount(attentionCount)
-  const myWorkCount = sanitizeCount(myOpenWorkCount)
+  const myTasks = sanitizeCount(myOpenTaskCount)
+  const teamTasks = sanitizeCount(teamOpenTaskCount)
   const sentences: string[] = []
 
   if (inboxCount === 1) {
-    sentences.push('1 neuer Eingang wartet oben')
+    sentences.push('1 neuer Eingang')
   } else if (inboxCount > 1) {
-    sentences.push(`${inboxCount} neue Eingänge warten oben`)
+    sentences.push(`${inboxCount} neue Eingänge`)
   }
 
   if (needsAttention === 1) {
@@ -73,14 +76,20 @@ export function getWorkSituationHint({
     sentences.push(`${needsAttention} Vorgänge brauchen Aufmerksamkeit`)
   }
 
-  if (myWorkCount === 1) {
-    sentences.push('1 offener Punkt unter Meine Arbeit')
-  } else if (myWorkCount > 1) {
-    sentences.push(`${myWorkCount} offene Punkte unter Meine Arbeit`)
+  if (myTasks === 1) {
+    sentences.push('1 eigene offene Aufgabe')
+  } else if (myTasks > 1) {
+    sentences.push(`${myTasks} eigene offene Aufgaben`)
+  }
+
+  if (teamTasks === 1) {
+    sentences.push('1 Team-Aufgabe offen')
+  } else if (teamTasks > 1) {
+    sentences.push(`${teamTasks} Team-Aufgaben offen`)
   }
 
   if (sentences.length === 0) {
-    return 'Alles ruhig für den Moment. Nichts braucht gerade deine Aufmerksamkeit.'
+    return 'Alles ruhig für den Moment. Nichts braucht gerade besondere Aufmerksamkeit.'
   }
 
   return sentences.map(formatSentence).join(' ')
