@@ -26,6 +26,7 @@ type DashboardWorkOverviewProps = {
   teamTasks: DashboardTeamTasksResult
   caseTypeCounts: DashboardCaseTypeCount[]
   recentlyUpdated: DashboardMyWorkCaseItem[]
+  memberNameMap?: Record<string, string>
 }
 
 export function DashboardWorkOverview({
@@ -38,6 +39,7 @@ export function DashboardWorkOverview({
   teamTasks,
   caseTypeCounts,
   recentlyUpdated,
+  memberNameMap = {},
 }: DashboardWorkOverviewProps) {
   const safeInboxItems = Array.isArray(unprocessedInboxItems) ? unprocessedInboxItems : []
   const safeAttentionItems = Array.isArray(attentionItems) ? attentionItems : []
@@ -62,7 +64,7 @@ export function DashboardWorkOverview({
 
       <div className="grid gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-4">
         <div className="order-1 lg:col-start-1 lg:row-start-1">
-          <DashboardInboxSection items={safeInboxItems} />
+          <DashboardInboxSection items={safeInboxItems} memberNameMap={memberNameMap} />
         </div>
 
         <div className="order-2 lg:col-start-2 lg:row-start-1">

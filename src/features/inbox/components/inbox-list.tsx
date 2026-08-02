@@ -9,6 +9,7 @@ type InboxListProps = {
   processedItems: InboxItem[]
   selectedItemId: string | null
   onSelectItem: (itemId: string) => void
+  memberNameMap?: Record<string, string>
 }
 
 export function InboxList({
@@ -16,6 +17,7 @@ export function InboxList({
   processedItems,
   selectedItemId,
   onSelectItem,
+  memberNameMap = {},
 }: InboxListProps) {
   return (
     <div className="space-y-3">
@@ -31,6 +33,7 @@ export function InboxList({
                   item={item}
                   isSelected={item.id === selectedItemId}
                   onSelect={onSelectItem}
+                  memberNameMap={memberNameMap}
                 />
               </li>
             ))}
@@ -49,6 +52,7 @@ export function InboxList({
                   isSelected={item.id === selectedItemId}
                   subdued
                   onSelect={onSelectItem}
+                  memberNameMap={memberNameMap}
                 />
               </li>
             ))}

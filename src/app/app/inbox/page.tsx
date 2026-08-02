@@ -1,3 +1,4 @@
+import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
 import { enrichInboxAttachmentsWithMediaUrls } from '@/features/inbox/lib/enrich-inbox-attachments'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
@@ -6,6 +7,7 @@ import {
   listInboxItemsForCurrentUser,
 } from '@/features/inbox/repositories/inbox-repository'
 import type { InboxLinkedFile } from '@/features/inbox/types/inbox-item'
+import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
@@ -14,7 +16,10 @@ type InboxPageProps = {
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
   const { item } = await searchParams
-  const result = await listInboxItemsForCurrentUser()
+  const [result, membersResult] = await Promise.all([
+    listInboxItemsForCurrentUser(),
+    listCurrentAgencyMembers(),
+  ])
 
   if (!result.success) {
     return (
@@ -23,6 +28,10 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       </div>
     )
   }
+
+  const memberNameMap = membersResult.success
+    ? buildMemberNameMap(membersResult.members)
+    : {}
 
   const allItems = [...result.unprocessedItems, ...result.processedItems]
   const selectedItemId =
@@ -47,6 +56,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       taskRelationsByItemId={result.taskRelationsByItemId}
       selectedItemId={selectedItemId}
       attachments={attachments}
+      memberNameMap={memberNameMap}
     />
   )
 }

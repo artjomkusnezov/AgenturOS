@@ -19,15 +19,24 @@ import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 
 type DashboardInboxSectionProps = {
   items: InboxItem[]
+  memberNameMap?: Record<string, string>
 }
 
-function DashboardInboxRow({ item }: { item: InboxItem }) {
+function DashboardInboxRow({
+  item,
+  memberNameMap,
+}: {
+  item: InboxItem
+  memberNameMap: Record<string, string>
+}) {
   const { title } = splitInboxFeedContent(item.content)
   const timeLabel = formatDashboardDateOrTime(item.created_at)
   const isUnprocessed = isInboxItemUnprocessed(item)
+  const creatorName = resolveTaskMemberName(item.user_id, memberNameMap)
 
   return (
     <Link
@@ -46,6 +55,8 @@ function DashboardInboxRow({ item }: { item: InboxItem }) {
         <span className="mt-0.5 flex items-center gap-1.5 text-[10px] text-zinc-400">
           <span>{getInboxSourceLabel(item.source)}</span>
           <span aria-hidden="true">·</span>
+          <span className="truncate">{creatorName}</span>
+          <span aria-hidden="true">·</span>
           <span className="tabular-nums">{timeLabel}</span>
         </span>
       </span>
@@ -58,7 +69,10 @@ function DashboardInboxRow({ item }: { item: InboxItem }) {
   )
 }
 
-export function DashboardInboxSection({ items }: DashboardInboxSectionProps) {
+export function DashboardInboxSection({
+  items,
+  memberNameMap = {},
+}: DashboardInboxSectionProps) {
   const totalCount = sanitizeDashboardCount(items.length)
   const previewItems = items.slice(0, 5)
   const sectionVisual = resolveSectionVisual('inbox')
@@ -81,7 +95,7 @@ export function DashboardInboxSection({ items }: DashboardInboxSectionProps) {
       ) : (
         <div className={`${dashboardSectionPaddingClassName} divide-y divide-zinc-100/80 pb-1`}>
           {previewItems.map((item) => (
-            <DashboardInboxRow key={item.id} item={item} />
+            <DashboardInboxRow key={item.id} item={item} memberNameMap={memberNameMap} />
           ))}
         </div>
       )}

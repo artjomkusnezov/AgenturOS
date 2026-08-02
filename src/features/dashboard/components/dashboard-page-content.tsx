@@ -99,6 +99,7 @@ export async function DashboardPageContent() {
       teamTasks={teamTasks}
       caseTypeCounts={caseTypeCounts}
       recentlyUpdated={recentlyUpdated}
+      memberNameMap={memberNameMap}
     />
   )
 }

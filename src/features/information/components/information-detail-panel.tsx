@@ -13,11 +13,13 @@ import type {
   InformationLinkedFile,
   InformationMutationState,
 } from '@/features/information/types/information-item'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { aosWorkspaceSurfaceClassName } from '@/lib/design-system'
 
 type InformationDetailPanelProps = {
   item: InformationItem
   attachments?: InformationLinkedFile[]
+  memberNameMap?: Record<string, string>
   onBack?: () => void
   onDeleted: () => void
 }
@@ -27,6 +29,7 @@ const initialState: InformationMutationState = {}
 export function InformationDetailPanel({
   item,
   attachments = [],
+  memberNameMap = {},
   onBack,
   onDeleted,
 }: InformationDetailPanelProps) {
@@ -42,6 +45,7 @@ export function InformationDetailPanel({
   )
   const [confirmDelete, setConfirmDelete] = useState(false)
   const handledDeleteRef = useRef(false)
+  const creatorName = resolveTaskMemberName(item.created_by ?? item.user_id, memberNameMap)
 
   useEffect(() => {
     if (deleteState.success && !handledDeleteRef.current) {
@@ -54,7 +58,11 @@ export function InformationDetailPanel({
 
   return (
     <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
-      <InformationDocumentHeader updatedAt={item.updated_at} onBack={onBack} />
+      <InformationDocumentHeader
+        updatedAt={item.updated_at}
+        creatorName={creatorName}
+        onBack={onBack}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <form id={updateFormId} action={updateAction} className="flex flex-col">

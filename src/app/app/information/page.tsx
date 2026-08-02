@@ -1,4 +1,5 @@
 import { parseInformationAttachmentNotice } from '@/features/capture/lib/information-capture-notice'
+import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
 import { InformationWorkspace } from '@/features/information/components/information-workspace'
 import { enrichInformationAttachmentsWithMediaUrls } from '@/features/information/lib/enrich-information-attachments'
 import { isValidInformationItemId } from '@/features/information/lib/validate-information-item'
@@ -7,6 +8,7 @@ import {
   listInformationItemsForCurrentUser,
 } from '@/features/information/repositories/information-repository'
 import type { InformationLinkedFile } from '@/features/information/types/information-item'
+import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InformationPageProps = {
@@ -16,7 +18,10 @@ type InformationPageProps = {
 export default async function InformationPage({ searchParams }: InformationPageProps) {
   const { item, itemId, attachments: attachmentsParam } = await searchParams
   const selectedParam = item ?? itemId ?? null
-  const result = await listInformationItemsForCurrentUser()
+  const [result, membersResult] = await Promise.all([
+    listInformationItemsForCurrentUser(),
+    listCurrentAgencyMembers(),
+  ])
 
   if (!result.success) {
     return (
@@ -25,6 +30,10 @@ export default async function InformationPage({ searchParams }: InformationPageP
       </div>
     )
   }
+
+  const memberNameMap = membersResult.success
+    ? buildMemberNameMap(membersResult.members)
+    : {}
 
   const selectedItemId =
     selectedParam &&
@@ -51,6 +60,7 @@ export default async function InformationPage({ searchParams }: InformationPageP
       selectedItemId={selectedItemId}
       attachments={attachments}
       attachmentNotice={attachmentNotice}
+      memberNameMap={memberNameMap}
     />
   )
 }

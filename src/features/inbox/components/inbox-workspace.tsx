@@ -18,6 +18,7 @@ type InboxWorkspaceProps = {
   taskRelationsByItemId: Record<string, string>
   selectedItemId: string | null
   attachments?: InboxLinkedFile[]
+  memberNameMap?: Record<string, string>
 }
 
 export function InboxWorkspace({
@@ -26,6 +27,7 @@ export function InboxWorkspace({
   taskRelationsByItemId,
   selectedItemId,
   attachments = [],
+  memberNameMap = {},
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -125,6 +127,7 @@ export function InboxWorkspace({
               processedItems={processedItems}
               selectedItemId={selectedItemId}
               onSelectItem={handleSelectItem}
+              memberNameMap={memberNameMap}
             />
           )
         }
@@ -140,6 +143,7 @@ export function InboxWorkspace({
               item={selectedItem}
               linkedTaskId={taskRelationsByItemId[selectedItem.id] ?? null}
               attachments={attachments}
+              memberNameMap={memberNameMap}
               onBack={handleBackToList}
               onDeleted={handleDeleted}
               onStatusChange={handleStatusChange}

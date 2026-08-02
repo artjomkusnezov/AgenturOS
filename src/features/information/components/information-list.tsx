@@ -7,12 +7,14 @@ type InformationListProps = {
   items: InformationItem[]
   selectedItemId: string | null
   onSelectItem: (itemId: string) => void
+  memberNameMap?: Record<string, string>
 }
 
 export function InformationList({
   items,
   selectedItemId,
   onSelectItem,
+  memberNameMap = {},
 }: InformationListProps) {
   return (
     <ul className="flex flex-col">
@@ -22,6 +24,7 @@ export function InformationList({
             item={item}
             isSelected={item.id === selectedItemId}
             onSelect={onSelectItem}
+            memberNameMap={memberNameMap}
           />
         </li>
       ))}

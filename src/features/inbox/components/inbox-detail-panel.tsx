@@ -18,6 +18,7 @@ import type {
   InboxItemMutationState,
   InboxLinkedFile,
 } from '@/features/inbox/types/inbox-item'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { InboxTranscriptionSection } from '@/features/transcription/components/inbox-transcription-section'
 import {
   aosBtnDangerClassName,
@@ -38,6 +39,7 @@ type InboxDetailPanelProps = {
   item: InboxItem
   linkedTaskId: string | null
   attachments?: InboxLinkedFile[]
+  memberNameMap?: Record<string, string>
   onBack?: () => void
   onDeleted: () => void
   onStatusChange: () => void
@@ -95,6 +97,7 @@ export function InboxDetailPanel({
   item,
   linkedTaskId,
   attachments = [],
+  memberNameMap = {},
   onBack,
   onDeleted,
   onStatusChange,
@@ -112,6 +115,7 @@ export function InboxDetailPanel({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const handledDeleteRef = useRef(false)
   const isUnprocessed = isInboxItemUnprocessed(item)
+  const creatorName = resolveTaskMemberName(item.user_id, memberNameMap)
 
   useEffect(() => {
     if (deleteState.success && !handledDeleteRef.current) {
@@ -138,6 +142,8 @@ export function InboxDetailPanel({
         <div className="flex items-start justify-between gap-3">
           <p className={`min-w-0 flex-1 ${aosWorkspaceMetaClassName}`}>
             <span>{getInboxSourceLabel(item.source)}</span>
+            <span className="mx-1.5 text-zinc-300">·</span>
+            <span>Erfasst von {creatorName}</span>
             <span className="mx-1.5 text-zinc-300">·</span>
             <span>{formatInboxDateTime(item.created_at)}</span>
             <span className="mx-1.5 text-zinc-300">·</span>

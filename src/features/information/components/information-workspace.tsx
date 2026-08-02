@@ -23,6 +23,7 @@ type InformationWorkspaceProps = {
   selectedItemId: string | null
   attachments?: InformationLinkedFile[]
   attachmentNotice?: string | null
+  memberNameMap?: Record<string, string>
 }
 
 export function InformationWorkspace({
@@ -30,6 +31,7 @@ export function InformationWorkspace({
   selectedItemId,
   attachments = [],
   attachmentNotice = null,
+  memberNameMap = {},
 }: InformationWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -130,6 +132,7 @@ export function InformationWorkspace({
               items={items}
               selectedItemId={selectedItemId}
               onSelectItem={handleSelectItem}
+              memberNameMap={memberNameMap}
             />
           )
         }
@@ -160,6 +163,7 @@ export function InformationWorkspace({
                   key={selectedItem.id}
                   item={selectedItem}
                   attachments={attachments}
+                  memberNameMap={memberNameMap}
                   onBack={handleBackToList}
                   onDeleted={handleDeleted}
                 />

@@ -3,6 +3,7 @@
 import { truncateInformationContentPreview } from '@/features/information/lib/format-information-content'
 import { formatInformationListDate } from '@/features/information/lib/information-status'
 import type { InformationItem } from '@/features/information/types/information-item'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import {
   aosListRowClassName,
   aosListRowHoverClassName,
@@ -13,14 +14,17 @@ type InformationListItemProps = {
   item: InformationItem
   isSelected: boolean
   onSelect: (itemId: string) => void
+  memberNameMap?: Record<string, string>
 }
 
 export function InformationListItem({
   item,
   isSelected,
   onSelect,
+  memberNameMap = {},
 }: InformationListItemProps) {
   const preview = truncateInformationContentPreview(item.content)
+  const creatorName = resolveTaskMemberName(item.created_by ?? item.user_id, memberNameMap)
 
   return (
     <button
@@ -36,6 +40,8 @@ export function InformationListItem({
       </p>
       <p className="w-full truncate text-[11px] leading-none text-zinc-400">
         <span>{formatInformationListDate(item.updated_at)}</span>
+        <span className="mx-1 text-zinc-300">·</span>
+        <span>{creatorName}</span>
         {preview ? (
           <>
             <span className="mx-1 text-zinc-300">·</span>

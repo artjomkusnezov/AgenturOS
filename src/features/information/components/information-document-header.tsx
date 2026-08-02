@@ -8,11 +8,13 @@ import {
 
 type InformationDocumentHeaderProps = {
   updatedAt: string
+  creatorName?: string | null
   onBack?: () => void
 }
 
 export function InformationDocumentHeader({
   updatedAt,
+  creatorName,
   onBack,
 }: InformationDocumentHeaderProps) {
   return (
@@ -27,7 +29,13 @@ export function InformationDocumentHeader({
         </button>
       ) : null}
       <p className={aosWorkspaceMetaClassName}>
-        Geändert {formatInformationDateTime(updatedAt)}
+        {creatorName ? (
+          <>
+            <span>Erfasst von {creatorName}</span>
+            <span className="mx-1.5 text-zinc-300">·</span>
+          </>
+        ) : null}
+        <span>Geändert {formatInformationDateTime(updatedAt)}</span>
       </p>
     </div>
   )

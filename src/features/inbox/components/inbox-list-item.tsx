@@ -9,6 +9,7 @@ import { truncateInboxContentPreview } from '@/features/inbox/lib/format-inbox-c
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
+import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import {
   aosListRowClassName,
   aosListRowHoverClassName,
@@ -23,6 +24,7 @@ type InboxListItemProps = {
   isSelected: boolean
   subdued?: boolean
   onSelect: (itemId: string) => void
+  memberNameMap?: Record<string, string>
 }
 
 const initialState: InboxItemMutationState = {}
@@ -103,8 +105,10 @@ export function InboxListItem({
   isSelected,
   subdued = false,
   onSelect,
+  memberNameMap = {},
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
+  const creatorName = resolveTaskMemberName(item.user_id, memberNameMap)
 
   return (
     <div
@@ -137,6 +141,8 @@ export function InboxListItem({
 
         <p className="mt-0.5 truncate text-[11px] leading-none text-zinc-400">
           <span>{getInboxSourceLabel(item.source)}</span>
+          <span className="mx-1 text-zinc-300">·</span>
+          <span>{creatorName}</span>
           <span className="mx-1 text-zinc-300">·</span>
           <span>{formatInboxListDate(item.created_at)}</span>
         </p>
