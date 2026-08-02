@@ -182,6 +182,12 @@ export function TaskDetailPanel({
               <span>
                 {creatorName} · {formatTaskDateTime(task.created_at)}
               </span>
+              {task.case_id ? (
+                <>
+                  <span className="text-zinc-300">·</span>
+                  <span>Teil eines Vorgangs</span>
+                </>
+              ) : null}
             </div>
           </div>
 

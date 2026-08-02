@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
@@ -18,6 +18,8 @@ import {
 import type { CaseDisplayLookups } from '@/features/cases/lib/case-display'
 import type { CaseRecord } from '@/features/cases/types/case'
 import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
+import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
+import type { Task } from '@/features/tasks/types/task'
 import type { WorkspaceView } from '@/features/workspace-views/types/workspace-view'
 
 type CasesWorkspaceProps = {
@@ -28,6 +30,8 @@ type CasesWorkspaceProps = {
   selectedCase: CaseRecord | null
   selectedCaseOrigin: CaseInboxOriginView | null
   selectedCaseTimelineEntries: CaseTimelineEntry[]
+  selectedCaseOpenTasks: Task[]
+  selectedCaseCompletedTasks: Task[]
   memberNameMap: Record<string, string>
   lookups: CaseDisplayLookups
   pathMode: CasesWorkspacePathMode
@@ -41,25 +45,43 @@ export function CasesWorkspace({
   selectedCase,
   selectedCaseOrigin,
   selectedCaseTimelineEntries,
+  selectedCaseOpenTasks,
+  selectedCaseCompletedTasks,
   memberNameMap,
   lookups,
   pathMode,
   emptyMessage,
 }: CasesWorkspaceProps) {
   const router = useRouter()
+  const [isCreatingTask, setIsCreatingTask] = useState(false)
   const listHref = buildCasesListHref(pathMode, view.key)
   const countLabel = cases.length === 1 ? '1 Vorgang' : `${cases.length} Vorgänge`
 
   const handleSelectCase = useCallback(
     (caseId: string) => {
+      setIsCreatingTask(false)
       router.push(buildCasesItemHref(pathMode, view.key, { caseId }))
     },
     [pathMode, router, view.key],
   )
 
   const handleBackToList = useCallback(() => {
+    setIsCreatingTask(false)
     router.push(listHref)
   }, [listHref, router])
+
+  const handleStartCreateTask = useCallback(() => {
+    setIsCreatingTask(true)
+  }, [])
+
+  const handleCancelCreateTask = useCallback(() => {
+    setIsCreatingTask(false)
+  }, [])
+
+  const handleCreatedTask = useCallback(() => {
+    setIsCreatingTask(false)
+    router.refresh()
+  }, [router])
 
   let detail = (
     <EmptyState
@@ -68,7 +90,15 @@ export function CasesWorkspace({
     />
   )
 
-  if (selectedCase) {
+  if (selectedCase && isCreatingTask) {
+    detail = (
+      <CreateTaskForm
+        caseId={selectedCase.id}
+        onCancel={handleCancelCreateTask}
+        onCreated={handleCreatedTask}
+      />
+    )
+  } else if (selectedCase) {
     detail = (
       <CaseDetailPanel
         caseRow={selectedCase}
@@ -76,6 +106,9 @@ export function CasesWorkspace({
         lookups={lookups}
         origin={selectedCaseOrigin}
         timelineEntries={selectedCaseTimelineEntries}
+        openTasks={selectedCaseOpenTasks}
+        completedTasks={selectedCaseCompletedTasks}
+        onAddTask={handleStartCreateTask}
         onBack={handleBackToList}
       />
     )
@@ -93,7 +126,7 @@ export function CasesWorkspace({
       <WorkspaceSplit
         listLabel={view.name}
         detailLabel="Vorgangsdetails"
-        showMobileDetail={selectedCaseId !== null}
+        showMobileDetail={selectedCaseId !== null || isCreatingTask}
         list={
           cases.length === 0 ? (
             <EmptyState

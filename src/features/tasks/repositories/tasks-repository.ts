@@ -22,6 +22,7 @@ type DeleteTaskResult =
 type TaskWriteInput = {
   title: string
   description: string | null
+  caseId?: string | null
 }
 
 type TaskDetailWriteInput = {
@@ -134,6 +135,7 @@ export async function createTaskForCurrentUser(
   const { data, error } = await supabase.rpc('create_task', {
     p_title: input.title,
     p_description: input.description ?? undefined,
+    p_case_id: input.caseId ?? undefined,
   })
 
   if (error || !data) {
@@ -147,6 +149,73 @@ export async function createTaskForCurrentUser(
     success: true,
     task: data as Task,
   }
+}
+
+export async function listTasksForCase(
+  caseId: string,
+): Promise<ListTasksResult> {
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('case_id', caseId)
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Aufgaben des Vorgangs konnten nicht geladen werden.',
+    }
+  }
+
+  const { openTasks, completedTasks } = partitionAndSortTasks(data)
+
+  return {
+    success: true,
+    openTasks,
+    completedTasks,
+  }
+}
+
+export async function getParentCaseIdsForTasks(
+  taskIds: string[],
+): Promise<
+  { success: true; parentCaseIds: Record<string, string | null> } | RepositoryError
+> {
+  if (taskIds.length === 0) {
+    return { success: true, parentCaseIds: {} }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, case_id')
+    .in('id', taskIds)
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Vorgangsverknüpfungen konnten nicht geladen werden.',
+    }
+  }
+
+  const parentCaseIds: Record<string, string | null> = {}
+  for (const row of data) {
+    parentCaseIds[row.id] = row.case_id
+  }
+
+  return { success: true, parentCaseIds }
 }
 
 export async function updateTaskDetailsForCurrentUser(

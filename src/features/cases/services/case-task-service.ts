@@ -45,6 +45,7 @@ type CreateTaskCaseFromInboxResult =
 type TaskCaseWriteInput = {
   title: string
   description: string | null
+  caseId?: string | null
 }
 
 type TaskCaseDetailWriteInput = {

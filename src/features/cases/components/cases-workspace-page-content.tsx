@@ -13,6 +13,11 @@ import { listTimelineForCase } from '@/features/cases/repositories/case-timeline
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
 import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
 import {
+  getParentCaseIdsForTasks,
+  listTasksForCase,
+} from '@/features/tasks/repositories/tasks-repository'
+import type { Task } from '@/features/tasks/types/task'
+import {
   getCaseByIdForCurrentUser,
   getTaskCaseBySourceTaskIdAsTask,
   listActiveBusinessAreasForCurrentAgency,
@@ -152,12 +157,29 @@ export async function CasesWorkspacePageContent({
       )
     }
 
-    const openTasks = openCasesResult.cases
+    const openTasksMapped = openCasesResult.cases
       .filter((row) => row.source_task_id)
       .map((row) => mapCaseRecordToTask(row))
-    const completedTasks = completedCasesResult.cases
+    const completedTasksMapped = completedCasesResult.cases
       .filter((row) => row.source_task_id)
       .map((row) => mapCaseRecordToTask(row))
+
+    const parentCaseIdsResult = await getParentCaseIdsForTasks([
+      ...openTasksMapped.map((task) => task.id),
+      ...completedTasksMapped.map((task) => task.id),
+    ])
+    const parentCaseIds = parentCaseIdsResult.success
+      ? parentCaseIdsResult.parentCaseIds
+      : {}
+
+    const openTasks = openTasksMapped.map((task) => ({
+      ...task,
+      case_id: parentCaseIds[task.id] ?? null,
+    }))
+    const completedTasks = completedTasksMapped.map((task) => ({
+      ...task,
+      case_id: parentCaseIds[task.id] ?? null,
+    }))
 
     const memberNameMap = membersResult.success
       ? buildMemberNameMap(membersResult.members)
@@ -286,6 +308,7 @@ export async function CasesWorkspacePageContent({
     selectedCaseResult,
     originResult,
     timelineResult,
+    caseTasksResult,
   ] = await Promise.all([
     listCasesForWorkspaceViewFilters({
       filters: activeView.filters,
@@ -303,6 +326,9 @@ export async function CasesWorkspacePageContent({
     caseParam
       ? listTimelineForCase(caseParam)
       : Promise.resolve(null),
+    caseParam
+      ? listTasksForCase(caseParam)
+      : Promise.resolve(null),
   ])
 
   if (!casesResult.success) {
@@ -317,6 +343,14 @@ export async function CasesWorkspacePageContent({
     return (
       <div className={`${aosAlertErrorClassName} px-5 py-4`}>
         {timelineResult.error}
+      </div>
+    )
+  }
+
+  if (caseTasksResult && !caseTasksResult.success) {
+    return (
+      <div className={`${aosAlertErrorClassName} px-5 py-4`}>
+        {caseTasksResult.error}
       </div>
     )
   }
@@ -350,6 +384,13 @@ export async function CasesWorkspacePageContent({
   const selectedCaseTimelineEntries: CaseTimelineEntry[] =
     timelineResult && timelineResult.success ? timelineResult.entries : []
 
+  const selectedCaseOpenTasks: Task[] =
+    caseTasksResult && caseTasksResult.success ? caseTasksResult.openTasks : []
+  const selectedCaseCompletedTasks: Task[] =
+    caseTasksResult && caseTasksResult.success
+      ? caseTasksResult.completedTasks
+      : []
+
   return (
     <CasesWorkspace
       view={activeView}
@@ -358,6 +399,8 @@ export async function CasesWorkspacePageContent({
       selectedCase={selectedCase}
       selectedCaseOrigin={selectedCaseOrigin}
       selectedCaseTimelineEntries={selectedCaseTimelineEntries}
+      selectedCaseOpenTasks={selectedCaseOpenTasks}
+      selectedCaseCompletedTasks={selectedCaseCompletedTasks}
       memberNameMap={memberNameMap}
       lookups={lookups}
       pathMode={pathMode}

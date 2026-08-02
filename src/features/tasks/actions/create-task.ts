@@ -22,9 +22,13 @@ export async function createTaskAction(
     return { fieldErrors }
   }
 
+  const caseIdRaw = String(formData.get('caseId') ?? '').trim()
+  const caseId = caseIdRaw.length > 0 ? caseIdRaw : null
+
   const result = await createTaskCaseForCurrentUser({
     title: input.title.trim(),
     description: normalizeTaskDescription(input.description),
+    caseId,
   })
 
   if (!result.success) {
@@ -33,6 +37,7 @@ export async function createTaskAction(
 
   revalidatePath('/app/tasks')
   revalidatePath('/app/activity')
+  revalidatePath('/app/cases')
 
   return {
     success: true,

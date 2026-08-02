@@ -877,6 +877,7 @@ export type Database = {
         Row: {
           agency_id: string
           assignee_user_id: string | null
+          case_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string
@@ -891,6 +892,7 @@ export type Database = {
         Insert: {
           agency_id: string
           assignee_user_id?: string | null
+          case_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -905,6 +907,7 @@ export type Database = {
         Update: {
           agency_id?: string
           assignee_user_id?: string | null
+          case_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
@@ -922,6 +925,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
             referencedColumns: ["id"]
           },
         ]
@@ -1025,10 +1035,11 @@ export type Database = {
         }
       }
       create_task: {
-        Args: { p_description?: string; p_title: string }
+        Args: { p_case_id?: string; p_description?: string; p_title: string }
         Returns: {
           agency_id: string
           assignee_user_id: string | null
+          case_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string

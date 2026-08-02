@@ -24,12 +24,14 @@ import {
 } from '@/features/dashboard/components/dashboard-icons'
 import { CaseTimeline } from '@/features/cases/components/case-timeline'
 import { CaseTimelineNoteForm } from '@/features/cases/components/case-timeline-note-form'
+import { CaseTasksSection } from '@/features/cases/components/case-tasks-section'
 import type { CaseTimelineEntry } from '@/features/cases/types/case-timeline'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
+import type { Task } from '@/features/tasks/types/task'
 import {
   aosDocBodyClassName,
   aosDocTitleClassName,
@@ -51,6 +53,9 @@ type CaseDetailPanelProps = {
   lookups: CaseDisplayLookups
   origin: CaseInboxOriginView | null
   timelineEntries: CaseTimelineEntry[]
+  openTasks: Task[]
+  completedTasks: Task[]
+  onAddTask: () => void
   onBack: () => void
 }
 
@@ -79,6 +84,9 @@ export function CaseDetailPanel({
   lookups,
   origin,
   timelineEntries,
+  openTasks,
+  completedTasks,
+  onAddTask,
   onBack,
 }: CaseDetailPanelProps) {
   const typeLabel = resolveCaseTypeLabel(caseRow.case_type_id, lookups.caseTypesById)
@@ -191,6 +199,12 @@ export function CaseDetailPanel({
             caseId={caseRow.id}
           />
         </section>
+
+        <CaseTasksSection
+          openTasks={openTasks}
+          completedTasks={completedTasks}
+          onAddTask={onAddTask}
+        />
 
         {origin ? <InboxAttachmentSection attachments={origin.attachments} /> : null}
       </div>

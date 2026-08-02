@@ -18,11 +18,17 @@ import {
 type CreateTaskFormProps = {
   onCancel: () => void
   onCreated: (taskId: string) => void
+  /** Optional: Aufgabe einem Vorgang zuordnen. */
+  caseId?: string | null
 }
 
 const initialState: TaskMutationState = {}
 
-export function CreateTaskForm({ onCancel, onCreated }: CreateTaskFormProps) {
+export function CreateTaskForm({
+  onCancel,
+  onCreated,
+  caseId = null,
+}: CreateTaskFormProps) {
   const [state, formAction, isPending] = useActionState(createTaskAction, initialState)
   const handledSuccessRef = useRef<string | null>(null)
 
@@ -40,6 +46,8 @@ export function CreateTaskForm({ onCancel, onCreated }: CreateTaskFormProps) {
       </div>
 
       <form action={formAction} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {caseId ? <input type="hidden" name="caseId" value={caseId} /> : null}
+
         <div className="flex flex-1 flex-col gap-4 px-1 py-4">
           <div>
             <label htmlFor="create-task-title" className="sr-only">

@@ -140,6 +140,12 @@ export function TaskListItem({
           <span className="truncate">{formatTaskListDate(task.created_at)}</span>
           <span className="text-zinc-300">·</span>
           <span className="truncate">{assigneeName}</span>
+          {task.case_id ? (
+            <>
+              <span className="text-zinc-300">·</span>
+              <span className="truncate">Vorgang</span>
+            </>
+          ) : null}
           {showPriority ? (
             <>
               <span className="text-zinc-300">·</span>

@@ -262,9 +262,16 @@ export async function getTaskCaseBySourceTaskIdAsTask(
   try {
     const { case_types: _ignored, ...caseRow } = data
     void _ignored
+
+    const { data: taskRow } = await supabase
+      .from('tasks')
+      .select('case_id')
+      .eq('id', taskId)
+      .maybeSingle()
+
     return {
       success: true,
-      task: mapCaseRecordToTask(caseRow),
+      task: mapCaseRecordToTask(caseRow, taskRow?.case_id ?? null),
     }
   } catch {
     return {
