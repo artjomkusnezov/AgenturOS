@@ -1086,6 +1086,21 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_case: {
+        Args: {
+          p_assignee_user_id?: string
+          p_business_area_key?: string
+          p_case_type_key: string
+          p_description?: string
+          p_due_at?: string
+          p_priority?: string
+          p_title: string
+        }
+        Returns: {
+          case_id: string
+          case_type_key: string
+        }[]
+      }
       create_case_from_inbox_item: {
         Args: {
           p_inbox_item_id: string

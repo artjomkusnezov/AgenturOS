@@ -115,6 +115,7 @@ export const aosSidebarUserClassName = 'aos-sidebar-user'
 export const aosCaptureSidebarClassName = 'aos-capture-sidebar'
 export const aosCaptureFloatingClassName = 'aos-capture-floating'
 export const aosCaptureFloatingBtnClassName = 'aos-capture-floating-btn'
+export const aosCaptureToolbarClassName = 'aos-capture-toolbar'
 
 export const aosIconTileClassName = 'aos-icon-tile'
 export const aosIconTileSmClassName = 'aos-icon-tile aos-icon-tile-sm'

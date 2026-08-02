@@ -3,7 +3,6 @@
 import Link from 'next/link'
 
 import { AppNavigation } from '@/components/app/app-navigation'
-import { QuickCaptureButton } from '@/components/app/quick-capture-button'
 import { LogoutButton } from '@/features/auth/components/logout-button'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
 import {
@@ -16,14 +15,12 @@ import {
 type AppSidebarProps = {
   userDisplayName: string
   className?: string
-  onOpenCapture: (trigger: HTMLButtonElement) => void
   caseViews?: AppCaseViewNavItem[]
 }
 
 export function AppSidebar({
   userDisplayName,
   className = '',
-  onOpenCapture,
   caseViews = [],
 }: AppSidebarProps) {
   return (
@@ -38,7 +35,6 @@ export function AppSidebar({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4">
-        <QuickCaptureButton variant="sidebar" onClick={onOpenCapture} />
         <AppNavigation caseViews={caseViews} />
       </div>
 

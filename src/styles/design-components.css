@@ -426,11 +426,15 @@
   }
 
   .aos-capture-floating {
-    @apply fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 lg:bottom-6 lg:right-6;
+    @apply fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30;
   }
 
   .aos-capture-floating-btn {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 lg:h-10 lg:w-10 lg:px-0;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .aos-capture-toolbar {
+    @apply inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.06];
   }
 
   /* Soft accent icon tiles (Dashboard 27C) */

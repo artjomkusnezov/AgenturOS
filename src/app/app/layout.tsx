@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 
 import { AppShellWithNavSuspense } from '@/components/app/app-shell'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
+import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
 import { listNavigationWorkspaceViews } from '@/features/workspace-views/repositories/workspace-views-repository'
 import { createClient } from '@/lib/supabase/server'
 import { getDisplayName } from '@/lib/user/get-display-name'
@@ -21,7 +22,11 @@ export default async function AppLayout({
   }
 
   const displayName = getDisplayName(user) ?? 'Benutzer'
-  const navViewsResult = await listNavigationWorkspaceViews()
+  const [navViewsResult, membersResult] = await Promise.all([
+    listNavigationWorkspaceViews(),
+    listCurrentAgencyMembers(),
+  ])
+
   const caseViews: AppCaseViewNavItem[] = navViewsResult.success
     ? navViewsResult.views.map((view) => ({
         key: view.key,
@@ -31,8 +36,15 @@ export default async function AppLayout({
       }))
     : []
 
+  const agencyMembers = membersResult.success ? membersResult.members : []
+
   return (
-    <AppShellWithNavSuspense userDisplayName={displayName} caseViews={caseViews}>
+    <AppShellWithNavSuspense
+      userDisplayName={displayName}
+      caseViews={caseViews}
+      agencyMembers={agencyMembers}
+      currentUserId={user.id}
+    >
       {children}
     </AppShellWithNavSuspense>
   )
