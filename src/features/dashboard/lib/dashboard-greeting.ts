@@ -31,8 +31,8 @@ export function getFirstNameFromUser(user: {
 
 type WorkSituationInput = {
   unprocessedInboxCount: number
-  openTaskCount: number
-  informationCount: number
+  attentionCount: number
+  myOpenWorkCount: number
 }
 
 function sanitizeCount(value: number): number {
@@ -53,34 +53,34 @@ function formatSentence(text: string): string {
 
 export function getWorkSituationHint({
   unprocessedInboxCount,
-  openTaskCount,
-  informationCount,
+  attentionCount,
+  myOpenWorkCount,
 }: WorkSituationInput): string {
   const inboxCount = sanitizeCount(unprocessedInboxCount)
-  const tasksCount = sanitizeCount(openTaskCount)
-  const infoCount = sanitizeCount(informationCount)
+  const needsAttention = sanitizeCount(attentionCount)
+  const myWorkCount = sanitizeCount(myOpenWorkCount)
   const sentences: string[] = []
 
   if (inboxCount === 1) {
-    sentences.push('Heute wartet 1 neuer Eingang auf dich')
+    sentences.push('1 neuer Eingang wartet oben')
   } else if (inboxCount > 1) {
-    sentences.push(`Heute warten ${inboxCount} neue Eingänge auf dich`)
+    sentences.push(`${inboxCount} neue Eingänge warten oben`)
   }
 
-  if (tasksCount === 1) {
-    sentences.push('Eine Aufgabe ist offen')
-  } else if (tasksCount > 1) {
-    sentences.push(`${tasksCount} Aufgaben sind offen`)
+  if (needsAttention === 1) {
+    sentences.push('1 Vorgang braucht Aufmerksamkeit')
+  } else if (needsAttention > 1) {
+    sentences.push(`${needsAttention} Vorgänge brauchen Aufmerksamkeit`)
   }
 
-  if (infoCount === 1) {
-    sentences.push('Eine Information wurde hinterlegt')
-  } else if (infoCount > 1) {
-    sentences.push(`${infoCount} Informationen sind hinterlegt`)
+  if (myWorkCount === 1) {
+    sentences.push('1 offener Punkt unter Meine Arbeit')
+  } else if (myWorkCount > 1) {
+    sentences.push(`${myWorkCount} offene Punkte unter Meine Arbeit`)
   }
 
   if (sentences.length === 0) {
-    return 'Alles ruhig für den Moment. Starte mit einem Eingang, einer Aufgabe oder einer Information.'
+    return 'Alles ruhig für den Moment. Nichts braucht gerade deine Aufmerksamkeit.'
   }
 
   return sentences.map(formatSentence).join(' ')

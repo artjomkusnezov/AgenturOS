@@ -1,21 +1,20 @@
 import { listTaskActivityForCurrentUser } from '@/features/activity/repositories/task-activity-repository'
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
-import { mapCaseRecordToTask } from '@/features/cases/lib/map-case-to-task'
+import {
+  buildCaseTypeLookup,
+} from '@/features/cases/lib/case-display'
+import { listActiveCaseTypesForCurrentUser } from '@/features/cases/repositories/cases-repository'
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
 import { DashboardErrorBanner } from '@/features/dashboard/components/dashboard-error-banner'
 import { DashboardWorkOverview } from '@/features/dashboard/components/dashboard-work-overview'
-import type { DashboardViewBucket } from '@/features/dashboard/components/dashboard-view-buckets'
-import { selectPriorityTasksForDashboard } from '@/features/dashboard/lib/dashboard-priority-tasks'
+import {
+  countAttentionCases,
+  selectAttentionCasesForDashboard,
+} from '@/features/dashboard/lib/dashboard-attention'
+import { selectMyWorkForDashboard } from '@/features/dashboard/lib/dashboard-my-work'
 import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
-import { listInformationItemsForCurrentUser } from '@/features/information/repositories/information-repository'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
-import type { Task } from '@/features/tasks/types/task'
-import { listDashboardWorkspaceViews } from '@/features/workspace-views/repositories/workspace-views-repository'
 import { createClient } from '@/lib/supabase/server'
-
-type LoadedBucket = DashboardViewBucket & {
-  mappedTasks: Task[]
-}
 
 export async function DashboardPageContent() {
   const supabase = await createClient()
@@ -30,75 +29,48 @@ export async function DashboardPageContent() {
 
   const [
     inboxResult,
-    informationResult,
     membersResult,
     activityResult,
-    dashboardViewsResult,
+    openCasesResult,
+    caseTypesResult,
   ] = await Promise.all([
     listInboxItemsForCurrentUser(),
-    listInformationItemsForCurrentUser(),
     listCurrentAgencyMembers(),
     listTaskActivityForCurrentUser({ limit: 3 }),
-    listDashboardWorkspaceViews(),
+    listCasesForWorkspaceViewFilters({
+      filters: {
+        core_statuses: ['open', 'in_progress', 'waiting'],
+      },
+      sort: 'updated_at_desc',
+    }),
+    listActiveCaseTypesForCurrentUser(),
   ])
 
-  if (!inboxResult.success || !informationResult.success) {
-    const errors = [
-      !inboxResult.success ? inboxResult.error : null,
-      !informationResult.success ? informationResult.error : null,
-    ].filter((message): message is string => message !== null)
-
-    return (
-      <div className="space-y-3" role="alert" aria-live="polite">
-        {errors.map((message) => (
-          <DashboardErrorBanner key={message} message={message} />
-        ))}
-      </div>
-    )
+  if (!inboxResult.success) {
+    return <DashboardErrorBanner message={inboxResult.error} />
   }
 
-  const dashboardViews = dashboardViewsResult.success
-    ? dashboardViewsResult.views
-    : []
+  if (!openCasesResult.success) {
+    return <DashboardErrorBanner message={openCasesResult.error} />
+  }
 
-  const loadedBuckets: LoadedBucket[] = await Promise.all(
-    dashboardViews.map(async (view) => {
-      const casesResult = await listCasesForWorkspaceViewFilters({
-        filters: view.filters,
-        sort: view.sort,
-      })
+  if (!caseTypesResult.success) {
+    return <DashboardErrorBanner message={caseTypesResult.error} />
+  }
 
-      if (!casesResult.success) {
-        return {
-          view,
-          count: 0,
-          priorityTasks: [],
-          mappedTasks: [],
-        }
-      }
+  const caseTypesById = buildCaseTypeLookup(caseTypesResult.caseTypes)
+  const openCases = openCasesResult.cases
 
-      const mappedTasks = casesResult.cases
-        .filter((row) => row.source_task_id)
-        .map((row) => mapCaseRecordToTask(row))
+  const attentionItems = selectAttentionCasesForDashboard(openCases, caseTypesById)
+  const attentionCount = countAttentionCases(openCases)
+  const attentionCaseIds = new Set(attentionItems.map((item) => item.caseId))
 
-      return {
-        view,
-        count: casesResult.cases.length,
-        priorityTasks:
-          view.key === 'tasks'
-            ? selectPriorityTasksForDashboard(mappedTasks)
-            : [],
-        mappedTasks,
-      }
-    }),
-  )
-
-  const tasksLoaded = loadedBuckets.find((bucket) => bucket.view.key === 'tasks')
-  const openTasks = tasksLoaded?.mappedTasks ?? []
-  const viewBuckets: DashboardViewBucket[] = loadedBuckets.map(
-    ({ mappedTasks: _mappedTasks, ...bucket }) => {
-      void _mappedTasks
-      return bucket
+  const { myOpenCases, myOpenTasks, recentlyUpdated } = selectMyWorkForDashboard(
+    openCases,
+    caseTypesById,
+    {
+      currentUserId: user.id,
+      excludeCaseIds: attentionCaseIds,
     },
   )
 
@@ -111,11 +83,13 @@ export async function DashboardPageContent() {
     <DashboardWorkOverview
       user={user}
       unprocessedInboxItems={inboxResult.unprocessedItems}
-      openTasks={openTasks}
-      informationItems={informationResult.items}
+      attentionItems={attentionItems}
+      attentionCount={attentionCount}
+      myOpenCases={myOpenCases}
+      myOpenTasks={myOpenTasks}
+      recentlyUpdated={recentlyUpdated}
       activityItems={activityItems}
       memberNameMap={memberNameMap}
-      viewBuckets={viewBuckets}
     />
   )
 }

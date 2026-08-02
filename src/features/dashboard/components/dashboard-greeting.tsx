@@ -10,22 +10,22 @@ type DashboardGreetingProps = {
     user_metadata?: Record<string, unknown>
   }
   unprocessedInboxCount: number
-  openTaskCount: number
-  informationCount: number
+  attentionCount: number
+  myOpenWorkCount: number
 }
 
 export function DashboardGreeting({
   user,
   unprocessedInboxCount,
-  openTaskCount,
-  informationCount,
+  attentionCount,
+  myOpenWorkCount,
 }: DashboardGreetingProps) {
   const greeting = getTimeOfDayGreeting()
   const firstName = getFirstNameFromUser(user)
   const situationHint = getWorkSituationHint({
     unprocessedInboxCount,
-    openTaskCount,
-    informationCount,
+    attentionCount,
+    myOpenWorkCount,
   })
 
   return (

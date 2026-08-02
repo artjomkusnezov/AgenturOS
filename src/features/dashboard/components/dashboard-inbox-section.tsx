@@ -18,6 +18,7 @@ import {
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
+import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 
 type DashboardInboxSectionProps = {
   items: InboxItem[]
@@ -29,7 +30,7 @@ function DashboardInboxRow({ item }: { item: InboxItem }) {
   const timeLabel = formatDashboardDateOrTime(item.created_at)
 
   return (
-    <Link href="/app/inbox" className={dashboardRowClassName}>
+    <Link href={`/app/inbox?item=${encodeURIComponent(item.id)}`} className={dashboardRowClassName}>
       <DashboardInboxSourceIcon source={item.source} />
       <span className="min-w-0 flex-1">
         <span
@@ -61,25 +62,21 @@ function DashboardInboxRow({ item }: { item: InboxItem }) {
 }
 
 export function DashboardInboxSection({ items }: DashboardInboxSectionProps) {
+  const totalCount = sanitizeDashboardCount(items.length)
   const previewItems = items.slice(0, 5)
   const sectionVisual = resolveSectionVisual('inbox')
+  const title =
+    totalCount > 0 ? `Neue Eingänge (${totalCount})` : 'Neue Eingänge'
 
   return (
     <DashboardSection
-      title="Neue Eingänge"
+      title={title}
       titleId="dashboard-inbox-heading"
       href="/app/inbox"
       hrefLabel="Alle Eingänge anzeigen"
       className={dashboardSurfaceEmphasizedClassName}
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
-      headerExtra={
-        previewItems.length > 0 ? (
-          <span className="text-xs font-medium text-zinc-400">
-            {previewItems.length === 1 ? '1 neu' : `${previewItems.length} neu`}
-          </span>
-        ) : null
-      }
     >
       {previewItems.length === 0 ? (
         <div className={dashboardSectionPaddingClassName}>

@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import type { TaskActivityKind } from '@/features/activity/types/task-activity'
 import {
   DashboardIconActivity,
+  DashboardIconAlert,
+  DashboardIconBriefcase,
   DashboardIconCheckSquare,
   DashboardIconFile,
   DashboardIconFileText,
@@ -156,6 +158,8 @@ export function resolveInformationVisual(isTeamInfo: boolean): DashboardVisual {
 
 export type DashboardSectionKey =
   | 'inbox'
+  | 'attention'
+  | 'myWork'
   | 'tasks'
   | 'information'
   | 'weeklyGoal'
@@ -168,6 +172,18 @@ export function resolveSectionVisual(section: DashboardSectionKey): DashboardVis
         label: 'Neue Eingänge',
         accent: 'blue',
         icon: <DashboardIconInbox className={ICON_MD} />,
+      }
+    case 'attention':
+      return {
+        label: 'Braucht Aufmerksamkeit',
+        accent: 'orange',
+        icon: <DashboardIconAlert className={ICON_MD} />,
+      }
+    case 'myWork':
+      return {
+        label: 'Meine Arbeit',
+        accent: 'green',
+        icon: <DashboardIconBriefcase className={ICON_MD} />,
       }
     case 'tasks':
       return {
