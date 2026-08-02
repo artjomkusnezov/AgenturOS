@@ -25,7 +25,7 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-50/80">
+    <div className="flex min-h-screen bg-zinc-50">
       <AppSidebar
         userDisplayName={userDisplayName}
         className="hidden lg:flex"
@@ -36,16 +36,14 @@ export function AppShell({ children, userDisplayName }: AppShellProps) {
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         userDisplayName={userDisplayName}
+        onOpenCapture={openCapture}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader
-          userDisplayName={userDisplayName}
-          onOpenMobileMenu={() => setMobileMenuOpen(true)}
-        />
+        <AppHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-10">
-          <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10">{children}</div>
+        <main className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-16">
+          {children}
         </main>
       </div>
 

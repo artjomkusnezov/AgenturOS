@@ -4,11 +4,18 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
+import { WorkspaceFrame } from '@/components/app/workspace'
 import { ContactDetailPanel } from '@/features/contacts/components/contact-detail-panel'
 import { ContactEmptyDetail } from '@/features/contacts/components/contact-empty-detail'
 import { ContactList } from '@/features/contacts/components/contact-list'
 import { CreateContactForm } from '@/features/contacts/components/create-contact-form'
 import type { Contact } from '@/features/contacts/types/contact'
+import {
+  aosBtnPrimaryClassName,
+  aosWorkspaceDetailPaneClassName,
+  aosWorkspaceListPaneClassName,
+  aosWorkspaceSplitClassName,
+} from '@/lib/design-system'
 
 type ContactsWorkspaceProps = {
   contacts: Contact[]
@@ -75,33 +82,25 @@ export function ContactsWorkspace({
 
   const showMobileDetail = isCreating || selectedContact !== null
   const totalCount = contacts.length
+  const countLabel = totalCount === 1 ? '1 Kontakt' : `${totalCount} Kontakte`
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col lg:flex-row lg:gap-6">
+    <WorkspaceFrame
+      meta={countLabel}
+      primary={
+        <button type="button" onClick={handleStartCreate} className={aosBtnPrimaryClassName}>
+          Neuer Kontakt
+        </button>
+      }
+      bodyClassName="pt-0"
+    >
+      <div className={aosWorkspaceSplitClassName}>
       <section
         aria-label="Kontaktliste"
-        className={`flex w-full flex-col lg:w-80 lg:shrink-0 ${
+        className={`${aosWorkspaceListPaneClassName} ${
           showMobileDetail ? 'hidden lg:flex' : 'flex'
         }`}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
-              Kontakte
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              {totalCount === 1 ? '1 Kontakt' : `${totalCount} Kontakte`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleStartCreate}
-            className="rounded-xl bg-accent px-3.5 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90"
-          >
-            Neuer Kontakt
-          </button>
-        </div>
-
         {totalCount === 0 ? (
           <EmptyState
             title="Noch keine Kontakte"
@@ -118,7 +117,7 @@ export function ContactsWorkspace({
 
       <section
         aria-label="Kontaktdetails"
-        className={`min-h-[24rem] flex-1 ${
+        className={`${aosWorkspaceDetailPaneClassName} ${
           showMobileDetail ? 'flex' : 'hidden lg:flex'
         }`}
       >
@@ -135,6 +134,7 @@ export function ContactsWorkspace({
           <ContactEmptyDetail />
         )}
       </section>
-    </div>
+      </div>
+    </WorkspaceFrame>
   )
 }

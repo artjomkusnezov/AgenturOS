@@ -1,6 +1,12 @@
 'use client'
 
 import { PlusIcon } from '@/components/app/app-icons'
+import {
+  aosBtnPrimaryClassName,
+  aosCaptureFloatingBtnClassName,
+  aosCaptureFloatingClassName,
+  aosCaptureSidebarClassName,
+} from '@/lib/design-system'
 
 type QuickCaptureButtonProps = {
   variant?: 'floating' | 'sidebar'
@@ -17,9 +23,6 @@ export function QuickCaptureButton({
   disabled = false,
   isExpanded = false,
 }: QuickCaptureButtonProps) {
-  const baseClasses =
-    'inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60'
-
   if (variant === 'floating') {
     return (
       <button
@@ -29,10 +32,10 @@ export function QuickCaptureButton({
         aria-haspopup="menu"
         aria-expanded={isExpanded}
         aria-label="Schnellerfassung"
-        className={`${baseClasses} fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 h-12 min-h-12 border border-accent/20 bg-accent px-4 text-white shadow-lg shadow-accent/20 hover:bg-accent/90 ${className}`}
+        className={`${aosCaptureFloatingBtnClassName} ${aosCaptureFloatingClassName} ${className}`}
       >
         <PlusIcon className="h-4 w-4" aria-hidden="true" />
-        <span>Neu</span>
+        <span className="lg:hidden">Neu</span>
       </button>
     )
   }
@@ -44,7 +47,7 @@ export function QuickCaptureButton({
       disabled={disabled}
       aria-haspopup="menu"
       aria-expanded={isExpanded}
-      className={`${baseClasses} mb-3 w-full min-h-11 border border-accent/20 bg-accent px-4 py-2.5 text-white shadow-sm hover:bg-accent/90 ${className}`}
+      className={`${aosBtnPrimaryClassName} ${aosCaptureSidebarClassName} min-h-11 gap-2 px-4 ${className}`}
     >
       <PlusIcon className="h-4 w-4" aria-hidden="true" />
       <span>Neu</span>

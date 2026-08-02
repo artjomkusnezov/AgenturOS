@@ -67,7 +67,7 @@ export function QuickActionMenu({
       id={menuId}
       role="menu"
       aria-label="Schnellerfassung"
-      className={`${aosDropdownPanelClassName} fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-4 z-40 w-[min(calc(100vw-2rem),18rem)]`}
+      className={`${aosDropdownPanelClassName} fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-4 z-40 w-[min(calc(100vw-2rem),18rem)] lg:bottom-[4.75rem] lg:right-6`}
     >
       <ul className="divide-y divide-zinc-100 py-1">
         {QUICK_ACTIONS.map((action) => (

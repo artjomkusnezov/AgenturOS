@@ -1,5 +1,5 @@
-/**
- * AgenturOS Design System – zentrale Klassen-Konstanten für TypeScript-Komponenten.
+﻿/**
+ * AgenturOS Design System ÔÇô zentrale Klassen-Konstanten f├╝r TypeScript-Komponenten.
  * Entspricht den Utilities in src/styles/design-components.css.
  */
 
@@ -38,6 +38,7 @@ export const aosIconButtonClassName = 'aos-icon-button'
 export const aosCardClassName = 'aos-card'
 export const aosCardPaddedClassName = 'aos-card-padded'
 export const aosCardPanelClassName = 'aos-card-panel'
+export const aosWorkspaceSurfaceClassName = 'aos-workspace-surface'
 export const aosCardEmptyClassName = 'aos-card-empty'
 export const aosPanelHeaderClassName = 'aos-panel-header'
 export const aosPanelFooterClassName = 'aos-panel-footer'
@@ -69,3 +70,28 @@ export const aosSkeletonSubtleClassName = 'aos-skeleton-subtle'
 
 export const aosFieldErrorClassName = 'aos-field-error'
 export const aosFieldErrorSmClassName = 'aos-field-error-sm'
+
+export const aosAppSidebarClassName = 'aos-app-sidebar'
+export const aosAppHeaderClassName = 'aos-app-header'
+export const aosWorkspacePageClassName = 'aos-workspace-page'
+export const aosWorkspacePageCompactClassName = 'aos-workspace-page-compact'
+export const aosWorkspacePageHeaderClassName = 'aos-workspace-page-header'
+export const aosWorkspaceChromeClassName = 'aos-workspace-chrome'
+export const aosWorkspaceChromeTitleClassName = 'aos-workspace-chrome-title'
+export const aosWorkspaceToolbarClassName = 'aos-workspace-toolbar'
+export const aosWorkspaceToolbarMetaClassName = 'aos-workspace-toolbar-meta'
+export const aosWorkspaceToolbarActionsClassName = 'aos-workspace-toolbar-actions'
+export const aosWorkspaceBodyClassName = 'aos-workspace-body'
+export const aosWorkspaceBodyCompactClassName = 'aos-workspace-body-compact'
+export const aosWorkspaceSplitClassName = 'aos-workspace-split'
+export const aosWorkspaceListPaneClassName = 'aos-workspace-list-pane'
+export const aosWorkspaceListScrollClassName = 'aos-workspace-list-scroll'
+export const aosWorkspaceDetailPaneClassName = 'aos-workspace-detail-pane'
+export const aosNavGroupLabelClassName = 'aos-nav-group-label'
+export const aosNavLinkClassName = 'aos-nav-link'
+export const aosNavLinkActiveClassName = 'aos-nav-link-active'
+export const aosNavLinkIndicatorClassName = 'aos-nav-link-indicator'
+export const aosSidebarUserClassName = 'aos-sidebar-user'
+export const aosCaptureSidebarClassName = 'aos-capture-sidebar'
+export const aosCaptureFloatingClassName = 'aos-capture-floating'
+export const aosCaptureFloatingBtnClassName = 'aos-capture-floating-btn'

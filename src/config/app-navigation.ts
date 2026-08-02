@@ -15,57 +15,80 @@ export type AppNavItem = {
   description?: string
 }
 
-export const appNavigation: AppNavItem[] = [
+export type AppNavGroup = {
+  label: string
+  items: AppNavItem[]
+}
+
+export const appNavigationGroups: AppNavGroup[] = [
   {
-    title: 'Übersicht',
-    href: '/app',
-    icon: 'overview',
-    description: 'Ihr persönlicher Überblick für den Tag.',
+    label: 'Arbeit',
+    items: [
+      {
+        title: 'Übersicht',
+        href: '/app',
+        icon: 'overview',
+        description: 'Ihr persönlicher Überblick für den Tag.',
+      },
+      {
+        title: 'Eingang',
+        href: '/app/inbox',
+        icon: 'inbox',
+        description: 'Zentraler Eingang für erfasste Inhalte.',
+      },
+      {
+        title: 'Aufgaben',
+        href: '/app/tasks',
+        icon: 'tasks',
+        description: 'Vorgänge erfassen, organisieren und bearbeiten.',
+      },
+      {
+        title: 'Informationen',
+        href: '/app/information',
+        icon: 'information',
+        description: 'Zentrale Informationsablage Ihrer Agentur.',
+      },
+    ],
   },
   {
-    title: 'Eingang',
-    href: '/app/inbox',
-    icon: 'inbox',
-    description: 'Zentraler Eingang für erfasste Inhalte, die später eingeordnet werden.',
+    label: 'Organisation',
+    items: [
+      {
+        title: 'Kontakte',
+        href: '/app/contacts',
+        icon: 'contacts',
+        description: 'Personen und Firmen verwalten.',
+      },
+      {
+        title: 'Dateien',
+        href: '/app/files',
+        icon: 'files',
+        description: 'Dateien hochladen und verwalten.',
+      },
+    ],
   },
   {
-    title: 'Aufgaben',
-    href: '/app/tasks',
-    icon: 'tasks',
-    description: 'Hier werden später Aufgaben erfasst, organisiert und bearbeitet.',
-  },
-  {
-    title: 'Informationen',
-    href: '/app/information',
-    icon: 'information',
-    description: 'Hier entsteht die zentrale Informationsablage von AgenturOS.',
-  },
-  {
-    title: 'Kontakte',
-    href: '/app/contacts',
-    icon: 'contacts',
-    description: 'Hier werden Kontakte erfasst und verwaltet.',
-  },
-  {
-    title: 'Dateien',
-    href: '/app/files',
-    icon: 'files',
-    description: 'Hier werden Dateien hochgeladen, heruntergeladen und verwaltet.',
-  },
-  {
-    title: 'Aktivitäten',
-    href: '/app/activity',
-    icon: 'activity',
-    description: 'Hier wird später der Verlauf wichtiger Vorgänge sichtbar.',
-  },
-  {
-    title: 'Einstellungen',
-    href: '/app/settings',
-    icon: 'settings',
-    description:
-      'Hier werden später persönliche und anwendungsbezogene Einstellungen verwaltet.',
+    label: 'System',
+    items: [
+      {
+        title: 'Aktivitäten',
+        href: '/app/activity',
+        icon: 'activity',
+        description: 'Verlauf wichtiger Vorgänge.',
+      },
+      {
+        title: 'Einstellungen',
+        href: '/app/settings',
+        icon: 'settings',
+        description: 'Persönliche und anwendungsbezogene Einstellungen.',
+      },
+    ],
   },
 ]
+
+export const appNavigation: AppNavItem[] = appNavigationGroups.flatMap(
+  (group) => group.items,
+)
 
 export function isNavItemActive(pathname: string, href: string): boolean {
   if (href === '/app') {

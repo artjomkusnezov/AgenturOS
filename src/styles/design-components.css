@@ -1,6 +1,6 @@
-/**
- * AgenturOS Component Utilities – Punkt 27A
- * Wiederverwendbare Klassen für einheitliche UI-Elemente.
+﻿/**
+ * AgenturOS Component Utilities ÔÇô Punkt 27A
+ * Wiederverwendbare Klassen f├╝r einheitliche UI-Elemente.
  */
 
 @layer components {
@@ -135,6 +135,10 @@
   .aos-card-panel {
     @apply flex flex-col rounded-xl border border-zinc-200/60 bg-white;
   }
+  .aos-workspace-surface {
+    @apply flex h-full min-h-0 flex-col bg-white;
+  }
+
 
   .aos-card-empty {
     @apply flex items-center justify-center rounded-xl border border-dashed border-zinc-200/60 bg-white/40;
@@ -246,4 +250,103 @@
   .aos-field-error-sm {
     @apply text-sm text-red-600;
   }
+  /* Workspace shell (27B) */
+  .aos-app-sidebar {
+    @apply flex w-60 shrink-0 flex-col border-r border-zinc-200/70 bg-white;
+  }
+
+  .aos-app-header {
+    @apply sticky top-0 z-20 flex h-12 shrink-0 items-center border-b border-zinc-200/70 bg-white px-4 lg:px-6;
+  }
+
+  .aos-workspace-page {
+    @apply mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 lg:px-8 lg:py-7;
+  }
+
+  .aos-workspace-page-compact {
+    @apply mx-auto flex w-full max-w-[96rem] flex-1 flex-col px-3 py-3 lg:px-4 lg:py-3;
+  }
+
+  .aos-workspace-page-header {
+    @apply space-y-1 pb-5;
+  }
+
+  .aos-workspace-chrome {
+    @apply flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-zinc-200/50 pb-2.5;
+  }
+
+  .aos-workspace-chrome-title {
+    @apply text-[15px] font-semibold tracking-tight text-zinc-900;
+  }
+
+  .aos-workspace-toolbar {
+    @apply flex flex-col gap-3 border-b border-zinc-200/70 pb-5 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .aos-workspace-toolbar-meta {
+    @apply text-[11px] tabular-nums text-zinc-400;
+  }
+
+  .aos-workspace-toolbar-actions {
+    @apply flex flex-wrap items-center justify-end gap-1.5;
+  }
+
+  .aos-workspace-body {
+    @apply flex min-h-0 flex-1 flex-col pt-5;
+  }
+
+  .aos-workspace-body-compact {
+    @apply flex min-h-0 flex-1 flex-col pt-2;
+  }
+
+  .aos-workspace-split {
+    @apply flex min-h-[calc(100dvh-8.5rem)] flex-col lg:min-h-[calc(100dvh-7.5rem)] lg:flex-row lg:gap-0;
+  }
+
+  .aos-workspace-list-pane {
+    @apply flex min-h-0 w-full flex-col lg:w-[19rem] lg:shrink-0 lg:border-r lg:border-zinc-200/50 lg:pr-2;
+  }
+
+  .aos-workspace-list-scroll {
+    @apply min-h-0 flex-1 overflow-y-auto px-0 py-0;
+  }
+
+  .aos-workspace-detail-pane {
+    @apply flex min-h-[24rem] min-w-0 flex-1 flex-col lg:min-h-0 lg:pl-5;
+  }
+
+
+  .aos-nav-group-label {
+    @apply px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 first:pt-1;
+  }
+
+  .aos-nav-link {
+    @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .aos-nav-link-active {
+    @apply bg-zinc-100 text-zinc-900;
+  }
+
+  .aos-nav-link-indicator {
+    @apply absolute inset-y-2 left-0 w-0.5 rounded-full bg-accent;
+  }
+
+  .aos-sidebar-user {
+    @apply border-t border-zinc-200/70 p-4;
+  }
+
+  .aos-capture-sidebar {
+    @apply mb-4 w-full;
+  }
+
+  .aos-capture-floating {
+    @apply fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 lg:bottom-6 lg:right-6;
+  }
+
+  .aos-capture-floating-btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 lg:h-10 lg:w-10 lg:px-0;
+  }
+
+
 }

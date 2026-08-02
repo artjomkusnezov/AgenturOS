@@ -1,6 +1,6 @@
-/**
- * AgenturOS Design Tokens – Punkt 27A
- * Zentrale Werte für Farbe, Typografie, Spacing, Radius, Schatten und Motion.
+﻿/**
+ * AgenturOS Design Tokens ÔÇô Punkt 27A
+ * Zentrale Werte f├╝r Farbe, Typografie, Spacing, Radius, Schatten und Motion.
  */
 
 :root {
@@ -105,9 +105,9 @@
   --aos-font-semibold: 600;
 
   /* Icons */
-  --aos-icon-sm: 1rem;
-  --aos-icon-md: 1.125rem;
-  --aos-icon-lg: 1.25rem;
+  --aos-icon-sm: 0.875rem; /* 14px meta */
+  --aos-icon-md: 1.125rem; /* 18px nav / section / rows */
+  --aos-icon-lg: 1.25rem; /* 20px list emphasis */
 
   /* Touch targets */
   --aos-touch-min: 2.75rem;
