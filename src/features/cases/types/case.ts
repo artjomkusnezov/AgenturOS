@@ -15,3 +15,20 @@ export const CASE_CORE_STATUSES = [
 ] as const satisfies readonly CaseCoreStatus[]
 
 export type CasePriority = CaseRecord['priority']
+
+/** Systemweite Case-Type-Keys (seeds in case_types, agency_id null). */
+export const SYSTEM_CASE_TYPE_KEYS = [
+  'task',
+  'offer',
+  'claim',
+  'appointment',
+  'follow_up',
+  'contract',
+  'general',
+] as const
+
+export type SystemCaseTypeKey = (typeof SYSTEM_CASE_TYPE_KEYS)[number]
+
+export function isSystemCaseTypeKey(value: string): value is SystemCaseTypeKey {
+  return (SYSTEM_CASE_TYPE_KEYS as readonly string[]).includes(value)
+}

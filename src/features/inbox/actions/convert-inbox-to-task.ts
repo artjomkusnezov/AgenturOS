@@ -2,10 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { createTaskCaseFromInboxItem } from '@/features/cases/services/case-task-service'
+import { promoteInboxItem } from '@/features/cases/services/inbox-promotion-service'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import type { InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 
+/**
+ * UI-Pfad „Als Aufgabe übernehmen“.
+ * Intern: gemeinsame Promotion mit case_type = task.
+ */
 export async function convertInboxToTaskAction(
   _prevState: InboxItemMutationState,
   formData: FormData
@@ -16,7 +20,10 @@ export async function convertInboxToTaskAction(
     return { error: 'Das Eingangselement ist ungültig.' }
   }
 
-  const result = await createTaskCaseFromInboxItem(itemId)
+  const result = await promoteInboxItem({
+    inboxItemId: itemId,
+    target: { kind: 'case', caseType: 'task' },
+  })
 
   if (!result.success) {
     return { error: result.error }

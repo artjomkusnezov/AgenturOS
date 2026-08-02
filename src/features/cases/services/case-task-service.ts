@@ -85,6 +85,9 @@ export async function deleteTaskCaseForCurrentUser(
   return deleteTaskForCurrentUser(taskId)
 }
 
+/**
+ * Persistenz für Inbox→Task-Case. Öffentlicher Promotion-Einstieg: `promoteInboxItem`.
+ */
 export async function createTaskCaseFromInboxItem(
   itemId: string,
 ): Promise<CreateTaskCaseFromInboxResult> {
