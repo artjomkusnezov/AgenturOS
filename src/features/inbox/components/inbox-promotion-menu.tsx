@@ -80,6 +80,7 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
   const handledSuccessKeyRef = useRef<string | null>(null)
 
   const isBusy = isTaskPending || isOfferPending || isNavigating
+  const showMenuPanel = isOpen && !isBusy
   const activeSuccess =
     taskState.success && taskState.taskId
       ? taskState
@@ -141,11 +142,9 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
     setIsOpen(false)
   }
 
-  function handleActiveSelect() {
-    if (isBusy) {
-      return
-    }
-
+  function handlePromotionSubmit() {
+    // Menü nur schließen; Formulare bleiben gemountet (hidden), damit der
+    // Server-Action-Submit nicht durch Unmount abgebrochen wird.
     setIsOpen(false)
   }
 
@@ -174,71 +173,76 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
         <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{activeError}</p>
       ) : null}
 
-      {isOpen && !isBusy ? (
-        <div
-          role="menu"
-          aria-label="Übernehmen als"
-          className="mt-3 max-w-full space-y-1 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/95 p-2 shadow-sm"
-        >
-          {PROMOTION_OPTIONS.map((option) => {
-            const Icon = option.icon
-            const isTask = option.key === 'task'
-            const isOffer = option.key === 'offer'
+      <div
+        role="menu"
+        aria-label="Übernehmen als"
+        aria-hidden={!showMenuPanel}
+        className={`mt-3 max-w-full space-y-1 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white/95 p-2 shadow-sm ${
+          showMenuPanel ? '' : 'hidden'
+        }`}
+      >
+        {PROMOTION_OPTIONS.map((option) => {
+          const Icon = option.icon
+          const isTask = option.key === 'task'
+          const isOffer = option.key === 'offer'
 
-            if (isTask || isOffer) {
-              return (
-                <form
-                  key={option.key}
-                  action={isTask ? taskFormAction : offerFormAction}
-                  className="w-full"
-                >
-                  <input type="hidden" name="itemId" value={itemId} />
-                  <button
-                    type="submit"
-                    role="menuitem"
-                    disabled={isBusy}
-                    onClick={handleActiveSelect}
-                    className={optionButtonClassName}
-                  >
-                    <span className="mt-0.5 shrink-0 text-zinc-500">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-zinc-900">
-                        {option.title}
-                      </span>
-                      <span className="block text-xs text-zinc-500">
-                        {option.description}
-                      </span>
-                    </span>
-                  </button>
-                </form>
-              )
-            }
-
+          if (isTask || isOffer) {
             return (
-              <button
+              <form
                 key={option.key}
-                type="button"
-                role="menuitem"
-                disabled={isBusy}
-                onClick={handlePlaceholderSelect}
-                className={optionButtonClassName}
+                action={isTask ? taskFormAction : offerFormAction}
+                onSubmit={handlePromotionSubmit}
+                className="w-full"
               >
-                <span className="mt-0.5 shrink-0 text-zinc-500">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-zinc-900">
-                    {option.title}
+                <input type="hidden" name="itemId" value={itemId} />
+                <button
+                  type="submit"
+                  role="menuitem"
+                  disabled={isBusy}
+                  className={optionButtonClassName}
+                >
+                  <span className="mt-0.5 shrink-0 text-zinc-500">
+                    <Icon className="h-4 w-4" />
                   </span>
-                  <span className="block text-xs text-zinc-500">{option.description}</span>
-                </span>
-              </button>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-zinc-900">
+                      {option.title}
+                    </span>
+                    <span className="block text-xs text-zinc-500">
+                      {option.description}
+                    </span>
+                  </span>
+                </button>
+              </form>
             )
-          })}
-        </div>
-      ) : null}
+          }
+
+          if (!showMenuPanel) {
+            return null
+          }
+
+          return (
+            <button
+              key={option.key}
+              type="button"
+              role="menuitem"
+              disabled={isBusy}
+              onClick={handlePlaceholderSelect}
+              className={optionButtonClassName}
+            >
+              <span className="mt-0.5 shrink-0 text-zinc-500">
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-zinc-900">
+                  {option.title}
+                </span>
+                <span className="block text-xs text-zinc-500">{option.description}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
