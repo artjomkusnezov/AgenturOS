@@ -92,11 +92,15 @@ export function CaseTimelineEntryView({
 }: CaseTimelineEntryProps) {
   const authorName = resolveTaskMemberName(entry.created_by, memberNameMap)
 
-  if (entry.event_type === 'created') {
-    return <SystemEntry entry={entry} label={entry.content} />
-  }
-
-  if (entry.event_type === 'task_created' || entry.event_type === 'task_completed') {
+  if (
+    entry.event_type === 'created' ||
+    entry.event_type === 'task_created' ||
+    entry.event_type === 'task_completed' ||
+    entry.event_type === 'status_changed' ||
+    entry.event_type === 'assignee_changed' ||
+    entry.event_type === 'priority_changed' ||
+    entry.event_type === 'due_at_changed'
+  ) {
     return <SystemEntry entry={entry} label={entry.content} />
   }
 

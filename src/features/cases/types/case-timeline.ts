@@ -9,6 +9,10 @@ export type CaseTimelineEventType =
   | 'attachment'
   | 'task_created'
   | 'task_completed'
+  | 'status_changed'
+  | 'assignee_changed'
+  | 'priority_changed'
+  | 'due_at_changed'
 
 export type CaseTimelineEntryView = CaseTimelineEntry & {
   file: FileRecord | null

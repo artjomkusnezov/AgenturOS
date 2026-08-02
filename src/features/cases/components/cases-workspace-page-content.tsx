@@ -358,6 +358,7 @@ export async function CasesWorkspacePageContent({
   const memberNameMap = membersResult.success
     ? buildMemberNameMap(membersResult.members)
     : {}
+  const agencyMembers = membersResult.success ? membersResult.members : []
 
   const lookups = {
     caseTypesById: caseTypesResult.success
@@ -402,6 +403,7 @@ export async function CasesWorkspacePageContent({
       selectedCaseOpenTasks={selectedCaseOpenTasks}
       selectedCaseCompletedTasks={selectedCaseCompletedTasks}
       memberNameMap={memberNameMap}
+      agencyMembers={agencyMembers}
       lookups={lookups}
       pathMode={pathMode}
       emptyMessage={getWorkspaceViewEmptyMessage(activeView.key, activeView.name)}

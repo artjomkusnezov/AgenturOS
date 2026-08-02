@@ -1211,6 +1211,38 @@ export type Database = {
         Args: { p_agency_id: string; p_key: string }
         Returns: string
       }
+      update_case: {
+        Args: {
+          p_assignee_user_id?: string | null
+          p_case_id: string
+          p_core_status?: string
+          p_due_at?: string | null
+          p_priority?: string
+          p_set_assignee?: boolean
+          p_set_core_status?: boolean
+          p_set_due_at?: boolean
+          p_set_priority?: boolean
+        }
+        Returns: {
+          agency_id: string
+          archived_at: string | null
+          assignee_user_id: string | null
+          business_area_id: string
+          case_type_id: string
+          completed_at: string | null
+          core_status: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          source_inbox_item_id: string | null
+          source_task_id: string | null
+          title: string
+          updated_at: string
+        }
+      }
       update_task_assignee: {
         Args: { p_assignee_user_id?: string; p_task_id: string }
         Returns: {

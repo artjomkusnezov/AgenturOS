@@ -4,11 +4,6 @@ import Link from 'next/link'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import {
-  formatCaseCoreStatusLabel,
-  formatCaseDueAtLabel,
-  formatCasePriorityLabel,
-  isCaseDueOverdue,
-  isCaseOpenForDue,
   resolveBusinessAreaLabel,
   resolveCaseTypeKey,
   resolveCaseTypeLabel,
@@ -24,12 +19,13 @@ import {
 } from '@/features/dashboard/components/dashboard-icons'
 import { CaseTimeline } from '@/features/cases/components/case-timeline'
 import { CaseTasksSection } from '@/features/cases/components/case-tasks-section'
+import { CaseWorkflowControls } from '@/features/cases/components/case-workflow-controls'
 import type { CaseTimelineEntryView } from '@/features/cases/types/case-timeline'
+import type { AgencyMember } from '@/features/agency/types/agency-member'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
-import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import type { Task } from '@/features/tasks/types/task'
 import {
   aosDocBodyClassName,
@@ -49,6 +45,7 @@ export type CaseInboxOriginView = {
 type CaseDetailPanelProps = {
   caseRow: CaseRecord
   memberNameMap: Record<string, string>
+  agencyMembers: AgencyMember[]
   lookups: CaseDisplayLookups
   origin: CaseInboxOriginView | null
   timelineEntries: CaseTimelineEntryView[]
@@ -80,6 +77,7 @@ function CaseTypeIcon({ typeKey }: { typeKey: string | null }) {
 export function CaseDetailPanel({
   caseRow,
   memberNameMap,
+  agencyMembers,
   lookups,
   origin,
   timelineEntries,
@@ -94,23 +92,7 @@ export function CaseDetailPanel({
     caseRow.business_area_id,
     lookups.businessAreasById,
   )
-  const statusLabel = formatCaseCoreStatusLabel(caseRow.core_status)
-  const priorityLabel = formatCasePriorityLabel(caseRow.priority)
-  const assigneeName = caseRow.assignee_user_id
-    ? resolveTaskMemberName(caseRow.assignee_user_id, memberNameMap)
-    : 'Nicht zugewiesen'
-  const dueLabel = caseRow.due_at
-    ? formatCaseDueAtLabel(caseRow.due_at, undefined, isCaseOpenForDue(caseRow))
-    : null
-  const dueOverdue = isCaseDueOverdue(caseRow)
   const description = caseRow.description?.trim() ?? ''
-
-  const metaParts = [
-    statusLabel,
-    businessAreaLabel,
-    assigneeName,
-    `Priorität ${priorityLabel}`,
-  ]
 
   return (
     <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
@@ -128,26 +110,17 @@ export function CaseDetailPanel({
             <CaseTypeIcon typeKey={typeKey} />
           </span>
           <span>{typeLabel}</span>
+          <span className="mx-0.5 text-zinc-300">·</span>
+          <span>{businessAreaLabel}</span>
         </p>
 
         <h2 className={`mt-2 ${aosDocTitleClassName}`}>{caseRow.title}</h2>
 
-        <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
-          {metaParts.map((part, index) => (
-            <span key={`${part}-${index}`}>
-              {index > 0 ? <span className="mx-1.5 text-zinc-300">·</span> : null}
-              <span>{part}</span>
-            </span>
-          ))}
-          {dueLabel ? (
-            <>
-              <span className="mx-1.5 text-zinc-300">·</span>
-              <span className={dueOverdue ? 'font-medium text-red-600' : undefined}>
-                Fällig {dueLabel}
-              </span>
-            </>
-          ) : null}
-        </p>
+        <CaseWorkflowControls
+          caseRow={caseRow}
+          caseTypeKey={typeKey}
+          members={agencyMembers}
+        />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

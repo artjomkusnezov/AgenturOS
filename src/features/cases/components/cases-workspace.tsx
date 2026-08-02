@@ -18,6 +18,7 @@ import {
 import type { CaseDisplayLookups } from '@/features/cases/lib/case-display'
 import type { CaseRecord } from '@/features/cases/types/case'
 import type { CaseTimelineEntryView } from '@/features/cases/types/case-timeline'
+import type { AgencyMember } from '@/features/agency/types/agency-member'
 import { CreateTaskForm } from '@/features/tasks/components/create-task-form'
 import type { Task } from '@/features/tasks/types/task'
 import type { WorkspaceView } from '@/features/workspace-views/types/workspace-view'
@@ -33,6 +34,7 @@ type CasesWorkspaceProps = {
   selectedCaseOpenTasks: Task[]
   selectedCaseCompletedTasks: Task[]
   memberNameMap: Record<string, string>
+  agencyMembers: AgencyMember[]
   lookups: CaseDisplayLookups
   pathMode: CasesWorkspacePathMode
   emptyMessage: string
@@ -48,6 +50,7 @@ export function CasesWorkspace({
   selectedCaseOpenTasks,
   selectedCaseCompletedTasks,
   memberNameMap,
+  agencyMembers,
   lookups,
   pathMode,
   emptyMessage,
@@ -103,6 +106,7 @@ export function CasesWorkspace({
       <CaseDetailPanel
         caseRow={selectedCase}
         memberNameMap={memberNameMap}
+        agencyMembers={agencyMembers}
         lookups={lookups}
         origin={selectedCaseOrigin}
         timelineEntries={selectedCaseTimelineEntries}
