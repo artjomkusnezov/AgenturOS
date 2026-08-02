@@ -3,16 +3,17 @@
 import { revalidatePath } from 'next/cache'
 
 import { promoteInboxItem } from '@/features/cases/services/inbox-promotion-service'
+import { resolvePromotionViewKey } from '@/features/cases/types/inbox-promotion'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import type { InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 
 /**
- * UI-Pfad „Als Aufgabe übernehmen“.
- * Intern: gemeinsame Promotion mit case_type = task.
+ * UI-Pfad „Übernehmen als… → Angebot“.
+ * Intern: gemeinsame Promotion mit case_type = offer.
  */
-export async function convertInboxToTaskAction(
+export async function convertInboxToOfferAction(
   _prevState: InboxItemMutationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<InboxItemMutationState> {
   const itemId = String(formData.get('itemId') ?? '')
 
@@ -22,23 +23,30 @@ export async function convertInboxToTaskAction(
 
   const result = await promoteInboxItem({
     inboxItemId: itemId,
-    target: { kind: 'case', caseType: 'task' },
+    target: { kind: 'case', caseType: 'offer' },
   })
 
   if (!result.success) {
-    return { error: result.error }
+    return {
+      error: result.error || 'Angebot konnte nicht erstellt werden.',
+    }
+  }
+
+  if (!result.caseId) {
+    return {
+      error: 'Angebot konnte nicht erstellt werden.',
+    }
   }
 
   revalidatePath('/app/inbox')
-  revalidatePath('/app/tasks')
+  revalidatePath('/app/cases')
 
   return {
     success: true,
     itemId: result.inboxItemId,
-    taskId: result.sourceTaskId,
     caseId: result.caseId,
-    caseTypeKey: result.caseTypeKey ?? 'task',
-    viewKey: result.viewKey,
-    promotionKind: 'task',
+    caseTypeKey: result.caseTypeKey ?? 'offer',
+    viewKey: result.viewKey ?? resolvePromotionViewKey('offer'),
+    promotionKind: 'offer',
   }
 }

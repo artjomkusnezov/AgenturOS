@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { buildCasesItemHref } from '@/features/cases/lib/cases-workspace-urls'
+import { convertInboxToOfferAction } from '@/features/inbox/actions/convert-inbox-to-offer'
 import { convertInboxToTaskAction } from '@/features/inbox/actions/convert-inbox-to-task'
 import {
   DashboardIconCalendar,
@@ -66,31 +68,62 @@ const optionButtonClassName =
 export function InboxPromotionMenu({ itemId }: { itemId: string }) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
-  const [state, formAction, isPending] = useActionState(convertInboxToTaskAction, initialState)
+  const [taskState, taskFormAction, isTaskPending] = useActionState(
+    convertInboxToTaskAction,
+    initialState,
+  )
+  const [offerState, offerFormAction, isOfferPending] = useActionState(
+    convertInboxToOfferAction,
+    initialState,
+  )
   const [isNavigating, startNavigation] = useTransition()
   const handledSuccessKeyRef = useRef<string | null>(null)
 
-  const isBusy = isPending || isNavigating
-  const showSuccess = Boolean(state.success && state.taskId)
-  const showError = Boolean(state.error) && !isBusy
+  const isBusy = isTaskPending || isOfferPending || isNavigating
+  const activeSuccess =
+    taskState.success && taskState.taskId
+      ? taskState
+      : offerState.success && offerState.caseId
+        ? offerState
+        : null
+  const activeError = activeSuccess
+    ? null
+    : !isBusy && (taskState.error || offerState.error)
+      ? taskState.error || offerState.error || null
+      : null
 
   useEffect(() => {
-    if (!state.success || !state.taskId) {
+    if (!activeSuccess) {
       return
     }
 
-    const successKey = `${itemId}:${state.taskId}`
-    if (handledSuccessKeyRef.current === successKey) {
+    const successKey =
+      activeSuccess.promotionKind === 'offer' && activeSuccess.caseId
+        ? `${itemId}:offer:${activeSuccess.caseId}`
+        : activeSuccess.taskId
+          ? `${itemId}:task:${activeSuccess.taskId}`
+          : null
+
+    if (!successKey || handledSuccessKeyRef.current === successKey) {
       return
     }
 
     handledSuccessKeyRef.current = successKey
 
     startNavigation(() => {
-      router.push(`/app/tasks?task=${encodeURIComponent(state.taskId!)}`)
+      if (activeSuccess.promotionKind === 'offer' && activeSuccess.caseId) {
+        router.push(
+          buildCasesItemHref('cases', activeSuccess.viewKey ?? 'offers', {
+            caseId: activeSuccess.caseId,
+          }),
+        )
+      } else if (activeSuccess.taskId) {
+        router.push(`/app/tasks?task=${encodeURIComponent(activeSuccess.taskId)}`)
+      }
+
       router.refresh()
     })
-  }, [itemId, router, startNavigation, state.success, state.taskId])
+  }, [activeSuccess, itemId, router, startNavigation])
 
   function handleToggle() {
     if (isBusy) {
@@ -108,7 +141,7 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
     setIsOpen(false)
   }
 
-  function handleTaskSelect() {
+  function handleActiveSelect() {
     if (isBusy) {
       return
     }
@@ -129,12 +162,16 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
         {isBusy ? 'Übernahme läuft...' : 'Übernehmen als...'}
       </button>
 
-      {showSuccess ? (
+      {activeSuccess?.promotionKind === 'task' ? (
         <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Aufgabe erstellt</p>
       ) : null}
 
-      {showError ? (
-        <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{state.error}</p>
+      {activeSuccess?.promotionKind === 'offer' ? (
+        <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Angebot erstellt</p>
+      ) : null}
+
+      {activeError ? (
+        <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{activeError}</p>
       ) : null}
 
       {isOpen && !isBusy ? (
@@ -146,16 +183,21 @@ export function InboxPromotionMenu({ itemId }: { itemId: string }) {
           {PROMOTION_OPTIONS.map((option) => {
             const Icon = option.icon
             const isTask = option.key === 'task'
+            const isOffer = option.key === 'offer'
 
-            if (isTask) {
+            if (isTask || isOffer) {
               return (
-                <form key={option.key} action={formAction} className="w-full">
+                <form
+                  key={option.key}
+                  action={isTask ? taskFormAction : offerFormAction}
+                  className="w-full"
+                >
                   <input type="hidden" name="itemId" value={itemId} />
                   <button
                     type="submit"
                     role="menuitem"
                     disabled={isBusy}
-                    onClick={handleTaskSelect}
+                    onClick={handleActiveSelect}
                     className={optionButtonClassName}
                   >
                     <span className="mt-0.5 shrink-0 text-zinc-500">

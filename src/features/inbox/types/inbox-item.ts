@@ -21,6 +21,10 @@ export type InboxItemMutationState = {
   success?: boolean
   itemId?: string
   taskId?: string
+  caseId?: string
+  caseTypeKey?: string
+  viewKey?: string
+  promotionKind?: 'task' | 'offer'
 }
 
 export type InboxItemInput = {
