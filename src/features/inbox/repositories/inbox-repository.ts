@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { INBOX_RELATION_TYPE_TASK } from '@/features/inbox/lib/inbox-relation'
 import { INBOX_SOURCE_MANUAL_TEXT, INBOX_SOURCE_UNIVERSAL_CAPTURE } from '@/features/inbox/lib/inbox-source'
 import { partitionAndSortInboxItems } from '@/features/inbox/lib/sort-inbox-items'
-import type { InboxItem } from '@/features/inbox/types/inbox-item'
+import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
+import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 
 type RepositoryError = {
   success: false
@@ -24,6 +25,10 @@ type InboxItemResult =
 
 type DeleteInboxItemResult =
   | { success: true }
+  | RepositoryError
+
+type ListInboxFilesResult =
+  | { success: true; files: InboxLinkedFile[] }
   | RepositoryError
 
 type CreateTaskFromInboxItemResult =
@@ -357,5 +362,74 @@ export async function createTaskFromInboxItem(
     inboxItemId: row.inbox_item_id,
     taskId: row.task_id,
     relationId: row.relation_id,
+  }
+}
+
+export async function listFilesForInboxItem(
+  inboxItemId: string,
+): Promise<ListInboxFilesResult> {
+  if (!isValidInboxItemId(inboxItemId)) {
+    return {
+      success: false,
+      error: 'Bitte geben Sie ein gültiges Eingangselement an.',
+    }
+  }
+
+  const authResult = await getAuthenticatedUserId()
+
+  if (!authResult.success) {
+    return authResult
+  }
+
+  const supabase = await createClient()
+  const { data: inboxItem, error: inboxError } = await supabase
+    .from('inbox_items')
+    .select('id')
+    .eq('id', inboxItemId)
+    .eq('user_id', authResult.userId)
+    .maybeSingle()
+
+  if (inboxError) {
+    return {
+      success: false,
+      error: 'Die Anhänge konnten nicht geladen werden.',
+    }
+  }
+
+  if (!inboxItem) {
+    return {
+      success: false,
+      error: 'Das Eingangselement wurde nicht gefunden.',
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('inbox_item_files')
+    .select('id, created_at, files(*)')
+    .eq('inbox_item_id', inboxItemId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Anhänge konnten nicht geladen werden.',
+    }
+  }
+
+  const files: InboxLinkedFile[] = []
+
+  for (const row of data) {
+    const file = row.files
+
+    files.push({
+      relationId: row.id,
+      linkedAt: row.created_at,
+      file: !file || Array.isArray(file) ? null : file,
+    })
+  }
+
+  return {
+    success: true,
+    files,
   }
 }

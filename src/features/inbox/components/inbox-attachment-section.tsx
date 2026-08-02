@@ -3,13 +3,13 @@
 import { DocumentMediaSection } from '@/features/files/components/document-media-section'
 import { downloadFileAction } from '@/features/files/actions/download-file'
 import type { DocumentMediaItem } from '@/features/files/types/document-media'
-import type { InformationLinkedFile } from '@/features/information/types/information-item'
+import type { InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 
-type InformationAttachmentSectionProps = {
-  attachments: InformationLinkedFile[]
+type InboxAttachmentSectionProps = {
+  attachments: InboxLinkedFile[]
 }
 
-function toMediaItems(attachments: InformationLinkedFile[]): DocumentMediaItem[] {
+function toMediaItems(attachments: InboxLinkedFile[]): DocumentMediaItem[] {
   return attachments.map((attachment) => ({
     key: attachment.relationId,
     file: attachment.file,
@@ -17,9 +17,7 @@ function toMediaItems(attachments: InformationLinkedFile[]): DocumentMediaItem[]
   }))
 }
 
-export function InformationAttachmentSection({
-  attachments,
-}: InformationAttachmentSectionProps) {
+export function InboxAttachmentSection({ attachments }: InboxAttachmentSectionProps) {
   return (
     <DocumentMediaSection
       items={toMediaItems(attachments)}

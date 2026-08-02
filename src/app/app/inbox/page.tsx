@@ -1,6 +1,11 @@
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
+import { enrichInboxAttachmentsWithMediaUrls } from '@/features/inbox/lib/enrich-inbox-attachments'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
-import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
+import {
+  listFilesForInboxItem,
+  listInboxItemsForCurrentUser,
+} from '@/features/inbox/repositories/inbox-repository'
+import type { InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
@@ -25,12 +30,23 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       ? item
       : null
 
+  let attachments: InboxLinkedFile[] = []
+
+  if (selectedItemId) {
+    const attachmentsResult = await listFilesForInboxItem(selectedItemId)
+
+    if (attachmentsResult.success) {
+      attachments = await enrichInboxAttachmentsWithMediaUrls(attachmentsResult.files)
+    }
+  }
+
   return (
     <InboxWorkspace
       unprocessedItems={result.unprocessedItems}
       processedItems={result.processedItems}
       taskRelationsByItemId={result.taskRelationsByItemId}
       selectedItemId={selectedItemId}
+      attachments={attachments}
     />
   )
 }

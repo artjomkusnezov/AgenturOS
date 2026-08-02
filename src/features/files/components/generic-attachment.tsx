@@ -8,15 +8,16 @@ import {
   DashboardIconImage,
   DashboardIconMic,
 } from '@/features/dashboard/components/dashboard-icons'
+import { MediaOpenButton } from '@/features/files/components/media-open-button'
 import { classifyMediaKind, type MediaKind } from '@/features/files/lib/classify-media-kind'
 import { formatFileSize } from '@/features/files/lib/format-file-label'
+import type { MediaDownloadAction } from '@/features/files/types/document-media'
 import type { FileRecord } from '@/features/files/types/file'
-import { InformationAttachmentOpenButton } from '@/features/information/components/information-attachment-open-button'
 import { aosWorkspaceMetaClassName } from '@/lib/design-system'
 
 type IconProps = SVGProps<SVGSVGElement>
 
-function DashboardIconVideo(props: IconProps) {
+function MediaIconVideo(props: IconProps) {
   const { className, ...rest } = props
   return (
     <svg
@@ -36,7 +37,7 @@ function DashboardIconVideo(props: IconProps) {
   )
 }
 
-function DashboardIconArchive(props: IconProps) {
+function MediaIconArchive(props: IconProps) {
   const { className, ...rest } = props
   return (
     <svg
@@ -68,19 +69,27 @@ function mediaKindIcon(kind: MediaKind): ReactNode {
     case 'audio':
       return <DashboardIconMic className={className} />
     case 'video':
-      return <DashboardIconVideo className={className} />
+      return <MediaIconVideo className={className} />
     case 'archive':
-      return <DashboardIconArchive className={className} />
+      return <MediaIconArchive className={className} />
     default:
       return <DashboardIconFile className={className} />
   }
 }
 
-type InformationGenericAttachmentProps = {
+type GenericAttachmentProps = {
   file: FileRecord | null
+  openAction: MediaDownloadAction
+  openExtraFields?: Record<string, string>
+  actions?: ReactNode
 }
 
-export function InformationGenericAttachment({ file }: InformationGenericAttachmentProps) {
+export function GenericAttachment({
+  file,
+  openAction,
+  openExtraFields,
+  actions,
+}: GenericAttachmentProps) {
   if (!file) {
     return (
       <li className="flex items-center gap-2.5 py-2.5">
@@ -108,7 +117,10 @@ export function InformationGenericAttachment({ file }: InformationGenericAttachm
         </p>
         <p className={aosWorkspaceMetaClassName}>{formatFileSize(file.size_bytes)}</p>
       </div>
-      <InformationAttachmentOpenButton fileId={file.id} />
+      <div className="flex shrink-0 items-center gap-1.5">
+        <MediaOpenButton fileId={file.id} action={openAction} extraFields={openExtraFields} />
+        {actions}
+      </div>
     </li>
   )
 }

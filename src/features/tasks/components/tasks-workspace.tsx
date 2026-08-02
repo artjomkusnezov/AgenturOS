@@ -75,13 +75,6 @@ export function TasksWorkspace({
     [router],
   )
 
-  const navigateToTaskFile = useCallback(
-    (taskId: string, fileId: string) => {
-      router.push(`/app/tasks?task=${taskId}&file=${fileId}`)
-    },
-    [router],
-  )
-
   const navigateToList = useCallback(() => {
     router.push('/app/tasks')
   }, [router])
@@ -92,17 +85,6 @@ export function TasksWorkspace({
       navigateToTask(taskId)
     },
     [navigateToTask],
-  )
-
-  const handleOpenFile = useCallback(
-    (fileId: string) => {
-      if (!selectedTaskId) {
-        return
-      }
-
-      navigateToTaskFile(selectedTaskId, fileId)
-    },
-    [navigateToTaskFile, selectedTaskId],
   )
 
   const handleCloseFilePreview = useCallback(() => {
@@ -255,10 +237,8 @@ export function TasksWorkspace({
           linkedInformation={detailState.linkedInformation}
           availableFiles={detailState.availableFiles}
           availableInformation={detailState.availableInformation}
-          selectedFileId={selectedFileId}
           memberNameMap={memberNameMap}
           agencyMembers={agencyMembers}
-          onOpenFile={handleOpenFile}
           onBack={handleBackToList}
           onDeleted={handleDeleted}
           onWorkflowChange={handleWorkflowChange}

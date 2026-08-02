@@ -10,9 +10,14 @@ import { deleteInboxItemAction } from '@/features/inbox/actions/delete-inbox-ite
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-item'
+import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
-import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
+import type {
+  InboxItem,
+  InboxItemMutationState,
+  InboxLinkedFile,
+} from '@/features/inbox/types/inbox-item'
 import {
   aosBtnDangerClassName,
   aosDocBodyClassName,
@@ -31,6 +36,7 @@ import {
 type InboxDetailPanelProps = {
   item: InboxItem
   linkedTaskId: string | null
+  attachments?: InboxLinkedFile[]
   onBack?: () => void
   onDeleted: () => void
   onStatusChange: () => void
@@ -122,6 +128,7 @@ function ConvertToTaskButton({
 export function InboxDetailPanel({
   item,
   linkedTaskId,
+  attachments = [],
   onBack,
   onDeleted,
   onStatusChange,
@@ -130,11 +137,11 @@ export function InboxDetailPanel({
   const deleteFormId = useId()
   const [updateState, updateAction, isUpdatePending] = useActionState(
     updateInboxItemAction,
-    initialState
+    initialState,
   )
   const [deleteState, deleteAction, isDeletePending] = useActionState(
     deleteInboxItemAction,
-    initialState
+    initialState,
   )
   const [confirmDelete, setConfirmDelete] = useState(false)
   const handledDeleteRef = useRef(false)
@@ -179,41 +186,44 @@ export function InboxDetailPanel({
         </div>
       </div>
 
-      <form
-        id={updateFormId}
-        action={updateAction}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
-      >
-        <input type="hidden" name="itemId" value={item.id} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <form id={updateFormId} action={updateAction} className="flex flex-col">
+          <input type="hidden" name="itemId" value={item.id} />
 
-        <section aria-label="Inhalt" className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}>
-          <WorkspaceSectionHeading
-            title="Inhalt"
-            accent="blue"
-            icon={<DashboardIconFileText className="h-4 w-4" />}
-          />
-          <label htmlFor={`inbox-content-${item.id}`} className="sr-only">
-            Inhalt
-          </label>
-          <textarea
-            id={`inbox-content-${item.id}`}
-            name="content"
-            rows={16}
-            required
-            defaultValue={item.content}
-            disabled={isPending}
-            className={`${aosDocBodyClassName} min-h-[18rem]`}
-          />
-          {updateState.fieldErrors?.content ? (
-            <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.content}</p>
-          ) : null}
-          {updateState.error ? (
-            <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
-          ) : null}
-          {updateState.success ? (
-            <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
-          ) : null}
-        </section>
+          <section
+            aria-label="Inhalt"
+            className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}
+          >
+            <WorkspaceSectionHeading
+              title="Inhalt"
+              accent="blue"
+              icon={<DashboardIconFileText className="h-4 w-4" />}
+            />
+            <label htmlFor={`inbox-content-${item.id}`} className="sr-only">
+              Inhalt
+            </label>
+            <textarea
+              id={`inbox-content-${item.id}`}
+              name="content"
+              rows={16}
+              required
+              defaultValue={item.content}
+              disabled={isPending}
+              className={`${aosDocBodyClassName} min-h-[18rem]`}
+            />
+            {updateState.fieldErrors?.content ? (
+              <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.content}</p>
+            ) : null}
+            {updateState.error ? (
+              <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
+            ) : null}
+            {updateState.success ? (
+              <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
+            ) : null}
+          </section>
+        </form>
+
+        <InboxAttachmentSection attachments={attachments} />
 
         <section aria-label="Aufgabe" className={aosWorkspaceSectionClassName}>
           <WorkspaceSectionHeading
@@ -235,7 +245,7 @@ export function InboxDetailPanel({
             <ConvertToTaskButton itemId={item.id} onSuccess={onStatusChange} />
           )}
         </section>
-      </form>
+      </div>
 
       <form id={deleteFormId} action={deleteAction}>
         <input type="hidden" name="itemId" value={item.id} />

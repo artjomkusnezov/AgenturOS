@@ -2,25 +2,28 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 
-import { downloadFileAction } from '@/features/files/actions/download-file'
-import type { FileMutationState } from '@/features/files/types/file'
+import type {
+  MediaDownloadAction,
+  MediaDownloadState,
+} from '@/features/files/types/document-media'
 import { aosWorkspaceActionClassName } from '@/lib/design-system'
 
-const initialDownloadState: FileMutationState = {}
+const initialState: MediaDownloadState = {}
 
-type InformationAttachmentOpenButtonProps = {
+type MediaOpenButtonProps = {
   fileId: string
+  action: MediaDownloadAction
+  extraFields?: Record<string, string>
   label?: string
 }
 
-export function InformationAttachmentOpenButton({
+export function MediaOpenButton({
   fileId,
+  action,
+  extraFields,
   label = 'Öffnen',
-}: InformationAttachmentOpenButtonProps) {
-  const [state, formAction, isPending] = useActionState(
-    downloadFileAction,
-    initialDownloadState,
-  )
+}: MediaOpenButtonProps) {
+  const [state, formAction, isPending] = useActionState(action, initialState)
   const handledUrlRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -37,6 +40,11 @@ export function InformationAttachmentOpenButton({
   return (
     <form action={formAction} className="shrink-0">
       <input type="hidden" name="fileId" value={fileId} />
+      {extraFields
+        ? Object.entries(extraFields).map(([name, value]) => (
+            <input key={name} type="hidden" name={name} value={value} />
+          ))
+        : null}
       <button type="submit" disabled={isPending} className={aosWorkspaceActionClassName}>
         {isPending ? '…' : label}
       </button>

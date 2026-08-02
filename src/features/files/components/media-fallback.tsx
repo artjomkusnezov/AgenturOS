@@ -3,17 +3,25 @@
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { InformationAttachmentOpenButton } from '@/features/information/components/information-attachment-open-button'
+import { MediaOpenButton } from '@/features/files/components/media-open-button'
 import { formatFileSize } from '@/features/files/lib/format-file-label'
+import type { MediaDownloadAction } from '@/features/files/types/document-media'
 import type { FileRecord } from '@/features/files/types/file'
 import { aosWorkspaceActionClassName, aosWorkspaceMetaClassName } from '@/lib/design-system'
 
-type InformationMediaFallbackProps = {
+type MediaFallbackProps = {
   file: FileRecord
   message: string
+  openAction: MediaDownloadAction
+  openExtraFields?: Record<string, string>
 }
 
-export function InformationMediaFallback({ file, message }: InformationMediaFallbackProps) {
+export function MediaFallback({
+  file,
+  message,
+  openAction,
+  openExtraFields,
+}: MediaFallbackProps) {
   const router = useRouter()
 
   const handleReload = useCallback(() => {
@@ -30,7 +38,7 @@ export function InformationMediaFallback({ file, message }: InformationMediaFall
         <button type="button" onClick={handleReload} className={aosWorkspaceActionClassName}>
           Erneut laden
         </button>
-        <InformationAttachmentOpenButton fileId={file.id} />
+        <MediaOpenButton fileId={file.id} action={openAction} extraFields={openExtraFields} />
       </div>
     </div>
   )

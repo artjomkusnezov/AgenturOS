@@ -9,7 +9,7 @@ import { CreateInboxItemForm } from '@/features/inbox/components/create-inbox-it
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
-import type { InboxItem } from '@/features/inbox/types/inbox-item'
+import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { aosWorkspaceActionAccentClassName } from '@/lib/design-system'
 
 type InboxWorkspaceProps = {
@@ -17,6 +17,7 @@ type InboxWorkspaceProps = {
   processedItems: InboxItem[]
   taskRelationsByItemId: Record<string, string>
   selectedItemId: string | null
+  attachments?: InboxLinkedFile[]
 }
 
 export function InboxWorkspace({
@@ -24,6 +25,7 @@ export function InboxWorkspace({
   processedItems,
   taskRelationsByItemId,
   selectedItemId,
+  attachments = [],
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -137,6 +139,7 @@ export function InboxWorkspace({
               key={selectedItem.id}
               item={selectedItem}
               linkedTaskId={taskRelationsByItemId[selectedItem.id] ?? null}
+              attachments={attachments}
               onBack={handleBackToList}
               onDeleted={handleDeleted}
               onStatusChange={handleStatusChange}

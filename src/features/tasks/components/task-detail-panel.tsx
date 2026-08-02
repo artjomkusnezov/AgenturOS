@@ -4,7 +4,7 @@ import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
-import { DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
+import { DashboardIconFileText, DashboardIconMessage } from '@/features/dashboard/components/dashboard-icons'
 import { completeTaskAction } from '@/features/tasks/actions/complete-task'
 import { deleteTaskAction } from '@/features/tasks/actions/delete-task'
 import { reopenTaskAction } from '@/features/tasks/actions/reopen-task'
@@ -15,6 +15,7 @@ import { TaskLinkedFiles } from '@/features/tasks/components/task-linked-files'
 import { TaskLinkedInformationSection } from '@/features/tasks/components/task-linked-information'
 import { TaskPriorityBadge } from '@/features/tasks/components/task-priority-badge'
 import { TaskTimeline } from '@/features/tasks/components/task-timeline'
+import { TaskTimelineNoteForm } from '@/features/tasks/components/task-timeline-note-form'
 import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
 import { formatTaskDateTime, isTaskOpen } from '@/features/tasks/lib/task-status'
@@ -47,10 +48,8 @@ type TaskDetailPanelProps = {
   linkedInformation: TaskLinkedInformation[]
   availableFiles: FileRecord[]
   availableInformation: InformationItem[]
-  selectedFileId?: string | null
   memberNameMap: Record<string, string>
   agencyMembers: AgencyMember[]
-  onOpenFile: (fileId: string) => void
   onBack?: () => void
   onDeleted: () => void
   onWorkflowChange: () => void
@@ -112,10 +111,8 @@ export function TaskDetailPanel({
   linkedInformation,
   availableFiles,
   availableInformation,
-  selectedFileId = null,
   memberNameMap,
   agencyMembers,
-  onOpenFile,
   onBack,
   onDeleted,
   onWorkflowChange,
@@ -343,25 +340,27 @@ export function TaskDetailPanel({
           </section>
         )}
 
-        <TaskTimeline
-          taskId={task.id}
-          entries={timelineEntries}
-          memberNameMap={memberNameMap}
-          noteFormKey={timelineEntries.length}
-        />
-
         <TaskLinkedFiles
           taskId={task.id}
           linkedFiles={linkedFiles}
           availableFiles={availableFiles}
-          selectedFileId={selectedFileId}
-          onOpenFile={onOpenFile}
         />
         <TaskLinkedInformationSection
           taskId={task.id}
           linkedInformation={linkedInformation}
           availableInformation={availableInformation}
         />
+
+        <TaskTimeline entries={timelineEntries} memberNameMap={memberNameMap} />
+
+        <section aria-label="Notiz hinzufügen" className={aosWorkspaceSectionClassName}>
+          <WorkspaceSectionHeading
+            title="Notiz hinzufügen"
+            accent="blue"
+            icon={<DashboardIconMessage className="h-4 w-4" />}
+          />
+          <TaskTimelineNoteForm key={timelineEntries.length} taskId={task.id} />
+        </section>
       </div>
 
       <form id={deleteFormId} action={deleteAction}>

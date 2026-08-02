@@ -1,33 +1,43 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 
-import { InformationAttachmentOpenButton } from '@/features/information/components/information-attachment-open-button'
-import { InformationMediaFallback } from '@/features/information/components/information-media-fallback'
+import { MediaFallback } from '@/features/files/components/media-fallback'
+import { MediaOpenButton } from '@/features/files/components/media-open-button'
 import { formatFileSize } from '@/features/files/lib/format-file-label'
+import type { MediaDownloadAction } from '@/features/files/types/document-media'
 import type { FileRecord } from '@/features/files/types/file'
 import { aosWorkspaceMetaClassName } from '@/lib/design-system'
 
-type InformationImageAttachmentProps = {
+type ImageMediaProps = {
   file: FileRecord
   mediaUrl: string | null
+  openAction: MediaDownloadAction
+  openExtraFields?: Record<string, string>
+  captionActions?: ReactNode
 }
 
-export function InformationImageAttachment({
+export function ImageMedia({
   file,
   mediaUrl,
-}: InformationImageAttachmentProps) {
+  openAction,
+  openExtraFields,
+  captionActions,
+}: ImageMediaProps) {
   const [loadError, setLoadError] = useState(false)
 
   if (!mediaUrl || loadError) {
     return (
-      <InformationMediaFallback
+      <MediaFallback
         file={file}
         message={
           loadError
             ? 'Das Bild konnte nicht geladen werden.'
             : 'Die Bildvorschau ist vorübergehend nicht verfügbar.'
         }
+        openAction={openAction}
+        openExtraFields={openExtraFields}
       />
     )
   }
@@ -46,7 +56,10 @@ export function InformationImageAttachment({
         <span className={`min-w-0 truncate ${aosWorkspaceMetaClassName}`} title={file.filename}>
           {file.filename} · {formatFileSize(file.size_bytes)}
         </span>
-        <InformationAttachmentOpenButton fileId={file.id} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <MediaOpenButton fileId={file.id} action={openAction} extraFields={openExtraFields} />
+          {captionActions}
+        </div>
       </figcaption>
     </figure>
   )

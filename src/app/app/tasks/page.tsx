@@ -11,6 +11,7 @@ import {
   listFilesForTask,
   listInformationForTask,
 } from '@/features/tasks/repositories/task-relations-repository'
+import { enrichTaskLinkedFilesWithMediaUrls } from '@/features/tasks/lib/enrich-task-linked-files'
 import { listTimelineForTask } from '@/features/tasks/repositories/task-timeline-repository'
 import {
   getTaskById,
@@ -115,7 +116,10 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
             status: 'ready',
             task: taskResult.task,
             timelineEntries: timelineResult.entries,
-            linkedFiles: linkedFilesResult.files,
+            linkedFiles: await enrichTaskLinkedFilesWithMediaUrls(
+              selectedTaskParam,
+              linkedFilesResult.files,
+            ),
             linkedInformation: linkedInformationResult.information,
             availableFiles: allFiles.filter((file) => !linkedFileIds.has(file.id)),
             availableInformation: allInformation.filter(

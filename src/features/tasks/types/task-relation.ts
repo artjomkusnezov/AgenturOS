@@ -10,6 +10,7 @@ export type TaskLinkedFile = {
   relationId: string
   linkedAt: string
   file: FileRecord
+  mediaUrl?: string | null
 }
 
 export type TaskLinkedInformation = {
