@@ -5,7 +5,6 @@ import { useActionState, useEffect, useId, useRef, useState } from 'react'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconCheckSquare, DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
-import { convertInboxToTaskAction } from '@/features/inbox/actions/convert-inbox-to-task'
 import { deleteInboxItemAction } from '@/features/inbox/actions/delete-inbox-item'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
@@ -90,38 +89,24 @@ function InboxStatusActionButton({
   )
 }
 
-function ConvertToTaskButton({
-  itemId,
-  onSuccess,
-}: {
-  itemId: string
-  onSuccess: () => void
-}) {
-  const [state, formAction, isPending] = useActionState(convertInboxToTaskAction, initialState)
-  const wasPendingRef = useRef(false)
-  const handledSuccessRef = useRef(false)
-
-  useEffect(() => {
-    handledSuccessRef.current = false
-  }, [itemId])
-
-  useEffect(() => {
-    if (wasPendingRef.current && !isPending && state.success && !handledSuccessRef.current) {
-      handledSuccessRef.current = true
-      onSuccess()
-    }
-
-    wasPendingRef.current = isPending
-  }, [isPending, state.success, onSuccess])
+function PromotionEntryButton() {
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <form action={formAction}>
-      <input type="hidden" name="itemId" value={itemId} />
-      <button type="submit" disabled={isPending} className={aosWorkspaceActionAccentClassName}>
-        {isPending ? 'Wird übernommen …' : 'Als Aufgabe übernehmen'}
+    <div>
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className={aosWorkspaceActionAccentClassName}
+      >
+        Übernehmen als...
       </button>
-      {state.error ? <p className={`mt-1 ${aosFieldErrorSmClassName}`}>{state.error}</p> : null}
-    </form>
+      {isOpen ? (
+        <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
+          Auswahl folgt im nächsten Schritt.
+        </p>
+      ) : null}
+    </div>
   )
 }
 
@@ -242,7 +227,7 @@ export function InboxDetailPanel({
               </Link>
             </div>
           ) : (
-            <ConvertToTaskButton itemId={item.id} onSuccess={onStatusChange} />
+            <PromotionEntryButton />
           )}
         </section>
       </div>
