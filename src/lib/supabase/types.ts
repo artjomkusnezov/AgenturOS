@@ -768,6 +768,68 @@ export type Database = {
           },
         ]
       }
+      workspace_views: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          filters: Json
+          icon: string | null
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          scope: string
+          sort: string
+          sort_order: number
+          updated_at: string
+          visible_in_navigation: boolean
+          visible_on_dashboard: boolean
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by: string
+          filters?: Json
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          scope?: string
+          sort?: string
+          sort_order?: number
+          updated_at?: string
+          visible_in_navigation?: boolean
+          visible_on_dashboard?: boolean
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          filters?: Json
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          scope?: string
+          sort?: string
+          sort_order?: number
+          updated_at?: string
+          visible_in_navigation?: boolean
+          visible_on_dashboard?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_views_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -885,6 +947,10 @@ export type Database = {
       resolve_timeline_actor_name: {
         Args: { p_user_id: string }
         Returns: string
+      }
+      seed_default_workspace_views_for_agency: {
+        Args: { p_agency_id: string; p_created_by?: string }
+        Returns: undefined
       }
       update_task_assignee: {
         Args: { p_assignee_user_id?: string; p_task_id: string }
