@@ -116,6 +116,190 @@ export type Database = {
           },
         ]
       }
+      business_areas: {
+        Row: {
+          agency_id: string
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_areas_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_types: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_types_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          agency_id: string
+          archived_at: string | null
+          assignee_user_id: string | null
+          business_area_id: string
+          case_type_id: string
+          completed_at: string | null
+          core_status: string
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          source_inbox_item_id: string | null
+          source_task_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          archived_at?: string | null
+          assignee_user_id?: string | null
+          business_area_id: string
+          case_type_id: string
+          completed_at?: string | null
+          core_status: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          source_inbox_item_id?: string | null
+          source_task_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          archived_at?: string | null
+          assignee_user_id?: string | null
+          business_area_id?: string
+          case_type_id?: string
+          completed_at?: string | null
+          core_status?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          source_inbox_item_id?: string | null
+          source_task_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_business_area_id_fkey"
+            columns: ["business_area_id"]
+            isOneToOne: false
+            referencedRelation: "business_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_case_type_id_fkey"
+            columns: ["case_type_id"]
+            isOneToOne: false
+            referencedRelation: "case_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_source_inbox_item_id_fkey"
+            columns: ["source_inbox_item_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_source_task_id_fkey"
+            columns: ["source_task_id"]
+            isOneToOne: true
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           company: string | null
@@ -653,6 +837,10 @@ export type Database = {
         }[]
       }
       initialize_current_user_account: { Args: never; Returns: string }
+      map_task_to_case_core_status: {
+        Args: { p_completed_at: string | null }
+        Returns: string
+      }
       insert_task_created_timeline_entry: {
         Args: { p_author_user_id: string; p_task_id: string }
         Returns: undefined
