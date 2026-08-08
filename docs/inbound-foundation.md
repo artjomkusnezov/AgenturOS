@@ -122,19 +122,27 @@ Für die erste Agentur wird zunächst verwendet:
 info@artkus.de
 ```
 
-Die Architektur bleibt offen für andere Adressen (z. B. später `eingang@…` oder agency-spezifische Adressen).  
-Die bestehende Agentur-Fachadresse (z. B. Allianz-Mailbox) bleibt unabhängig.
+**Produktadresse:** ausschließlich `info@artkus.de` (sichtbar, merkbar).  
+**Technische Receiving-Adresse** (z. B. Resend `…@….resend.app`): unsichtbar, austauschbar, **nie** Bestandteil des Produkts.
 
-V1-Workflow:
+### V1-Transport: IONOS-Weiterleitung ohne Mailpostfach
+
+IONOS bietet für `artkus.de` eine **reine E-Mail-Weiterleitung** (ohne Speicherung / ohne eigenes Postfach).
 
 ```text
 beliebige E-Mail
-  → Weiterleiten an konfigurierte Inbound-Adresse
+  → Weiterleitung an info@artkus.de
+  → IONOS E-Mail-Weiterleitung (keine Speicherung)
+  → technische Receiving-Adresse (z. B. Resend)
+  → Webhook
   → E-Mail-Adapter
   → InboundItem
   → Intake
   → Inbox
 ```
+
+Damit braucht V1 **kein** IONOS-Mailpostfach und **kein** IMAP.  
+Die bestehende Agentur-Fachadresse (z. B. Allianz-Mailbox) bleibt unabhängig.
 
 Kein IMAP, keine Microsoft-Graph-Integration, keine automatische Postfachüberwachung in V1.
 
@@ -169,3 +177,17 @@ Umgesetzt in 36C.1: Foundation (Vertrag, Intake, additive Persistenz, bestehende
 Umgesetzt in 37C (Code): `title`/`origin`, providerneutraler E-Mail-Adapter, Resend-Transport, Webhook-Route.
 
 Nicht produktiv aktiviert in 37C: IONOS-Weiterleitung, Resend-Secrets, echte `info@artkus.de`-Verdrahtung.
+
+## Punkt 37D: IONOS-Weiterleitung ohne Postfach
+
+Bestätigt: V1 nutzt IONOS als **reine Weiterleitungsadresse** für `info@artkus.de` (keine Speicherung).  
+Technisches Receiving-Ziel bleibt providerseitig (Resend bevorzugt; Postmark Inbound als Alternative).  
+Produktadresse bleibt ausschließlich `info@artkus.de`.
+
+## Domain-Architektur (V1)
+
+Eingefroren in [`docs/domain-architecture.md`](./domain-architecture.md):
+
+- `app.artkus.de` = einzige Anwendung (UI, Login, `/api/*`)
+- `info@artkus.de` = öffentliche Eingangsadresse
+- `api.artkus.de` = spätere Evolutionsstufe, nicht V1
