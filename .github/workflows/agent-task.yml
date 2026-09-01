@@ -72,17 +72,17 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           task = Path('.agent-loop/TASK.md').read_text(errors='replace')
-          instructions = '''
-
-You are the CODER in a bounded autonomous AgenturOS workflow.
-Read AGENTS.md before changing anything.
-Work only inside the task scope and allowed paths.
-Do not merge, deploy, change secrets, use paid external services, or touch production data.
-Do not run git or gh commands. Git publication is handled deterministically after you finish.
-Implement the task, add or update relevant regression tests, and run useful local checks.
-Stop only when the task is implemented or you have a concrete human blocker.
-'''
-          Path('/tmp/coder-prompt.txt').write_text(task + instructions)
+          lines = [
+              '',
+              'You are the CODER in a bounded autonomous AgenturOS workflow.',
+              'Read AGENTS.md before changing anything.',
+              'Work only inside the task scope and allowed paths.',
+              'Do not merge, deploy, change secrets, use paid external services, or touch production data.',
+              'Do not run git or gh commands. Git publication is handled deterministically after you finish.',
+              'Implement the task, add or update relevant regression tests, and run useful local checks.',
+              'Stop only when the task is implemented or you have a concrete human blocker.',
+          ]
+          Path('/tmp/coder-prompt.txt').write_text(task + '\n'.join(lines))
           PY
 
       - name: Run Cursor coder
