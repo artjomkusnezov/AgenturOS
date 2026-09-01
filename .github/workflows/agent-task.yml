@@ -52,7 +52,7 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
           TASK="$(cat .agent-loop/TASK.md)"
-          agent -p "$TASK
+          agent --trust -p "$TASK
 
           You are the CODER in a bounded autonomous AgenturOS workflow.
           Read AGENTS.md before changing anything.
