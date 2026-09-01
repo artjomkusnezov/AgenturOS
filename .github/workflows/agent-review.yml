@@ -44,7 +44,7 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
-          agent --mode=ask -p "You are the independent REVIEWER for AgenturOS.
+          agent --trust --mode=ask -p "You are the independent REVIEWER for AgenturOS.
           Read AGENTS.md and .agent-loop/TASK.md.
           Review the actual production-path diff against the task acceptance criteria, scope, regressions, security guardrails, and fake-green risk.
           Do not modify files.
