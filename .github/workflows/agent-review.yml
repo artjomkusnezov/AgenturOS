@@ -47,19 +47,23 @@ jobs:
               source = source[:limit] + '\n\n[DIFF TRUNCATED AT 120000 CHARACTERS — inspect repository files directly for remaining context]\n'
           Path('/tmp/diff.txt').write_text(source)
           stat = Path('/tmp/diff-stat.txt').read_text(errors='replace')
-          prompt = '''You are the independent REVIEWER for AgenturOS.
-Read AGENTS.md and .agent-loop/TASK.md.
-Review the actual production-path diff against the task acceptance criteria, scope, regressions, security guardrails, and fake-green risk.
-Do not modify files.
-Do not approve because tests merely exist; verify the changed code is actually used by the user path.
-Inspect repository files directly when the bounded diff is incomplete.
-Run read-only inspection and tests if useful.
-End with exactly one verdict line: REVIEW: PASS or REVIEW: CHANGES.
-If CHANGES, provide concrete actionable findings with file paths.
-
-Diff stat:
-''' + stat + '\nBounded diff follows:\n' + source
-          Path('/tmp/review-prompt.txt').write_text(prompt)
+          lines = [
+              'You are the independent REVIEWER for AgenturOS.',
+              'Read AGENTS.md and .agent-loop/TASK.md.',
+              'Review the actual production-path diff against the task acceptance criteria, scope, regressions, security guardrails, and fake-green risk.',
+              'Do not modify files.',
+              'Do not approve because tests merely exist; verify the changed code is actually used by the user path.',
+              'Inspect repository files directly when the bounded diff is incomplete.',
+              'Run read-only inspection and tests if useful.',
+              'End with exactly one verdict line: REVIEW: PASS or REVIEW: CHANGES.',
+              'If CHANGES, provide concrete actionable findings with file paths.',
+              '',
+              'Diff stat:',
+              stat,
+              'Bounded diff follows:',
+              source,
+          ]
+          Path('/tmp/review-prompt.txt').write_text('\n'.join(lines))
           PY
 
       - name: Independent review
