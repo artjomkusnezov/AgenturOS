@@ -11,7 +11,9 @@ permissions:
 
 jobs:
   implement:
-    if: startsWith(github.event.issue.title, '[AGENT]')
+    if: >-
+      startsWith(github.event.issue.title, '[AGENT]') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -42,6 +44,26 @@ jobs:
           mkdir -p .agent-loop
           jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" > .agent-loop/TASK.md
 
+      - name: Validate task contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+
+          text = Path('.agent-loop/TASK.md').read_text(errors='replace')
+          required = [
+              'STATUS: READY',
+              '## Goal',
+              '## Acceptance criteria',
+              '## Allowed paths',
+              '## Out of scope',
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              print('Invalid task contract. Missing: ' + ', '.join(missing))
+              sys.exit(1)
+          PY
+
       - name: Install Cursor CLI
         run: |
           curl https://cursor.com/install -fsS | bash
@@ -61,6 +83,62 @@ jobs:
           Do not run git or gh commands. Git publication is handled deterministically after you finish.
           Implement the task, add or update relevant regression tests, and run useful local checks.
           Stop only when the task is implemented or you have a concrete human blocker." --output-format text
+
+      - name: Enforce allowed paths
+        run: |
+          python - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import subprocess, sys
+
+          text = Path('.agent-loop/TASK.md').read_text(errors='replace').splitlines()
+          allowed = []
+          in_allowed = False
+          for raw in text:
+              line = raw.strip()
+              if line == '## Allowed paths':
+                  in_allowed = True
+                  continue
+              if in_allowed and line.startswith('## '):
+                  break
+              if in_allowed and line.startswith('- '):
+                  value = line[2:].strip().strip('`')
+                  if value:
+                      allowed.append(value)
+
+          if not allowed:
+              print('No allowed paths declared.')
+              sys.exit(1)
+
+          changed = subprocess.check_output(
+              ['git', 'diff', '--name-only'], text=True
+          ).splitlines()
+          changed += subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only'], text=True
+          ).splitlines()
+          changed = sorted(set(changed))
+
+          # TASK.md is materialized deterministically by the workflow itself.
+          workflow_owned = {'.agent-loop/TASK.md'}
+
+          def matches(path: str, rule: str) -> bool:
+              rule = rule.rstrip('/')
+              if rule.endswith('/**'):
+                  rule = rule[:-3].rstrip('/')
+              return path == rule or path.startswith(rule + '/')
+
+          violations = []
+          for path in changed:
+              if path in workflow_owned:
+                  continue
+              if not any(matches(path, rule) for rule in allowed):
+                  violations.append(path)
+
+          if violations:
+              print('Changed files outside Allowed paths:')
+              for path in violations:
+                  print(' - ' + path)
+              sys.exit(1)
+          PY
 
       - name: Deterministic validation
         run: |
@@ -110,3 +188,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue comment "${{ github.event.issue.number }}" --body "Agent finished without repository changes. Review the task/blocker before retrying."
+
+      - name: Comment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "Agent run failed. Inspect: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
