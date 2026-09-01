@@ -33,11 +33,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create task branch
+      - name: Prepare task branch
         env:
           BRANCH: agent/issue-${{ github.event.issue.number }}
         run: |
-          git checkout -b "$BRANCH"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
 
       - name: Materialize TASK.md from issue
         run: |
@@ -49,15 +54,8 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import sys
-
           text = Path('.agent-loop/TASK.md').read_text(errors='replace')
-          required = [
-              'STATUS: READY',
-              '## Goal',
-              '## Acceptance criteria',
-              '## Allowed paths',
-              '## Out of scope',
-          ]
+          required = ['STATUS: READY','## Goal','## Acceptance criteria','## Allowed paths','## Out of scope']
           missing = [item for item in required if item not in text]
           if missing:
               print('Invalid task contract. Missing: ' + ', '.join(missing))
@@ -69,27 +67,35 @@ jobs:
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
 
+      - name: Build coder prompt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          task = Path('.agent-loop/TASK.md').read_text(errors='replace')
+          instructions = '''
+
+You are the CODER in a bounded autonomous AgenturOS workflow.
+Read AGENTS.md before changing anything.
+Work only inside the task scope and allowed paths.
+Do not merge, deploy, change secrets, use paid external services, or touch production data.
+Do not run git or gh commands. Git publication is handled deterministically after you finish.
+Implement the task, add or update relevant regression tests, and run useful local checks.
+Stop only when the task is implemented or you have a concrete human blocker.
+'''
+          Path('/tmp/coder-prompt.txt').write_text(task + instructions)
+          PY
+
       - name: Run Cursor coder
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
-          TASK="$(cat .agent-loop/TASK.md)"
-          agent --trust -p "$TASK
-
-          You are the CODER in a bounded autonomous AgenturOS workflow.
-          Read AGENTS.md before changing anything.
-          Work only inside the task scope and allowed paths.
-          Do not merge, deploy, change secrets, use paid external services, or touch production data.
-          Do not run git or gh commands. Git publication is handled deterministically after you finish.
-          Implement the task, add or update relevant regression tests, and run useful local checks.
-          Stop only when the task is implemented or you have a concrete human blocker." --output-format text
+          agent --trust -p "$(cat /tmp/coder-prompt.txt)" --output-format text
 
       - name: Enforce allowed paths
         run: |
           python - <<'PY'
-          from pathlib import Path, PurePosixPath
+          from pathlib import Path
           import subprocess, sys
-
           text = Path('.agent-loop/TASK.md').read_text(errors='replace').splitlines()
           allowed = []
           in_allowed = False
@@ -104,39 +110,22 @@ jobs:
                   value = line[2:].strip().strip('`')
                   if value:
                       allowed.append(value)
-
           if not allowed:
               print('No allowed paths declared.')
               sys.exit(1)
-
-          changed = subprocess.check_output(
-              ['git', 'diff', '--name-only'], text=True
-          ).splitlines()
-          changed += subprocess.check_output(
-              ['git', 'diff', '--cached', '--name-only'], text=True
-          ).splitlines()
+          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          changed += subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines()
           changed = sorted(set(changed))
-
-          # TASK.md is materialized deterministically by the workflow itself.
           workflow_owned = {'.agent-loop/TASK.md'}
-
-          def matches(path: str, rule: str) -> bool:
+          def matches(path, rule):
               rule = rule.rstrip('/')
               if rule.endswith('/**'):
                   rule = rule[:-3].rstrip('/')
               return path == rule or path.startswith(rule + '/')
-
-          violations = []
-          for path in changed:
-              if path in workflow_owned:
-                  continue
-              if not any(matches(path, rule) for rule in allowed):
-                  violations.append(path)
-
+          violations = [p for p in changed if p not in workflow_owned and not any(matches(p,r) for r in allowed)]
           if violations:
               print('Changed files outside Allowed paths:')
-              for path in violations:
-                  print(' - ' + path)
+              for path in violations: print(' - ' + path)
               sys.exit(1)
           PY
 
@@ -165,21 +154,19 @@ jobs:
           git config user.email "agent@users.noreply.github.com"
           git add -A
           git commit -m "agent: implement issue #${{ github.event.issue.number }}"
-          git push origin "$BRANCH"
+          git push --force-with-lease origin "$BRANCH"
 
-      - name: Open draft PR
+      - name: Open or update draft PR
         if: steps.changes.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: agent/issue-${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
-          PR_URL=$(gh pr create \
-            --base master \
-            --head "$BRANCH" \
-            --draft \
-            --title "${ISSUE_TITLE#\[AGENT\] }" \
-            --body "Autonomous implementation for #${{ github.event.issue.number }}.\n\nCI and independent review must pass. No auto-merge.")
+          PR_URL=$(gh pr list --head "$BRANCH" --base master --state open --json url --jq '.[0].url // empty')
+          if [ -z "$PR_URL" ]; then
+            PR_URL=$(gh pr create --base master --head "$BRANCH" --draft --title "${ISSUE_TITLE#\[AGENT\] }" --body "Autonomous implementation for #${{ github.event.issue.number }}.\n\nCI and independent review must pass. No auto-merge.")
+          fi
           gh issue comment "${{ github.event.issue.number }}" --body "Agent implementation complete: $PR_URL"
 
       - name: Comment when no changes
