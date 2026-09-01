@@ -1,0 +1,63 @@
+name: Agent Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: startsWith(github.head_ref, 'agent/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+
+      - name: Build review context
+        run: |
+          git diff --stat origin/master...HEAD > /tmp/diff-stat.txt
+          git diff origin/master...HEAD > /tmp/diff.txt
+
+      - name: Independent review
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          agent --mode=ask -p "You are the independent REVIEWER for AgenturOS.
+          Read AGENTS.md and .agent-loop/TASK.md.
+          Review the actual production-path diff against the task acceptance criteria, scope, regressions, security guardrails, and fake-green risk.
+          Do not modify files.
+          Do not approve because tests merely exist; verify the changed code is actually used by the user path.
+          Run read-only inspection and tests if useful.
+          End with exactly one verdict line: REVIEW: PASS or REVIEW: CHANGES.
+          If CHANGES, provide concrete actionable findings with file paths.
+
+          Diff follows:
+          $(cat /tmp/diff.txt)" --output-format text > /tmp/review.txt
+
+      - name: Publish review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/review.txt
