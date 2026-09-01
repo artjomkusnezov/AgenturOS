@@ -45,7 +45,6 @@ jobs:
           limit = 120_000
           if len(source) > limit:
               source = source[:limit] + '\n\n[DIFF TRUNCATED AT 120000 CHARACTERS — inspect repository files directly for remaining context]\n'
-          Path('/tmp/diff.txt').write_text(source)
           stat = Path('/tmp/diff-stat.txt').read_text(errors='replace')
           lines = [
               'You are the independent REVIEWER for AgenturOS.',
@@ -70,17 +69,24 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
-          agent --trust --mode=ask -p "$(cat /tmp/review-prompt.txt)" --output-format text > /tmp/review.txt
+          set -o pipefail
+          agent --trust --mode=ask -p "$(cat /tmp/review-prompt.txt)" --output-format text | tee /tmp/review.txt
+          test -s /tmp/review.txt
 
       - name: Publish review
-        if: always() && hashFiles('/tmp/review.txt') != ''
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/review.txt
+          if [ -s /tmp/review.txt ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/review.txt
+          else
+            echo "Reviewer produced no output; nothing to publish."
+          fi
 
       - name: Enforce review verdict
         run: |
+          test -s /tmp/review.txt || { echo "Independent review produced no output"; exit 1; }
           VERDICT=$(grep -E '^REVIEW: (PASS|CHANGES)$' /tmp/review.txt | tail -n 1 || true)
           if [ "$VERDICT" != "REVIEW: PASS" ]; then
             echo "Independent review did not pass: ${VERDICT:-missing verdict}"
