@@ -15,6 +15,11 @@ function readSrc(relativePath: string): string {
   return readFileSync(path.join(process.cwd(), 'src', relativePath), 'utf8')
 }
 
+/** JSX construction (return/assign/grouped), not TypeScript generics such as Record<string, unknown>. */
+function containsJsxConstruction(source: string): boolean {
+  return /(?:return|=|\()\s*<\/?[A-Za-z]/.test(source)
+}
+
 describe('dashboard variant boundary', () => {
   it('keeps DashboardVariant importable from a non-client module', () => {
     const variants: DashboardVariant[] = ['default', 'agenturzentrale']
@@ -62,11 +67,22 @@ describe('dashboard variant boundary', () => {
     }
   })
 
+  it('distinguishes JSX construction from TypeScript generics in boundary checks', () => {
+    assert.equal(containsJsxConstruction('user_metadata as Record<string, unknown>'), false)
+    assert.equal(containsJsxConstruction('const items: Array<string> = []'), false)
+    assert.equal(containsJsxConstruction('return <DashboardErrorBanner message={msg} />'), true)
+    assert.equal(containsJsxConstruction('loadResult = (<DashboardWorkOverview {...props} />)'), true)
+  })
+
   it('keeps dashboard page content JSX outside try/catch', () => {
     const source = readSrc('features/dashboard/components/dashboard-page-content.tsx')
     const tryBlock = source.match(/try\s*\{[\s\S]*?\}\s*catch/)
     assert.ok(tryBlock, 'expected a try/catch around data loading')
-    assert.doesNotMatch(tryBlock[0], /</, 'JSX must not be constructed inside try/catch')
+    assert.equal(
+      containsJsxConstruction(tryBlock[0]),
+      false,
+      'JSX must not be constructed inside try/catch',
+    )
     assert.match(source, /return <DashboardErrorBanner/)
     assert.match(source, /return <DashboardWorkOverview/)
   })
