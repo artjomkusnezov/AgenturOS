@@ -13,7 +13,7 @@ jobs:
   implement:
     if: >-
       startsWith(github.event.issue.title, '[AGENT]') &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
+      github.event.issue.author_association == 'OWNER'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -44,17 +44,19 @@ jobs:
             git checkout -b "$BRANCH"
           fi
 
-      - name: Materialize TASK.md from issue
+      - name: Materialize immutable task contract
         run: |
           mkdir -p .agent-loop
-          jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" > .agent-loop/TASK.md
+          jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" > /tmp/owner-task.md
+          cp /tmp/owner-task.md .agent-loop/TASK.md
+          sha256sum /tmp/owner-task.md | cut -d' ' -f1 > /tmp/owner-task.sha256
 
       - name: Validate task contract
         run: |
           python - <<'PY'
           from pathlib import Path
           import re, sys
-          text = Path('.agent-loop/TASK.md').read_text(errors='replace')
+          text = Path('/tmp/owner-task.md').read_text(errors='replace')
           if not re.search(r'(?m)^STATUS:\s*READY\s*$', text):
               print('Invalid task contract. Actual STATUS line must be READY.')
               sys.exit(1)
@@ -74,11 +76,12 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          task = Path('.agent-loop/TASK.md').read_text(errors='replace')
+          task = Path('/tmp/owner-task.md').read_text(errors='replace')
           lines = [
               '',
               'You are the CODER in a bounded autonomous AgenturOS workflow.',
               'Read AGENTS.md before changing anything.',
+              'The embedded task is the immutable Owner contract. Do not edit .agent-loop/TASK.md.',
               'Treat every item under ## Acceptance criteria as mandatory.',
               'Treat every item under ## Out of scope as forbidden.',
               'Work only inside the task scope and allowed paths; broad allowed paths do not override Out of scope.',
@@ -87,7 +90,7 @@ jobs:
               'Implement the task, add or update relevant regression tests, and run useful local checks.',
               'Stop only when the task is implemented or you have a concrete human blocker.',
           ]
-          Path('/tmp/coder-prompt.txt').write_text(task + '\n'.join(lines))
+          Path('/tmp/coder-prompt.txt').write_text(task + '\n' + '\n'.join(lines))
           PY
 
       - name: Run Cursor coder
@@ -96,12 +99,17 @@ jobs:
         run: |
           agent --trust -p "$(cat /tmp/coder-prompt.txt)" --output-format text
 
+      - name: Verify immutable task contract
+        run: |
+          test "$(sha256sum /tmp/owner-task.md | cut -d' ' -f1)" = "$(cat /tmp/owner-task.sha256)"
+          cmp --silent /tmp/owner-task.md .agent-loop/TASK.md || { echo "TASK.md was modified by coder"; exit 1; }
+
       - name: Enforce allowed paths
         run: |
           python - <<'PY'
           from pathlib import Path
           import subprocess, sys
-          text = Path('.agent-loop/TASK.md').read_text(errors='replace').splitlines()
+          text = Path('/tmp/owner-task.md').read_text(errors='replace').splitlines()
           allowed = []
           in_allowed = False
           for raw in text:
