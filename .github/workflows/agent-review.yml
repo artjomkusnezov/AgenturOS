@@ -1,0 +1,117 @@
+name: Agent Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: startsWith(github.head_ref, 'agent/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate deterministic gates
+        run: |
+          npm run test:inbound
+          npx tsc --noEmit
+          npm run lint
+          npm run build
+
+      - name: Verify task provenance
+        if: startsWith(github.head_ref, 'agent/issue-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          ISSUE_NUMBER="${HEAD_REF#agent/issue-}"
+          case "$ISSUE_NUMBER" in (*[!0-9]*|'') echo "Invalid agent issue branch"; exit 1;; esac
+          gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER" --jq '.body // ""' > /tmp/owner-task.md
+          cmp --silent /tmp/owner-task.md .agent-loop/TASK.md || { echo "TASK.md does not match current Owner issue contract"; exit 1; }
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+
+      - name: Build bounded review context and prompt
+        run: |
+          git diff --stat origin/master...HEAD > /tmp/diff-stat.txt
+          git diff origin/master...HEAD > /tmp/diff-full.txt
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('/tmp/diff-full.txt').read_text(errors='replace')
+          limit = 120_000
+          if len(source) > limit:
+              source = source[:limit] + '\n\n[DIFF TRUNCATED AT 120000 CHARACTERS — inspect repository files directly for remaining context]\n'
+          stat = Path('/tmp/diff-stat.txt').read_text(errors='replace')
+          task_path = Path('/tmp/owner-task.md') if Path('/tmp/owner-task.md').exists() else Path('.agent-loop/TASK.md')
+          task = task_path.read_text(errors='replace') if task_path.exists() else '[TASK CONTRACT MISSING]'
+          lines = [
+              'You are the independent REVIEWER for AgenturOS.',
+              'The task contract below is the verified Owner contract for agent/issue-* branches.',
+              'Verify its acceptance criteria and out-of-scope constraints explicitly.',
+              'Review the actual production-path diff against the task acceptance criteria, scope, regressions, security guardrails, and fake-green risk.',
+              'Do not modify files.',
+              'Do not approve because tests merely exist; deterministic checks already ran in this review job, but verify changed code is actually used by the user path.',
+              'Inspect repository files directly when the bounded diff is incomplete.',
+              'End with exactly one verdict line: REVIEW: PASS or REVIEW: CHANGES.',
+              'If CHANGES, provide concrete actionable findings with file paths.',
+              '',
+              'OWNER TASK CONTRACT:',
+              task,
+              '',
+              'Diff stat:',
+              stat,
+              'Bounded diff follows:',
+              source,
+          ]
+          Path('/tmp/review-prompt.txt').write_text('\n'.join(lines))
+          PY
+
+      - name: Independent review
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -o pipefail
+          agent --trust --mode=ask -p "$(cat /tmp/review-prompt.txt)" --output-format text | tee /tmp/review.txt
+          test -s /tmp/review.txt
+
+      - name: Publish review
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s /tmp/review.txt ]; then
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/review.txt
+          else
+            echo "Reviewer produced no output; nothing to publish."
+          fi
+
+      - name: Enforce review verdict
+        run: |
+          test -s /tmp/review.txt || { echo "Independent review produced no output"; exit 1; }
+          VERDICT=$(grep -E '^REVIEW: (PASS|CHANGES)$' /tmp/review.txt | tail -n 1 || true)
+          if [ "$VERDICT" != "REVIEW: PASS" ]; then
+            echo "Independent review did not pass: ${VERDICT:-missing verdict}"
+            exit 1
+          fi

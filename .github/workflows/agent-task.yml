@@ -1,0 +1,206 @@
+name: Agent Task
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  implement:
+    if: >-
+      startsWith(github.event.issue.title, '[AGENT]') &&
+      github.event.issue.author_association == 'OWNER'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare task branch
+        env:
+          BRANCH: agent/issue-${{ github.event.issue.number }}
+        run: |
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+      - name: Materialize immutable task contract
+        run: |
+          mkdir -p .agent-loop
+          jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" > /tmp/owner-task.md
+          cp /tmp/owner-task.md .agent-loop/TASK.md
+          sha256sum /tmp/owner-task.md | cut -d' ' -f1 > /tmp/owner-task.sha256
+
+      - name: Validate task contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, sys
+          text = Path('/tmp/owner-task.md').read_text(errors='replace')
+          if not re.search(r'(?m)^STATUS:\s*READY\s*$', text):
+              print('Invalid task contract. Actual STATUS line must be READY.')
+              sys.exit(1)
+          required = ['## Goal','## Acceptance criteria','## Allowed paths','## Out of scope']
+          missing = [item for item in required if item not in text]
+          if missing:
+              print('Invalid task contract. Missing: ' + ', '.join(missing))
+              sys.exit(1)
+          PY
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+
+      - name: Build coder prompt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          task = Path('/tmp/owner-task.md').read_text(errors='replace')
+          lines = [
+              '',
+              'You are the CODER in a bounded autonomous AgenturOS workflow.',
+              'Read AGENTS.md before changing anything.',
+              'The embedded task is the immutable Owner contract. Do not edit .agent-loop/TASK.md.',
+              'Treat every item under ## Acceptance criteria as mandatory.',
+              'Treat every item under ## Out of scope as forbidden.',
+              'Work only inside the task scope and allowed paths; broad allowed paths do not override Out of scope.',
+              'Do not merge, deploy, change secrets, use paid external services, or touch production data.',
+              'Do not run git or gh commands. Git publication is handled deterministically after you finish.',
+              'Implement the task, add or update relevant regression tests, and run useful local checks.',
+              'Stop only when the task is implemented or you have a concrete human blocker.',
+          ]
+          Path('/tmp/coder-prompt.txt').write_text(task + '\n' + '\n'.join(lines))
+          PY
+
+      - name: Run Cursor coder
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          agent --trust -p "$(cat /tmp/coder-prompt.txt)" --output-format text
+
+      - name: Verify immutable task contract
+        run: |
+          test "$(sha256sum /tmp/owner-task.md | cut -d' ' -f1)" = "$(cat /tmp/owner-task.sha256)"
+          cmp --silent /tmp/owner-task.md .agent-loop/TASK.md || { echo "TASK.md was modified by coder"; exit 1; }
+
+      - name: Enforce allowed paths
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          text = Path('/tmp/owner-task.md').read_text(errors='replace').splitlines()
+          allowed = []
+          in_allowed = False
+          for raw in text:
+              line = raw.strip()
+              if line == '## Allowed paths':
+                  in_allowed = True
+                  continue
+              if in_allowed and line.startswith('## '):
+                  break
+              if in_allowed and line.startswith('- '):
+                  value = line[2:].strip().strip('`')
+                  if value:
+                      allowed.append(value)
+          if not allowed:
+              print('No allowed paths declared.')
+              sys.exit(1)
+          if any(rule in {'.', './', '**', '*', '/'} for rule in allowed):
+              print('Repo-root-wide Allowed paths are forbidden.')
+              sys.exit(1)
+          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          changed += subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines()
+          changed += subprocess.check_output(['git','ls-files','--others','--exclude-standard'], text=True).splitlines()
+          changed = sorted(set(changed))
+          workflow_owned = {'.agent-loop/TASK.md'}
+          def matches(path, rule):
+              rule = rule.rstrip('/')
+              if rule.endswith('/**'):
+                  rule = rule[:-3].rstrip('/')
+              return path == rule or path.startswith(rule + '/')
+          violations = [p for p in changed if p not in workflow_owned and not any(matches(p,r) for r in allowed)]
+          if violations:
+              print('Changed files outside Allowed paths:')
+              for path in violations: print(' - ' + path)
+              sys.exit(1)
+          Path('/tmp/allowed-changed.txt').write_text('\n'.join(changed) + ('\n' if changed else ''))
+          PY
+
+      - name: Deterministic validation
+        run: |
+          npm run test:inbound
+          npx tsc --noEmit
+          npm run lint
+          npm run build
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          BRANCH: agent/issue-${{ github.event.issue.number }}
+        run: |
+          git config user.name "AgenturOS Agent"
+          git config user.email "agent@users.noreply.github.com"
+          while IFS= read -r path; do
+            [ -n "$path" ] && git add -- "$path"
+          done < /tmp/allowed-changed.txt
+          git diff --cached --quiet && { echo "No allowed changes staged"; exit 1; }
+          git commit -m "agent: implement issue #${{ github.event.issue.number }}"
+          git push --force-with-lease origin "$BRANCH"
+
+      - name: Open or update draft PR
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: agent/issue-${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          PR_URL=$(gh pr list --head "$BRANCH" --base master --state open --json url --jq '.[0].url // empty')
+          if [ -z "$PR_URL" ]; then
+            printf -v PR_BODY 'Autonomous implementation for #%s.\n\nCI and independent review must pass. No auto-merge.' '${{ github.event.issue.number }}'
+            PR_URL=$(gh pr create --base master --head "$BRANCH" --draft --title "${ISSUE_TITLE#\[AGENT\] }" --body "$PR_BODY")
+          fi
+          gh issue comment "${{ github.event.issue.number }}" --body "Agent implementation complete: $PR_URL"
+
+      - name: Comment when no changes
+        if: steps.changes.outputs.changed == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "Agent finished without repository changes. Review the task/blocker before retrying."
+
+      - name: Comment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "Agent run failed. Inspect: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
