@@ -8,6 +8,7 @@ import { DashboardErrorBanner } from '@/features/dashboard/components/dashboard-
 import { DashboardWorkOverview } from '@/features/dashboard/components/dashboard-work-overview'
 import {
   countAttentionCases,
+  countOverdueAttentionCases,
   selectAttentionCasesForDashboard,
 } from '@/features/dashboard/lib/dashboard-attention'
 import { selectMyWorkForDashboard } from '@/features/dashboard/lib/dashboard-my-work'
@@ -72,6 +73,7 @@ export async function DashboardPageContent() {
     memberNameMap,
   })
   const attentionCount = countAttentionCases(openCases)
+  const overdueAttentionCount = countOverdueAttentionCases(openCases)
   const attentionCaseIds = new Set(attentionItems.map((item) => item.caseId))
 
   const openTaskItems = buildOpenTaskItemsFromCases(openCases, caseTypesById)
@@ -91,9 +93,11 @@ export async function DashboardPageContent() {
   return (
     <DashboardWorkOverview
       user={user}
+      members={members}
       unprocessedInboxItems={inboxResult.unprocessedItems}
       attentionItems={attentionItems}
       attentionCount={attentionCount}
+      overdueAttentionCount={overdueAttentionCount}
       myTasks={myTasks}
       myOpenTaskCount={myOpenTaskCount}
       teamTasks={teamTasks}

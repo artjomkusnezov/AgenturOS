@@ -2,16 +2,13 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
-import {
-  dashboardSectionHeaderClassName,
-  dashboardSectionPaddingClassName,
-} from '@/features/dashboard/lib/dashboard-surface'
+import { useDashboardVariant } from '@/features/dashboard/context/dashboard-variant-context'
+import { resolveSurfaceClasses } from '@/features/dashboard/lib/agenturzentrale-surface'
 import {
   aosIconAccentBlueClassName,
   aosIconAccentGreenClassName,
   aosIconAccentOrangeClassName,
   aosIconAccentVioletClassName,
-  aosLinkClassName,
 } from '@/lib/design-system'
 
 const accentTextClass: Record<DashboardAccent, string> = {
@@ -20,6 +17,14 @@ const accentTextClass: Record<DashboardAccent, string> = {
   violet: aosIconAccentVioletClassName,
   orange: aosIconAccentOrangeClassName,
   neutral: 'text-zinc-400',
+}
+
+const azAccentTextClass: Record<DashboardAccent, string> = {
+  blue: 'text-[var(--az-accent-blue)]',
+  green: 'text-[var(--az-accent-emerald)]',
+  violet: 'text-violet-400',
+  orange: 'text-[var(--az-accent-amber)]',
+  neutral: 'text-[var(--az-text-muted)]',
 }
 
 type DashboardSectionProps = {
@@ -45,18 +50,23 @@ export function DashboardSection({
   icon,
   iconAccent = 'neutral',
 }: DashboardSectionProps) {
+  const variant = useDashboardVariant()
+  const surfaces = resolveSurfaceClasses(variant)
+  const accentClass =
+    variant === 'agenturzentrale' ? azAccentTextClass[iconAccent] : accentTextClass[iconAccent]
+
   return (
     <section aria-labelledby={titleId} className={`flex flex-col ${className}`}>
       <div
-        className={`${dashboardSectionPaddingClassName} flex items-center justify-between gap-2 pt-3`}
+        className={`${surfaces.sectionPadding} flex items-center justify-between gap-2 pt-3`}
       >
         <div className="flex min-w-0 items-center gap-2">
           {icon ? (
-            <span className={`shrink-0 ${accentTextClass[iconAccent]}`} aria-hidden="true">
+            <span className={`shrink-0 ${accentClass}`} aria-hidden="true">
               {icon}
             </span>
           ) : null}
-          <h2 id={titleId} className={dashboardSectionHeaderClassName}>
+          <h2 id={titleId} className={surfaces.sectionHeader}>
             {title}
           </h2>
         </div>
@@ -66,11 +76,8 @@ export function DashboardSection({
       <div className="pt-1">{children}</div>
 
       {href && hrefLabel ? (
-        <div className={`${dashboardSectionPaddingClassName} pb-3 pt-1`}>
-          <Link
-            href={href}
-            className={`text-sm transition-opacity duration-150 hover:opacity-80 ${aosLinkClassName}`}
-          >
+        <div className={`${surfaces.sectionPadding} pb-3 pt-1`}>
+          <Link href={href} className={surfaces.link}>
             {hrefLabel}
           </Link>
         </div>
@@ -84,5 +91,8 @@ type DashboardSectionEmptyProps = {
 }
 
 export function DashboardSectionEmpty({ message }: DashboardSectionEmptyProps) {
-  return <p className="py-1.5 text-xs leading-relaxed text-zinc-500">{message}</p>
+  const variant = useDashboardVariant()
+  const surfaces = resolveSurfaceClasses(variant)
+
+  return <p className={surfaces.empty}>{message}</p>
 }

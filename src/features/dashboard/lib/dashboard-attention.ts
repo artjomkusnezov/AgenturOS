@@ -185,3 +185,10 @@ export function countAttentionCases(
 ): number {
   return cases.filter((caseRow) => classifyAttentionBucket(caseRow, today) !== null).length
 }
+
+export function countOverdueAttentionCases(
+  cases: CaseRecord[],
+  today = getTodayDateString(),
+): number {
+  return cases.filter((caseRow) => classifyAttentionBucket(caseRow, today) === 'overdue').length
+}

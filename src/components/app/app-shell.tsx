@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useCallback, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 import { AppHeader } from '@/components/app/app-header'
 import { AppSidebar } from '@/components/app/app-sidebar'
@@ -31,6 +32,8 @@ export function AppShell({
   currentUserId = '',
   badgeCounts,
 }: AppShellProps) {
+  const pathname = usePathname()
+  const isAgenturzentrale = pathname === '/app'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [captureMenuOpen, setCaptureMenuOpen] = useState(false)
   const openCaptureRef = useRef<OpenCaptureMenu>(() => undefined)
@@ -45,12 +48,15 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-50">
+    <div
+      className={`flex min-h-screen ${isAgenturzentrale ? 'agenturzentrale-shell bg-[var(--az-bg-deep)]' : 'bg-zinc-50'}`}
+    >
       <AppSidebar
         userDisplayName={userDisplayName}
         className="hidden lg:flex"
         caseViews={caseViews}
         badgeCounts={badgeCounts}
+        variant={isAgenturzentrale ? 'agenturzentrale' : 'default'}
       />
 
       <MobileNavigation
@@ -60,12 +66,17 @@ export function AppShell({
         onOpenCapture={openCapture}
         caseViews={caseViews}
         badgeCounts={badgeCounts}
+        variant={isAgenturzentrale ? 'agenturzentrale' : 'default'}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
 
-        <div className="sticky top-0 z-20 hidden shrink-0 items-center justify-end bg-zinc-50/90 px-6 pb-2 pt-4 backdrop-blur-sm lg:flex">
+        <div
+          className={`sticky top-0 z-20 hidden shrink-0 items-center justify-end px-6 pb-2 pt-4 backdrop-blur-sm lg:flex ${
+            isAgenturzentrale ? 'az-main-toolbar' : 'bg-zinc-50/90'
+          }`}
+        >
           <QuickCaptureButton
             variant="toolbar"
             onClick={openCapture}
@@ -74,7 +85,11 @@ export function AppShell({
           />
         </div>
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-8">
+        <main
+          className={`flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0 ${
+            isAgenturzentrale ? 'az-main-content' : ''
+          }`}
+        >
           {children}
         </main>
       </div>

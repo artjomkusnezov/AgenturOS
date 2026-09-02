@@ -1,15 +1,16 @@
 import { Suspense } from 'react'
 
-import { WorkspaceFrame } from '@/components/app/workspace'
 import { DashboardPageContent } from '@/features/dashboard/components/dashboard-page-content'
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton'
 
 export default function AppDashboardPage() {
   return (
-    <WorkspaceFrame hidePageHeader>
-      <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardPageContent />
-      </Suspense>
-    </WorkspaceFrame>
+    <div className="agenturzentrale-root min-h-full bg-[var(--az-bg-deep,#0a0c10)]">
+      <div className="mx-auto w-full max-w-[90rem] px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+        <Suspense fallback={<DashboardSkeleton />}>
+          <DashboardPageContent />
+        </Suspense>
+      </div>
+    </div>
   )
 }

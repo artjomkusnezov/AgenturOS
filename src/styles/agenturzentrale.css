@@ -1,0 +1,219 @@
+/**
+ * Agenturzentrale (38B) — dark command-center shell tokens.
+ * Scoped via .agenturzentrale-root on the dashboard shell.
+ */
+
+.agenturzentrale-root {
+  --az-bg-deep: #0a0c10;
+  --az-bg-shell: #0f1218;
+  --az-bg-elevated: rgb(22 27 36 / 0.92);
+  --az-bg-panel: rgb(18 22 30 / 0.88);
+  --az-bg-panel-hover: rgb(28 34 46 / 0.95);
+  --az-border-subtle: rgb(255 255 255 / 0.06);
+  --az-border-glow: rgb(96 165 250 / 0.18);
+  --az-text-primary: #f4f4f5;
+  --az-text-secondary: #a1a1aa;
+  --az-text-muted: #71717a;
+  --az-accent-blue: #60a5fa;
+  --az-accent-amber: #fbbf24;
+  --az-accent-emerald: #34d399;
+  --az-accent-rose: #fb7185;
+  --az-glow-blue: 0 0 24px rgb(59 130 246 / 0.15);
+  --az-glow-warm: 0 0 40px rgb(251 191 36 / 0.08);
+  --az-shadow-panel: 0 4px 24px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  --az-shadow-deep: 0 12px 48px rgb(0 0 0 / 0.5);
+}
+
+.agenturzentrale-root .az-panel {
+  border-radius: 0.875rem;
+  background: var(--az-bg-panel);
+  box-shadow: var(--az-shadow-panel);
+  border: 1px solid var(--az-border-subtle);
+}
+
+.agenturzentrale-root .az-panel-emphasis {
+  border-radius: 0.875rem;
+  background: linear-gradient(
+    145deg,
+    rgb(24 30 42 / 0.95) 0%,
+    rgb(14 18 26 / 0.98) 100%
+  );
+  box-shadow: var(--az-shadow-panel), var(--az-glow-blue);
+  border: 1px solid var(--az-border-glow);
+}
+
+.agenturzentrale-root .az-hero-scene {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 20%, rgb(251 191 36 / 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgb(59 130 246 / 0.08) 0%, transparent 50%),
+    linear-gradient(165deg, #1a2030 0%, #0d1118 45%, #080a0f 100%);
+  box-shadow: var(--az-shadow-deep);
+  border: 1px solid var(--az-border-subtle);
+}
+
+.agenturzentrale-root .az-hero-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0.15) 45%, rgb(0 0 0 / 0.35) 100%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 78px,
+      rgb(255 255 255 / 0.015) 78px,
+      rgb(255 255 255 / 0.015) 79px
+    );
+  pointer-events: none;
+}
+
+.agenturzentrale-root .az-hero-window-glow {
+  position: absolute;
+  top: 8%;
+  right: 12%;
+  width: 42%;
+  height: 55%;
+  border-radius: 0.25rem;
+  background: linear-gradient(
+    180deg,
+    rgb(251 211 141 / 0.35) 0%,
+    rgb(251 191 36 / 0.08) 40%,
+    transparent 100%
+  );
+  filter: blur(1px);
+  opacity: 0.9;
+}
+
+.agenturzentrale-root .az-hero-desk-line {
+  position: absolute;
+  bottom: 18%;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.08) 20%,
+    rgb(255 255 255 / 0.12) 50%,
+    rgb(255 255 255 / 0.08) 80%,
+    transparent 100%
+  );
+}
+
+.agenturzentrale-root .az-nav-rail-dark {
+  background: var(--az-bg-shell);
+  border-color: var(--az-border-subtle);
+}
+
+/* App shell integration — dark sidebar when Agenturzentrale is active */
+.agenturzentrale-shell {
+  --az-bg-deep: #0a0c10;
+  --az-bg-shell: #0f1218;
+  --az-border-subtle: rgb(255 255 255 / 0.06);
+  --az-text-primary: #f4f4f5;
+  --az-text-secondary: #a1a1aa;
+  --az-text-muted: #71717a;
+  --az-accent-blue: #60a5fa;
+  background: var(--az-bg-deep);
+}
+
+.agenturzentrale-shell .az-sidebar {
+  background: var(--az-bg-shell);
+  border-color: var(--az-border-subtle);
+}
+
+.agenturzentrale-shell .az-sidebar-brand {
+  color: var(--az-text-primary);
+  border-color: var(--az-border-subtle);
+}
+
+.agenturzentrale-shell .az-sidebar-brand:hover {
+  color: var(--az-accent-blue);
+}
+
+.agenturzentrale-shell .az-sidebar-user {
+  border-color: var(--az-border-subtle);
+}
+
+.agenturzentrale-shell .az-sidebar-user-name {
+  color: var(--az-text-primary);
+}
+
+.agenturzentrale-shell .az-sidebar-user-meta {
+  color: var(--az-text-muted);
+}
+
+.agenturzentrale-shell .az-nav-group-label {
+  color: var(--az-text-muted);
+}
+
+.agenturzentrale-shell .az-nav-link {
+  color: var(--az-text-secondary);
+}
+
+.agenturzentrale-shell .az-nav-link:hover {
+  background: rgb(255 255 255 / 0.04);
+  color: var(--az-text-primary);
+}
+
+.agenturzentrale-shell .az-nav-link-active {
+  background: linear-gradient(90deg, rgb(59 130 246 / 0.18) 0%, rgb(59 130 246 / 0.06) 100%);
+  color: var(--az-text-primary);
+  box-shadow: inset 3px 0 0 var(--az-accent-blue);
+}
+
+.agenturzentrale-shell .az-nav-link-indicator {
+  background: var(--az-accent-blue);
+}
+
+.agenturzentrale-shell .az-main-toolbar {
+  background: rgb(10 12 16 / 0.9);
+}
+
+.agenturzentrale-shell .az-main-content {
+  background: var(--az-bg-deep);
+}
+
+.agenturzentrale-root .az-nav-link-active {
+  background: linear-gradient(90deg, rgb(59 130 246 / 0.18) 0%, rgb(59 130 246 / 0.06) 100%);
+  color: var(--az-text-primary);
+  box-shadow: inset 3px 0 0 var(--az-accent-blue);
+}
+
+.agenturzentrale-root .az-nav-link {
+  color: var(--az-text-secondary);
+}
+
+.agenturzentrale-root .az-nav-link:hover {
+  background: rgb(255 255 255 / 0.04);
+  color: var(--az-text-primary);
+}
+
+.agenturzentrale-root .az-kpi-glow-red {
+  box-shadow: 0 0 16px rgb(251 113 133 / 0.2);
+}
+
+.agenturzentrale-root .az-kpi-glow-amber {
+  box-shadow: 0 0 16px rgb(251 191 36 / 0.15);
+}
+
+.agenturzentrale-root .az-kpi-glow-blue {
+  box-shadow: 0 0 16px rgb(96 165 250 / 0.15);
+}
+
+.agenturzentrale-root .az-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgb(251 191 36 / 0.12);
+  color: var(--az-accent-amber);
+  border: 1px solid rgb(251 191 36 / 0.25);
+}

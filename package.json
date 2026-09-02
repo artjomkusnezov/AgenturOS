@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:inbound": "tsx --test src/features/inbound/inbound-intake.smoke.test.ts src/features/email/email-adapter.test.ts src/features/email/email-intake.smoke.test.ts"
+    "test:inbound": "tsx --test src/features/inbound/inbound-intake.smoke.test.ts src/features/email/email-adapter.test.ts src/features/email/email-intake.smoke.test.ts src/features/dashboard/lib/dashboard-daily-quote.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

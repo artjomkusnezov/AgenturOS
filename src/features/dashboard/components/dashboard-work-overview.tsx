@@ -1,10 +1,12 @@
+import { DashboardVariantProvider } from '@/features/dashboard/context/dashboard-variant-context'
+import { AgenturzentraleCommandRail } from '@/features/dashboard/components/agenturzentrale-command-rail'
+import { AgenturzentraleDayRhythm } from '@/features/dashboard/components/agenturzentrale-day-rhythm'
+import { AgenturzentraleHero } from '@/features/dashboard/components/agenturzentrale-hero'
+import { AgenturzentraleLageHeute } from '@/features/dashboard/components/agenturzentrale-lage-heute'
 import { DashboardAttentionSection } from '@/features/dashboard/components/dashboard-attention-section'
-import { DashboardGoalsSection } from '@/features/dashboard/components/dashboard-goals-section'
-import { DashboardGreeting } from '@/features/dashboard/components/dashboard-greeting'
 import { DashboardInboxSection } from '@/features/dashboard/components/dashboard-inbox-section'
 import { DashboardMyTasksSection } from '@/features/dashboard/components/dashboard-my-tasks-section'
 import { DashboardMyWorkSection } from '@/features/dashboard/components/dashboard-my-work-section'
-import { DashboardTeamTasksSection } from '@/features/dashboard/components/dashboard-team-tasks-section'
 import type { DashboardAttentionItem } from '@/features/dashboard/lib/dashboard-attention'
 import type {
   DashboardCaseTypeCount,
@@ -12,15 +14,19 @@ import type {
 } from '@/features/dashboard/lib/dashboard-my-work'
 import type { DashboardTaskItem, DashboardTeamTasksResult } from '@/features/dashboard/lib/dashboard-tasks'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
+import type { AgencyMember } from '@/features/agency/types/agency-member'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 type DashboardWorkOverviewProps = {
   user: {
+    id: string
     user_metadata?: Record<string, unknown>
   }
+  members: AgencyMember[]
   unprocessedInboxItems: InboxItem[]
   attentionItems: DashboardAttentionItem[]
   attentionCount: number
+  overdueAttentionCount: number
   myTasks: DashboardTaskItem[]
   myOpenTaskCount: number
   teamTasks: DashboardTeamTasksResult
@@ -31,9 +37,11 @@ type DashboardWorkOverviewProps = {
 
 export function DashboardWorkOverview({
   user,
+  members,
   unprocessedInboxItems,
   attentionItems,
   attentionCount,
+  overdueAttentionCount,
   myTasks,
   myOpenTaskCount,
   teamTasks,
@@ -49,50 +57,74 @@ export function DashboardWorkOverview({
 
   const unprocessedInboxCount = sanitizeDashboardCount(safeInboxItems.length)
   const safeAttentionCount = sanitizeDashboardCount(attentionCount)
+  const safeOverdueAttentionCount = sanitizeDashboardCount(overdueAttentionCount)
   const safeMyOpenTaskCount = sanitizeDashboardCount(myOpenTaskCount)
   const safeTeamOpenTaskCount = sanitizeDashboardCount(teamTasks.totalTeamOpenCount)
 
   return (
-    <div className="space-y-4 lg:space-y-5">
-      <DashboardGreeting
-        user={user}
-        unprocessedInboxCount={unprocessedInboxCount}
-        attentionCount={safeAttentionCount}
-        myOpenTaskCount={safeMyOpenTaskCount}
-        teamOpenTaskCount={safeTeamOpenTaskCount}
-      />
+    <DashboardVariantProvider variant="agenturzentrale">
+      <div className="agenturzentrale-root min-h-full space-y-4 pb-2 lg:space-y-5">
+        <div className="grid gap-4 xl:grid-cols-[1fr_17.5rem] xl:gap-5">
+          <div className="min-w-0 space-y-4 lg:space-y-5">
+            <AgenturzentraleHero
+              user={user}
+              unprocessedInboxCount={unprocessedInboxCount}
+              attentionCount={safeAttentionCount}
+              myOpenTaskCount={safeMyOpenTaskCount}
+              teamOpenTaskCount={safeTeamOpenTaskCount}
+            />
 
-      <div className="grid gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-4">
-        <div className="order-1 lg:col-start-1 lg:row-start-1">
-          <DashboardInboxSection items={safeInboxItems} memberNameMap={memberNameMap} />
+            <AgenturzentraleLageHeute
+              unprocessedInboxCount={unprocessedInboxCount}
+              attentionCount={safeAttentionCount}
+              myOpenTaskCount={safeMyOpenTaskCount}
+              teamOpenTaskCount={safeTeamOpenTaskCount}
+              overdueAttentionCount={safeOverdueAttentionCount}
+            />
+
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--az-text-muted)]">
+                Operative Zonen
+              </h2>
+
+              <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+                <DashboardInboxSection
+                  title="Was braucht mich jetzt?"
+                  items={safeInboxItems}
+                  memberNameMap={memberNameMap}
+                />
+                <DashboardAttentionSection
+                  items={safeAttentionItems}
+                  totalCount={safeAttentionCount}
+                />
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+                <DashboardMyWorkSection
+                  title="Aktive Vorgänge"
+                  caseTypeCounts={safeCaseTypeCounts}
+                  recentlyUpdated={safeRecentlyUpdated}
+                />
+                <DashboardMyTasksSection
+                  title="Mein nächster Schritt"
+                  tasks={safeMyTasks}
+                  totalCount={safeMyOpenTaskCount}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="min-w-0 xl:block">
+            <AgenturzentraleCommandRail
+              members={members}
+              teamTasks={teamTasks}
+              currentUserId={user.id}
+            />
+          </div>
         </div>
 
-        <div className="order-2 lg:col-start-2 lg:row-start-1">
-          <DashboardAttentionSection
-            items={safeAttentionItems}
-            totalCount={safeAttentionCount}
-          />
-        </div>
-
-        <div className="order-3 lg:order-6 lg:col-start-1 lg:row-start-2">
-          <DashboardMyTasksSection tasks={safeMyTasks} totalCount={safeMyOpenTaskCount} />
-        </div>
-
-        <div className="order-4 lg:col-start-2 lg:row-start-2">
-          <DashboardTeamTasksSection teamTasks={teamTasks} />
-        </div>
-
-        <div className="order-5 lg:col-start-3 lg:row-start-2">
-          <DashboardMyWorkSection
-            caseTypeCounts={safeCaseTypeCounts}
-            recentlyUpdated={safeRecentlyUpdated}
-          />
-        </div>
-
-        <div className="order-6 lg:order-3 lg:col-start-3 lg:row-start-1">
-          <DashboardGoalsSection />
-        </div>
+        <AgenturzentraleDayRhythm />
       </div>
-    </div>
+    </DashboardVariantProvider>
   )
 }
