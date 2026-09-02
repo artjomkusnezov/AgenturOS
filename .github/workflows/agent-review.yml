@@ -46,9 +46,11 @@ jobs:
           if len(source) > limit:
               source = source[:limit] + '\n\n[DIFF TRUNCATED AT 120000 CHARACTERS — inspect repository files directly for remaining context]\n'
           stat = Path('/tmp/diff-stat.txt').read_text(errors='replace')
+          task_path = Path('.agent-loop/TASK.md')
+          task = task_path.read_text(errors='replace') if task_path.exists() else '[TASK.md MISSING]'
           lines = [
               'You are the independent REVIEWER for AgenturOS.',
-              'Read AGENTS.md and .agent-loop/TASK.md.',
+              'The task contract is embedded below; verify its acceptance criteria and out-of-scope constraints explicitly.',
               'Review the actual production-path diff against the task acceptance criteria, scope, regressions, security guardrails, and fake-green risk.',
               'Do not modify files.',
               'Do not approve because tests merely exist; verify the changed code is actually used by the user path.',
@@ -56,6 +58,9 @@ jobs:
               'Run read-only inspection and tests if useful.',
               'End with exactly one verdict line: REVIEW: PASS or REVIEW: CHANGES.',
               'If CHANGES, provide concrete actionable findings with file paths.',
+              '',
+              'TASK CONTRACT:',
+              task,
               '',
               'Diff stat:',
               stat,
