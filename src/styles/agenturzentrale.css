@@ -58,15 +58,28 @@
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
-    linear-gradient(90deg, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0.15) 45%, rgb(0 0 0 / 0.35) 100%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.45) 0%, rgb(0 0 0 / 0.08) 50%, rgb(0 0 0 / 0.25) 100%),
     repeating-linear-gradient(
       90deg,
       transparent 0,
       transparent 78px,
-      rgb(255 255 255 / 0.015) 78px,
-      rgb(255 255 255 / 0.015) 79px
+      rgb(255 255 255 / 0.012) 78px,
+      rgb(255 255 255 / 0.012) 79px
     );
+  pointer-events: none;
+}
+
+.agenturzentrale-root .az-hero-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse 85% 70% at 50% 45%,
+    transparent 30%,
+    rgb(0 0 0 / 0.55) 100%
+  );
   pointer-events: none;
 }
 
@@ -167,6 +180,46 @@
 
 .agenturzentrale-shell .az-nav-link-indicator {
   background: var(--az-accent-blue);
+}
+
+/* Navigation badges — dark shell */
+.agenturzentrale-shell .az-nav-badge-blue {
+  background: rgb(59 130 246 / 0.18);
+  color: var(--az-accent-blue);
+}
+
+.agenturzentrale-shell .az-nav-badge-orange {
+  background: rgb(251 191 36 / 0.15);
+  color: var(--az-accent-amber);
+}
+
+.agenturzentrale-shell .az-nav-badge-red {
+  background: rgb(251 113 133 / 0.18);
+  color: var(--az-accent-rose);
+}
+
+.agenturzentrale-shell .az-nav-badge-neutral {
+  background: rgb(255 255 255 / 0.08);
+  color: var(--az-text-secondary);
+}
+
+.agenturzentrale-root .az-cockpit-zone-label {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--az-text-muted);
+}
+
+.agenturzentrale-root .az-cockpit-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--az-border-subtle) 15%,
+    var(--az-border-subtle) 85%,
+    transparent 100%
+  );
 }
 
 .agenturzentrale-shell .az-main-toolbar {

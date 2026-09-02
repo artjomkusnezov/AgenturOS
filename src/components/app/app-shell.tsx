@@ -70,7 +70,10 @@ export function AppShell({
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
+        <AppHeader
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          variant={isAgenturzentrale ? 'agenturzentrale' : 'default'}
+        />
 
         <div
           className={`sticky top-0 z-20 hidden shrink-0 items-center justify-end px-6 pb-2 pt-4 backdrop-blur-sm lg:flex ${

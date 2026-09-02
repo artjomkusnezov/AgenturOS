@@ -67,6 +67,8 @@ export function MobileNavigation({
     return null
   }
 
+  const isDark = variant === 'agenturzentrale'
+
   return (
     <div className="fixed inset-0 z-40 lg:hidden">
       <button
@@ -79,14 +81,24 @@ export function MobileNavigation({
         role="dialog"
         aria-modal="true"
         aria-labelledby="mobile-nav-title"
-        className={`${aosAppSidebarClassName} absolute inset-y-0 left-0 w-[min(100%,16rem)]`}
+        className={`${aosAppSidebarClassName} absolute inset-y-0 left-0 w-[min(100%,16rem)] ${
+          isDark ? 'border-r border-[var(--az-border-subtle)] bg-[var(--az-bg-shell)]' : ''
+        }`}
       >
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-200/70 px-4">
+        <div
+          className={`flex h-12 shrink-0 items-center justify-between border-b px-4 ${
+            isDark ? 'border-[var(--az-border-subtle)]' : 'border-zinc-200/70'
+          }`}
+        >
           <Link
             id="mobile-nav-title"
             href="/app"
             onClick={onClose}
-            className="text-base font-semibold tracking-tight text-zinc-900"
+            className={`text-base font-semibold tracking-tight ${
+              isDark
+                ? 'text-[var(--az-text-primary)] hover:text-[var(--az-accent-blue)]'
+                : 'text-zinc-900'
+            }`}
           >
             AgenturOS
           </Link>
@@ -117,11 +129,25 @@ export function MobileNavigation({
           />
         </div>
 
-        <div className={`${aosSidebarUserClassName} pb-[max(1rem,env(safe-area-inset-bottom))]`}>
-          <p className={`truncate ${aosTextSmallClassName} font-medium text-zinc-900`}>
+        <div
+          className={`${aosSidebarUserClassName} pb-[max(1rem,env(safe-area-inset-bottom))] ${
+            isDark ? 'border-[var(--az-border-subtle)]' : ''
+          }`}
+        >
+          <p
+            className={`truncate ${aosTextSmallClassName} font-medium ${
+              isDark ? 'text-[var(--az-text-primary)]' : 'text-zinc-900'
+            }`}
+          >
             {userDisplayName}
           </p>
-          <p className={`mt-0.5 truncate ${aosTextMetaClassName}`}>Angemeldet</p>
+          <p
+            className={`mt-0.5 truncate ${aosTextMetaClassName} ${
+              isDark ? 'text-[var(--az-text-muted)]' : ''
+            }`}
+          >
+            Angemeldet
+          </p>
           <div className="mt-3 [&_form_button]:w-full [&_form_button]:justify-center">
             <LogoutButton />
           </div>

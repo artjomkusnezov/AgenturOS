@@ -64,8 +64,8 @@ export function DashboardWorkOverview({
   return (
     <DashboardVariantProvider variant="agenturzentrale">
       <div className="agenturzentrale-root min-h-full space-y-4 pb-2 lg:space-y-5">
-        <div className="grid gap-4 xl:grid-cols-[1fr_17.5rem] xl:gap-5">
-          <div className="min-w-0 space-y-4 lg:space-y-5">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start xl:gap-5">
+          <div className="min-w-0 space-y-4 lg:space-y-5 xl:col-span-1">
             <AgenturzentraleHero
               user={user}
               unprocessedInboxCount={unprocessedInboxCount}
@@ -81,45 +81,44 @@ export function DashboardWorkOverview({
               teamOpenTaskCount={safeTeamOpenTaskCount}
               overdueAttentionCount={safeOverdueAttentionCount}
             />
-
-            <div className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--az-text-muted)]">
-                Operative Zonen
-              </h2>
-
-              <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
-                <DashboardInboxSection
-                  title="Was braucht mich jetzt?"
-                  items={safeInboxItems}
-                  memberNameMap={memberNameMap}
-                />
-                <DashboardAttentionSection
-                  items={safeAttentionItems}
-                  totalCount={safeAttentionCount}
-                />
-              </div>
-
-              <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
-                <DashboardMyWorkSection
-                  title="Aktive Vorgänge"
-                  caseTypeCounts={safeCaseTypeCounts}
-                  recentlyUpdated={safeRecentlyUpdated}
-                />
-                <DashboardMyTasksSection
-                  title="Mein nächster Schritt"
-                  tasks={safeMyTasks}
-                  totalCount={safeMyOpenTaskCount}
-                />
-              </div>
-            </div>
           </div>
 
-          <div className="min-w-0 xl:block">
+          <div className="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1">
             <AgenturzentraleCommandRail
               members={members}
               teamTasks={teamTasks}
               currentUserId={user.id}
             />
+          </div>
+
+          <div className="min-w-0 space-y-3 xl:col-start-1 xl:row-start-2">
+            <div className="az-cockpit-divider hidden xl:block" aria-hidden="true" />
+            <h2 className="az-cockpit-zone-label">Operative Zonen</h2>
+
+            <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+              <DashboardInboxSection
+                title="Was braucht mich jetzt?"
+                items={safeInboxItems}
+                memberNameMap={memberNameMap}
+              />
+              <DashboardAttentionSection
+                items={safeAttentionItems}
+                totalCount={safeAttentionCount}
+              />
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+              <DashboardMyWorkSection
+                title="Aktive Vorgänge"
+                caseTypeCounts={safeCaseTypeCounts}
+                recentlyUpdated={safeRecentlyUpdated}
+              />
+              <DashboardMyTasksSection
+                title="Mein nächster Schritt"
+                tasks={safeMyTasks}
+                totalCount={safeMyOpenTaskCount}
+              />
+            </div>
           </div>
         </div>
 

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e2838"/>
+      <stop offset="45%" stop-color="#121820"/>
+      <stop offset="100%" stop-color="#080a10"/>
+    </linearGradient>
+    <linearGradient id="windowGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d" stop-opacity="0.55"/>
+      <stop offset="35%" stop-color="#f59e0b" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2030" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0a0c12" stop-opacity="1"/>
+    </linearGradient>
+    <radialGradient id="ambientWarm" cx="75%" cy="15%" r="45%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ambientCool" cx="15%" cy="80%" r="40%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="400" fill="url(#sky)"/>
+  <rect width="1200" height="400" fill="url(#ambientWarm)"/>
+  <rect width="1200" height="400" fill="url(#ambientCool)"/>
+
+  <!-- Large agency window -->
+  <rect x="680" y="40" width="420" height="220" rx="4" fill="#0c1018" stroke="rgb(255 255 255 / 0.08)" stroke-width="2"/>
+  <rect x="692" y="52" width="396" height="196" rx="2" fill="url(#windowGlow)"/>
+  <line x1="890" y1="52" x2="890" y2="248" stroke="rgb(255 255 255 / 0.06)" stroke-width="1.5"/>
+  <line x1="692" y1="150" x2="1088" y2="150" stroke="rgb(255 255 255 / 0.06)" stroke-width="1.5"/>
+
+  <!-- City silhouette through window -->
+  <path d="M700 230 L720 190 L735 210 L755 175 L775 200 L800 170 L820 195 L845 165 L870 185 L895 160 L920 180 L945 155 L970 175 L995 165 L1020 185 L1045 170 L1070 195 L1088 210 L1088 248 L692 248 Z" fill="rgb(0 0 0 / 0.35)"/>
+
+  <!-- Bookshelf left -->
+  <rect x="80" y="90" width="180" height="180" rx="3" fill="rgb(255 255 255 / 0.03)" stroke="rgb(255 255 255 / 0.05)" stroke-width="1"/>
+  <rect x="92" y="102" width="156" height="4" rx="1" fill="rgb(255 255 255 / 0.08)"/>
+  <rect x="92" y="140" width="156" height="4" rx="1" fill="rgb(255 255 255 / 0.08)"/>
+  <rect x="92" y="178" width="156" height="4" rx="1" fill="rgb(255 255 255 / 0.08)"/>
+  <rect x="98" y="110" width="28" height="24" rx="1" fill="#3b5998" opacity="0.5"/>
+  <rect x="132" y="112" width="22" height="22" rx="1" fill="#b45309" opacity="0.45"/>
+  <rect x="162" y="108" width="32" height="26" rx="1" fill="#047857" opacity="0.4"/>
+  <rect x="200" y="114" width="24" height="20" rx="1" fill="#7c3aed" opacity="0.4"/>
+
+  <!-- Plant -->
+  <ellipse cx="310" cy="248" rx="28" ry="8" fill="rgb(0 0 0 / 0.4)"/>
+  <rect x="302" y="210" width="16" height="38" rx="2" fill="#78350f" opacity="0.7"/>
+  <ellipse cx="310" cy="200" rx="32" ry="24" fill="#166534" opacity="0.55"/>
+  <ellipse cx="295" cy="208" rx="18" ry="14" fill="#15803d" opacity="0.45"/>
+  <ellipse cx="325" cy="205" rx="16" ry="12" fill="#22c55e" opacity="0.35"/>
+
+  <!-- Desk cluster -->
+  <rect x="340" y="230" width="320" height="14" rx="2" fill="rgb(255 255 255 / 0.06)"/>
+  <rect x="360" y="180" width="140" height="50" rx="3" fill="rgb(255 255 255 / 0.04)" stroke="rgb(255 255 255 / 0.06)" stroke-width="1"/>
+  <rect x="520" y="195" width="110" height="35" rx="3" fill="rgb(255 255 255 / 0.035)" stroke="rgb(255 255 255 / 0.05)" stroke-width="1"/>
+
+  <!-- Monitor glow -->
+  <rect x="380" y="188" width="52" height="36" rx="2" fill="#0f172a" stroke="rgb(96 165 250 / 0.25)" stroke-width="1"/>
+  <rect x="384" y="192" width="44" height="28" rx="1" fill="rgb(59 130 246 / 0.2)"/>
+  <rect x="540" y="202" width="40" height="28" rx="2" fill="#0f172a" stroke="rgb(96 165 250 / 0.2)" stroke-width="1"/>
+
+  <!-- Chairs (silhouettes) -->
+  <ellipse cx="420" cy="258" rx="22" ry="10" fill="rgb(0 0 0 / 0.45)"/>
+  <path d="M408 244 Q420 220 432 244 L428 258 L412 258 Z" fill="rgb(255 255 255 / 0.06)"/>
+  <ellipse cx="565" cy="258" rx="18" ry="8" fill="rgb(0 0 0 / 0.4)"/>
+
+  <!-- Floor -->
+  <rect x="0" y="270" width="1200" height="130" fill="url(#floor)"/>
+  <line x1="0" y1="270" x2="1200" y2="270" stroke="rgb(255 255 255 / 0.06)" stroke-width="1"/>
+  <line x1="0" y1="320" x2="1200" y2="320" stroke="rgb(255 255 255 / 0.02)" stroke-width="1"/>
+
+  <!-- Warm light spill on floor -->
+  <ellipse cx="880" cy="290" rx="200" ry="40" fill="#fbbf24" opacity="0.06" filter="url(#softBlur)"/>
+
+  <!-- Ceiling light strip -->
+  <rect x="400" y="24" width="200" height="3" rx="1.5" fill="rgb(255 255 255 / 0.12)"/>
+  <rect x="400" y="24" width="200" height="20" fill="rgb(255 255 255 / 0.02)" filter="url(#softBlur)"/>
+</svg>

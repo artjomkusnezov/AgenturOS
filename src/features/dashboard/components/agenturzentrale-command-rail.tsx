@@ -52,14 +52,28 @@ function TeamPresenceCard({
 }) {
   const safeOpen = sanitizeDashboardCount(openCount)
   const safeOverdue = sanitizeDashboardCount(overdueCount)
+  const statusTone =
+    safeOverdue > 0 ? 'bg-red-400' : safeOpen > 0 ? 'bg-amber-400' : 'bg-emerald-400'
 
   return (
-    <div className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--az-bg-panel-hover)]">
-      <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-semibold text-white shadow-md ${avatarTone(member.userId)}`}
-        aria-hidden="true"
-      >
-        {memberInitials(member)}
+    <div className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-[var(--az-bg-panel-hover)]">
+      <div className="relative shrink-0">
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white shadow-lg ring-2 ring-[var(--az-bg-panel)] ${avatarTone(member.userId)}`}
+          aria-hidden="true"
+        >
+          {memberInitials(member)}
+        </div>
+        <span
+          className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--az-bg-panel)] ${statusTone}`}
+          title={
+            safeOverdue > 0
+              ? 'Überfällige Aufgaben'
+              : safeOpen > 0
+                ? 'Aufgaben offen'
+                : 'Frei'
+          }
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[0.8125rem] font-medium text-[var(--az-text-primary)]">
@@ -106,7 +120,7 @@ export function AgenturzentraleCommandRail({
       aria-labelledby="command-rail-heading"
       className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start"
     >
-      <section className={`${azSurfaceClassName} p-4`}>
+      <section className={`${azSurfaceClassName} az-panel-emphasis p-4`}>
         <div className="flex items-center justify-between gap-2">
           <h2
             id="command-rail-heading"

@@ -90,7 +90,12 @@ function NavLink({
       />
       <span className="min-w-0 flex-1 truncate">{item.title}</span>
       {badge ? (
-        <NavigationBadge count={badge.count} tone={badge.tone} label={badge.label} />
+        <NavigationBadge
+          count={badge.count}
+          tone={badge.tone}
+          label={badge.label}
+          variant={variant}
+        />
       ) : null}
     </Link>
   )
@@ -153,7 +158,12 @@ function CaseViewNavLink({
       />
       <span className="min-w-0 flex-1 truncate">{item.name}</span>
       {badge ? (
-        <NavigationBadge count={badge.count} tone={badge.tone} label={badge.label} />
+        <NavigationBadge
+          count={badge.count}
+          tone={badge.tone}
+          label={badge.label}
+          variant={variant}
+        />
       ) : null}
     </Link>
   )

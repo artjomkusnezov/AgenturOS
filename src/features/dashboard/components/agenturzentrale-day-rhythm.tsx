@@ -71,7 +71,7 @@ export function AgenturzentraleDayRhythm() {
   return (
     <section
       aria-labelledby="day-rhythm-heading"
-      className={`${azSurfaceClassName} px-4 py-3.5 sm:px-5 sm:py-4`}
+      className={`${azSurfaceClassName} az-panel-emphasis px-4 py-3.5 sm:px-5 sm:py-4`}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
