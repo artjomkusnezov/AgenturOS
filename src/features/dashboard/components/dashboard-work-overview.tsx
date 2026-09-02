@@ -54,18 +54,30 @@ export function DashboardWorkOverview({
   const safeMyTasks = Array.isArray(myTasks) ? myTasks : []
   const safeCaseTypeCounts = Array.isArray(caseTypeCounts) ? caseTypeCounts : []
   const safeRecentlyUpdated = Array.isArray(recentlyUpdated) ? recentlyUpdated : []
+  const safeMembers = Array.isArray(members) ? members : []
+  const safeTeamTasks: DashboardTeamTasksResult = {
+    members: Array.isArray(teamTasks?.members) ? teamTasks.members : [],
+    unassigned: {
+      openCount: sanitizeDashboardCount(teamTasks?.unassigned?.openCount ?? 0),
+      overdueCount: sanitizeDashboardCount(teamTasks?.unassigned?.overdueCount ?? 0),
+      previewTasks: Array.isArray(teamTasks?.unassigned?.previewTasks)
+        ? teamTasks.unassigned.previewTasks
+        : [],
+    },
+    totalTeamOpenCount: sanitizeDashboardCount(teamTasks?.totalTeamOpenCount ?? 0),
+  }
 
   const unprocessedInboxCount = sanitizeDashboardCount(safeInboxItems.length)
   const safeAttentionCount = sanitizeDashboardCount(attentionCount)
   const safeOverdueAttentionCount = sanitizeDashboardCount(overdueAttentionCount)
   const safeMyOpenTaskCount = sanitizeDashboardCount(myOpenTaskCount)
-  const safeTeamOpenTaskCount = sanitizeDashboardCount(teamTasks.totalTeamOpenCount)
+  const safeTeamOpenTaskCount = sanitizeDashboardCount(safeTeamTasks.totalTeamOpenCount)
 
   return (
     <DashboardVariantProvider variant="agenturzentrale">
       <div className="agenturzentrale-root min-h-full space-y-4 pb-2 lg:space-y-5">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start xl:gap-5">
-          <div className="min-w-0 space-y-4 lg:space-y-5 xl:col-span-1">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-5">
+          <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1 lg:space-y-5">
             <AgenturzentraleHero
               user={user}
               unprocessedInboxCount={unprocessedInboxCount}
@@ -83,19 +95,22 @@ export function DashboardWorkOverview({
             />
           </div>
 
-          <div className="min-w-0 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+          <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
             <AgenturzentraleCommandRail
-              members={members}
-              teamTasks={teamTasks}
+              members={safeMembers}
+              teamTasks={safeTeamTasks}
               currentUserId={user.id}
+              currentUserTasks={safeMyTasks}
+              currentUserOpenCount={safeMyOpenTaskCount}
+              currentUserOverdueCount={safeMyTasks.filter((task) => task.isOverdue).length}
             />
           </div>
 
-          <div className="min-w-0 space-y-3 xl:col-start-1 xl:row-start-2">
-            <div className="az-cockpit-divider hidden xl:block" aria-hidden="true" />
+          <div className="min-w-0 space-y-3 lg:col-start-1 lg:row-start-2">
+            <div className="az-cockpit-divider hidden lg:block" aria-hidden="true" />
             <h2 className="az-cockpit-zone-label">Operative Zonen</h2>
 
-            <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
               <DashboardInboxSection
                 title="Was braucht mich jetzt?"
                 items={safeInboxItems}
@@ -107,7 +122,7 @@ export function DashboardWorkOverview({
               />
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
               <DashboardMyWorkSection
                 title="Aktive Vorgänge"
                 caseTypeCounts={safeCaseTypeCounts}

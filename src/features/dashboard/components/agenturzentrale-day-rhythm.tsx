@@ -44,10 +44,10 @@ const QUICK_ACTIONS: QuickAction[] = [
 ]
 
 const DAY_PHASES = [
-  { label: 'Morgen', time: '08–12', active: true },
-  { label: 'Mittag', time: '12–14', active: false },
-  { label: 'Nachmittag', time: '14–18', active: false },
-  { label: 'Abschluss', time: '18+', active: false },
+  { label: 'Morgen', time: '08–12' },
+  { label: 'Mittag', time: '12–14' },
+  { label: 'Nachmittag', time: '14–18' },
+  { label: 'Abschluss', time: '18+' },
 ] as const
 
 function getCurrentDayPhaseIndex(): number {

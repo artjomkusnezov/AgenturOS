@@ -1,3 +1,5 @@
+'use client'
+
 import { DashboardTaskRow } from '@/features/dashboard/components/dashboard-task-row'
 import {
   DashboardSection,

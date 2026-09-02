@@ -3,6 +3,9 @@ import { Suspense } from 'react'
 import { DashboardPageContent } from '@/features/dashboard/components/dashboard-page-content'
 import { DashboardSkeleton } from '@/features/dashboard/components/dashboard-skeleton'
 
+/** Auth + live operational data — never statically prerender. */
+export const dynamic = 'force-dynamic'
+
 export default function AppDashboardPage() {
   return (
     <div className="agenturzentrale-root min-h-full bg-[var(--az-bg-deep,#0a0c10)]">
@@ -14,3 +17,4 @@ export default function AppDashboardPage() {
     </div>
   )
 }
+

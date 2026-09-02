@@ -2,7 +2,9 @@
 
 import { createContext, useContext } from 'react'
 
-export type DashboardVariant = 'default' | 'agenturzentrale'
+import type { DashboardVariant } from '@/features/dashboard/lib/dashboard-variant'
+
+export type { DashboardVariant }
 
 const DashboardVariantContext = createContext<DashboardVariant>('default')
 

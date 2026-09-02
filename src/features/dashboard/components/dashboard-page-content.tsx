@@ -92,7 +92,10 @@ export async function DashboardPageContent() {
 
   return (
     <DashboardWorkOverview
-      user={user}
+      user={{
+        id: user.id,
+        user_metadata: user.user_metadata as Record<string, unknown> | undefined,
+      }}
       members={members}
       unprocessedInboxItems={inboxResult.unprocessedItems}
       attentionItems={attentionItems}

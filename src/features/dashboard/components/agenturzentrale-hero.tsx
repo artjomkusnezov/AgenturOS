@@ -37,7 +37,7 @@ export function AgenturzentraleHero({
   return (
     <section
       aria-labelledby="agenturzentrale-greeting"
-      className="az-hero-scene relative min-h-[12rem] sm:min-h-[14rem] lg:min-h-[17rem] xl:min-h-[19rem]"
+      className="az-hero-scene relative min-h-[12rem] sm:min-h-[14rem] lg:min-h-[18rem] xl:min-h-[20rem]"
     >
       <AgenturzentraleOfficeScene />
       <div className="az-hero-window-glow" aria-hidden="true" />

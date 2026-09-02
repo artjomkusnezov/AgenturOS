@@ -1,7 +1,10 @@
+'use client'
+
 import Link from 'next/link'
 
 import type { AgencyMember } from '@/features/agency/types/agency-member'
 import { DashboardIconTarget } from '@/features/dashboard/components/dashboard-icons'
+import { DashboardTaskRow } from '@/features/dashboard/components/dashboard-task-row'
 import type { DashboardTeamTasksResult } from '@/features/dashboard/lib/dashboard-tasks'
 import { azSurfaceClassName } from '@/features/dashboard/lib/agenturzentrale-surface'
 import { DASHBOARD_WEEKLY_GOAL_DEMO } from '@/features/dashboard/lib/dashboard-weekly-goal-demo'
@@ -11,6 +14,10 @@ type AgenturzentraleCommandRailProps = {
   members: AgencyMember[]
   teamTasks: DashboardTeamTasksResult
   currentUserId: string
+  /** Real open tasks for the signed-in member (not included in teamTasks). */
+  currentUserTasks?: DashboardTeamTasksResult['members'][number]['previewTasks']
+  currentUserOpenCount?: number
+  currentUserOverdueCount?: number
 }
 
 function memberInitials(member: AgencyMember): string {
@@ -20,7 +27,8 @@ function memberInitials(member: AgencyMember): string {
   if (combined.length >= 2) {
     return combined
   }
-  const fromDisplay = member.displayName.trim().slice(0, 2).toUpperCase()
+  const display = typeof member.displayName === 'string' ? member.displayName.trim() : ''
+  const fromDisplay = display.slice(0, 2).toUpperCase()
   return fromDisplay.length > 0 ? fromDisplay : '?'
 }
 
@@ -43,63 +51,79 @@ function TeamPresenceCard({
   member,
   openCount,
   overdueCount,
+  previewTasks,
   isCurrentUser,
 }: {
   member: AgencyMember
   openCount: number
   overdueCount: number
+  previewTasks: DashboardTeamTasksResult['members'][number]['previewTasks']
   isCurrentUser: boolean
 }) {
   const safeOpen = sanitizeDashboardCount(openCount)
   const safeOverdue = sanitizeDashboardCount(overdueCount)
   const statusTone =
     safeOverdue > 0 ? 'bg-red-400' : safeOpen > 0 ? 'bg-amber-400' : 'bg-emerald-400'
+  const displayName =
+    typeof member.displayName === 'string' && member.displayName.trim().length > 0
+      ? member.displayName.trim()
+      : 'Unbenanntes Mitglied'
 
   return (
-    <div className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-[var(--az-bg-panel-hover)]">
-      <div className="relative shrink-0">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white shadow-lg ring-2 ring-[var(--az-bg-panel)] ${avatarTone(member.userId)}`}
-          aria-hidden="true"
-        >
-          {memberInitials(member)}
+    <div className="space-y-1.5 px-1 py-2.5 first:pt-0">
+      <div className="flex items-center gap-3 rounded-lg px-1 py-1 transition-colors hover:bg-[var(--az-bg-panel-hover)]">
+        <div className="relative shrink-0">
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white shadow-lg ring-2 ring-[var(--az-bg-panel)] ${avatarTone(member.userId)}`}
+            aria-hidden="true"
+          >
+            {memberInitials(member)}
+          </div>
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--az-bg-panel)] ${statusTone}`}
+            title={
+              safeOverdue > 0
+                ? 'Überfällige Aufgaben'
+                : safeOpen > 0
+                  ? 'Aufgaben offen'
+                  : 'Frei'
+            }
+          />
         </div>
-        <span
-          className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--az-bg-panel)] ${statusTone}`}
-          title={
-            safeOverdue > 0
-              ? 'Überfällige Aufgaben'
-              : safeOpen > 0
-                ? 'Aufgaben offen'
-                : 'Frei'
-          }
-        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.8125rem] font-medium text-[var(--az-text-primary)]">
+            {displayName}
+            {isCurrentUser ? (
+              <span className="ml-1.5 text-[10px] font-normal text-[var(--az-accent-blue)]">
+                Du
+              </span>
+            ) : null}
+          </p>
+          <p className="text-[10px] text-[var(--az-text-muted)]">
+            {safeOpen === 0
+              ? 'Keine offenen Aufgaben'
+              : safeOpen === 1
+                ? '1 Aufgabe offen'
+                : `${safeOpen} Aufgaben offen`}
+            {safeOverdue > 0 ? ` · ${safeOverdue} überfällig` : ''}
+          </p>
+        </div>
+        {safeOpen > 0 ? (
+          <span className="shrink-0 rounded-full bg-[var(--az-accent-blue)]/15 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--az-accent-blue)]">
+            {safeOpen}
+          </span>
+        ) : (
+          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400/70" title="Frei" />
+        )}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[0.8125rem] font-medium text-[var(--az-text-primary)]">
-          {member.displayName}
-          {isCurrentUser ? (
-            <span className="ml-1.5 text-[10px] font-normal text-[var(--az-accent-blue)]">
-              Du
-            </span>
-          ) : null}
-        </p>
-        <p className="text-[10px] text-[var(--az-text-muted)]">
-          {safeOpen === 0
-            ? 'Keine offenen Aufgaben'
-            : safeOpen === 1
-              ? '1 Aufgabe offen'
-              : `${safeOpen} Aufgaben offen`}
-          {safeOverdue > 0 ? ` · ${safeOverdue} überfällig` : ''}
-        </p>
-      </div>
-      {safeOpen > 0 ? (
-        <span className="shrink-0 rounded-full bg-[var(--az-accent-blue)]/15 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--az-accent-blue)]">
-          {safeOpen}
-        </span>
-      ) : (
-        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400/70" title="Frei" />
-      )}
+
+      {previewTasks.length > 0 ? (
+        <div className="ml-12 divide-y divide-[var(--az-border-subtle)] border-l border-[var(--az-border-subtle)] pl-2">
+          {previewTasks.map((task) => (
+            <DashboardTaskRow key={task.taskId} task={task} />
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -108,17 +132,22 @@ export function AgenturzentraleCommandRail({
   members,
   teamTasks,
   currentUserId,
+  currentUserTasks = [],
+  currentUserOpenCount = 0,
+  currentUserOverdueCount = 0,
 }: AgenturzentraleCommandRailProps) {
   const taskByMember = new Map(
     teamTasks.members.map((entry) => [entry.userId, entry]),
   )
   const demoGoal = DASHBOARD_WEEKLY_GOAL_DEMO
   const progressPercent = Math.round((demoGoal.current / demoGoal.target) * 100)
+  const safeMembers = Array.isArray(members) ? members : []
+  const safeCurrentUserTasks = Array.isArray(currentUserTasks) ? currentUserTasks : []
 
   return (
     <aside
       aria-labelledby="command-rail-heading"
-      className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start"
+      className="flex w-full min-w-0 flex-col gap-3 lg:sticky lg:top-4 lg:self-start"
     >
       <section className={`${azSurfaceClassName} az-panel-emphasis p-4`}>
         <div className="flex items-center justify-between gap-2">
@@ -137,38 +166,61 @@ export function AgenturzentraleCommandRail({
         </div>
 
         <div className="mt-3 divide-y divide-[var(--az-border-subtle)]">
-          {members.length === 0 ? (
+          {safeMembers.length === 0 ? (
             <p className="py-2 text-xs text-[var(--az-text-muted)]">
               Keine Teammitglieder geladen.
             </p>
           ) : (
-            members.map((member) => {
+            safeMembers.map((member) => {
+              const isCurrentUser = member.userId === currentUserId
               const stats = taskByMember.get(member.userId)
               return (
                 <TeamPresenceCard
                   key={member.userId}
                   member={member}
-                  openCount={stats?.openCount ?? 0}
-                  overdueCount={stats?.overdueCount ?? 0}
-                  isCurrentUser={member.userId === currentUserId}
+                  openCount={
+                    isCurrentUser
+                      ? currentUserOpenCount
+                      : (stats?.openCount ?? 0)
+                  }
+                  overdueCount={
+                    isCurrentUser
+                      ? currentUserOverdueCount
+                      : (stats?.overdueCount ?? 0)
+                  }
+                  previewTasks={
+                    isCurrentUser
+                      ? safeCurrentUserTasks.slice(0, 3)
+                      : (stats?.previewTasks ?? [])
+                  }
+                  isCurrentUser={isCurrentUser}
                 />
               )
             })
           )}
 
           {teamTasks.unassigned.openCount > 0 ? (
-            <div className="flex items-center gap-2.5 px-2 py-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-500/50 text-xs text-zinc-400">
-                ?
+            <div className="space-y-1.5 px-1 py-2.5">
+              <div className="flex items-center gap-2.5 px-1">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-500/50 text-xs text-zinc-400">
+                  ?
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.8125rem] font-medium text-[var(--az-text-primary)]">
+                    Nicht zugeordnet
+                  </p>
+                  <p className="text-[10px] text-[var(--az-text-muted)]">
+                    {teamTasks.unassigned.openCount} offen
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[0.8125rem] font-medium text-[var(--az-text-primary)]">
-                  Nicht zugeordnet
-                </p>
-                <p className="text-[10px] text-[var(--az-text-muted)]">
-                  {teamTasks.unassigned.openCount} offen
-                </p>
-              </div>
+              {teamTasks.unassigned.previewTasks.length > 0 ? (
+                <div className="ml-12 divide-y divide-[var(--az-border-subtle)] border-l border-[var(--az-border-subtle)] pl-2">
+                  {teamTasks.unassigned.previewTasks.map((task) => (
+                    <DashboardTaskRow key={task.taskId} task={task} />
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -223,11 +275,7 @@ export function AgenturzentraleCommandRail({
           <span className="az-demo-badge">Geplant</span>
         </div>
         <ul className="mt-3 space-y-2">
-          {[
-            'Tagesabschluss-Routine',
-            'Team-Standup',
-            'Wochenstatistik',
-          ].map((label) => (
+          {['Tagesabschluss-Routine', 'Team-Standup', 'Wochenstatistik'].map((label) => (
             <li
               key={label}
               className="flex items-center justify-between gap-2 rounded-md border border-dashed border-zinc-600/40 px-2.5 py-2"

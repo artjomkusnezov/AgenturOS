@@ -7,7 +7,7 @@ export function DashboardSkeleton() {
       aria-busy="true"
       aria-label="Agenturzentrale wird geladen"
     >
-      <div className={`az-hero-scene min-h-[12rem] sm:min-h-[14rem] lg:min-h-[17rem] xl:min-h-[19rem]`}>
+      <div className={`az-hero-scene min-h-[12rem] sm:min-h-[14rem] lg:min-h-[18rem] xl:min-h-[20rem]`}>
         <div className="relative z-10 flex h-full flex-col justify-end p-5 sm:p-6 lg:p-8">
           <div className="h-3 w-40 rounded bg-white/10" />
           <div className="mt-2 h-8 w-64 max-w-full rounded bg-white/15 sm:h-9" />

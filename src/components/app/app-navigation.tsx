@@ -63,7 +63,7 @@ function NavLink({
       } ${
         isActive
           ? isDark
-            ? 'az-nav-link-active'
+            ? `${aosNavLinkActiveClassName} az-nav-link-active`
             : aosNavLinkActiveClassName
           : isDark
             ? 'hover:bg-white/[0.04] hover:text-[var(--az-text-primary)]'
@@ -131,7 +131,7 @@ function CaseViewNavLink({
       } ${
         isActive
           ? isDark
-            ? 'az-nav-link-active'
+            ? `${aosNavLinkActiveClassName} az-nav-link-active`
             : aosNavLinkActiveClassName
           : isDark
             ? 'hover:bg-white/[0.04] hover:text-[var(--az-text-primary)]'

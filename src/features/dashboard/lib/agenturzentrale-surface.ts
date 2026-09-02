@@ -1,4 +1,4 @@
-import type { DashboardVariant } from '@/features/dashboard/context/dashboard-variant-context'
+import type { DashboardVariant } from '@/features/dashboard/lib/dashboard-variant'
 
 /**
  * Agenturzentrale (38B) surface classes — dark command-center panels.

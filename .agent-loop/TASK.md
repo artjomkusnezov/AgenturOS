@@ -22,13 +22,31 @@ The target must visibly contain the same design language and major composition a
 
 The reference is the desired quality bar for layout, hierarchy, atmosphere and richness. Simplification is allowed only where AgenturOS lacks the underlying feature/data; it is NOT permission to fall back to the existing white/flat dashboard structure.
 
+## P0 runtime repair — current blocker
+The current Vercel Preview for PR #3 is NOT usable: requesting `/app` returns HTTP 500 and Chrome reports `Uncaught Error: An error occurred in the Server Components render`. This must be treated as the first priority before any further visual polish.
+
+Required repair behavior:
+- reproduce/trace the `/app` server-render failure on the current `agent/issue-2` implementation
+- identify the concrete runtime cause in the 38B code path, not just suppress the error page
+- repair the server-component/runtime issue without changing the approved product direction
+- preserve existing data-loading and authentication behavior
+- after repair, `/app` must render successfully in production/preview conditions
+- then rerun tests, typecheck, lint and production build
+- IMPORTANT: do NOT create, modify, or add any files under `.agent-loop/**`; use only the repository's existing check commands directly
+
+Also preserve/fix the already identified 38B review regressions where still present: existing clickable team-task previews must not be lost, mobile active-navigation styling must remain correct, and the right command rail must behave sensibly on normal desktop widths.
+
 ## Acceptance criteria
+- `/app` renders successfully in the Vercel Preview with no HTTP 500 / Server Components render failure.
 - At first glance the implementation clearly resembles the supplied Agenturzentrale reference in composition and experience, not merely color palette.
 - Hero/office scene + greeting + daily quote are present.
 - Daily quote changes deterministically by date from a curated local set.
 - The page has left navigation, central operational cockpit and right status/command rail on desktop.
 - Existing real dashboard data/functions remain functional and are reused where available.
 - Existing navigation and core workflows are not broken.
+- Existing clickable team-task preview behavior is preserved where it existed before 38B.
+- Mobile active-navigation styling remains correct.
+- Right command/status rail remains usable on normal desktop widths, not only very wide screens.
 - People/team presence is visually stronger where existing member/profile data permits it.
 - Operational state is the primary hierarchy: attention, active work, next actions, team/agency state.
 - Planned concepts such as weekly goals/statistics may appear only when visibly labelled “Demo”, “Geplant” or equivalent. Invented values must never look like production data.
@@ -60,6 +78,7 @@ The reference screenshot supplied by Artjom is authoritative for this task. If t
 - No production deployment or merge.
 - No broad redesign of Inbox, Tasks, Cases, Files or Contacts in this task.
 - No autonomous product decisions beyond this approved 38B art direction.
+- No `.agent-loop/**` file changes.
 
 ## Product rule
 Existing function = real data.
@@ -67,4 +86,4 @@ Planned function = clearly marked placeholder/demo.
 Never present invented data as real.
 
 ## Definition of failure
-The task is NOT accepted if the result can reasonably be described as “the old AgenturOS dashboard, just darker”.
+The task is NOT accepted if `/app` still returns HTTP 500 in Preview, if the agent writes into `.agent-loop/**`, or if the result can reasonably be described as “the old AgenturOS dashboard, just darker”.
