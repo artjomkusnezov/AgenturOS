@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 
 import {
@@ -8,14 +6,14 @@ import {
 } from '@/features/dashboard/components/dashboard-icons'
 import type { DashboardTaskItem } from '@/features/dashboard/lib/dashboard-tasks'
 import { dashboardMetaIconClassName } from '@/features/dashboard/lib/dashboard-icon-map'
-import { useDashboardVariant } from '@/features/dashboard/context/dashboard-variant-context'
 import { resolveSurfaceClasses } from '@/features/dashboard/lib/agenturzentrale-surface'
+import type { DashboardVariant } from '@/features/dashboard/lib/dashboard-variant'
 import {
   aosIconAccentDangerClassName,
   aosIconAccentOrangeClassName,
 } from '@/lib/design-system'
 
-function dueTone(task: DashboardTaskItem, variant: 'default' | 'agenturzentrale'): string {
+function dueTone(task: DashboardTaskItem, variant: DashboardVariant): string {
   if (task.isOverdue) {
     return variant === 'agenturzentrale' ? 'text-red-400' : aosIconAccentDangerClassName
   }
@@ -25,15 +23,24 @@ function dueTone(task: DashboardTaskItem, variant: 'default' | 'agenturzentrale'
   return variant === 'agenturzentrale' ? 'text-[var(--az-text-muted)]' : 'text-zinc-500'
 }
 
-export function DashboardTaskRow({ task }: { task: DashboardTaskItem }) {
-  const variant = useDashboardVariant()
+type DashboardTaskRowProps = {
+  task: DashboardTaskItem
+  variant?: DashboardVariant
+}
+
+export function DashboardTaskRow({ task, variant = 'default' }: DashboardTaskRowProps) {
   const surfaces = resolveSurfaceClasses(variant)
   const tone = dueTone(task, variant)
   const showDue = Boolean(task.dueLabel)
   const showHigh = task.priority === 'high'
+  const title =
+    typeof task.title === 'string' && task.title.trim().length > 0
+      ? task.title.trim()
+      : 'Ohne Titel'
+  const href = typeof task.href === 'string' && task.href.startsWith('/') ? task.href : '/app/tasks'
 
   return (
-    <Link href={task.href} className={surfaces.compactRow}>
+    <Link href={href} className={surfaces.compactRow}>
       <span
         className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ring-2 ${
           variant === 'agenturzentrale'
@@ -44,7 +51,7 @@ export function DashboardTaskRow({ task }: { task: DashboardTaskItem }) {
       />
       <span className="min-w-0 flex-1">
         <span className={`line-clamp-1 text-[0.8125rem] font-medium leading-snug ${surfaces.titleText}`}>
-          {task.title}
+          {title}
         </span>
         {(showDue || showHigh) && (
           <span className={surfaces.meta}>

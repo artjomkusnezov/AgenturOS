@@ -1,7 +1,18 @@
 /** Präsentationshilfen nur für das Dashboard (keine Fachlogik). */
 
-export function formatDashboardDateOrTime(value: string, now = new Date()): string {
+export function formatDashboardDateOrTime(
+  value: string | null | undefined,
+  now = new Date(),
+): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return '—'
+  }
+
   const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+
   const berlinDay = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Berlin',
     year: 'numeric',
@@ -24,11 +35,12 @@ export function formatDashboardDateOrTime(value: string, now = new Date()): stri
   }).format(date)
 }
 
-export function splitInboxFeedContent(content: string): {
+export function splitInboxFeedContent(content: string | null | undefined): {
   title: string
   preview: string | null
 } {
-  const normalized = content.replace(/\s+/g, ' ').trim()
+  const normalized =
+    typeof content === 'string' ? content.replace(/\s+/g, ' ').trim() : ''
 
   if (!normalized) {
     return { title: 'Ohne Inhalt', preview: null }

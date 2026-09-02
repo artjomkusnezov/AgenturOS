@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 
 import {
@@ -10,11 +8,11 @@ import {
   DashboardSection,
   DashboardSectionEmpty,
 } from '@/features/dashboard/components/dashboard-section'
-import { useDashboardVariant } from '@/features/dashboard/context/dashboard-variant-context'
 import type { DashboardAttentionItem } from '@/features/dashboard/lib/dashboard-attention'
 import { resolveSurfaceClasses } from '@/features/dashboard/lib/agenturzentrale-surface'
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import { dashboardMetaIconClassName } from '@/features/dashboard/lib/dashboard-icon-map'
+import type { DashboardVariant } from '@/features/dashboard/lib/dashboard-variant'
 import {
   aosIconAccentDangerClassName,
   aosIconAccentOrangeClassName,
@@ -23,11 +21,12 @@ import {
 type DashboardAttentionSectionProps = {
   items: DashboardAttentionItem[]
   totalCount?: number
+  variant?: DashboardVariant
 }
 
 function accentBorderClass(
   bucket: DashboardAttentionItem['bucket'],
-  variant: 'default' | 'agenturzentrale',
+  variant: DashboardVariant,
 ): string {
   const surfaces = resolveSurfaceClasses(variant)
   if (bucket === 'overdue') {
@@ -39,7 +38,7 @@ function accentBorderClass(
   return surfaces.accentBorderSoon
 }
 
-function bucketTone(bucket: DashboardAttentionItem['bucket'], variant: 'default' | 'agenturzentrale'): string {
+function bucketTone(bucket: DashboardAttentionItem['bucket'], variant: DashboardVariant): string {
   if (variant === 'agenturzentrale') {
     if (bucket === 'overdue') return 'text-red-400'
     if (bucket === 'today') return 'text-orange-400'
@@ -54,21 +53,31 @@ function bucketTone(bucket: DashboardAttentionItem['bucket'], variant: 'default'
   return 'text-amber-600'
 }
 
-function DashboardAttentionRow({ item }: { item: DashboardAttentionItem }) {
-  const variant = useDashboardVariant()
+function DashboardAttentionRow({
+  item,
+  variant,
+}: {
+  item: DashboardAttentionItem
+  variant: DashboardVariant
+}) {
   const surfaces = resolveSurfaceClasses(variant)
   const tone = bucketTone(item.bucket, variant)
   const showDue = Boolean(item.dueLabel)
   const showHigh = item.priority === 'high'
+  const title =
+    typeof item.title === 'string' && item.title.trim().length > 0
+      ? item.title.trim()
+      : 'Ohne Titel'
+  const href = typeof item.href === 'string' && item.href.startsWith('/') ? item.href : '/app/cases'
 
   return (
     <Link
-      href={item.href}
+      href={href}
       className={`${surfaces.row} ${accentBorderClass(item.bucket, variant)} pl-2`}
     >
       <span className="min-w-0 flex-1">
         <span className={`line-clamp-1 text-[0.8125rem] font-medium leading-snug ${surfaces.titleText}`}>
-          {item.title}
+          {title}
         </span>
         <span className={surfaces.meta}>
           <span className={`font-medium ${tone}`}>{item.bucketLabel}</span>
@@ -99,11 +108,12 @@ function DashboardAttentionRow({ item }: { item: DashboardAttentionItem }) {
 export function DashboardAttentionSection({
   items,
   totalCount,
+  variant = 'default',
 }: DashboardAttentionSectionProps) {
-  const variant = useDashboardVariant()
   const surfaces = resolveSurfaceClasses(variant)
   const sectionVisual = resolveSectionVisual('attention')
-  const count = totalCount ?? items.length
+  const safeItems = Array.isArray(items) ? items.filter((item) => item && typeof item === 'object') : []
+  const count = totalCount ?? safeItems.length
   const title = count > 0 ? `Braucht Aufmerksamkeit (${count})` : 'Braucht Aufmerksamkeit'
 
   return (
@@ -115,15 +125,23 @@ export function DashboardAttentionSection({
       className={surfaces.surface}
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
+      variant={variant}
     >
-      {items.length === 0 ? (
+      {safeItems.length === 0 ? (
         <div className={surfaces.sectionPadding}>
-          <DashboardSectionEmpty message="Aktuell braucht kein Vorgang besondere Aufmerksamkeit." />
+          <DashboardSectionEmpty
+            message="Aktuell braucht kein Vorgang besondere Aufmerksamkeit."
+            variant={variant}
+          />
         </div>
       ) : (
         <div className={`${surfaces.sectionPadding} divide-y ${surfaces.divider} pb-1`}>
-          {items.map((item) => (
-            <DashboardAttentionRow key={item.caseId} item={item} />
+          {safeItems.map((item, index) => (
+            <DashboardAttentionRow
+              key={typeof item.caseId === 'string' ? item.caseId : `attention-${index}`}
+              item={item}
+              variant={variant}
+            />
           ))}
         </div>
       )}

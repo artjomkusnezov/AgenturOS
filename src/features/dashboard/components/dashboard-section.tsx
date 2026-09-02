@@ -1,11 +1,9 @@
-'use client'
-
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
-import { useDashboardVariant } from '@/features/dashboard/context/dashboard-variant-context'
 import { resolveSurfaceClasses } from '@/features/dashboard/lib/agenturzentrale-surface'
+import type { DashboardVariant } from '@/features/dashboard/lib/dashboard-variant'
 import {
   aosIconAccentBlueClassName,
   aosIconAccentGreenClassName,
@@ -39,6 +37,7 @@ type DashboardSectionProps = {
   headerExtra?: ReactNode
   icon?: ReactNode
   iconAccent?: DashboardAccent
+  variant?: DashboardVariant
 }
 
 export function DashboardSection({
@@ -51,8 +50,8 @@ export function DashboardSection({
   headerExtra,
   icon,
   iconAccent = 'neutral',
+  variant = 'default',
 }: DashboardSectionProps) {
-  const variant = useDashboardVariant()
   const surfaces = resolveSurfaceClasses(variant)
   const accentClass =
     variant === 'agenturzentrale' ? azAccentTextClass[iconAccent] : accentTextClass[iconAccent]
@@ -90,10 +89,13 @@ export function DashboardSection({
 
 type DashboardSectionEmptyProps = {
   message: string
+  variant?: DashboardVariant
 }
 
-export function DashboardSectionEmpty({ message }: DashboardSectionEmptyProps) {
-  const variant = useDashboardVariant()
+export function DashboardSectionEmpty({
+  message,
+  variant = 'default',
+}: DashboardSectionEmptyProps) {
   const surfaces = resolveSurfaceClasses(variant)
 
   return <p className={surfaces.empty}>{message}</p>

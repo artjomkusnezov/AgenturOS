@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 
 import type { AgencyMember } from '@/features/agency/types/agency-member'
@@ -120,7 +118,11 @@ function TeamPresenceCard({
       {previewTasks.length > 0 ? (
         <div className="ml-12 divide-y divide-[var(--az-border-subtle)] border-l border-[var(--az-border-subtle)] pl-2">
           {previewTasks.map((task) => (
-            <DashboardTaskRow key={task.taskId} task={task} />
+            <DashboardTaskRow
+              key={task.taskId}
+              task={task}
+              variant="agenturzentrale"
+            />
           ))}
         </div>
       ) : null}
@@ -217,7 +219,11 @@ export function AgenturzentraleCommandRail({
               {teamTasks.unassigned.previewTasks.length > 0 ? (
                 <div className="ml-12 divide-y divide-[var(--az-border-subtle)] border-l border-[var(--az-border-subtle)] pl-2">
                   {teamTasks.unassigned.previewTasks.map((task) => (
-                    <DashboardTaskRow key={task.taskId} task={task} />
+                    <DashboardTaskRow
+                      key={task.taskId}
+                      task={task}
+                      variant="agenturzentrale"
+                    />
                   ))}
                 </div>
               ) : null}

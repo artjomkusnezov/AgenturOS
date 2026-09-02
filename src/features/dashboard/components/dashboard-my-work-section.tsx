@@ -1,34 +1,43 @@
-'use client'
-
 import Link from 'next/link'
 
 import {
   DashboardSection,
   DashboardSectionEmpty,
 } from '@/features/dashboard/components/dashboard-section'
-import { useDashboardVariant } from '@/features/dashboard/context/dashboard-variant-context'
 import { resolveSurfaceClasses } from '@/features/dashboard/lib/agenturzentrale-surface'
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import type {
   DashboardCaseTypeCount,
   DashboardMyWorkCaseItem,
 } from '@/features/dashboard/lib/dashboard-my-work'
+import type { DashboardVariant } from '@/features/dashboard/lib/dashboard-variant'
 
 type DashboardMyWorkSectionProps = {
   caseTypeCounts: DashboardCaseTypeCount[]
   recentlyUpdated: DashboardMyWorkCaseItem[]
   title?: string
+  variant?: DashboardVariant
 }
 
-function RecentCaseRow({ item }: { item: DashboardMyWorkCaseItem }) {
-  const variant = useDashboardVariant()
+function RecentCaseRow({
+  item,
+  variant,
+}: {
+  item: DashboardMyWorkCaseItem
+  variant: DashboardVariant
+}) {
   const surfaces = resolveSurfaceClasses(variant)
+  const title =
+    typeof item.title === 'string' && item.title.trim().length > 0
+      ? item.title.trim()
+      : 'Ohne Titel'
+  const href = typeof item.href === 'string' && item.href.startsWith('/') ? item.href : '/app/cases'
 
   return (
-    <Link href={item.href} className={surfaces.compactRow}>
+    <Link href={href} className={surfaces.compactRow}>
       <span className="min-w-0 flex-1">
         <span className={`line-clamp-1 text-[0.8125rem] font-medium leading-snug ${surfaces.titleText}`}>
-          {item.title}
+          {title}
         </span>
         <span className={surfaces.meta}>
           <span>{item.typeLabel}</span>
@@ -43,11 +52,13 @@ export function DashboardMyWorkSection({
   caseTypeCounts,
   recentlyUpdated,
   title: customTitle = 'Meine Arbeit',
+  variant = 'default',
 }: DashboardMyWorkSectionProps) {
-  const variant = useDashboardVariant()
   const surfaces = resolveSurfaceClasses(variant)
   const sectionVisual = resolveSectionVisual('myWork')
-  const hasContent = caseTypeCounts.length > 0 || recentlyUpdated.length > 0
+  const safeCaseTypeCounts = Array.isArray(caseTypeCounts) ? caseTypeCounts : []
+  const safeRecentlyUpdated = Array.isArray(recentlyUpdated) ? recentlyUpdated : []
+  const hasContent = safeCaseTypeCounts.length > 0 || safeRecentlyUpdated.length > 0
 
   return (
     <DashboardSection
@@ -58,14 +69,18 @@ export function DashboardMyWorkSection({
       className={surfaces.surface}
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
+      variant={variant}
     >
       {!hasContent ? (
         <div className={surfaces.sectionPadding}>
-          <DashboardSectionEmpty message="Keine offenen Vorgänge unter deiner Verantwortung." />
+          <DashboardSectionEmpty
+            message="Keine offenen Vorgänge unter deiner Verantwortung."
+            variant={variant}
+          />
         </div>
       ) : (
         <div className={`${surfaces.sectionPadding} space-y-3 pb-1`}>
-          {caseTypeCounts.length > 0 ? (
+          {safeCaseTypeCounts.length > 0 ? (
             <div>
               <h3
                 id="dashboard-my-cases-by-type-heading"
@@ -77,7 +92,7 @@ export function DashboardMyWorkSection({
                 className="mt-1.5 space-y-0.5"
                 aria-labelledby="dashboard-my-cases-by-type-heading"
               >
-                {caseTypeCounts.map((entry) => (
+                {safeCaseTypeCounts.map((entry) => (
                   <li
                     key={entry.typeKey}
                     className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-[0.8125rem]"
@@ -92,17 +107,26 @@ export function DashboardMyWorkSection({
             </div>
           ) : null}
 
-          {recentlyUpdated.length > 0 ? (
-            <div className={`border-t pt-2 ${variant === 'agenturzentrale' ? 'border-[var(--az-border-subtle)]' : 'border-zinc-100/80'}`}>
+          {safeRecentlyUpdated.length > 0 ? (
+            <div
+              className={`border-t pt-2 ${
+                variant === 'agenturzentrale'
+                  ? 'border-[var(--az-border-subtle)]'
+                  : 'border-zinc-100/80'
+              }`}
+            >
               <h3
                 id="dashboard-recent-cases-heading"
                 className={`px-1 text-[10px] font-semibold uppercase tracking-wide ${surfaces.subtleText}`}
               >
                 Zuletzt bearbeitet
               </h3>
-              <div className={`mt-1 divide-y ${surfaces.divider}`} aria-labelledby="dashboard-recent-cases-heading">
-                {recentlyUpdated.map((item) => (
-                  <RecentCaseRow key={item.caseId} item={item} />
+              <div
+                className={`mt-1 divide-y ${surfaces.divider}`}
+                aria-labelledby="dashboard-recent-cases-heading"
+              >
+                {safeRecentlyUpdated.map((item) => (
+                  <RecentCaseRow key={item.caseId} item={item} variant={variant} />
                 ))}
               </div>
             </div>

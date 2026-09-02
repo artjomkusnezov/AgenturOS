@@ -20,44 +20,45 @@ The target must visibly contain the same design language and major composition a
 - icons, colored states, subtle glow/depth, layered surfaces, compact information density and management-game hierarchy
 - desktop should feel like ENTERING THE REAL AGENCY in the morning
 
-The reference is the desired quality bar for layout, hierarchy, atmosphere and richness. Simplification is allowed only where AgenturOS lacks the underlying feature/data; it is NOT permission to fall back to the existing white/flat dashboard structure.
+## P0 runtime repair — STILL BROKEN AFTER RUN #12
+Owner re-tested the newly deployed commit `b84356d49cb91aae242f4753c693fe2f53b9aa1a` in the Vercel Preview after Vercel reported Ready. `/app` STILL crashes with the same production error page. Visible digest/error number: `2558150778`.
 
-## P0 runtime repair — current blocker
-The current Vercel Preview for PR #3 is NOT usable: requesting `/app` returns HTTP 500 and Chrome reports `Uncaught Error: An error occurred in the Server Components render`. This must be treated as the first priority before any further visual polish.
+Run #13 found a likely concrete root cause and implemented a repair in the runner, but publication was blocked only by ESLint in `dashboard-page-content.tsx`.
 
-Required repair behavior:
-- reproduce/trace the `/app` server-render failure on the current `agent/issue-2` implementation
-- identify the concrete runtime cause in the 38B code path, not just suppress the error page
-- repair the server-component/runtime issue without changing the approved product direction
-- preserve existing data-loading and authentication behavior
-- after repair, `/app` must render successfully in production/preview conditions
-- then rerun tests, typecheck, lint and production build
-- IMPORTANT: do NOT create, modify, or add any files under `.agent-loop/**`; use only the repository's existing check commands directly
+### Preserve the Run #13 repair
+Re-implement the same repair from Run #13:
+- remove `DashboardVariantProvider` / `useDashboardVariant` from the Agenturzentrale live-data render path
+- pass the dashboard variant explicitly as props
+- restore Server Components for the dashboard overview, command rail, inbox, attention, my-work, my-tasks, section and task rows so real inbox/case/task objects do not cross a new unsafe Server→Client boundary
+- preserve the approved visual composition
+- preserve clickable team-task previews
+- keep right command rail from `lg`
+- keep mobile active-navigation styling correct
+- harden malformed live rows/date/content mapping only where needed
 
-Also preserve/fix the already identified 38B review regressions where still present: existing clickable team-task previews must not be lost, mobile active-navigation styling must remain correct, and the right command rail must behave sensibly on normal desktop widths.
+### Fix the exact Run #13 validation blocker
+The previous attempt failed ESLint with `react-hooks/error-boundaries` because JSX returns were constructed inside a broad `try/catch` in `src/features/dashboard/components/dashboard-page-content.tsx`.
+
+Do NOT solve this by disabling ESLint or suppressing the rule.
+Refactor so async/data operations that can throw are caught separately and converted to plain result/state values; perform JSX returns outside `try/catch`. Keep the intended runtime hardening without constructing JSX inside catchable blocks.
+
+### Runtime acceptance is mandatory
+A successful build or Vercel Ready status is NOT sufficient. The published PR commit must be Vercel-preview-ready and intended to render authenticated `/app` without error `2558150778`.
 
 ## Acceptance criteria
-- `/app` renders successfully in the Vercel Preview with no HTTP 500 / Server Components render failure.
-- At first glance the implementation clearly resembles the supplied Agenturzentrale reference in composition and experience, not merely color palette.
-- Hero/office scene + greeting + daily quote are present.
-- Daily quote changes deterministically by date from a curated local set.
-- The page has left navigation, central operational cockpit and right status/command rail on desktop.
-- Existing real dashboard data/functions remain functional and are reused where available.
-- Existing navigation and core workflows are not broken.
-- Existing clickable team-task preview behavior is preserved where it existed before 38B.
-- Mobile active-navigation styling remains correct.
-- Right command/status rail remains usable on normal desktop widths, not only very wide screens.
-- People/team presence is visually stronger where existing member/profile data permits it.
-- Operational state is the primary hierarchy: attention, active work, next actions, team/agency state.
-- Planned concepts such as weekly goals/statistics may appear only when visibly labelled “Demo”, “Geplant” or equivalent. Invented values must never look like production data.
-- DO NOT introduce fake XP, levels, rankings, trophies, streaks or fake performance metrics as if real.
-- Responsive behavior remains usable; this slice focuses on desktop and must not degrade mobile.
-- Reuse existing AgenturOS tokens/primitives where sensible, but extend them enough to achieve the reference.
+- `/app` renders successfully in Vercel Preview with no HTTP 500 / Server Components render failure / error `2558150778`.
+- Run #13 server/client-boundary repair is preserved.
+- ESLint passes without rule suppression.
 - Tests/typecheck/lint/build pass.
-- Produce a Vercel-preview-ready branch/PR for Artjom’s visual review before merge.
-
-## Visual assets
-The reference screenshot supplied by Artjom is authoritative for this task. If the coding environment cannot directly access that chat image, use this written specification literally and create/choose a suitable local visual treatment for the office hero without depending on an external runtime image URL.
+- Hero/office scene + greeting + daily quote remain present.
+- Daily quote changes deterministically by date from a curated local set.
+- Existing real dashboard data/functions remain functional and are reused where available.
+- Existing clickable team-task preview behavior is preserved.
+- Mobile active-navigation styling remains correct.
+- Right command/status rail remains usable from normal desktop widths (`lg`).
+- Planned concepts may appear only when visibly labelled Demo/Geplant.
+- No fake XP, levels, rankings, trophies, streaks or fake performance metrics.
+- Produce a new Vercel-preview-ready commit on PR #3 for owner browser verification before merge.
 
 ## Allowed paths
 - src/app/**
@@ -76,9 +77,10 @@ The reference screenshot supplied by Artjom is authoritative for this task. If t
 - No WhatsApp implementation.
 - No AI feature implementation.
 - No production deployment or merge.
-- No broad redesign of Inbox, Tasks, Cases, Files or Contacts in this task.
-- No autonomous product decisions beyond this approved 38B art direction.
-- No `.agent-loop/**` file changes.
+- No broad redesign of Inbox, Tasks, Cases, Files or Contacts.
+- No autonomous product decisions beyond the approved 38B art direction.
+- No `.agent-loop/**` file changes by the coder.
+- No ESLint rule disabling/suppression as a workaround.
 
 ## Product rule
 Existing function = real data.
@@ -86,4 +88,4 @@ Planned function = clearly marked placeholder/demo.
 Never present invented data as real.
 
 ## Definition of failure
-The task is NOT accepted if `/app` still returns HTTP 500 in Preview, if the agent writes into `.agent-loop/**`, or if the result can reasonably be described as “the old AgenturOS dashboard, just darker”.
+The task is NOT accepted if `/app` still returns HTTP 500 in Preview, if error `2558150778` remains, if the Run #13 boundary repair is lost, if lint is bypassed rather than fixed, or if the result can reasonably be described as “the old AgenturOS dashboard, just darker”.

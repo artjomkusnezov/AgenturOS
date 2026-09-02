@@ -1,4 +1,3 @@
-import { DashboardVariantProvider } from '@/features/dashboard/context/dashboard-variant-context'
 import { AgenturzentraleCommandRail } from '@/features/dashboard/components/agenturzentrale-command-rail'
 import { AgenturzentraleDayRhythm } from '@/features/dashboard/components/agenturzentrale-day-rhythm'
 import { AgenturzentraleHero } from '@/features/dashboard/components/agenturzentrale-hero'
@@ -17,7 +16,7 @@ import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-
 import type { AgencyMember } from '@/features/agency/types/agency-member'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
-type DashboardWorkOverviewProps = {
+export type DashboardWorkOverviewProps = {
   user: {
     id: string
     user_metadata?: Record<string, unknown>
@@ -34,6 +33,8 @@ type DashboardWorkOverviewProps = {
   recentlyUpdated: DashboardMyWorkCaseItem[]
   memberNameMap?: Record<string, string>
 }
+
+const AGENTURZENTRALE_VARIANT = 'agenturzentrale' as const
 
 export function DashboardWorkOverview({
   user,
@@ -74,71 +75,73 @@ export function DashboardWorkOverview({
   const safeTeamOpenTaskCount = sanitizeDashboardCount(safeTeamTasks.totalTeamOpenCount)
 
   return (
-    <DashboardVariantProvider variant="agenturzentrale">
-      <div className="agenturzentrale-root min-h-full space-y-4 pb-2 lg:space-y-5">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-5">
-          <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1 lg:space-y-5">
-            <AgenturzentraleHero
-              user={user}
-              unprocessedInboxCount={unprocessedInboxCount}
-              attentionCount={safeAttentionCount}
-              myOpenTaskCount={safeMyOpenTaskCount}
-              teamOpenTaskCount={safeTeamOpenTaskCount}
-            />
+    <div className="agenturzentrale-root min-h-full space-y-4 pb-2 lg:space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start lg:gap-5">
+        <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1 lg:space-y-5">
+          <AgenturzentraleHero
+            user={user}
+            unprocessedInboxCount={unprocessedInboxCount}
+            attentionCount={safeAttentionCount}
+            myOpenTaskCount={safeMyOpenTaskCount}
+            teamOpenTaskCount={safeTeamOpenTaskCount}
+          />
 
-            <AgenturzentraleLageHeute
-              unprocessedInboxCount={unprocessedInboxCount}
-              attentionCount={safeAttentionCount}
-              myOpenTaskCount={safeMyOpenTaskCount}
-              teamOpenTaskCount={safeTeamOpenTaskCount}
-              overdueAttentionCount={safeOverdueAttentionCount}
-            />
-          </div>
-
-          <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-            <AgenturzentraleCommandRail
-              members={safeMembers}
-              teamTasks={safeTeamTasks}
-              currentUserId={user.id}
-              currentUserTasks={safeMyTasks}
-              currentUserOpenCount={safeMyOpenTaskCount}
-              currentUserOverdueCount={safeMyTasks.filter((task) => task.isOverdue).length}
-            />
-          </div>
-
-          <div className="min-w-0 space-y-3 lg:col-start-1 lg:row-start-2">
-            <div className="az-cockpit-divider hidden lg:block" aria-hidden="true" />
-            <h2 className="az-cockpit-zone-label">Operative Zonen</h2>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
-              <DashboardInboxSection
-                title="Was braucht mich jetzt?"
-                items={safeInboxItems}
-                memberNameMap={memberNameMap}
-              />
-              <DashboardAttentionSection
-                items={safeAttentionItems}
-                totalCount={safeAttentionCount}
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
-              <DashboardMyWorkSection
-                title="Aktive Vorgänge"
-                caseTypeCounts={safeCaseTypeCounts}
-                recentlyUpdated={safeRecentlyUpdated}
-              />
-              <DashboardMyTasksSection
-                title="Mein nächster Schritt"
-                tasks={safeMyTasks}
-                totalCount={safeMyOpenTaskCount}
-              />
-            </div>
-          </div>
+          <AgenturzentraleLageHeute
+            unprocessedInboxCount={unprocessedInboxCount}
+            attentionCount={safeAttentionCount}
+            myOpenTaskCount={safeMyOpenTaskCount}
+            teamOpenTaskCount={safeTeamOpenTaskCount}
+            overdueAttentionCount={safeOverdueAttentionCount}
+          />
         </div>
 
-        <AgenturzentraleDayRhythm />
+        <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <AgenturzentraleCommandRail
+            members={safeMembers}
+            teamTasks={safeTeamTasks}
+            currentUserId={user.id}
+            currentUserTasks={safeMyTasks}
+            currentUserOpenCount={safeMyOpenTaskCount}
+            currentUserOverdueCount={safeMyTasks.filter((task) => task.isOverdue).length}
+          />
+        </div>
+
+        <div className="min-w-0 space-y-3 lg:col-start-1 lg:row-start-2">
+          <div className="az-cockpit-divider hidden lg:block" aria-hidden="true" />
+          <h2 className="az-cockpit-zone-label">Operative Zonen</h2>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
+            <DashboardInboxSection
+              title="Was braucht mich jetzt?"
+              items={safeInboxItems}
+              memberNameMap={memberNameMap}
+              variant={AGENTURZENTRALE_VARIANT}
+            />
+            <DashboardAttentionSection
+              items={safeAttentionItems}
+              totalCount={safeAttentionCount}
+              variant={AGENTURZENTRALE_VARIANT}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
+            <DashboardMyWorkSection
+              title="Aktive Vorgänge"
+              caseTypeCounts={safeCaseTypeCounts}
+              recentlyUpdated={safeRecentlyUpdated}
+              variant={AGENTURZENTRALE_VARIANT}
+            />
+            <DashboardMyTasksSection
+              title="Mein nächster Schritt"
+              tasks={safeMyTasks}
+              totalCount={safeMyOpenTaskCount}
+              variant={AGENTURZENTRALE_VARIANT}
+            />
+          </div>
+        </div>
       </div>
-    </DashboardVariantProvider>
+
+      <AgenturzentraleDayRhythm />
+    </div>
   )
 }

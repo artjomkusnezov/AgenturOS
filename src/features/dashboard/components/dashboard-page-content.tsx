@@ -5,7 +5,10 @@ import {
 import { listActiveCaseTypesForCurrentUser } from '@/features/cases/repositories/cases-repository'
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
 import { DashboardErrorBanner } from '@/features/dashboard/components/dashboard-error-banner'
-import { DashboardWorkOverview } from '@/features/dashboard/components/dashboard-work-overview'
+import {
+  DashboardWorkOverview,
+  type DashboardWorkOverviewProps,
+} from '@/features/dashboard/components/dashboard-work-overview'
 import {
   countAttentionCases,
   countOverdueAttentionCases,
@@ -22,7 +25,11 @@ import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbo
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { createClient } from '@/lib/supabase/server'
 
-export async function DashboardPageContent() {
+type DashboardLoadResult =
+  | { status: 'ok'; props: DashboardWorkOverviewProps }
+  | { status: 'error'; message: string }
+
+async function loadDashboardOverview(): Promise<DashboardLoadResult> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -30,7 +37,7 @@ export async function DashboardPageContent() {
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return <DashboardErrorBanner message="Sie sind nicht angemeldet." />
+    return { status: 'error', message: 'Sie sind nicht angemeldet.' }
   }
 
   const [
@@ -51,20 +58,22 @@ export async function DashboardPageContent() {
   ])
 
   if (!inboxResult.success) {
-    return <DashboardErrorBanner message={inboxResult.error} />
+    return { status: 'error', message: inboxResult.error }
   }
 
   if (!openCasesResult.success) {
-    return <DashboardErrorBanner message={openCasesResult.error} />
+    return { status: 'error', message: openCasesResult.error }
   }
 
   if (!caseTypesResult.success) {
-    return <DashboardErrorBanner message={caseTypesResult.error} />
+    return { status: 'error', message: caseTypesResult.error }
   }
 
   const caseTypesById = buildCaseTypeLookup(caseTypesResult.caseTypes)
-  const openCases = openCasesResult.cases
-  const members = membersResult.success ? membersResult.members : []
+  const openCases = Array.isArray(openCasesResult.cases) ? openCasesResult.cases : []
+  const members = membersResult.success && Array.isArray(membersResult.members)
+    ? membersResult.members
+    : []
   const memberNameMap = membersResult.success
     ? buildMemberNameMap(membersResult.members)
     : {}
@@ -90,23 +99,47 @@ export async function DashboardPageContent() {
     },
   )
 
-  return (
-    <DashboardWorkOverview
-      user={{
+  const unprocessedInboxItems = Array.isArray(inboxResult.unprocessedItems)
+    ? inboxResult.unprocessedItems
+    : []
+
+  return {
+    status: 'ok',
+    props: {
+      user: {
         id: user.id,
         user_metadata: user.user_metadata as Record<string, unknown> | undefined,
-      }}
-      members={members}
-      unprocessedInboxItems={inboxResult.unprocessedItems}
-      attentionItems={attentionItems}
-      attentionCount={attentionCount}
-      overdueAttentionCount={overdueAttentionCount}
-      myTasks={myTasks}
-      myOpenTaskCount={myOpenTaskCount}
-      teamTasks={teamTasks}
-      caseTypeCounts={caseTypeCounts}
-      recentlyUpdated={recentlyUpdated}
-      memberNameMap={memberNameMap}
-    />
-  )
+      },
+      members,
+      unprocessedInboxItems,
+      attentionItems,
+      attentionCount,
+      overdueAttentionCount,
+      myTasks,
+      myOpenTaskCount,
+      teamTasks,
+      caseTypeCounts,
+      recentlyUpdated,
+      memberNameMap,
+    },
+  }
+}
+
+export async function DashboardPageContent() {
+  let loadResult: DashboardLoadResult
+
+  try {
+    loadResult = await loadDashboardOverview()
+  } catch {
+    loadResult = {
+      status: 'error',
+      message: 'Das Dashboard konnte nicht geladen werden. Bitte laden Sie die Seite neu.',
+    }
+  }
+
+  if (loadResult.status === 'error') {
+    return <DashboardErrorBanner message={loadResult.message} />
+  }
+
+  return <DashboardWorkOverview {...loadResult.props} />
 }
