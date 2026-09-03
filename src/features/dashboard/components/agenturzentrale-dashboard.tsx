@@ -180,7 +180,7 @@ function InboxPanel({
   memberNameMap: Record<string, string>
 }) {
   const total = sanitizeDashboardCount(items.length)
-  const preview = items.slice(0, 4)
+  const preview = items.slice(0, 3)
 
   return (
     <section className="az-panel az-panel--inbox" aria-labelledby="az-inbox-heading">
@@ -249,7 +249,7 @@ function AttentionPanel({
   items: DashboardAttentionItem[]
   totalCount: number
 }) {
-  const preview = items.slice(0, 4)
+  const preview = items.slice(0, 3)
   const groups = BUCKET_ORDER.map((bucket) => ({
     bucket,
     items: preview.filter((item) => item.bucket === bucket),
