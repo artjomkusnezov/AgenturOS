@@ -64,6 +64,17 @@
   /* Overlay */
   --aos-color-overlay: rgb(24 24 27 / 0.4);
 
+  /* Dashboard / Agenturzentrale ambient (38B local restart – visual only) */
+  --aos-color-zentrale-bg: #0f1419;
+  --aos-color-zentrale-bg-mid: #141b22;
+  --aos-color-zentrale-bg-elevated: #1a222c;
+  --aos-color-zentrale-glow: rgb(56 120 200 / 0.14);
+  --aos-color-zentrale-text: #f4f7fb;
+  --aos-color-zentrale-text-muted: #9aa8b8;
+  --aos-color-zentrale-text-subtle: #6b7a8c;
+  --aos-shadow-zentrale-panel: 0 10px 28px -12px rgb(0 0 0 / 0.45), 0 2px 8px -4px rgb(0 0 0 / 0.35);
+  --aos-shadow-zentrale-glow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+
   /* Spacing (4px base) */
   --aos-space-0: 0;
   --aos-space-1: 0.25rem;

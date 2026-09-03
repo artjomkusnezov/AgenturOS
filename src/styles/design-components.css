@@ -497,4 +497,35 @@
   .aos-icon-accent-danger {
     color: var(--aos-color-error);
   }
+
+  /* Dashboard Agenturzentrale shell (38B) – visual only, /app page */
+  .aos-workspace-page.aos-dashboard-zentrale {
+    @apply relative mx-auto flex w-full flex-1 flex-col px-0 py-0;
+    max-width: none;
+    min-height: 100%;
+    color: var(--aos-color-zentrale-text);
+    background:
+      radial-gradient(ellipse 80% 55% at 18% -10%, var(--aos-color-zentrale-glow), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 92% 8%, rgb(30 64 100 / 0.12), transparent 50%),
+      linear-gradient(
+        165deg,
+        var(--aos-color-zentrale-bg) 0%,
+        var(--aos-color-zentrale-bg-mid) 48%,
+        var(--aos-color-zentrale-bg-elevated) 100%
+      );
+    box-shadow: var(--aos-shadow-zentrale-glow);
+  }
+
+  .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+    @apply mx-auto w-full max-w-6xl flex-1 px-4 lg:px-8;
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+      padding-top: 2rem !important;
+      padding-bottom: 2rem;
+    }
+  }
 }
