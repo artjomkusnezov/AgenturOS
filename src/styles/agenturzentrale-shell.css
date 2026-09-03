@@ -1,0 +1,120 @@
+/**
+ * Agenturzentrale visual shell (Punkt 38B – first slice).
+ * Scoped to /app dashboard framing only. Does not redefine the global light system.
+ */
+
+@layer components {
+  .dashboard-greeting__date {
+    color: #a1a1aa;
+  }
+
+  .dashboard-greeting__title {
+    color: #18181b;
+  }
+
+  .dashboard-greeting__hint {
+    color: #71717a;
+  }
+
+  .agenturzentrale-shell {
+    --az-shell-bg: #0e1218;
+    --az-shell-border: rgb(148 163 184 / 0.14);
+    --az-shell-glow: rgb(96 165 250 / 0.12);
+    --az-shell-text: #f4f4f5;
+    --az-shell-text-muted: #a1a1aa;
+    --az-shell-text-subtle: #71717a;
+
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    min-height: 100%;
+    flex: 1;
+    flex-direction: column;
+    background: var(--az-shell-bg);
+    color: var(--az-shell-text);
+  }
+
+  .agenturzentrale-shell__atmosphere {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% -10%, var(--az-shell-glow), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 90% 0%, rgb(56 189 248 / 0.06), transparent 50%),
+      linear-gradient(180deg, rgb(21 27 36 / 0.9) 0%, transparent 42%);
+  }
+
+  .agenturzentrale-shell__frame {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 100%;
+    flex: 1;
+    flex-direction: column;
+    border-top: 1px solid var(--az-shell-border);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+
+  .agenturzentrale-shell__chrome {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 72rem;
+    padding: 1.25rem 1rem 0;
+  }
+
+  @media (min-width: 1024px) {
+    .agenturzentrale-shell__chrome {
+      padding-inline: 2rem;
+      padding-top: 1.5rem;
+    }
+  }
+
+  .agenturzentrale-shell__eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--az-shell-text-subtle);
+  }
+
+  .agenturzentrale-shell__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  /* Greeting sits on dark atmosphere; cards remain elevated light surfaces. */
+  .agenturzentrale-shell .dashboard-greeting__date {
+    color: var(--az-shell-text-subtle);
+  }
+
+  .agenturzentrale-shell .dashboard-greeting__title {
+    color: var(--az-shell-text);
+  }
+
+  .agenturzentrale-shell .dashboard-greeting__hint {
+    color: var(--az-shell-text-muted);
+  }
+
+  /* Soften workspace page padding top — shell chrome already provides breathing room. */
+  .agenturzentrale-shell .aos-workspace-page {
+    padding-top: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .agenturzentrale-shell .aos-workspace-page {
+      padding-top: 1rem;
+    }
+  }
+
+  /* Elevated panels on dark: stronger edge so white cards read as command tiles. */
+  .agenturzentrale-shell .dashboard-surface {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.28),
+      0 8px 24px -12px rgb(0 0 0 / 0.45);
+  }
+}

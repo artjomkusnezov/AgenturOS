@@ -4,10 +4,10 @@
  */
 
 export const dashboardSurfaceClassName =
-  'rounded-xl bg-white shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.04]'
+  'dashboard-surface rounded-xl bg-white shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.04]'
 
 export const dashboardSurfaceEmphasizedClassName =
-  'rounded-xl bg-white shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.05]'
+  'dashboard-surface rounded-xl bg-white shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.05]'
 
 export const dashboardSectionPaddingClassName = 'px-3.5 sm:px-4'
 

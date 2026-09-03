@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:inbound": "tsx --test src/features/inbound/inbound-intake.smoke.test.ts src/features/email/email-adapter.test.ts src/features/email/email-intake.smoke.test.ts"
+    "test:inbound": "tsx --test src/features/inbound/inbound-intake.smoke.test.ts src/features/email/email-adapter.test.ts src/features/email/email-intake.smoke.test.ts src/features/dashboard/lib/agenturzentrale-shell.test.ts",
+    "test:dashboard-shell": "tsx --test src/features/dashboard/lib/agenturzentrale-shell.test.ts",
+    "test": "npm run test:inbound"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

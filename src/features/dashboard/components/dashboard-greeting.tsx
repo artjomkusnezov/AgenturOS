@@ -32,13 +32,13 @@ export function DashboardGreeting({
   })
 
   return (
-    <header className="space-y-0.5">
-      <p className="text-[11px] font-medium text-zinc-400">{getGermanDateLabel()}</p>
-      <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
+    <header className="dashboard-greeting space-y-0.5">
+      <p className="dashboard-greeting__date text-[11px] font-medium">{getGermanDateLabel()}</p>
+      <h1 className="dashboard-greeting__title text-xl font-semibold tracking-tight sm:text-2xl">
         {greeting}
         {firstName ? `, ${firstName}` : ''}
       </h1>
-      <p className="max-w-3xl text-xs leading-relaxed text-zinc-500" aria-live="polite">
+      <p className="dashboard-greeting__hint max-w-3xl text-xs leading-relaxed" aria-live="polite">
         {situationHint}
       </p>
     </header>
