@@ -34,21 +34,21 @@ export function splitInboxFeedContent(content: string): {
     return { title: 'Ohne Inhalt', preview: null }
   }
 
-  const sentenceMatch = normalized.match(/^(.{12,80}?[.!?])\s+(.+)$/u)
+  const sentenceMatch = normalized.match(/^(.{12,42}?[.!?])\s+(.+)$/u)
   if (sentenceMatch) {
     const preview = sentenceMatch[2].trim()
     return {
       title: sentenceMatch[1].trim(),
-      preview: preview.length > 100 ? `${preview.slice(0, 100).trimEnd()}…` : preview,
+      preview: preview.length > 64 ? `${preview.slice(0, 64).trimEnd()}…` : preview,
     }
   }
 
-  if (normalized.length <= 80) {
+  if (normalized.length <= 42) {
     return { title: normalized, preview: null }
   }
 
   return {
-    title: `${normalized.slice(0, 80).trimEnd()}…`,
+    title: `${normalized.slice(0, 42).trimEnd()}…`,
     preview: null,
   }
 }

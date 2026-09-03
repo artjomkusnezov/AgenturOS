@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "../styles/design-tokens.css";
 @import "../styles/design-components.css";
+@import "../styles/design-cockpit.css";
+@import "../styles/design-agenturzentrale.css";
 
 @theme inline {
   --color-background: var(--background);

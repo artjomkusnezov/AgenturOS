@@ -7,7 +7,6 @@ import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-ma
 import type { DashboardTeamTasksResult } from '@/features/dashboard/lib/dashboard-tasks'
 import {
   dashboardSectionPaddingClassName,
-  dashboardSurfaceClassName,
 } from '@/features/dashboard/lib/dashboard-surface'
 
 type DashboardTeamTasksSectionProps = {
@@ -56,7 +55,7 @@ export function DashboardTeamTasksSection({ teamTasks }: DashboardTeamTasksSecti
       titleId="dashboard-team-tasks-heading"
       href="/app/tasks"
       hrefLabel="Alle Aufgaben anzeigen"
-      className={dashboardSurfaceClassName}
+      className="aos-cockpit-panel aos-cockpit-rail-card"
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
     >

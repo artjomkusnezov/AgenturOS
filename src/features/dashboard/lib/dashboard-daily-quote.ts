@@ -1,40 +1,113 @@
 /**
- * Kuratierte Tagesimpulse für die Agenturzentrale.
- * Deterministisch nach Kalendertag (Europe/Berlin) – kein Random pro Render.
+ * Kuratierte Tageszitate für die Agenturzentrale.
+ * Kurze, seriöse Zitate mit bekannten Zuschreibungen.
+ * Deterministisch nach Kalendertag (Europe/Berlin) – kein Random pro Render,
+ * kein API, keine KI.
  */
 
-export const DASHBOARD_DAILY_QUOTES = [
-  'Klarheit schlägt Hektik.',
-  'Was heute sauber wird, belastet morgen nicht.',
-  'Gute Arbeit beginnt mit dem nächsten klaren Schritt.',
-  'Tempo entsteht durch Fokus.',
-  'Ein ruhiger Überblick spart zehn hektische Entscheidungen.',
-  'Erst verstehen, dann handeln.',
-  'Ordnung im Eingang schafft Ruhe im Tag.',
-  'Kleine saubere Schritte tragen weiter als große Absichten.',
-  'Wer priorisiert, gewinnt Zeit zurück.',
-  'Ruhe ist kein Stillstand – sie ist Steuerung.',
-  'Das Wichtige verdient den ersten Blick.',
-  'Ein klarer Stand schützt vor falscher Eile.',
-  'Qualität zeigt sich in der nächsten Entscheidung.',
-  'Weniger parallel, mehr abgeschlossen.',
-  'Gute Beratung beginnt mit gutem Überblick.',
-  'Heute erledigen, was morgen stören würde.',
-  'Fokus ist die freundlichste Form von Geschwindigkeit.',
-  'Saubere Übergaben entlasten das ganze Team.',
-  'Zuerst den Überblick, dann den nächsten Schritt.',
-  'Verlässlichkeit entsteht in den kleinen Routinen.',
-  'Nicht alles gleichzeitig – das Richtige jetzt.',
-  'Ein ruhiger Start prägt den ganzen Arbeitstag.',
-  'Klarheit im Vorgang schützt den Kunden.',
-  'Gute Systeme machen gute Arbeit leichter.',
-  'Nachvollziehbar arbeiten heißt professionell arbeiten.',
-  'Der nächste sinnvolle Schritt genügt.',
-  'Überblick vor Aktion – dann sicher handeln.',
-  'Sorgfalt heute spart Erklärungen morgen.',
-] as const
+export type DashboardDailyQuote = {
+  text: string
+  author: string
+}
 
-export type DashboardDailyQuote = (typeof DASHBOARD_DAILY_QUOTES)[number]
+export const DASHBOARD_DAILY_QUOTES: readonly DashboardDailyQuote[] = [
+  {
+    text: 'Die beste Zeit, einen Baum zu pflanzen, war vor zwanzig Jahren. Die zweitbeste Zeit ist jetzt.',
+    author: 'Chinesisches Sprichwort',
+  },
+  {
+    text: 'Es ist nicht genug zu wissen, man muss auch anwenden; es ist nicht genug zu wollen, man muss auch tun.',
+    author: 'Johann Wolfgang von Goethe',
+  },
+  {
+    text: 'Wer kämpft, kann verlieren. Wer nicht kämpft, hat schon verloren.',
+    author: 'Bertolt Brecht',
+  },
+  {
+    text: 'Mut steht am Anfang des Handelns, Glück am Ende.',
+    author: 'Demokrit',
+  },
+  {
+    text: 'In der Ruhe liegt die Kraft.',
+    author: 'Deutsches Sprichwort',
+  },
+  {
+    text: 'Was du heute kannst besorgen, das verschiebe nicht auf morgen.',
+    author: 'Deutsches Sprichwort',
+  },
+  {
+    text: 'Der Anfang ist die Hälfte des Ganzen.',
+    author: 'Aristoteles',
+  },
+  {
+    text: 'Wer den Hafen nicht kennt, in den er segeln will, für den ist kein Wind der richtige.',
+    author: 'Seneca',
+  },
+  {
+    text: 'Nicht weil es schwer ist, wagen wir es nicht, sondern weil wir es nicht wagen, ist es schwer.',
+    author: 'Seneca',
+  },
+  {
+    text: 'Charakter ist Schicksal.',
+    author: 'Heraklit',
+  },
+  {
+    text: 'Geduld ist bitter, aber ihre Frucht ist süß.',
+    author: 'Jean-Jacques Rousseau',
+  },
+  {
+    text: 'Wer aufhört, besser zu werden, hat aufgehört, gut zu sein.',
+    author: 'Philip Rosenthal',
+  },
+  {
+    text: 'Erfolg ist die Fähigkeit, von einem Misserfolg zum nächsten zu gehen, ohne die Begeisterung zu verlieren.',
+    author: 'Winston Churchill',
+  },
+  {
+    text: 'Tu das, was du kannst, mit dem, was du hast, dort, wo du bist.',
+    author: 'Theodore Roosevelt',
+  },
+  {
+    text: 'Einfachheit ist die höchste Form der Raffinesse.',
+    author: 'Leonardo da Vinci',
+  },
+  {
+    text: 'Wer immer tut, was er schon kann, bleibt immer das, was er schon ist.',
+    author: 'Henry Ford',
+  },
+  {
+    text: 'Ohne Hast, aber ohne Rast.',
+    author: 'Johann Wolfgang von Goethe',
+  },
+  {
+    text: 'Nur was wir teilen, besitzen wir wirklich.',
+    author: 'Seneca',
+  },
+  {
+    text: 'Vorsicht ist die Mutter der Weisheit.',
+    author: 'Deutsches Sprichwort',
+  },
+  {
+    text: 'Erst denken, dann handeln.',
+    author: 'Deutsches Sprichwort',
+  },
+  {
+    text: 'Ein Weiser ändert seine Meinung, ein Narr nie.',
+    author: 'Deutsches Sprichwort',
+  },
+  {
+    text: 'Disziplin ist die Brücke zwischen Zielen und Erfüllung.',
+    author: 'Jim Rohn',
+  },
+  {
+    text: 'Handle stets so, dass die Maxime deines Willens zugleich als Prinzip einer allgemeinen Gesetzgebung gelten könne.',
+    author: 'Immanuel Kant',
+  },
+  {
+    text: 'Auch der weiteste Weg beginnt mit dem ersten Schritt.',
+    author: 'Laozi',
+  },
+] as const
 
 /** Kalendertag in Europe/Berlin als YYYY-MM-DD. */
 export function getBerlinDateKey(date = new Date()): string {

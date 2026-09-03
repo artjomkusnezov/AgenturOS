@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { DashboardAvatar } from '@/features/dashboard/components/dashboard-avatar'
 import { DashboardInboxSourceIcon } from '@/features/dashboard/components/dashboard-inbox-source-icon'
 import {
   DashboardSection,
@@ -10,16 +11,12 @@ import {
   splitInboxFeedContent,
 } from '@/features/dashboard/lib/dashboard-format'
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
-import {
-  dashboardCompactRowClassName,
-  dashboardSectionPaddingClassName,
-  dashboardSurfaceClassName,
-} from '@/features/dashboard/lib/dashboard-surface'
+import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
+import { dashboardSectionPaddingClassName } from '@/features/dashboard/lib/dashboard-surface'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
-import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 
 type DashboardInboxSectionProps = {
   items: InboxItem[]
@@ -41,18 +38,14 @@ function DashboardInboxRow({
   return (
     <Link
       href={`/app/inbox?item=${encodeURIComponent(item.id)}`}
-      className={dashboardCompactRowClassName}
+      className="aos-cockpit-row"
     >
       <DashboardInboxSourceIcon source={item.source} />
       <span className="min-w-0 flex-1">
-        <span
-          className={`line-clamp-1 text-[0.8125rem] leading-snug ${
-            isUnprocessed ? 'font-semibold text-zinc-900' : 'font-medium text-zinc-800'
-          }`}
-        >
+        <span className={`aos-cockpit-row-title ${isUnprocessed ? 'aos-cockpit-row-title--strong' : ''}`}>
           {title}
         </span>
-        <span className="mt-0.5 flex items-center gap-1.5 text-[10px] text-zinc-400">
+        <span className="aos-cockpit-row-meta">
           <span>{getInboxSourceLabel(item.source)}</span>
           <span aria-hidden="true">·</span>
           <span className="truncate">{creatorName}</span>
@@ -60,11 +53,8 @@ function DashboardInboxRow({
           <span className="tabular-nums">{timeLabel}</span>
         </span>
       </span>
-      {isUnprocessed ? (
-        <span className="shrink-0 rounded bg-[var(--aos-color-soft-blue-bg)] px-1 py-0.5 text-[9px] font-medium text-[var(--aos-color-soft-blue)]">
-          Neu
-        </span>
-      ) : null}
+      {isUnprocessed ? <span className="aos-cockpit-status-chip aos-cockpit-status-chip--new">Neu</span> : null}
+      {creatorName ? <DashboardAvatar name={creatorName} /> : null}
     </Link>
   )
 }
@@ -74,19 +64,23 @@ export function DashboardInboxSection({
   memberNameMap = {},
 }: DashboardInboxSectionProps) {
   const totalCount = sanitizeDashboardCount(items.length)
-  const previewItems = items.slice(0, 5)
+  const previewItems = items.slice(0, 3)
   const sectionVisual = resolveSectionVisual('inbox')
-  const title = totalCount > 0 ? `Neue Eingänge (${totalCount})` : 'Neue Eingänge'
 
   return (
     <DashboardSection
-      title={title}
+      title="Neue Eingänge"
       titleId="dashboard-inbox-heading"
       href="/app/inbox"
       hrefLabel="Alle Eingänge anzeigen"
-      className={dashboardSurfaceClassName}
+      className="aos-cockpit-panel aos-cockpit-work-card aos-cockpit-work-card--inbox"
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
+      headerExtra={
+        totalCount > 0 ? (
+          <span className="aos-cockpit-count-chip aos-cockpit-count-chip--blue">{totalCount}</span>
+        ) : null
+      }
     >
       {previewItems.length === 0 ? (
         <div className={dashboardSectionPaddingClassName}>

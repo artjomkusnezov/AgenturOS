@@ -1,24 +1,32 @@
+import Image from 'next/image'
+
+import type { DashboardDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
+
 type DashboardGreetingProps = {
   dateLabel: string
   greetingTitle: string
-  situationHint: string
-  dailyQuote: string
+  dailyQuote: DashboardDailyQuote
 }
 
+/** Legacy hero wrapper — Agenturzentrale uses AgenturzentraleDashboard Hero. */
 export function DashboardGreeting({
   dateLabel,
   greetingTitle,
-  situationHint,
   dailyQuote,
 }: DashboardGreetingProps) {
   return (
     <header className="aos-dashboard-hero" aria-labelledby="dashboard-hero-heading">
       <div className="aos-dashboard-hero-stage" aria-hidden="true">
-        <div className="aos-dashboard-hero-glow" />
-        <div className="aos-dashboard-hero-window" />
-        <div className="aos-dashboard-hero-blinds" />
-        <div className="aos-dashboard-hero-floor" />
-        <div className="aos-dashboard-hero-desk" />
+        <Image
+          src="/hero-agenturzentrale.jpg"
+          alt=""
+          width={1920}
+          height={1080}
+          priority
+          unoptimized
+          className="aos-dashboard-hero-image"
+        />
+        <div className="aos-dashboard-hero-overlay" />
       </div>
 
       <div className="aos-dashboard-hero-content">
@@ -26,10 +34,15 @@ export function DashboardGreeting({
         <h1 id="dashboard-hero-heading" className="aos-dashboard-hero-title">
           {greetingTitle}
         </h1>
-        <p className="aos-dashboard-hero-hint" aria-live="polite">
-          {situationHint}
-        </p>
-        <p className="aos-dashboard-hero-quote">{dailyQuote}</p>
+        <blockquote className="az-hero-quote-block">
+          <p className="az-hero-quote">
+            <span className="az-hero-quote-mark" aria-hidden="true">
+              “
+            </span>
+            {dailyQuote.text}
+          </p>
+          <footer className="az-hero-quote-author">— {dailyQuote.author}</footer>
+        </blockquote>
       </div>
     </header>
   )

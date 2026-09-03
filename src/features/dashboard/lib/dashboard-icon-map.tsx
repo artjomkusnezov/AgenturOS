@@ -14,8 +14,9 @@ import {
   DashboardIconMail,
   DashboardIconMessage,
   DashboardIconMic,
+  DashboardIconPenLine,
+  DashboardIconFilePlus,
   DashboardIconPhone,
-  DashboardIconPlusCircle,
   DashboardIconTarget,
   DashboardIconUser,
   DashboardIconUsers,
@@ -31,7 +32,7 @@ export type DashboardVisual = {
 }
 
 const ICON_MD = 'h-[1.125rem] w-[1.125rem]'
-const ICON_LG = 'h-5 w-5'
+const ICON_LG = 'h-5 w-5' /* ~20px inside 36–42px tiles */
 const ICON_KPI = 'h-5 w-5'
 const ICON_SM = 'h-3.5 w-3.5'
 
@@ -50,13 +51,13 @@ export type PreparedInboxSourceKey =
 const PREPARED_INBOX_SOURCE_VISUALS: Record<PreparedInboxSourceKey, DashboardVisual> = {
   manual_text: {
     label: 'Manuell',
-    accent: 'orange',
-    icon: <DashboardIconFileText className={ICON_LG} />,
+    accent: 'neutral',
+    icon: <DashboardIconPenLine className={ICON_LG} />,
   },
   universal_capture: {
     label: 'Neu erfasst',
     accent: 'blue',
-    icon: <DashboardIconPlusCircle className={ICON_LG} />,
+    icon: <DashboardIconFilePlus className={ICON_LG} />,
   },
   whatsapp: {
     label: 'WhatsApp',
@@ -80,8 +81,8 @@ const PREPARED_INBOX_SOURCE_VISUALS: Record<PreparedInboxSourceKey, DashboardVis
   },
   document: {
     label: 'Dokument',
-    accent: 'neutral',
-    icon: <DashboardIconFile className={ICON_LG} />,
+    accent: 'orange',
+    icon: <DashboardIconFileText className={ICON_LG} />,
   },
   image: {
     label: 'Bild',
@@ -90,7 +91,7 @@ const PREPARED_INBOX_SOURCE_VISUALS: Record<PreparedInboxSourceKey, DashboardVis
   },
   audio: {
     label: 'Sprachnachricht',
-    accent: 'orange',
+    accent: 'green',
     icon: <DashboardIconMic className={ICON_LG} />,
   },
 }
