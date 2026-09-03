@@ -74,6 +74,10 @@
   --aos-color-zentrale-text-subtle: #6b7a8c;
   --aos-shadow-zentrale-panel: 0 10px 28px -12px rgb(0 0 0 / 0.45), 0 2px 8px -4px rgb(0 0 0 / 0.35);
   --aos-shadow-zentrale-glow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --aos-color-hero-glow: rgb(120 170 230 / 0.22);
+  --aos-color-hero-window: rgb(180 210 245 / 0.16);
+  --aos-color-hero-floor: rgb(8 12 18 / 0.72);
+  --aos-color-hero-desk: rgb(26 34 44 / 0.88);
 
   /* Spacing (4px base) */
   --aos-space-0: 0;

@@ -18,6 +18,16 @@ export function getTimeOfDayGreeting(date = new Date()): string {
   return 'Guten Abend'
 }
 
+/** Datumszeile für Dashboard-Hero – immer Europe/Berlin. */
+export function getDashboardDateLabel(date = new Date()): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Berlin',
+  }).format(date)
+}
+
 export function getFirstNameFromUser(user: {
   user_metadata?: Record<string, unknown>
 }): string | null {

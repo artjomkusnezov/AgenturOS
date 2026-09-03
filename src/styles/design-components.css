@@ -528,4 +528,167 @@
       padding-bottom: 2rem;
     }
   }
+
+  /* Dashboard Agenturzentrale hero (38B step 2) */
+  .aos-dashboard-hero {
+    @apply relative isolate overflow-hidden;
+    min-height: 15rem;
+    margin-inline: -0.25rem;
+    border-radius: 1.15rem;
+    border: 0;
+    background:
+      radial-gradient(ellipse 70% 55% at 18% 8%, rgb(120 170 230 / 0.18), transparent 58%),
+      radial-gradient(ellipse 45% 40% at 88% 18%, rgb(60 100 150 / 0.14), transparent 62%),
+      linear-gradient(165deg, #15202b 0%, #101820 42%, #0c1219 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.07),
+      inset 0 -40px 60px rgb(0 0 0 / 0.28),
+      0 22px 48px -28px rgb(0 0 0 / 0.65);
+  }
+
+  .aos-dashboard-hero-stage {
+    @apply pointer-events-none absolute inset-0;
+  }
+
+  .aos-dashboard-hero-glow {
+    position: absolute;
+    inset: -25% -12% auto -18%;
+    height: 78%;
+    background:
+      radial-gradient(ellipse 55% 60% at 24% 38%, var(--aos-color-hero-glow), transparent 72%),
+      radial-gradient(ellipse 36% 42% at 72% 18%, rgb(150 190 240 / 0.14), transparent 70%);
+    filter: blur(2px);
+  }
+
+  .aos-dashboard-hero-window {
+    position: absolute;
+    top: 10%;
+    left: 7%;
+    width: min(46%, 19rem);
+    height: 52%;
+    border-radius: 0.45rem;
+    background:
+      linear-gradient(155deg, rgb(210 230 255 / 0.28), rgb(110 150 200 / 0.08) 48%, transparent 78%),
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 24%,
+        rgb(255 255 255 / 0.05) 24%,
+        rgb(255 255 255 / 0.05) 25.5%
+      );
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      0 0 50px rgb(130 180 240 / 0.16);
+    opacity: 0.95;
+  }
+
+  .aos-dashboard-hero-blinds {
+    position: absolute;
+    top: 10%;
+    left: 7%;
+    width: min(46%, 19rem);
+    height: 52%;
+    background: repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 9px,
+      rgb(6 10 16 / 0.22) 9px,
+      rgb(6 10 16 / 0.22) 11px
+    );
+    opacity: 0.65;
+    mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.85), transparent 92%);
+  }
+
+  .aos-dashboard-hero-floor {
+    position: absolute;
+    left: -8%;
+    right: -8%;
+    bottom: -12%;
+    height: 48%;
+    background:
+      linear-gradient(
+        180deg,
+        transparent 0%,
+        rgb(10 15 22 / 0.55) 28%,
+        rgb(5 8 12 / 0.92) 100%
+      );
+    transform: perspective(520px) rotateX(20deg);
+    transform-origin: center bottom;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+
+  .aos-dashboard-hero-desk {
+    position: absolute;
+    left: 5%;
+    right: 16%;
+    bottom: 9%;
+    height: 20%;
+    border-radius: 0.5rem 0.5rem 0.2rem 0.2rem;
+    background:
+      linear-gradient(180deg, rgb(52 66 84 / 0.72), rgb(22 30 40 / 0.95)),
+      linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+    box-shadow:
+      0 14px 28px rgb(0 0 0 / 0.42),
+      inset 0 1px 0 rgb(255 255 255 / 0.1);
+    opacity: 0.95;
+  }
+
+  .aos-dashboard-hero-content {
+    @apply relative z-10 flex min-h-[15rem] flex-col justify-end px-5 py-5 sm:px-7 sm:py-6;
+    max-width: 38rem;
+  }
+
+  .aos-dashboard-hero-date {
+    @apply text-[11px] font-medium tracking-wide;
+    color: var(--aos-color-zentrale-text-subtle);
+  }
+
+  .aos-dashboard-hero-title {
+    @apply mt-1 text-2xl font-semibold tracking-tight sm:text-[1.85rem];
+    color: var(--aos-color-zentrale-text);
+    text-shadow: 0 2px 24px rgb(0 0 0 / 0.45);
+  }
+
+  .aos-dashboard-hero-hint {
+    @apply mt-2 max-w-xl text-xs leading-relaxed;
+    color: var(--aos-color-zentrale-text-muted);
+  }
+
+  .aos-dashboard-hero-quote {
+    @apply mt-4 max-w-md border-l pl-3 text-sm leading-snug italic;
+    border-color: rgb(180 210 245 / 0.28);
+    color: rgb(220 230 242 / 0.95);
+  }
+
+  @media (min-width: 768px) {
+    .aos-dashboard-hero {
+      min-height: 17rem;
+      margin-inline: 0;
+    }
+
+    .aos-dashboard-hero-content {
+      min-height: 17rem;
+      padding-bottom: 1.75rem;
+    }
+
+    .aos-dashboard-hero-window,
+    .aos-dashboard-hero-blinds {
+      left: auto;
+      right: 6%;
+      width: min(40%, 22rem);
+      height: 62%;
+      top: 7%;
+    }
+
+    .aos-dashboard-hero-blinds {
+      mask-image: linear-gradient(270deg, rgb(0 0 0 / 0.85), transparent 92%);
+    }
+
+    .aos-dashboard-hero-desk {
+      left: 44%;
+      right: 5%;
+      bottom: 11%;
+      height: 18%;
+    }
+  }
 }

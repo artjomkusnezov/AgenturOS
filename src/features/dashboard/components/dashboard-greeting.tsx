@@ -1,51 +1,36 @@
-import { getGermanDateLabel } from '@/lib/user/get-display-name'
-import {
-  getFirstNameFromUser,
-  getTimeOfDayGreeting,
-  getWorkSituationHint,
-} from '@/features/dashboard/lib/dashboard-greeting'
-
 type DashboardGreetingProps = {
-  user: {
-    user_metadata?: Record<string, unknown>
-  }
-  unprocessedInboxCount: number
-  attentionCount: number
-  myOpenTaskCount: number
-  teamOpenTaskCount: number
+  dateLabel: string
+  greetingTitle: string
+  situationHint: string
+  dailyQuote: string
 }
 
 export function DashboardGreeting({
-  user,
-  unprocessedInboxCount,
-  attentionCount,
-  myOpenTaskCount,
-  teamOpenTaskCount,
+  dateLabel,
+  greetingTitle,
+  situationHint,
+  dailyQuote,
 }: DashboardGreetingProps) {
-  const greeting = getTimeOfDayGreeting()
-  const firstName = getFirstNameFromUser(user)
-  const situationHint = getWorkSituationHint({
-    unprocessedInboxCount,
-    attentionCount,
-    myOpenTaskCount,
-    teamOpenTaskCount,
-  })
-
   return (
-    <header className="space-y-1 pb-1">
-      <p className="text-[11px] font-medium tracking-wide text-[var(--aos-color-zentrale-text-subtle)]">
-        {getGermanDateLabel()}
-      </p>
-      <h1 className="text-xl font-semibold tracking-tight text-[var(--aos-color-zentrale-text)] sm:text-2xl">
-        {greeting}
-        {firstName ? `, ${firstName}` : ''}
-      </h1>
-      <p
-        className="max-w-3xl text-xs leading-relaxed text-[var(--aos-color-zentrale-text-muted)]"
-        aria-live="polite"
-      >
-        {situationHint}
-      </p>
+    <header className="aos-dashboard-hero" aria-labelledby="dashboard-hero-heading">
+      <div className="aos-dashboard-hero-stage" aria-hidden="true">
+        <div className="aos-dashboard-hero-glow" />
+        <div className="aos-dashboard-hero-window" />
+        <div className="aos-dashboard-hero-blinds" />
+        <div className="aos-dashboard-hero-floor" />
+        <div className="aos-dashboard-hero-desk" />
+      </div>
+
+      <div className="aos-dashboard-hero-content">
+        <p className="aos-dashboard-hero-date">{dateLabel}</p>
+        <h1 id="dashboard-hero-heading" className="aos-dashboard-hero-title">
+          {greetingTitle}
+        </h1>
+        <p className="aos-dashboard-hero-hint" aria-live="polite">
+          {situationHint}
+        </p>
+        <p className="aos-dashboard-hero-quote">{dailyQuote}</p>
+      </div>
     </header>
   )
 }

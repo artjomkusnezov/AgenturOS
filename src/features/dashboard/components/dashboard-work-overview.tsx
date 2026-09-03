@@ -6,6 +6,13 @@ import { DashboardMyTasksSection } from '@/features/dashboard/components/dashboa
 import { DashboardMyWorkSection } from '@/features/dashboard/components/dashboard-my-work-section'
 import { DashboardTeamTasksSection } from '@/features/dashboard/components/dashboard-team-tasks-section'
 import type { DashboardAttentionItem } from '@/features/dashboard/lib/dashboard-attention'
+import { getDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
+import {
+  getDashboardDateLabel,
+  getFirstNameFromUser,
+  getTimeOfDayGreeting,
+  getWorkSituationHint,
+} from '@/features/dashboard/lib/dashboard-greeting'
 import type {
   DashboardCaseTypeCount,
   DashboardMyWorkCaseItem,
@@ -52,14 +59,25 @@ export function DashboardWorkOverview({
   const safeMyOpenTaskCount = sanitizeDashboardCount(myOpenTaskCount)
   const safeTeamOpenTaskCount = sanitizeDashboardCount(teamTasks.totalTeamOpenCount)
 
+  const firstName = getFirstNameFromUser(user)
+  const greeting = getTimeOfDayGreeting()
+  const greetingTitle = firstName ? `${greeting}, ${firstName}` : greeting
+  const situationHint = getWorkSituationHint({
+    unprocessedInboxCount,
+    attentionCount: safeAttentionCount,
+    myOpenTaskCount: safeMyOpenTaskCount,
+    teamOpenTaskCount: safeTeamOpenTaskCount,
+  })
+  const dateLabel = getDashboardDateLabel()
+  const dailyQuote = getDailyQuote()
+
   return (
     <div className="space-y-4 lg:space-y-5">
       <DashboardGreeting
-        user={user}
-        unprocessedInboxCount={unprocessedInboxCount}
-        attentionCount={safeAttentionCount}
-        myOpenTaskCount={safeMyOpenTaskCount}
-        teamOpenTaskCount={safeTeamOpenTaskCount}
+        dateLabel={dateLabel}
+        greetingTitle={greetingTitle}
+        situationHint={situationHint}
+        dailyQuote={dailyQuote}
       />
 
       <div className="grid gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 lg:gap-4">
