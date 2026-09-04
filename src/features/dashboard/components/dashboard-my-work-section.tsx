@@ -13,7 +13,6 @@ import {
   dashboardCompactRowClassName,
   dashboardMetaClassName,
   dashboardSectionPaddingClassName,
-  dashboardSurfaceClassName,
 } from '@/features/dashboard/lib/dashboard-surface'
 
 type DashboardMyWorkSectionProps = {
@@ -50,7 +49,7 @@ export function DashboardMyWorkSection({
       titleId="dashboard-my-work-heading"
       href="/app/cases"
       hrefLabel="Zum Arbeitsbereich"
-      className={dashboardSurfaceClassName}
+      className="aos-cockpit-panel aos-cockpit-rail-card"
       icon={sectionVisual.icon}
       iconAccent={sectionVisual.accent}
     >
@@ -96,7 +95,7 @@ export function DashboardMyWorkSection({
                 Zuletzt bearbeitet
               </h3>
               <div className="mt-1 divide-y divide-zinc-100/80" aria-labelledby="dashboard-recent-cases-heading">
-                {recentlyUpdated.map((item) => (
+                {recentlyUpdated.slice(0, 4).map((item) => (
                   <RecentCaseRow key={item.caseId} item={item} />
                 ))}
               </div>

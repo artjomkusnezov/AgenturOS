@@ -11,12 +11,15 @@ import {
   aosBtnDangerClassName,
   aosBtnGhostLgClassName,
   aosBtnPrimaryLgClassName,
-  aosCardPanelClassName,
   aosFieldErrorSmClassName,
   aosInputClassName,
   aosPanelFooterClassName,
   aosTextareaClassName,
   aosTextLabelClassName,
+  aosWorkspaceSurfaceClassName,
+  aosWsTextMetaClassName,
+  aosWsTextPrimaryClassName,
+  aosWsTextSecondaryClassName,
 } from '@/lib/design-system'
 
 type ContactDetailPanelProps = {
@@ -55,22 +58,24 @@ export function ContactDetailPanel({
   const isPending = isUpdatePending || isDeletePending
 
   return (
-    <div className={`${aosCardPanelClassName} h-full`}>
-      <div className="border-b border-zinc-200/70 px-5 py-4">
+    <div className={`${aosWorkspaceSurfaceClassName} h-full min-h-0`}>
+      <div className="border-b border-zinc-200/40 px-4 py-3">
         {onBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="mb-2 inline-flex items-center text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 lg:hidden"
+            className={`mb-2 inline-flex items-center text-sm font-medium ${aosWsTextMetaClassName} transition-colors duration-150 hover:text-sky-300 lg:hidden`}
           >
             ← Zurück zur Liste
           </button>
         ) : null}
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
+        <h2 className={`text-sm font-semibold tracking-tight ${aosWsTextPrimaryClassName}`}>
           Kontakt bearbeiten
         </h2>
-        <p className="mt-1 text-sm text-zinc-700">{formatContactListLabel(contact)}</p>
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className={`mt-1 text-sm ${aosWsTextSecondaryClassName}`}>
+          {formatContactListLabel(contact)}
+        </p>
+        <p className={`mt-2 text-xs ${aosWsTextMetaClassName}`}>
           Zuletzt geändert am {formatContactDateTime(contact.updated_at)}
         </p>
       </div>

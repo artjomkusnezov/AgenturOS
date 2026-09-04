@@ -4,18 +4,13 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
-import { WorkspaceFrame } from '@/components/app/workspace'
+import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
 import { ContactDetailPanel } from '@/features/contacts/components/contact-detail-panel'
 import { ContactEmptyDetail } from '@/features/contacts/components/contact-empty-detail'
 import { ContactList } from '@/features/contacts/components/contact-list'
 import { CreateContactForm } from '@/features/contacts/components/create-contact-form'
 import type { Contact } from '@/features/contacts/types/contact'
-import {
-  aosBtnPrimaryClassName,
-  aosWorkspaceDetailPaneClassName,
-  aosWorkspaceListPaneClassName,
-  aosWorkspaceSplitClassName,
-} from '@/lib/design-system'
+import { aosWorkspaceActionAccentClassName } from '@/lib/design-system'
 
 type ContactsWorkspaceProps = {
   contacts: Contact[]
@@ -86,55 +81,47 @@ export function ContactsWorkspace({
 
   return (
     <WorkspaceFrame
+      compact
       meta={countLabel}
       primary={
-        <button type="button" onClick={handleStartCreate} className={aosBtnPrimaryClassName}>
-          Neuer Kontakt
+        <button type="button" onClick={handleStartCreate} className={aosWorkspaceActionAccentClassName}>
+          Neu
         </button>
       }
-      bodyClassName="pt-0"
     >
-      <div className={aosWorkspaceSplitClassName}>
-      <section
-        aria-label="Kontaktliste"
-        className={`${aosWorkspaceListPaneClassName} ${
-          showMobileDetail ? 'hidden lg:flex' : 'flex'
-        }`}
-      >
-        {totalCount === 0 ? (
-          <EmptyState
-            title="Noch keine Kontakte"
-            description="Legen Sie Personen und Firmen an, die Sie später wiederfinden möchten."
-          />
-        ) : (
-          <ContactList
-            contacts={contacts}
-            selectedContactId={selectedContactId}
-            onSelectContact={handleSelectContact}
-          />
-        )}
-      </section>
-
-      <section
-        aria-label="Kontaktdetails"
-        className={`${aosWorkspaceDetailPaneClassName} ${
-          showMobileDetail ? 'flex' : 'hidden lg:flex'
-        }`}
-      >
-        {isCreating ? (
-          <CreateContactForm onCancel={handleCancelCreate} onCreated={handleCreated} />
-        ) : selectedContact ? (
-          <ContactDetailPanel
-            key={selectedContact.id}
-            contact={selectedContact}
-            onBack={handleBackToList}
-            onDeleted={handleDeleted}
-          />
-        ) : (
-          <ContactEmptyDetail />
-        )}
-      </section>
-      </div>
+      <WorkspaceSplit
+        listLabel="Kontaktliste"
+        detailLabel="Kontaktdetails"
+        showMobileDetail={showMobileDetail}
+        list={
+          totalCount === 0 ? (
+            <EmptyState
+              title="Noch keine Kontakte"
+              description="Legen Sie Personen und Firmen an, die Sie später wiederfinden möchten."
+            />
+          ) : (
+            <ContactList
+              contacts={contacts}
+              selectedContactId={selectedContactId}
+              onSelectContact={handleSelectContact}
+            />
+          )
+        }
+        detail={
+          isCreating ? (
+            <CreateContactForm onCancel={handleCancelCreate} onCreated={handleCreated} />
+          ) : selectedContact ? (
+            <ContactDetailPanel
+              key={selectedContact.id}
+              contact={selectedContact}
+              onBack={handleBackToList}
+              onDeleted={handleDeleted}
+            />
+          ) : (
+            <ContactEmptyDetail />
+          )
+        }
+      />
     </WorkspaceFrame>
   )
 }

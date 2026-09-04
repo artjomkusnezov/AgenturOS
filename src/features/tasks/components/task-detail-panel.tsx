@@ -39,6 +39,7 @@ import {
   aosWorkspaceMetaClassName,
   aosWorkspaceSectionClassName,
   aosWorkspaceSurfaceClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type TaskDetailPanelProps = {
@@ -171,7 +172,7 @@ export function TaskDetailPanel({
 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="text-[1.375rem] font-semibold leading-snug tracking-tight text-zinc-900">
+            <h2 className={`text-[1.375rem] font-semibold leading-snug tracking-tight ${aosWsTextPrimaryClassName}`}>
               {task.title}
             </h2>
             <div className={`mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 ${aosWorkspaceMetaClassName}`}>
@@ -337,7 +338,7 @@ export function TaskDetailPanel({
               }
             />
             {task.description ? (
-              <p className="text-[15px] leading-[1.7] whitespace-pre-wrap text-zinc-800">
+              <p className={`text-[15px] leading-[1.7] whitespace-pre-wrap ${aosWsTextPrimaryClassName}`}>
                 {task.description}
               </p>
             ) : (

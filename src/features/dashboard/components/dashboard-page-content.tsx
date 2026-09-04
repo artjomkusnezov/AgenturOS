@@ -97,6 +97,7 @@ export async function DashboardPageContent() {
       myTasks={myTasks}
       myOpenTaskCount={myOpenTaskCount}
       teamTasks={teamTasks}
+      activeCaseCount={openCases.length}
       caseTypeCounts={caseTypeCounts}
       recentlyUpdated={recentlyUpdated}
       memberNameMap={memberNameMap}

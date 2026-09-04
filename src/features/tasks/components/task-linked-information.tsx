@@ -16,6 +16,7 @@ import {
   aosWorkspaceActionClassName,
   aosWorkspaceMetaClassName,
   aosWorkspaceSectionClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type TaskLinkedInformationProps = {
@@ -100,13 +101,13 @@ export function TaskLinkedInformationSection({
       {linkedInformation.length === 0 ? (
         <p className={aosWorkspaceMetaClassName}>Noch keine Informationen verknüpft.</p>
       ) : (
-        <ul className="divide-y divide-zinc-100">
+        <ul className="divide-y divide-white/10">
           {linkedInformation.map(({ information }) => (
             <li
               key={information.id}
-              className="flex items-center gap-2 py-2.5 transition-colors duration-150 hover:bg-zinc-50/80"
+              className="flex items-center gap-2 py-2.5 transition-colors duration-150 hover:bg-white/[0.04]"
             >
-              <p className="min-w-0 flex-1 truncate px-1 text-[13px] font-medium text-zinc-900">
+              <p className={`min-w-0 flex-1 truncate px-1 text-[13px] font-medium ${aosWsTextPrimaryClassName}`}>
                 {information.title}
               </p>
               <DetachInformationButton taskId={taskId} informationId={information.id} />

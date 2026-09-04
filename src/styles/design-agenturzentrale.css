@@ -1,0 +1,1118 @@
+/**
+ * AgenturOS 38B – Agenturzentrale presentation layer
+ * Owns layout geometry for /app. Old SaaS card grids must not dictate widths.
+ *
+ * Explicit desktop targets:
+ * - 1440×900  notebook
+ * - 1920×1080 desktop
+ * - 2560×1440 WQHD (max-widths, extra space ≠ inflate rows)
+ */
+
+@layer components {
+  /* ── Shell chrome: sidebar / search (cockpit only) ── */
+  .aos-cockpit-shell .aos-app-sidebar {
+    width: 13.5rem; /* ~216px default / notebook */
+    max-width: 15rem;
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 1920px) {
+    .aos-cockpit-shell .aos-app-sidebar {
+      width: 14.125rem; /* ~226px */
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .aos-cockpit-shell .aos-app-sidebar {
+      width: 15rem; /* 240px cap */
+    }
+  }
+
+  .aos-cockpit-search-placeholder {
+    flex: 0 0 auto;
+    width: 26.25rem; /* 420px */
+    max-width: 26.25rem;
+  }
+
+  @media (min-width: 1920px) {
+    .aos-cockpit-search-placeholder {
+      width: 31.25rem; /* 500px */
+      max-width: 32.5rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .aos-cockpit-search-placeholder {
+      width: 35rem; /* 560px cap */
+      max-width: 35rem;
+    }
+  }
+
+  /* Page body: let az-shell own spacing */
+  .aos-cockpit-shell .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .aos-cockpit-shell .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+      padding-inline: 1rem;
+      max-width: none;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .aos-cockpit-shell .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+      padding-inline: 1.25rem;
+    }
+  }
+
+  /* ── Root frame ─────────────────────────────────── */
+  .az-shell {
+    width: 100%;
+    min-width: 0;
+    color: var(--aos-cockpit-text);
+  }
+
+  .az-frame {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .az-primary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  /* Notebook default (<1920): rail BELOW workbench, not side-by-side */
+  .az-rail {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  @media (min-width: 1100px) and (max-width: 1919.98px) {
+    .az-rail {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: stretch;
+    }
+
+    .az-rail-card--actions {
+      grid-column: span 1;
+    }
+  }
+
+  /* 1920+: side rail */
+  @media (min-width: 1920px) {
+    .az-frame {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(16.5rem, 24%, 22rem);
+      gap: 0.85rem;
+      align-items: start;
+      /* ~74% / ~26% at 1920 with ~226px sidebar already outside */
+    }
+
+    .az-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      position: sticky;
+      top: 3.5rem;
+      max-width: 22rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .az-frame {
+      grid-template-columns: minmax(0, 1fr) clamp(18rem, 22%, 24rem);
+      max-width: 110rem;
+      margin-inline: auto;
+      gap: 1rem;
+    }
+
+    .az-primary {
+      max-width: 78rem; /* keep work rows from stretching forever */
+    }
+
+    .az-rail {
+      max-width: 24rem;
+    }
+  }
+
+  /* ── Hero ───────────────────────────────────────── */
+  .az-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    height: 15.5rem; /* ~248px notebook floor */
+    max-height: 20.625rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--aos-cockpit-border);
+    background: #0b1016;
+  }
+
+  @media (min-width: 1440px) {
+    .az-hero {
+      height: 16rem; /* 256px */
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .az-hero {
+      height: 18.5rem; /* ~296px */
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .az-hero {
+      height: 20.5rem; /* 328px cap */
+    }
+  }
+
+  .az-hero-media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .az-hero-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Asset swap-ready: no crop experiments — replace public/hero-agenturzentrale.jpg later */
+    object-position: center center;
+  }
+
+  .az-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgb(8 12 18 / 0.88) 0%, rgb(8 12 18 / 0.55) 42%, rgb(8 12 18 / 0.2) 72%, transparent 100%),
+      linear-gradient(0deg, rgb(8 12 18 / 0.55) 0%, transparent 45%);
+    pointer-events: none;
+  }
+
+  .az-hero-copy {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    max-width: 36rem;
+    padding: 1rem 1.15rem 1.05rem;
+    gap: 0.2rem;
+  }
+
+  .az-hero-date {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(148 163 184 / 0.88);
+  }
+
+  .az-hero-title {
+    margin: 0;
+    font-size: 1.75rem; /* 28px */
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: #f8fafc;
+    max-width: 28rem;
+  }
+
+  @media (min-width: 1920px) {
+    .az-hero-title {
+      font-size: 2rem; /* 32px cap */
+    }
+  }
+
+  .az-hero-quote-block {
+    margin: 0.55rem 0 0;
+    max-width: 28rem;
+    padding: 0.55rem 0.7rem 0.6rem;
+    border-radius: 0.45rem;
+    background: rgb(8 12 18 / 0.42);
+    border: 1px solid rgb(255 255 255 / 0.06);
+    box-shadow: 0 8px 18px -14px rgb(0 0 0 / 0.55);
+  }
+
+  .az-hero-quote {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: rgb(226 232 240 / 0.92);
+    font-style: italic;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .az-hero-quote-mark {
+    margin-right: 0.15rem;
+    font-style: normal;
+    color: rgb(148 163 184 / 0.75);
+  }
+
+  .az-hero-quote-author {
+    margin: 0.35rem 0 0;
+    font-size: 0.6875rem;
+    font-style: normal;
+    color: rgb(100 116 139 / 0.98);
+    letter-spacing: 0.01em;
+  }
+
+  /* ── Lage ───────────────────────────────────────── */
+  .az-lage {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  @media (min-width: 1100px) {
+    .az-lage {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .az-lage {
+      max-width: 78rem;
+    }
+  }
+
+  .az-lage-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 5.75rem; /* ~92px — layout frozen */
+    max-height: 6.55rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.55rem;
+    background: rgb(22 28 36 / 0.96);
+    border: 1px solid rgb(255 255 255 / 0.07);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 8px 18px -14px rgb(0 0 0 / 0.55);
+    overflow: hidden;
+  }
+
+  .az-lage-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+  }
+
+  .az-lage-card--blue::before {
+    background: #38bdf8;
+  }
+  .az-lage-card--orange::before {
+    background: #fb923c;
+  }
+  .az-lage-card--violet::before {
+    background: #a78bfa;
+  }
+  .az-lage-card--cyan::before {
+    background: #22d3ee;
+  }
+
+  .az-glyph {
+    width: 1.25rem; /* 20px */
+    height: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .az-glyph--sm {
+    width: 1.125rem; /* 18px */
+    height: 1.125rem;
+  }
+
+  .az-lage-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.55rem; /* ~41px tile */
+    height: 2.55rem;
+    border-radius: 0.55rem;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.03), 0 6px 14px -10px rgb(0 0 0 / 0.5);
+  }
+
+  .az-lage-card--blue .az-lage-icon {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+    border-color: rgb(56 189 248 / 0.22);
+    box-shadow: 0 0 18px -8px rgb(56 189 248 / 0.45);
+  }
+  .az-lage-card--orange .az-lage-icon {
+    background: rgb(251 146 60 / 0.15);
+    color: #fdba74;
+    border-color: rgb(251 146 60 / 0.24);
+    box-shadow: 0 0 18px -8px rgb(251 146 60 / 0.4);
+  }
+  .az-lage-card--violet .az-lage-icon {
+    background: rgb(167 139 250 / 0.15);
+    color: #c4b5fd;
+    border-color: rgb(167 139 250 / 0.24);
+    box-shadow: 0 0 18px -8px rgb(167 139 250 / 0.4);
+  }
+  .az-lage-card--cyan .az-lage-icon {
+    background: rgb(34 211 238 / 0.13);
+    color: #67e8f9;
+    border-color: rgb(34 211 238 / 0.22);
+    box-shadow: 0 0 18px -8px rgb(34 211 238 / 0.4);
+  }
+
+  .az-lage-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08rem;
+    min-width: 0;
+  }
+
+  .az-lage-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(100 116 139 / 0.95);
+  }
+
+  .az-lage-value {
+    font-size: 1.75rem; /* 28px */
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #f8fafc;
+  }
+
+  @media (min-width: 1920px) {
+    .az-lage-value {
+      font-size: 1.9375rem; /* 31px */
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .az-lage-value {
+      font-size: 2rem; /* 32px cap */
+    }
+  }
+
+  .az-lage-value--empty {
+    color: rgb(100 116 139 / 0.9);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .az-lage-meta {
+    font-size: 0.6875rem;
+    color: rgb(71 85 105 / 1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Workbench (3 columns) ──────────────────────── */
+  .az-workbench {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    min-width: 0;
+    align-items: start;
+  }
+
+  /* Notebook+: one row → equal compact outer heights */
+  @media (min-width: 1280px) {
+    .az-workbench {
+      grid-template-columns:
+        minmax(0, 0.32fr)
+        minmax(0, 0.35fr)
+        minmax(0, 0.33fr);
+      gap: 0.65rem;
+      align-items: stretch;
+    }
+
+    .az-workbench > .az-panel {
+      height: 18.25rem; /* compact shared outer height */
+      max-height: 18.25rem;
+      align-self: stretch;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .az-workbench {
+      grid-template-columns:
+        minmax(0, 0.32fr)
+        minmax(0, 0.34fr)
+        minmax(0, 0.34fr);
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+
+    .az-workbench > .az-panel {
+      height: 18.75rem;
+      max-height: 18.75rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .az-workbench {
+      max-width: 78rem;
+      align-items: stretch;
+    }
+
+    .az-workbench > .az-panel {
+      height: 19.25rem;
+      max-height: 19.25rem;
+    }
+  }
+
+  /* ── Panels ─────────────────────────────────────── */
+  .az-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: auto;
+    border-radius: 0.65rem;
+    background: rgb(20 26 34 / 0.96);
+    border: 1px solid rgb(255 255 255 / 0.07);
+    box-shadow: 0 10px 22px -18px rgb(0 0 0 / 0.7);
+    padding: 0.7rem 0.75rem 0.55rem;
+  }
+
+  .az-panel::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    bottom: 0.75rem;
+    width: 2px;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  .az-panel--inbox {
+    background: linear-gradient(180deg, rgb(18 28 38 / 0.98), rgb(18 24 32 / 0.96));
+    border-color: rgb(56 189 248 / 0.14);
+  }
+
+  .az-panel--inbox::before {
+    background: #38bdf8;
+  }
+
+  .az-panel--attention {
+    background: linear-gradient(180deg, rgb(32 26 22 / 0.95), rgb(20 24 32 / 0.96));
+    border-color: rgb(251 146 60 / 0.16);
+  }
+
+  .az-panel--attention::before {
+    background: #fb923c;
+  }
+
+  /* Next Step: neutral outer panel — purple only on featured priority card */
+  .az-panel--next {
+    background: rgb(20 26 34 / 0.96);
+    border-color: rgb(255 255 255 / 0.08);
+    box-shadow: 0 10px 22px -18px rgb(0 0 0 / 0.7);
+  }
+
+  .az-panel--next::before {
+    background: #a78bfa;
+  }
+
+  .az-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .az-panel-title {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgb(148 163 184 / 0.88);
+  }
+
+  .az-panel--inbox .az-panel-title {
+    color: rgb(125 211 252 / 0.82);
+  }
+
+  .az-panel--attention .az-panel-title {
+    color: rgb(253 186 116 / 0.85);
+  }
+
+  .az-panel--next .az-panel-title {
+    color: rgb(196 181 253 / 0.78);
+  }
+
+  .az-panel-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem; /* 36px */
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+  }
+
+  .az-panel-icon--blue {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+    border-color: rgb(56 189 248 / 0.22);
+    box-shadow: 0 0 16px -8px rgb(56 189 248 / 0.5);
+  }
+  .az-panel-icon--orange {
+    background: rgb(251 146 60 / 0.15);
+    color: #fdba74;
+    border-color: rgb(251 146 60 / 0.24);
+    box-shadow: 0 0 16px -8px rgb(251 146 60 / 0.45);
+  }
+  .az-panel-icon--violet {
+    background: rgb(167 139 250 / 0.16);
+    color: #c4b5fd;
+    border-color: rgb(167 139 250 / 0.28);
+    box-shadow: 0 0 18px -7px rgb(167 139 250 / 0.55);
+  }
+  .az-panel-icon--green {
+    background: rgb(52 211 153 / 0.12);
+    color: #6ee7b7;
+    border-color: rgb(52 211 153 / 0.22);
+    box-shadow: 0 0 14px -8px rgb(52 211 153 / 0.4);
+  }
+
+  .az-count {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
+    line-height: 1.2;
+  }
+
+  .az-count--blue {
+    background: rgb(56 189 248 / 0.16);
+    color: #7dd3fc;
+  }
+  .az-count--orange {
+    background: rgb(251 146 60 / 0.16);
+    color: #fdba74;
+  }
+  .az-count--violet {
+    background: rgb(167 139 250 / 0.18);
+    color: #c4b5fd;
+  }
+
+  .az-empty {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 0.75rem;
+    color: rgb(100 116 139 / 0.95);
+  }
+
+  .az-panel-link {
+    margin-top: auto;
+    padding-top: 0.45rem;
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #38bdf8;
+    text-decoration: none;
+  }
+
+  .az-panel-link:hover {
+    color: #7dd3fc;
+  }
+
+  /* ── Rows / list (max-width rule) ───────────────── */
+  .az-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  /* Direct content fills panel; footer link stays bottom-aligned */
+  .az-panel > .az-list,
+  .az-panel > .az-empty,
+  .az-panel > .az-attention-groups,
+  .az-panel > .az-next-stack {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .az-list-item {
+    min-width: 0;
+  }
+
+  .az-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.45rem 0.4rem;
+    border-radius: 0.45rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 120ms;
+  }
+
+  .az-row:hover {
+    background: rgb(255 255 255 / 0.035);
+  }
+
+  /* Cap row content width so 2560 doesn't create kilometer subjects */
+  .az-panel--inbox .az-row,
+  .az-panel--attention .az-row,
+  .az-panel--next .az-row {
+    max-width: 28rem;
+  }
+
+  @media (min-width: 1920px) {
+    .az-panel--inbox .az-row,
+    .az-panel--attention .az-row,
+    .az-panel--next .az-row {
+      max-width: 32rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .az-panel--inbox .az-row,
+    .az-panel--attention .az-row,
+    .az-panel--next .az-row {
+      max-width: 34rem;
+    }
+  }
+
+  .az-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .az-row-title {
+    display: block;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 600;
+    line-height: 1.25;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (min-width: 1920px) {
+    .az-row-title {
+      font-size: 0.9375rem; /* 15px */
+    }
+  }
+
+  .az-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.4rem;
+    font-size: 0.6875rem; /* 11px */
+    color: rgb(100 116 139 / 0.98);
+    min-width: 0;
+  }
+
+  .az-row-rail {
+    width: 3px;
+    align-self: stretch;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+
+  .az-row-rail--overdue {
+    background: #f87171;
+  }
+  .az-row-rail--today {
+    background: #fb923c;
+  }
+  .az-row-rail--soon {
+    background: #38bdf8;
+  }
+  .az-row-rail--waiting {
+    background: #a78bfa;
+  }
+
+  /* Channel icons */
+  .az-channel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem; /* 32px — compact row tile */
+    height: 2rem;
+    border-radius: 0.45rem;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+  }
+
+  .az-channel--blue {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+    border-color: rgb(56 189 248 / 0.2);
+  }
+  .az-channel--green {
+    background: rgb(52 211 153 / 0.12);
+    color: #6ee7b7;
+    border-color: rgb(52 211 153 / 0.2);
+  }
+  .az-channel--violet {
+    background: rgb(167 139 250 / 0.14);
+    color: #c4b5fd;
+    border-color: rgb(167 139 250 / 0.22);
+  }
+  .az-channel--orange {
+    background: rgb(251 146 60 / 0.14);
+    color: #fdba74;
+    border-color: rgb(251 146 60 / 0.22);
+  }
+  .az-channel--cyan {
+    background: rgb(34 211 238 / 0.12);
+    color: #67e8f9;
+    border-color: rgb(34 211 238 / 0.2);
+  }
+  .az-channel--neutral {
+    background: rgb(255 255 255 / 0.05);
+    color: #94a3b8;
+    border-color: rgb(255 255 255 / 0.08);
+  }
+
+  .az-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.05rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .az-chip--new {
+    background: rgb(56 189 248 / 0.16);
+    color: #7dd3fc;
+  }
+  .az-chip--overdue {
+    background: rgb(248 113 113 / 0.16);
+    color: #fca5a5;
+  }
+  .az-chip--today {
+    background: rgb(251 146 60 / 0.16);
+    color: #fdba74;
+  }
+  .az-chip--soon {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+  }
+  .az-chip--waiting {
+    background: rgb(167 139 250 / 0.16);
+    color: #c4b5fd;
+  }
+
+  /* Inbox preview: max 3 — never inflate shared row height */
+  .az-panel--inbox .az-list-item:nth-child(n + 4) {
+    display: none;
+  }
+
+  /* Attention groups */
+  .az-attention-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .az-group-label {
+    margin: 0 0 0.2rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .az-group-label--overdue {
+    color: #fca5a5;
+  }
+  .az-group-label--today {
+    color: #fdba74;
+  }
+  .az-group-label--soon {
+    color: #7dd3fc;
+  }
+  .az-group-label--waiting {
+    color: #c4b5fd;
+  }
+
+  /* Next step featured — strongest work focus, not neon */
+  .az-next-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .az-next-stack > .az-list {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .az-next-hero {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 0.55rem;
+    overflow: hidden;
+    border: 1px solid rgb(167 139 250 / 0.32);
+    background: linear-gradient(150deg, rgb(68 48 108 / 0.42), rgb(24 24 36 / 0.94));
+    box-shadow: 0 10px 20px -16px rgb(76 29 149 / 0.55);
+    max-width: 34rem;
+  }
+
+  .az-next-banner {
+    padding: 0.28rem 0.65rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ddd6fe;
+    background: rgb(124 58 237 / 0.22);
+    border-bottom: 1px solid rgb(167 139 250 / 0.16);
+  }
+
+  .az-next-body {
+    padding: 0.55rem 0.65rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .az-next-title {
+    margin: 0;
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 650;
+    line-height: 1.3;
+    color: #f8fafc;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .az-next-cta {
+    display: inline-flex;
+    align-self: flex-start;
+    margin-top: 0.15rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.35rem;
+    font-size: 0.6875rem;
+    font-weight: 650;
+    background: rgb(167 139 250 / 0.24);
+    border: 1px solid rgb(167 139 250 / 0.28);
+    color: #ede9fe;
+  }
+
+  .az-next-hero:hover .az-next-cta {
+    background: rgb(167 139 250 / 0.34);
+  }
+
+  .az-next-owner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: rgb(148 163 184 / 0.92);
+  }
+
+  .az-panel--next .az-list .az-row-title {
+    font-weight: 500;
+    color: rgb(203 213 225 / 0.92);
+  }
+
+  .az-panel--next .az-list .az-row-meta {
+    color: rgb(100 116 139 / 0.95);
+  }
+
+  /* ── Rail widgets ───────────────────────────────── */
+  .az-rail-card {
+    border-radius: 0.55rem;
+    background: rgb(18 23 30 / 0.92);
+    border: 1px solid rgb(255 255 255 / 0.06);
+    box-shadow: 0 8px 16px -16px rgb(0 0 0 / 0.6);
+    padding: 0.6rem 0.7rem;
+    min-width: 0;
+  }
+
+  .az-rail-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .az-rail-title {
+    margin: 0;
+    flex: 1 1 auto;
+    font-size: 0.6875rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgb(148 163 184 / 0.85);
+  }
+
+  .az-planned {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    background: rgb(255 255 255 / 0.05);
+    color: rgb(100 116 139 / 0.95);
+    border: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .az-rail-empty {
+    margin: 0;
+    font-size: 0.75rem;
+    color: rgb(100 116 139 / 0.95);
+  }
+
+  .az-work-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .az-work-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: rgb(148 163 184 / 0.9);
+  }
+
+  .az-work-count {
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .az-work-recent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    padding: 0.3rem 0;
+    text-decoration: none;
+    border-top: 1px solid rgb(255 255 255 / 0.05);
+    max-width: 22rem;
+  }
+
+  /* Quick access – fixed tile size, does not inflate */
+  .az-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 3.25rem));
+    gap: 0.35rem;
+    justify-content: start;
+    margin-top: 0.4rem;
+  }
+
+  .az-quick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    width: 3.25rem;
+    height: 3.25rem;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
+    color: rgb(148 163 184 / 0.95);
+    cursor: pointer;
+    transition: background 120ms, border-color 120ms;
+  }
+
+  .az-quick:hover {
+    background: rgb(255 255 255 / 0.06);
+    border-color: rgb(255 255 255 / 0.14);
+  }
+
+  .az-quick-icon {
+    display: inline-flex;
+  }
+
+  .az-quick-label {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: rgb(100 116 139 / 0.98);
+  }
+
+  .az-quick--blue {
+    border-color: rgb(56 189 248 / 0.18);
+  }
+  .az-quick--violet {
+    border-color: rgb(167 139 250 / 0.2);
+  }
+  .az-quick--orange {
+    border-color: rgb(251 146 60 / 0.2);
+  }
+  .az-quick--green {
+    border-color: rgb(52 211 153 / 0.18);
+  }
+  .az-quick--cyan {
+    border-color: rgb(34 211 238 / 0.18);
+  }
+
+  .az-quick--blue .az-quick-icon {
+    color: #7dd3fc;
+  }
+  .az-quick--violet .az-quick-icon {
+    color: #c4b5fd;
+  }
+  .az-quick--orange .az-quick-icon {
+    color: #fdba74;
+  }
+  .az-quick--green .az-quick-icon {
+    color: #6ee7b7;
+  }
+  .az-quick--cyan .az-quick-icon {
+    color: #67e8f9;
+  }
+
+  /* ── Skeleton (az) ──────────────────────────────── */
+  .az-shell.az-skeleton .az-hero,
+  .az-shell.az-skeleton .az-lage-card,
+  .az-shell.az-skeleton .az-panel,
+  .az-shell.az-skeleton .az-rail-card {
+    background: rgb(28 36 46 / 0.7);
+  }
+}

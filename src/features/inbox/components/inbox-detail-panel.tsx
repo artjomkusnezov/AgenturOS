@@ -5,6 +5,8 @@ import { useActionState, useEffect, useId, useRef, useState } from 'react'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconCheckSquare, DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
+import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { deleteInboxItemAction } from '@/features/inbox/actions/delete-inbox-item'
 import { InboxPromotionMenu } from '@/features/inbox/components/inbox-promotion-menu'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
@@ -46,6 +48,14 @@ type InboxDetailPanelProps = {
 }
 
 const initialState: InboxItemMutationState = {}
+
+const CHANNEL_ACCENT_CLASS: Record<DashboardAccent, string> = {
+  blue: 'aos-inbox-channel--blue',
+  green: 'aos-inbox-channel--green',
+  violet: 'aos-inbox-channel--violet',
+  orange: 'aos-inbox-channel--orange',
+  neutral: 'aos-inbox-channel--neutral',
+}
 
 function InboxStatusActionButton({
   itemId,
@@ -116,6 +126,7 @@ export function InboxDetailPanel({
   const handledDeleteRef = useRef(false)
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
+  const sourceVisual = resolveInboxSourceVisual(item.source)
 
   useEffect(() => {
     if (deleteState.success && !handledDeleteRef.current) {
@@ -140,19 +151,27 @@ export function InboxDetailPanel({
         ) : null}
 
         <div className="flex items-start justify-between gap-3">
-          <p className={`min-w-0 flex-1 ${aosWorkspaceMetaClassName}`}>
-            <span>{getInboxSourceLabel(item.source)}</span>
-            <span className="mx-1.5 text-zinc-300">·</span>
-            <span>
-              {item.channel === 'whatsapp' || item.channel === 'email'
-                ? `Von ${creatorName}`
-                : `Erfasst von ${creatorName}`}
+          <div className="flex min-w-0 flex-1 items-start gap-2.5">
+            <span
+              className={`aos-inbox-channel mt-0.5 ${CHANNEL_ACCENT_CLASS[sourceVisual.accent]}`}
+              aria-hidden="true"
+            >
+              <span className="[&_svg]:h-4 [&_svg]:w-4">{sourceVisual.icon}</span>
             </span>
-            <span className="mx-1.5 text-zinc-300">·</span>
-            <span>{formatInboxDateTime(item.created_at)}</span>
-            <span className="mx-1.5 text-zinc-300">·</span>
-            <span>{isUnprocessed ? 'Unbearbeitet' : 'Bearbeitet'}</span>
-          </p>
+            <p className={`min-w-0 flex-1 ${aosWorkspaceMetaClassName}`}>
+              <span>{getInboxSourceLabel(item.source)}</span>
+              <span className="mx-1.5 text-zinc-300">·</span>
+              <span>
+                {item.channel === 'whatsapp' || item.channel === 'email'
+                  ? `Von ${creatorName}`
+                  : `Erfasst von ${creatorName}`}
+              </span>
+              <span className="mx-1.5 text-zinc-300">·</span>
+              <span>{formatInboxDateTime(item.created_at)}</span>
+              <span className="mx-1.5 text-zinc-300">·</span>
+              <span>{isUnprocessed ? 'Unbearbeitet' : 'Bearbeitet'}</span>
+            </p>
+          </div>
 
           <InboxStatusActionButton
             itemId={item.id}

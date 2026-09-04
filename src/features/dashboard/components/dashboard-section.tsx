@@ -6,21 +6,7 @@ import {
   dashboardSectionHeaderClassName,
   dashboardSectionPaddingClassName,
 } from '@/features/dashboard/lib/dashboard-surface'
-import {
-  aosIconAccentBlueClassName,
-  aosIconAccentGreenClassName,
-  aosIconAccentOrangeClassName,
-  aosIconAccentVioletClassName,
-  aosLinkClassName,
-} from '@/lib/design-system'
-
-const accentTextClass: Record<DashboardAccent, string> = {
-  blue: aosIconAccentBlueClassName,
-  green: aosIconAccentGreenClassName,
-  violet: aosIconAccentVioletClassName,
-  orange: aosIconAccentOrangeClassName,
-  neutral: 'text-zinc-400',
-}
+import { aosLinkClassName } from '@/lib/design-system'
 
 type DashboardSectionProps = {
   title: string
@@ -52,7 +38,10 @@ export function DashboardSection({
       >
         <div className="flex min-w-0 items-center gap-2">
           {icon ? (
-            <span className={`shrink-0 ${accentTextClass[iconAccent]}`} aria-hidden="true">
+            <span
+              className={`aos-cockpit-icon-box aos-cockpit-icon-box--${iconAccent} shrink-0`}
+              aria-hidden="true"
+            >
               {icon}
             </span>
           ) : null}

@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { formatAgencyMemberDisplayName } from '@/features/agency/lib/format-agency-member-display-name'
 import type { AgencyMember, AgencySummary } from '@/features/agency/types/agency-member'
 import { createClient } from '@/lib/supabase/server'
@@ -15,7 +17,7 @@ type ListAgencyMembersResult =
   | { success: true; members: AgencyMember[] }
   | RepositoryError
 
-async function getAuthenticatedUserId(): Promise<
+const getAuthenticatedUserId = cache(async function getAuthenticatedUserId(): Promise<
   { success: true; userId: string } | RepositoryError
 > {
   const supabase = await createClient()
@@ -27,7 +29,10 @@ async function getAuthenticatedUserId(): Promise<
   if (error || !user) {
     return {
       success: false,
-      error: 'Sie sind nicht angemeldet.',
+      error:
+        error?.message?.toLowerCase().includes('rate limit')
+          ? 'Die Anmeldung ist vorübergehend überlastet. Bitte die Seite in wenigen Sekunden neu laden.'
+          : 'Sie sind nicht angemeldet.',
     }
   }
 
@@ -35,7 +40,7 @@ async function getAuthenticatedUserId(): Promise<
     success: true,
     userId: user.id,
   }
-}
+})
 
 async function listActiveAgencyIdsForUser(
   userId: string,
@@ -60,7 +65,7 @@ async function listActiveAgencyIdsForUser(
   }
 }
 
-export async function getCurrentUserAgency(): Promise<CurrentUserAgencyResult> {
+export const getCurrentUserAgency = cache(async function getCurrentUserAgency(): Promise<CurrentUserAgencyResult> {
   const authResult = await getAuthenticatedUserId()
 
   if (!authResult.success) {
@@ -106,7 +111,7 @@ export async function getCurrentUserAgency(): Promise<CurrentUserAgencyResult> {
     success: true,
     agency: data,
   }
-}
+})
 
 export async function listCurrentAgencyMembers(): Promise<ListAgencyMembersResult> {
   const agencyResult = await getCurrentUserAgency()

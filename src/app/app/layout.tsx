@@ -35,7 +35,11 @@ export default async function AppLayout({
         key: view.key,
         name: view.name,
         icon: view.icon,
-        href: `/app/cases?view=${encodeURIComponent(view.key)}`,
+        // Dedicated alias so only nested "Aufgaben" is active — never under /app/cases.
+        href:
+          view.key === 'tasks'
+            ? '/app/tasks'
+            : `/app/cases?view=${encodeURIComponent(view.key)}`,
       }))
     : []
 

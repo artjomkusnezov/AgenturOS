@@ -1,46 +1,49 @@
-import { getGermanDateLabel } from '@/lib/user/get-display-name'
-import {
-  getFirstNameFromUser,
-  getTimeOfDayGreeting,
-  getWorkSituationHint,
-} from '@/features/dashboard/lib/dashboard-greeting'
+import Image from 'next/image'
+
+import type { DashboardDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
 
 type DashboardGreetingProps = {
-  user: {
-    user_metadata?: Record<string, unknown>
-  }
-  unprocessedInboxCount: number
-  attentionCount: number
-  myOpenTaskCount: number
-  teamOpenTaskCount: number
+  dateLabel: string
+  greetingTitle: string
+  dailyQuote: DashboardDailyQuote
 }
 
+/** Legacy hero wrapper — Agenturzentrale uses AgenturzentraleDashboard Hero. */
 export function DashboardGreeting({
-  user,
-  unprocessedInboxCount,
-  attentionCount,
-  myOpenTaskCount,
-  teamOpenTaskCount,
+  dateLabel,
+  greetingTitle,
+  dailyQuote,
 }: DashboardGreetingProps) {
-  const greeting = getTimeOfDayGreeting()
-  const firstName = getFirstNameFromUser(user)
-  const situationHint = getWorkSituationHint({
-    unprocessedInboxCount,
-    attentionCount,
-    myOpenTaskCount,
-    teamOpenTaskCount,
-  })
-
   return (
-    <header className="space-y-0.5">
-      <p className="text-[11px] font-medium text-zinc-400">{getGermanDateLabel()}</p>
-      <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-        {greeting}
-        {firstName ? `, ${firstName}` : ''}
-      </h1>
-      <p className="max-w-3xl text-xs leading-relaxed text-zinc-500" aria-live="polite">
-        {situationHint}
-      </p>
+    <header className="aos-dashboard-hero" aria-labelledby="dashboard-hero-heading">
+      <div className="aos-dashboard-hero-stage" aria-hidden="true">
+        <Image
+          src="/hero-agenturzentrale.jpg"
+          alt=""
+          width={1920}
+          height={1080}
+          priority
+          unoptimized
+          className="aos-dashboard-hero-image"
+        />
+        <div className="aos-dashboard-hero-overlay" />
+      </div>
+
+      <div className="aos-dashboard-hero-content">
+        <p className="aos-dashboard-hero-date">{dateLabel}</p>
+        <h1 id="dashboard-hero-heading" className="aos-dashboard-hero-title">
+          {greetingTitle}
+        </h1>
+        <blockquote className="az-hero-quote-block">
+          <p className="az-hero-quote">
+            <span className="az-hero-quote-mark" aria-hidden="true">
+              “
+            </span>
+            {dailyQuote.text}
+          </p>
+          <footer className="az-hero-quote-author">— {dailyQuote.author}</footer>
+        </blockquote>
+      </div>
     </header>
   )
 }

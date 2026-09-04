@@ -14,12 +14,16 @@ import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-
 import {
   aosListRowClassName,
   aosListRowHoverClassName,
+  aosListRowSubduedClassName,
   aosListSelectedClassName,
+  aosWsTextMetaClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type CaseListItemProps = {
   caseRow: CaseRecord
   isSelected: boolean
+  subdued?: boolean
   memberNameMap: Record<string, string>
   lookups: CaseDisplayLookups
   onSelect: (caseId: string) => void
@@ -28,6 +32,7 @@ type CaseListItemProps = {
 export function CaseListItem({
   caseRow,
   isSelected,
+  subdued = false,
   memberNameMap,
   lookups,
   onSelect,
@@ -57,18 +62,22 @@ export function CaseListItem({
     <button
       type="button"
       onClick={() => onSelect(caseRow.id)}
-      className={`${aosListRowClassName} ${aosListRowHoverClassName} ${
-        isSelected ? aosListSelectedClassName : ''
+      className={`${aosListRowClassName} ${
+        isSelected
+          ? aosListSelectedClassName
+          : subdued
+            ? aosListRowSubduedClassName
+            : aosListRowHoverClassName
       } w-full text-left`}
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-900">{caseRow.title}</p>
-        <p className="mt-0.5 truncate text-xs text-zinc-500">
+        <p className={`truncate text-sm font-medium ${aosWsTextPrimaryClassName}`}>{caseRow.title}</p>
+        <p className={`mt-0.5 truncate text-xs ${aosWsTextMetaClassName}`}>
           {secondaryParts.join(' · ')}
           {assigneeName && dueLabel ? (
             <>
               {' · '}
-              <span className={dueOverdue ? 'font-medium text-red-600' : undefined}>
+              <span className={dueOverdue ? 'font-medium text-red-400' : undefined}>
                 {dueLabel}
               </span>
             </>

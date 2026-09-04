@@ -1,13 +1,13 @@
 /**
- * Dashboard-spezifische Surface-Klassen (27C Polish).
- * Weicher als globale aos-card – weniger Rahmen, dezenter Schatten.
+ * Dashboard-spezifische Surface-Klassen (27C Polish + 38B zentrale depth).
+ * Weicher als globale aos-card – erhöhte Panels auf dunklem Ambient-Hintergrund.
  */
 
 export const dashboardSurfaceClassName =
-  'rounded-xl bg-white shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.04]'
+  'rounded-xl bg-[var(--aos-color-surface)] shadow-[var(--aos-shadow-zentrale-panel)] ring-1 ring-white/60'
 
 export const dashboardSurfaceEmphasizedClassName =
-  'rounded-xl bg-white shadow-[var(--aos-shadow-sm)] ring-1 ring-zinc-950/[0.05]'
+  'rounded-xl bg-[var(--aos-color-surface)] shadow-[var(--aos-shadow-zentrale-panel)] ring-1 ring-white/70'
 
 export const dashboardSectionPaddingClassName = 'px-3.5 sm:px-4'
 

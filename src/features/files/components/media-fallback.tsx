@@ -29,8 +29,8 @@ export function MediaFallback({
   }, [router])
 
   return (
-    <div className="rounded-md border border-dashed border-zinc-200/70 bg-zinc-50/50 px-3 py-4">
-      <p className="text-[13px] font-medium text-zinc-700">{file.filename}</p>
+    <div className="rounded-md border border-dashed border-white/15 bg-white/[0.03] px-3 py-4">
+      <p className="text-[13px] font-medium text-slate-100">{file.filename}</p>
       <p className={`mt-0.5 ${aosWorkspaceMetaClassName}`}>
         {formatFileSize(file.size_bytes)} · {message}
       </p>

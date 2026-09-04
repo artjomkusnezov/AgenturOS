@@ -44,7 +44,7 @@ export function PdfMedia({
 
   return (
     <figure className="space-y-2">
-      <div className="overflow-hidden rounded-md border border-zinc-200/60 bg-zinc-50">
+      <div className="overflow-hidden rounded-md border border-white/10 bg-white/[0.03]">
         <iframe
           key={mediaUrl}
           src={mediaUrl}

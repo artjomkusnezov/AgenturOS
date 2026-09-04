@@ -1,0 +1,701 @@
+/**
+ * AgenturOS 38C – Global dark workspace under .aos-cockpit-shell (/app/*).
+ * Design language from Agenturzentrale. Does not redefine dashboard composition.
+ * Dashboard page (.aos-dashboard-zentrale) keeps its own presentation rules.
+ */
+
+@layer components {
+  /* ── Global workspace page chrome (non-dashboard) ── */
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) {
+    background: transparent;
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-chrome {
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-chrome-title,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-page-title {
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-workspace-toolbar-meta,
+  .aos-cockpit-shell .aos-workspace-meta {
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-list-pane,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-detail-pane {
+    background: var(--aos-cockpit-panel);
+    border-color: var(--aos-cockpit-border);
+  }
+
+  /* Notebook: keep inbox list compact; detail takes remaining width */
+  @media (min-width: 1024px) {
+    .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-list-pane {
+      width: 17.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-list-pane {
+      width: 19rem;
+    }
+  }
+
+  .aos-cockpit-shell .aos-workspace-surface {
+    background: var(--aos-cockpit-panel-elevated);
+    border-color: var(--aos-cockpit-border);
+    color: var(--aos-cockpit-text);
+    box-shadow: none;
+  }
+
+  .aos-cockpit-shell .aos-panel-header,
+  .aos-cockpit-shell .aos-panel-footer {
+    border-color: var(--aos-cockpit-border-subtle);
+  }
+
+  .aos-cockpit-shell .aos-workspace-section-title,
+  .aos-cockpit-shell .aos-text-section-title {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  /* ── Text hierarchy utilities ── */
+  .aos-cockpit-shell .aos-ws-text-primary {
+    color: var(--aos-cockpit-text-primary);
+  }
+
+  .aos-cockpit-shell .aos-ws-text-secondary {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-ws-text-meta {
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  .aos-cockpit-shell .aos-ws-text-muted {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-ws-text-disabled {
+    color: var(--aos-cockpit-text-disabled);
+  }
+
+  /* ── List rows ── */
+  .aos-cockpit-shell .aos-list-group-label {
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  .aos-cockpit-shell .aos-list-row {
+    border-color: transparent;
+    color: var(--aos-cockpit-text-primary);
+  }
+
+  .aos-cockpit-shell .aos-list-row-hover:hover {
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  /* Archive / completed: quieter via color, NEVER via parent opacity */
+  .aos-cockpit-shell .aos-list-row-subdued {
+    opacity: 1;
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-list-row-subdued .aos-ws-text-primary {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-list-row-subdued .aos-ws-text-meta {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-list-selected {
+    background: rgb(56 189 248 / 0.1);
+    box-shadow: inset 2px 0 0 #38bdf8;
+  }
+
+  .aos-cockpit-shell .aos-list-status-btn {
+    border-color: rgb(255 255 255 / 0.12);
+    color: var(--aos-cockpit-text-muted);
+    background: rgb(255 255 255 / 0.03);
+  }
+
+  .aos-cockpit-shell .aos-list-status-btn:hover {
+    border-color: rgb(56 189 248 / 0.35);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-list-status-btn-done {
+    border-color: rgb(52 211 153 / 0.35);
+    color: #6ee7b7;
+    background: rgb(52 211 153 / 0.1);
+  }
+
+  .aos-cockpit-shell .aos-card-empty {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .aos-cockpit-shell .aos-empty-state {
+    background: transparent;
+    border-color: transparent;
+    color: var(--aos-cockpit-text-secondary);
+    box-shadow: none;
+  }
+
+  .aos-cockpit-shell .aos-empty-state h2,
+  .aos-cockpit-shell .aos-empty-state h3 {
+    color: var(--aos-cockpit-text-primary);
+  }
+
+  .aos-cockpit-shell .aos-empty-state p {
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  /* ── Forms / inputs ── */
+  .aos-cockpit-shell .aos-input,
+  .aos-cockpit-shell .aos-textarea,
+  .aos-cockpit-shell .aos-select,
+  .aos-cockpit-shell .aos-doc-body {
+    background: rgb(14 18 24 / 0.92);
+    border-color: rgb(255 255 255 / 0.1);
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-input::placeholder,
+  .aos-cockpit-shell .aos-textarea::placeholder,
+  .aos-cockpit-shell .aos-doc-body::placeholder {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-input:focus,
+  .aos-cockpit-shell .aos-textarea:focus,
+  .aos-cockpit-shell .aos-select:focus,
+  .aos-cockpit-shell .aos-doc-body:focus {
+    border-color: rgb(56 189 248 / 0.55);
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(56 189 248 / 0.15);
+  }
+
+  /* ── Buttons ── */
+  .aos-cockpit-shell .aos-btn-primary,
+  .aos-cockpit-shell .aos-workspace-action-primary,
+  .aos-cockpit-shell .aos-workspace-action-accent {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+  }
+
+  .aos-cockpit-shell .aos-btn-primary:hover,
+  .aos-cockpit-shell .aos-workspace-action-primary:hover,
+  .aos-cockpit-shell .aos-workspace-action-accent:hover {
+    background: #1d4ed8;
+  }
+
+  .aos-cockpit-shell .aos-btn-secondary,
+  .aos-cockpit-shell .aos-workspace-action {
+    background: rgb(255 255 255 / 0.05);
+    border-color: rgb(255 255 255 / 0.1);
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-btn-secondary:hover,
+  .aos-cockpit-shell .aos-workspace-action:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-btn-ghost,
+  .aos-cockpit-shell .aos-workspace-action-emphasis {
+    background: transparent;
+    border-color: rgb(255 255 255 / 0.12);
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-btn-danger {
+    background: rgb(220 38 38 / 0.16);
+    border-color: rgb(248 113 113 / 0.35);
+    color: #fca5a5;
+  }
+
+  /* ── Dialogs / dropdowns ── */
+  .aos-cockpit-shell .aos-dialog-panel,
+  .aos-cockpit-shell .aos-dialog-panel-lg,
+  .aos-cockpit-shell .aos-dropdown-panel {
+    background: var(--aos-cockpit-panel-elevated);
+    border-color: var(--aos-cockpit-border);
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-dialog-overlay {
+    background: rgb(0 0 0 / 0.55);
+  }
+
+  /* ── Cards / panels / badges / timeline / alerts ── */
+  .aos-cockpit-shell .aos-card,
+  .aos-cockpit-shell .aos-card-padded,
+  .aos-cockpit-shell .aos-card-panel {
+    background: var(--aos-cockpit-panel);
+    border-color: var(--aos-cockpit-border);
+    color: var(--aos-cockpit-text);
+    box-shadow: none;
+  }
+
+  .aos-cockpit-shell .aos-badge,
+  .aos-cockpit-shell .aos-badge-neutral {
+    background: rgb(255 255 255 / 0.06);
+    border-color: rgb(255 255 255 / 0.1);
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-badge-neutral-subdued {
+    background: rgb(255 255 255 / 0.03);
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-badge-emphasis {
+    background: rgb(56 189 248 / 0.14);
+    border-color: rgb(56 189 248 / 0.22);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-timeline-item {
+    border-color: var(--aos-cockpit-border-subtle);
+  }
+
+  .aos-cockpit-shell .aos-timeline-dot {
+    background: rgb(255 255 255 / 0.12);
+    border-color: rgb(255 255 255 / 0.16);
+  }
+
+  .aos-cockpit-shell .aos-alert-error {
+    background: rgb(220 38 38 / 0.12);
+    border-color: rgb(248 113 113 / 0.28);
+    color: #fecaca;
+  }
+
+  .aos-cockpit-shell .aos-alert-warning {
+    background: rgb(251 146 60 / 0.12);
+    border-color: rgb(251 146 60 / 0.28);
+    color: #fdba74;
+  }
+
+  .aos-cockpit-shell .aos-alert-success {
+    background: rgb(52 211 153 / 0.12);
+    border-color: rgb(52 211 153 / 0.28);
+    color: #6ee7b7;
+  }
+
+  .aos-cockpit-shell .aos-alert-info {
+    background: rgb(56 189 248 / 0.12);
+    border-color: rgb(56 189 248 / 0.28);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-link,
+  .aos-cockpit-shell .aos-link-inline {
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-icon-button {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-icon-button:hover {
+    background: rgb(255 255 255 / 0.06);
+    color: var(--aos-cockpit-text);
+  }
+
+  /* White / zinc leftovers that survive list-item classnames */
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/40,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/50,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/70,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/95,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-white:hover,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-white\/70:hover {
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .shadow-sm,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .ring-zinc-200\/80 {
+    box-shadow: none;
+    --tw-ring-color: transparent;
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-dashed {
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .divide-zinc-100 > :not(:first-child),
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .divide-zinc-100\/80 > :not(:first-child),
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-100 {
+    border-color: var(--aos-cockpit-border-subtle);
+  }
+
+  /* Activity surface */
+  .aos-cockpit-shell .aos-activity-surface {
+    background: var(--aos-cockpit-panel);
+    border: 1px solid var(--aos-cockpit-border);
+    border-radius: 0.65rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .aos-cockpit-shell .aos-activity-row {
+    border-color: var(--aos-cockpit-border-subtle);
+  }
+
+  .aos-cockpit-shell .aos-activity-row-icon {
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  /* ── Inbox-specific presentation ── */
+  .aos-inbox-channel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.45rem;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+  }
+
+  .aos-inbox-channel--blue {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+    border-color: rgb(56 189 248 / 0.2);
+  }
+  .aos-inbox-channel--green {
+    background: rgb(52 211 153 / 0.12);
+    color: #6ee7b7;
+    border-color: rgb(52 211 153 / 0.2);
+  }
+  .aos-inbox-channel--violet {
+    background: rgb(167 139 250 / 0.14);
+    color: #c4b5fd;
+    border-color: rgb(167 139 250 / 0.22);
+  }
+  .aos-inbox-channel--orange {
+    background: rgb(251 146 60 / 0.14);
+    color: #fdba74;
+    border-color: rgb(251 146 60 / 0.22);
+  }
+  .aos-inbox-channel--neutral {
+    background: rgb(255 255 255 / 0.05);
+    color: #94a3b8;
+    border-color: rgb(255 255 255 / 0.08);
+  }
+
+  .aos-inbox-chip-new {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 650;
+    background: rgb(56 189 248 / 0.16);
+    color: #7dd3fc;
+    flex-shrink: 0;
+  }
+
+  .aos-inbox-archive-toggle,
+  .aos-ws-archive-toggle {
+    margin-top: 0.45rem;
+    width: 100%;
+    padding: 0.4rem 0.55rem;
+    border-radius: 0.4rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
+    color: #7dd3fc;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .aos-inbox-archive-toggle:hover,
+  .aos-ws-archive-toggle:hover {
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .aos-inbox-empty-detail,
+  .aos-ws-empty-detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    min-height: 14rem;
+    height: 100%;
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    background: var(--aos-cockpit-panel);
+    border: 1px solid var(--aos-cockpit-border);
+    border-radius: 0.65rem;
+  }
+
+  .aos-inbox-empty-icon,
+  .aos-ws-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.55rem;
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+    border: 1px solid rgb(56 189 248 / 0.22);
+  }
+
+  .aos-inbox-empty-title,
+  .aos-ws-empty-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--aos-cockpit-text-primary);
+  }
+
+  .aos-inbox-empty-copy,
+  .aos-ws-empty-copy {
+    margin: 0;
+    max-width: 18rem;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  /* Soften zinc utility leftovers inside cockpit workspace */
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-900,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-800 {
+    color: var(--aos-cockpit-text-primary);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-700,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-600 {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-500 {
+    color: var(--aos-cockpit-text-meta);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-400,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-300 {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200\/40,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-100 {
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white,
+  .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-zinc-50 {
+    background: var(--aos-cockpit-panel);
+  }
+}
+
+/*
+ * Unlayered contrast repair — must beat Tailwind utilities (@apply embeds +
+ * utility classes like text-zinc-900 / bg-zinc-50/40 that win over @layer components).
+ * Scoped to Dark Workspace only; dashboard composition untouched.
+ */
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) {
+  color: var(--aos-cockpit-text-primary);
+}
+
+/*
+ * Detail primary titles — compact workspaces use .aos-workspace-page-compact
+ * (not .aos-workspace-page), so document titles need an explicit compact path.
+ * Only color; no surface/geometry changes.
+ */
+.aos-cockpit-shell .aos-workspace-page-compact .aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page-compact input.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page-compact h1.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page-compact h2.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) input.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) h1.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) h2.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-display,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-page-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-card-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-label,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-text-primary,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-chrome-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-chrome-title,
+.aos-cockpit-shell .aos-workspace-page-compact .aos-ws-text-primary,
+.aos-cockpit-shell .aos-workspace-page-compact .aos-workspace-chrome-title {
+  color: var(--aos-cockpit-text-primary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-doc-body,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-body {
+  color: var(--aos-cockpit-text-primary);
+  background-color: transparent;
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-text-secondary,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-label-sm,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-section-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-section-title {
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-meta,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-meta,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-small,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-caption,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-text-section-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-text-meta,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-list-group-label,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-toolbar-meta {
+  color: var(--aos-cockpit-text-meta);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-text-muted {
+  color: var(--aos-cockpit-text-muted);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-950,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-900,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-800,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-black {
+  color: var(--aos-cockpit-text-primary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-700,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-600 {
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-500 {
+  color: var(--aos-cockpit-text-meta);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-400,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .text-zinc-300 {
+  color: var(--aos-cockpit-text-muted);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:text-zinc-900:hover,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:text-zinc-800:hover,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:text-zinc-700:hover {
+  color: var(--aos-cockpit-text-primary);
+}
+
+/* Form controls — override light @apply / utility backgrounds */
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-input,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-textarea,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-select,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) input:not([type='checkbox']):not([type='radio']):not([type='file']):not(.aos-doc-title),
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) select,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) textarea:not(.aos-doc-body) {
+  background-color: rgb(14 18 24 / 0.92);
+  border-color: rgb(255 255 255 / 0.12);
+  color: var(--aos-cockpit-text-primary);
+}
+
+/* Document fields stay flush with the detail surface (no light/legacy card box) */
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) input.aos-doc-title,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-doc-body,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) textarea.aos-doc-body,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) p.aos-doc-body {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--aos-cockpit-text-primary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-input::placeholder,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-textarea::placeholder,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-doc-body::placeholder,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-doc-title::placeholder {
+  color: var(--aos-cockpit-text-muted);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-input:focus,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-textarea:focus,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-select:focus,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) textarea.aos-doc-body:focus {
+  border-color: rgb(56 189 248 / 0.55);
+  box-shadow: 0 0 0 3px rgb(56 189 248 / 0.15);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/40,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/50,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/70,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-white\/95,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-zinc-50,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-zinc-50\/40,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-zinc-50\/50,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-zinc-50\/80,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .bg-zinc-100 {
+  background-color: rgb(255 255 255 / 0.04);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-white:hover,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-white\/70:hover,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-zinc-50:hover,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-zinc-50\/80:hover,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .hover\:bg-zinc-100:hover {
+  background-color: rgb(255 255 255 / 0.06);
+}
+
+/* Timeline */
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-timeline::before {
+  background-color: rgb(255 255 255 / 0.12);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-timeline-dot {
+  background-color: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.2);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-timeline-dot-note {
+  background-color: rgb(56 189 248 / 0.16);
+  border-color: rgb(56 189 248 / 0.4);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-timeline-dot-system {
+  background-color: rgb(255 255 255 / 0.06);
+  border-color: rgb(255 255 255 / 0.14);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-timeline-action {
+  color: var(--aos-cockpit-text-primary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-timeline-person {
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-ws-timeline-body {
+  color: var(--aos-cockpit-text-primary);
+}
+
+/* Buttons / secondary surfaces that still carry light @apply fills */
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-btn-secondary,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-btn-secondary-lg,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-btn-ghost,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-btn-ghost-lg,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-action,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-chip {
+  background-color: rgb(255 255 255 / 0.04);
+  border-color: rgb(255 255 255 / 0.12);
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200\/40,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200\/60,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200\/70,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-200\/80,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .border-zinc-100,
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .divide-zinc-100 > :not([hidden]) ~ :not([hidden]),
+.aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .divide-zinc-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--aos-cockpit-border);
+}

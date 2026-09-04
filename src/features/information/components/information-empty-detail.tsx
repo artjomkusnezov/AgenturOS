@@ -1,13 +1,15 @@
-import { EmptyState } from '@/components/app/empty-state'
-import { aosCardEmptyClassName } from '@/lib/design-system'
+import { DashboardIconInfo } from '@/features/dashboard/components/dashboard-icons'
 
 export function InformationEmptyDetail() {
   return (
-    <div className={`${aosCardEmptyClassName} h-full min-h-[12rem]`}>
-      <EmptyState
-        title="Nichts ausgewählt"
-        description="Wählen Sie links eine Information oder erstellen Sie eine neue."
-      />
+    <div className="aos-ws-empty-detail">
+      <span className="aos-ws-empty-icon" aria-hidden="true">
+        <DashboardIconInfo className="h-5 w-5" />
+      </span>
+      <h2 className="aos-ws-empty-title">Keine Information ausgewählt</h2>
+      <p className="aos-ws-empty-copy">
+        Wähle links eine Information aus, um Inhalt und Anhänge zu öffnen.
+      </p>
     </div>
   )
 }

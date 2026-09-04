@@ -13,6 +13,8 @@ import {
   aosPanelFooterClassName,
   aosTextareaClassName,
   aosTextLabelClassName,
+  aosWsTextMutedClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type CreateContactFormProps = {
@@ -35,11 +37,11 @@ export function CreateContactForm({ onCancel, onCreated }: CreateContactFormProp
 
   return (
     <div className={`${aosCardPanelClassName} h-full`}>
-      <div className="border-b border-zinc-200/70 px-5 py-4">
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-900">
+      <div className="border-b border-white/10 px-5 py-4">
+        <h2 className={`text-sm font-semibold tracking-tight ${aosWsTextPrimaryClassName}`}>
           Neuer Kontakt
         </h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className={`mt-1 text-xs ${aosWsTextMutedClassName}`}>
           Erfassen Sie mindestens Vorname, Nachname oder Firma.
         </p>
       </div>

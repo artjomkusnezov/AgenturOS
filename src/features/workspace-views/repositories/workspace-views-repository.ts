@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { mapWorkspaceViewRecord } from '@/features/workspace-views/lib/map-workspace-view'
 import type {
@@ -23,62 +25,79 @@ type WorkspaceViewNavResult =
   | { success: true; views: WorkspaceViewNavItem[] }
   | RepositoryError
 
-async function listActiveWorkspaceViewsForCurrentAgency(
-  options: {
-    visibleInNavigation?: boolean
-    visibleOnDashboard?: boolean
-  } = {},
-): Promise<WorkspaceViewListResult> {
-  const agencyResult = await getCurrentUserAgency()
+/** Primitive args so React `cache()` can dedupe within a request. */
+const listActiveWorkspaceViewsCached = cache(
+  async function listActiveWorkspaceViewsCached(
+    visibleInNavigation: 0 | 1,
+    visibleOnDashboard: 0 | 1,
+  ): Promise<WorkspaceViewListResult> {
+    const agencyResult = await getCurrentUserAgency()
 
-  if (!agencyResult.success) {
-    return agencyResult
-  }
-
-  const supabase = await createClient()
-  let query = supabase
-    .from('workspace_views')
-    .select('*')
-    .eq('agency_id', agencyResult.agency.id)
-    .eq('is_active', true)
-    .eq('scope', 'cases')
-    .order('sort_order', { ascending: true })
-
-  if (options.visibleInNavigation === true) {
-    query = query.eq('visible_in_navigation', true)
-  }
-
-  if (options.visibleOnDashboard === true) {
-    query = query.eq('visible_on_dashboard', true)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    return {
-      success: false,
-      error: 'Die Arbeitsansichten konnten nicht geladen werden.',
+    if (!agencyResult.success) {
+      return agencyResult
     }
-  }
 
-  const views = data
-    .map((row) => mapWorkspaceViewRecord(row))
-    .filter((view): view is WorkspaceView => view !== null)
+    const supabase = await createClient()
+    let query = supabase
+      .from('workspace_views')
+      .select('*')
+      .eq('agency_id', agencyResult.agency.id)
+      .eq('is_active', true)
+      .eq('scope', 'cases')
+      .order('sort_order', { ascending: true })
 
-  return {
-    success: true,
-    views,
-  }
-}
+    if (visibleInNavigation === 1) {
+      query = query.eq('visible_in_navigation', true)
+    }
+
+    if (visibleOnDashboard === 1) {
+      query = query.eq('visible_on_dashboard', true)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      return {
+        success: false,
+        error: 'Die Arbeitsansichten konnten nicht geladen werden.',
+      }
+    }
+
+    const rows = data ?? []
+    const views = rows
+      .map((row) => mapWorkspaceViewRecord(row))
+      .filter((view): view is WorkspaceView => view !== null)
+
+    // Auth/RLS flakes often return [] while agency resolve still succeeded.
+    // Do not present that as “no views configured”.
+    if (views.length === 0 && rows.length === 0) {
+      return {
+        success: false,
+        error:
+          'Die Arbeitsansichten konnten nicht geladen werden. Bitte die Seite neu laden.',
+      }
+    }
+
+    if (views.length === 0 && rows.length > 0) {
+      return {
+        success: false,
+        error: 'Die Arbeitsansichten sind ungültig konfiguriert.',
+      }
+    }
+
+    return {
+      success: true,
+      views,
+    }
+  },
+)
 
 export async function listActiveWorkspaceViews(): Promise<WorkspaceViewListResult> {
-  return listActiveWorkspaceViewsForCurrentAgency()
+  return listActiveWorkspaceViewsCached(0, 0)
 }
 
 export async function listNavigationWorkspaceViews(): Promise<WorkspaceViewNavResult> {
-  const result = await listActiveWorkspaceViewsForCurrentAgency({
-    visibleInNavigation: true,
-  })
+  const result = await listActiveWorkspaceViewsCached(1, 0)
 
   if (!result.success) {
     return result
@@ -97,9 +116,7 @@ export async function listNavigationWorkspaceViews(): Promise<WorkspaceViewNavRe
 }
 
 export async function listDashboardWorkspaceViews(): Promise<WorkspaceViewListResult> {
-  return listActiveWorkspaceViewsForCurrentAgency({
-    visibleOnDashboard: true,
-  })
+  return listActiveWorkspaceViewsCached(0, 1)
 }
 
 export async function getWorkspaceViewByKeyForCurrentAgency(

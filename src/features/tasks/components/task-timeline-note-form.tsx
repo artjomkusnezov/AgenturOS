@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation'
 import { createTaskTimelineNoteAction } from '@/features/tasks/actions/create-task-timeline-note-action'
 import type { TaskTimelineNoteMutationState } from '@/features/tasks/actions/create-task-timeline-note-action'
 import {
-  aosDocBodyClassName,
   aosFieldErrorClassName,
+  aosTextareaClassName,
   aosWorkspaceActionEmphasisClassName,
 } from '@/lib/design-system'
 
@@ -62,7 +62,7 @@ export function TaskTimelineNoteForm({
           rows={3}
           disabled={isPending}
           placeholder="Arbeitsvermerk erfassen …"
-          className={`${aosDocBodyClassName} min-h-[4.5rem] rounded-md border border-zinc-200/60 bg-zinc-50/40 px-3 py-2.5`}
+          className={`${aosTextareaClassName} min-h-[4.5rem]`}
         />
         {state.fieldErrors?.content ? (
           <p className={aosFieldErrorClassName}>{state.fieldErrors.content}</p>

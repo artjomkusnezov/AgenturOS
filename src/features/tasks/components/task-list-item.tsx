@@ -20,6 +20,8 @@ import {
   aosListSelectedClassName,
   aosListStatusBtnClassName,
   aosListStatusBtnDoneClassName,
+  aosWsTextMetaClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type TaskListItemProps = {
@@ -128,31 +130,29 @@ export function TaskListItem({
         aria-current={isSelected ? 'true' : undefined}
         className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <p
-          className={`truncate text-[13px] leading-snug ${
-            subdued ? 'font-normal text-zinc-500' : 'font-medium text-zinc-900'
-          }`}
-        >
+        <p className={`truncate text-[13px] leading-snug font-medium ${aosWsTextPrimaryClassName}`}>
           {task.title}
         </p>
 
-        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-none text-zinc-400">
+        <div
+          className={`mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-none ${aosWsTextMetaClassName}`}
+        >
           <span className="truncate">{formatTaskListDate(task.created_at)}</span>
-          <span className="text-zinc-300">·</span>
+          <span aria-hidden="true">·</span>
           <span className="truncate">{assigneeName}</span>
           {task.case_id ? (
             <>
-              <span className="text-zinc-300">·</span>
+              <span aria-hidden="true">·</span>
               <span className="truncate">Vorgang</span>
             </>
           ) : null}
           {showPriority ? (
             <>
-              <span className="text-zinc-300">·</span>
+              <span aria-hidden="true">·</span>
               <span
                 className={
                   task.priority === 'high' && !subdued
-                    ? 'font-medium text-zinc-600'
+                    ? 'font-medium text-orange-400'
                     : undefined
                 }
               >

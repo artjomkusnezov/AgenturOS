@@ -1,0 +1,1340 @@
+/**
+ * AgenturOS Cockpit – Punkt 38B Phase A
+ * Scoped to .aos-cockpit-shell (all /app/* workspace pages).
+ * Agenturzentrale composition lives in design-agenturzentrale.css.
+ * Other /app/* pages remain light.
+ */
+
+@layer components {
+  /* ── Shell ─────────────────────────────────────── */
+  .aos-cockpit-shell {
+    background: var(--aos-cockpit-bg);
+    color: var(--aos-cockpit-text);
+  }
+
+  /* ── Sidebar ───────────────────────────────────── */
+  .aos-cockpit-shell .aos-app-sidebar {
+    /* Width owned by design-agenturzentrale.css (1440/1920/2560 caps) */
+    background: var(--aos-cockpit-sidebar);
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-app-sidebar > div:first-child {
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-sidebar-brand-link {
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-sidebar-brand-link:hover {
+    color: #fff;
+  }
+
+  .aos-cockpit-shell .aos-nav-group-label {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-nav-link {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-nav-link:hover {
+    background: rgb(255 255 255 / 0.05);
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-nav-link-active {
+    background: rgb(255 255 255 / 0.08);
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-nav-link-indicator {
+    background: #38bdf8;
+  }
+
+  .aos-cockpit-shell .aos-sidebar-user {
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-sidebar-user p:first-child {
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-sidebar-user p + p {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-sidebar-user button {
+    border-color: var(--aos-cockpit-border);
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-sidebar-user button:hover {
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  /* Badge tones inside cockpit sidebar */
+  .aos-cockpit-shell .aos-nav-link .bg-blue-100 {
+    background: rgb(56 189 248 / 0.16);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-nav-link .bg-orange-100 {
+    background: rgb(251 146 60 / 0.16);
+    color: #fdba74;
+  }
+
+  .aos-cockpit-shell .aos-nav-link .bg-red-100 {
+    background: rgb(248 113 113 / 0.16);
+    color: #fca5a5;
+  }
+
+  .aos-cockpit-shell .aos-nav-link .bg-zinc-100 {
+    background: rgb(255 255 255 / 0.08);
+    color: #a1a1aa;
+  }
+
+  /* ── Sidebar brand ──────────────────────────────── */
+  .aos-sidebar-brand {
+    display: flex;
+    min-height: 4.75rem;
+    height: 5rem;
+    align-items: center;
+    padding-inline: 1.125rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    flex-shrink: 0;
+  }
+
+  .aos-sidebar-brand-link {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    text-decoration: none;
+    transition: opacity 150ms;
+  }
+
+  .aos-sidebar-brand-link:hover {
+    opacity: 0.88;
+  }
+
+  .aos-sidebar-brand-allianz {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: #f8fafc;
+  }
+
+  .aos-sidebar-brand-kusnezov {
+    font-size: 0.6875rem;
+    font-weight: 650;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgb(125 211 252 / 0.72);
+  }
+
+  /* ── Mobile header ─────────────────────────────── */
+  .aos-cockpit-shell .aos-app-header {
+    background: var(--aos-cockpit-sidebar);
+    border-color: var(--aos-cockpit-border);
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-app-header p {
+    color: var(--aos-cockpit-text) !important;
+  }
+
+  .aos-cockpit-shell .aos-app-header button {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  /* ── Desktop topbar ────────────────────────────── */
+  .aos-cockpit-topbar {
+    display: none;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.45rem 1.25rem;
+    background: rgb(14 19 24 / 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--aos-cockpit-border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  @media (min-width: 1024px) {
+    .aos-cockpit-topbar {
+      display: flex;
+    }
+  }
+
+  .aos-cockpit-search-placeholder {
+    /* Width owned by design-agenturzentrale.css (420 / 500 / 560 caps) */
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 1.7rem;
+    padding: 0 0.55rem 0 0.7rem;
+    border-radius: 0.45rem;
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    color: var(--aos-cockpit-text-muted);
+    font-size: 0.75rem;
+    cursor: text;
+    user-select: none;
+  }
+
+  .aos-cockpit-search-kbd {
+    margin-left: auto;
+    display: none;
+    align-items: center;
+    height: 1.15rem;
+    padding: 0 0.35rem;
+    border-radius: 0.25rem;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.04);
+    font-size: 0.5625rem;
+    font-family: inherit;
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  @media (min-width: 1280px) {
+    .aos-cockpit-search-kbd {
+      display: inline-flex;
+    }
+  }
+
+  .aos-cockpit-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .aos-cockpit-topbar-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    color: var(--aos-cockpit-text-muted);
+    transition: color 150ms, background 150ms;
+  }
+
+  .aos-cockpit-topbar-icon-btn:hover {
+    background: rgb(255 255 255 / 0.06);
+    color: var(--aos-cockpit-text);
+  }
+
+  /* ── Zentrale page overrides ───────────────────── */
+  .aos-workspace-page.aos-dashboard-zentrale {
+    background: transparent;
+    max-width: none;
+  }
+
+  .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+    padding-top: 0.75rem !important;
+    padding-bottom: 1rem;
+  }
+
+  @media (min-width: 1024px) {
+    .aos-workspace-page.aos-dashboard-zentrale .aos-workspace-body {
+      max-width: 100%;
+      padding-inline: 1.25rem;
+      padding-top: 0.85rem !important;
+      padding-bottom: 1.25rem;
+    }
+  }
+
+  /* ── Cockpit composition ───────────────────────── */
+  .aos-cockpit-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .aos-cockpit-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .aos-cockpit-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  @media (min-width: 1280px) {
+    .aos-cockpit-layout {
+      display: grid;
+      grid-template-columns: 1fr minmax(16rem, 19.5rem);
+      gap: 0.85rem;
+      align-items: start;
+    }
+
+    .aos-cockpit-rail {
+      position: sticky;
+      top: 4rem;
+    }
+  }
+
+  /* ── Lage strip ────────────────────────────────── */
+  .aos-cockpit-lage {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .aos-cockpit-lage {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .aos-cockpit-lage-slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-height: 4.6rem;
+    padding: 0.55rem 0.7rem 0.55rem;
+    border-radius: 0.6rem;
+    background: linear-gradient(160deg, rgb(28 36 46 / 0.98), rgb(20 26 34 / 0.95));
+    border: 1px solid var(--aos-cockpit-border);
+    overflow: hidden;
+  }
+
+  .aos-cockpit-lage-slot::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+  }
+
+  .aos-cockpit-lage-slot--blue::before {
+    background: #38bdf8;
+  }
+
+  .aos-cockpit-lage-slot--orange::before {
+    background: #fb923c;
+  }
+
+  .aos-cockpit-lage-slot--violet::before {
+    background: #a78bfa;
+  }
+
+  .aos-cockpit-lage-slot--cyan::before {
+    background: #22d3ee;
+  }
+
+  .aos-cockpit-lage-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .aos-cockpit-lage-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.05rem;
+  }
+
+  .aos-cockpit-lage-slot--blue .aos-cockpit-lage-icon {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-lage-slot--orange .aos-cockpit-lage-icon {
+    background: rgb(251 146 60 / 0.16);
+    color: #fdba74;
+  }
+
+  .aos-cockpit-lage-slot--violet .aos-cockpit-lage-icon {
+    background: rgb(167 139 250 / 0.16);
+    color: #c4b5fd;
+  }
+
+  .aos-cockpit-lage-slot--cyan .aos-cockpit-lage-icon {
+    background: rgb(34 211 238 / 0.14);
+    color: #67e8f9;
+  }
+
+  .aos-cockpit-lage-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-lage-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: #f8fafc;
+  }
+
+  .aos-cockpit-lage-detail {
+    font-size: 0.625rem;
+    color: rgb(148 163 184 / 0.9);
+  }
+
+  .aos-cockpit-lage-empty {
+    color: var(--aos-cockpit-text-muted);
+    font-size: 1.125rem;
+  }
+
+  /* ── Work grid ─────────────────────────────────── */
+  .aos-cockpit-work-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .aos-cockpit-work-grid {
+      grid-template-columns: 1.15fr 1.05fr 0.95fr;
+      gap: 0.75rem;
+    }
+  }
+
+  /* ── Dark panels ───────────────────────────────── */
+  .aos-cockpit-panel {
+    border-radius: 0.75rem;
+    background: var(--aos-cockpit-panel);
+    border: 1px solid var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-panel-elevated {
+    border-radius: 0.75rem;
+    background: var(--aos-cockpit-panel-elevated);
+    border: 1px solid rgb(255 255 255 / 0.09);
+  }
+
+  /* ── Hero slot – photo must paint above CSS gradients ── */
+  .aos-dashboard-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 0;
+    height: 18.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--aos-cockpit-border);
+    background: transparent;
+  }
+
+  @media (min-width: 1280px) {
+    .aos-dashboard-hero {
+      height: 20.5rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .aos-dashboard-hero {
+      height: 21.25rem;
+    }
+  }
+
+  .aos-dashboard-hero-stage {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-color: #101820;
+    background-image: url('/hero-agenturzentrale.jpg');
+    background-size: cover;
+    background-position: 52% 48%;
+    background-repeat: no-repeat;
+  }
+
+  .aos-dashboard-hero-image {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    object-fit: cover;
+    object-position: 52% 48%;
+  }
+
+  .aos-dashboard-hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      90deg,
+      rgb(8 12 18 / 0.62) 0%,
+      rgb(8 12 18 / 0.34) 18%,
+      rgb(8 12 18 / 0.12) 34%,
+      transparent 48%
+    );
+  }
+
+  .aos-dashboard-hero-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+    height: 100%;
+    padding: 1rem 1.05rem 1.1rem;
+    max-width: 20rem;
+  }
+
+  @media (min-width: 640px) {
+    .aos-dashboard-hero-content {
+      padding: 1.15rem 1.25rem 1.2rem;
+      max-width: 21.5rem;
+    }
+  }
+
+  .aos-dashboard-hero-date {
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgb(148 163 184 / 0.95);
+  }
+
+  .aos-dashboard-hero-title {
+    margin-top: 0.15rem;
+    font-size: 1.625rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: #f8fafc;
+    text-shadow: 0 1px 14px rgb(0 0 0 / 0.45);
+  }
+
+  @media (min-width: 640px) {
+    .aos-dashboard-hero-title {
+      font-size: 1.75rem;
+    }
+  }
+
+  .aos-dashboard-hero-hint {
+    margin-top: 0.3rem;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    color: rgb(186 198 212 / 0.92);
+    max-width: 19rem;
+  }
+
+  .aos-dashboard-hero-quote {
+    margin-top: 0.55rem;
+    max-width: 15.5rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.45rem;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: rgb(10 14 20 / 0.42);
+    backdrop-filter: blur(12px);
+    font-size: 0.625rem;
+    line-height: 1.4;
+    font-style: italic;
+    color: rgb(230 236 244 / 0.92);
+  }
+
+  /* ── Dashboard section overrides for dark panels ─ */
+  .aos-cockpit-shell .aos-dashboard-zentrale .rounded-xl {
+    background: var(--aos-cockpit-panel);
+    border: 1px solid var(--aos-cockpit-border);
+    box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.4);
+    --tw-ring-color: transparent;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale h2 {
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .text-zinc-900 {
+    color: var(--aos-cockpit-text);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .text-zinc-800 {
+    color: rgb(200 210 225);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .text-zinc-700 {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .text-zinc-600 {
+    color: var(--aos-cockpit-text-secondary);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .text-zinc-500 {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .text-zinc-400 {
+    color: var(--aos-cockpit-text-muted);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-zinc-100 {
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-zinc-50\/80,
+  .aos-cockpit-shell .aos-dashboard-zentrale .hover\:bg-zinc-50\/80:hover {
+    background: rgb(255 255 255 / 0.04);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .divide-zinc-100\/80 > :not(:first-child) {
+    border-color: var(--aos-cockpit-border-subtle);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .border-zinc-100\/80 {
+    border-color: var(--aos-cockpit-border-subtle);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .border-zinc-200\/80 {
+    border-color: var(--aos-cockpit-border);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .ring-white\/60 {
+    --tw-ring-color: transparent;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .ring-white\/70 {
+    --tw-ring-color: transparent;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-zinc-300 {
+    background: rgb(100 116 132);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .ring-white {
+    --tw-ring-color: var(--aos-cockpit-bg);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-blue-100 {
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-orange-100 {
+    background: rgb(251 146 60 / 0.14);
+    color: #fdba74;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-red-100 {
+    background: rgb(248 113 113 / 0.14);
+    color: #fca5a5;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-\[var\(--aos-color-soft-blue-bg\)\] {
+    background: rgb(56 189 248 / 0.12);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .bg-\[var\(--aos-color-soft-green-bg\)\]\/40 {
+    background: rgb(52 211 153 / 0.1);
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-link {
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-link:hover {
+    color: #bae6fd;
+  }
+
+  /* Icon tiles in cockpit */
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-icon-tile-blue {
+    background: rgb(56 189 248 / 0.12);
+    color: #7dd3fc;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-icon-tile-green {
+    background: rgb(52 211 153 / 0.12);
+    color: #6ee7b7;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-icon-tile-violet {
+    background: rgb(167 139 250 / 0.12);
+    color: #c4b5fd;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-icon-tile-orange {
+    background: rgb(251 146 60 / 0.12);
+    color: #fdba74;
+  }
+
+  .aos-cockpit-shell .aos-dashboard-zentrale .aos-icon-tile-neutral {
+    background: rgb(255 255 255 / 0.08);
+    color: #a1a1aa;
+  }
+}
+
+/* Unlayered so /app dashboard utilities cannot keep white SaaS cards */
+.aos-cockpit-shell .aos-cockpit-panel {
+  background: var(--aos-cockpit-panel);
+  border: 1px solid var(--aos-cockpit-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.4);
+  color: var(--aos-cockpit-text);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel h2,
+.aos-cockpit-shell .aos-cockpit-panel .text-zinc-900 {
+  color: var(--aos-cockpit-text);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .text-zinc-800 {
+  color: rgb(200 210 225);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .text-zinc-700 {
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .text-zinc-600 {
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .text-zinc-500,
+.aos-cockpit-shell .aos-cockpit-panel .text-zinc-400 {
+  color: var(--aos-cockpit-text-muted);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .hover\:bg-zinc-50\/80:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .divide-zinc-100\/80 > :not(:first-child),
+.aos-cockpit-shell .aos-cockpit-panel .border-zinc-100\/80 {
+  border-color: var(--aos-cockpit-border-subtle);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .aos-link {
+  color: #7dd3fc;
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .bg-\[var\(--aos-color-soft-blue-bg\)\] {
+  background: rgb(56 189 248 / 0.12);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .bg-zinc-300 {
+  background: rgb(100 116 132);
+}
+
+.aos-cockpit-shell .aos-cockpit-panel .ring-white {
+  --tw-ring-color: var(--aos-cockpit-panel);
+}
+
+.aos-cockpit-shell .aos-dashboard-hero {
+  min-height: 0 !important;
+  height: 18.75rem;
+  background-image: none !important;
+  background-color: #101820;
+}
+
+.aos-cockpit-shell .aos-dashboard-hero-stage {
+  z-index: 0;
+  background-image: url('/hero-agenturzentrale.jpg');
+  background-size: cover;
+  background-position: 52% 48%;
+}
+
+.aos-cockpit-shell .aos-dashboard-hero-image,
+.aos-cockpit-shell .aos-dashboard-hero img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: 52% 48% !important;
+}
+
+.aos-cockpit-shell .aos-dashboard-hero-overlay {
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgb(8 12 18 / 0.62) 0%,
+    rgb(8 12 18 / 0.34) 18%,
+    rgb(8 12 18 / 0.12) 34%,
+    transparent 48%
+  );
+}
+
+.aos-cockpit-shell .aos-dashboard-hero-content {
+  z-index: 2;
+  min-height: 0 !important;
+  height: 100%;
+  max-width: 24rem;
+}
+
+.aos-cockpit-shell .aos-dashboard-hero-title {
+  font-size: 1.625rem !important;
+  line-height: 1.15;
+}
+
+@media (min-width: 640px) {
+  .aos-cockpit-shell .aos-dashboard-hero-title {
+    font-size: 1.75rem !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .aos-cockpit-shell .aos-dashboard-hero {
+    min-height: 0 !important;
+    height: 20.5rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .aos-cockpit-shell .aos-dashboard-hero {
+    height: 21.25rem;
+  }
+}
+
+.aos-cockpit-shell .aos-cockpit-icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.6rem;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-shell .aos-cockpit-icon-box--blue {
+  background: rgb(56 189 248 / 0.16);
+  color: #7dd3fc;
+}
+
+.aos-cockpit-shell .aos-cockpit-icon-box--orange {
+  background: rgb(251 146 60 / 0.18);
+  color: #fdba74;
+}
+
+.aos-cockpit-shell .aos-cockpit-icon-box--violet {
+  background: rgb(167 139 250 / 0.18);
+  color: #c4b5fd;
+}
+
+.aos-cockpit-shell .aos-cockpit-icon-box--green {
+  background: rgb(52 211 153 / 0.16);
+  color: #6ee7b7;
+}
+
+.aos-cockpit-shell .aos-cockpit-icon-box--neutral {
+  background: rgb(255 255 255 / 0.08);
+  color: #a1a1aa;
+}
+
+.aos-cockpit-shell .aos-icon-tile {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.6rem;
+}
+
+.aos-cockpit-shell .aos-icon-tile-md,
+.aos-cockpit-shell .aos-icon-tile-kpi {
+  width: 2.35rem;
+  height: 2.35rem;
+}
+
+.aos-cockpit-shell .aos-icon-tile-blue {
+  background: rgb(56 189 248 / 0.18);
+  color: #7dd3fc;
+}
+
+.aos-cockpit-shell .aos-icon-tile-green {
+  background: rgb(52 211 153 / 0.18);
+  color: #6ee7b7;
+}
+
+.aos-cockpit-shell .aos-icon-tile-violet {
+  background: rgb(167 139 250 / 0.18);
+  color: #c4b5fd;
+}
+
+.aos-cockpit-shell .aos-icon-tile-orange {
+  background: rgb(251 146 60 / 0.18);
+  color: #fdba74;
+}
+
+.aos-cockpit-shell .aos-icon-tile-neutral {
+  background: rgb(255 255 255 / 0.08);
+  color: #cbd5e1;
+}
+
+.aos-cockpit-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.15rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.aos-cockpit-count-chip--blue {
+  background: rgb(56 189 248 / 0.16);
+  color: #7dd3fc;
+}
+
+.aos-cockpit-count-chip--orange {
+  background: rgb(251 146 60 / 0.16);
+  color: #fdba74;
+}
+
+.aos-cockpit-count-chip--green {
+  background: rgb(52 211 153 / 0.16);
+  color: #6ee7b7;
+}
+
+.aos-cockpit-count-chip--violet {
+  background: rgb(167 139 250 / 0.16);
+  color: #c4b5fd;
+}
+
+.aos-cockpit-work-card h2 {
+  font-size: 0.6875rem !important;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f1f5f9 !important;
+}
+
+.aos-cockpit-work-card--next {
+  border-color: rgb(167 139 250 / 0.28);
+  box-shadow: 0 10px 28px -14px rgb(139 92 246 / 0.35), 0 8px 24px -10px rgb(0 0 0 / 0.4);
+}
+
+.aos-cockpit-work-card--attention {
+  border-color: rgb(251 146 60 / 0.16);
+}
+
+.aos-cockpit-work-card--inbox {
+  border-color: rgb(56 189 248 / 0.16);
+}
+
+.aos-cockpit-group-label {
+  margin: 0 0 0.15rem;
+  padding-left: 0.2rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aos-cockpit-group-label--overdue {
+  color: #fca5a5;
+}
+
+.aos-cockpit-group-label--today {
+  color: #fdba74;
+}
+
+.aos-cockpit-group-label--soon {
+  color: #7dd3fc;
+}
+
+.aos-cockpit-group-label--waiting {
+  color: #c4b5fd;
+}
+
+.aos-cockpit-rail-card h2,
+.aos-cockpit-rail-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #f1f5f9;
+}
+
+.aos-cockpit-rail-body {
+  padding: 0.55rem 0.7rem 0.6rem;
+}
+
+.aos-cockpit-rail-body--compact {
+  padding: 0.5rem 0.65rem 0.55rem;
+}
+
+.aos-cockpit-rail-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.aos-cockpit-planned-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 1rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aos-cockpit-text-muted);
+}
+
+.aos-cockpit-goal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.aos-cockpit-goal-empty {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: rgb(148 163 184 / 0.95);
+}
+
+.aos-cockpit-goal-card--green .aos-cockpit-lage-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  background: rgb(52 211 153 / 0.14);
+  color: #6ee7b7;
+}
+
+.aos-cockpit-goal-card--blue .aos-cockpit-lage-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  background: rgb(56 189 248 / 0.14);
+  color: #7dd3fc;
+}
+
+.aos-cockpit-lage-icon--green {
+  background: rgb(52 211 153 / 0.16);
+  color: #6ee7b7;
+}
+
+.aos-cockpit-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.aos-cockpit-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--aos-cockpit-text-secondary);
+}
+
+.aos-cockpit-quick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
+  transition: background 150ms, border-color 150ms, transform 150ms;
+}
+
+.aos-cockpit-quick-btn:hover .aos-cockpit-quick-icon {
+  transform: translateY(-1px);
+  border-color: rgb(255 255 255 / 0.18);
+}
+
+.aos-cockpit-quick-btn--blue .aos-cockpit-quick-icon {
+  color: #7dd3fc;
+  background: rgb(56 189 248 / 0.16);
+}
+
+.aos-cockpit-quick-btn--green .aos-cockpit-quick-icon {
+  color: #6ee7b7;
+  background: rgb(52 211 153 / 0.16);
+}
+
+.aos-cockpit-quick-btn--orange .aos-cockpit-quick-icon {
+  color: #fdba74;
+  background: rgb(251 146 60 / 0.16);
+}
+
+.aos-cockpit-quick-btn--violet .aos-cockpit-quick-icon {
+  color: #c4b5fd;
+  background: rgb(167 139 250 / 0.16);
+}
+
+.aos-cockpit-quick-btn--cyan .aos-cockpit-quick-icon {
+  color: #67e8f9;
+  background: rgb(34 211 238 / 0.16);
+}
+
+.aos-cockpit-quick-btn--blue:hover .aos-cockpit-quick-icon {
+  background: rgb(56 189 248 / 0.26);
+}
+
+.aos-cockpit-quick-btn--green:hover .aos-cockpit-quick-icon {
+  background: rgb(52 211 153 / 0.26);
+}
+
+.aos-cockpit-quick-btn--orange:hover .aos-cockpit-quick-icon {
+  background: rgb(251 146 60 / 0.26);
+}
+
+.aos-cockpit-quick-btn--violet:hover .aos-cockpit-quick-icon {
+  background: rgb(167 139 250 / 0.26);
+}
+
+.aos-cockpit-quick-btn--cyan:hover .aos-cockpit-quick-icon {
+  background: rgb(34 211 238 / 0.26);
+}
+
+.aos-cockpit-quick-label {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  color: rgb(148 163 184 / 0.95);
+}
+
+.aos-cockpit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.35rem;
+  border-radius: 0.55rem;
+  transition: background 140ms;
+}
+
+.aos-cockpit-row:hover {
+  background: rgb(255 255 255 / 0.04);
+}
+
+.aos-cockpit-row-accent {
+  width: 0.2rem;
+  align-self: stretch;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.aos-cockpit-row-accent--overdue {
+  background: #f87171;
+}
+
+.aos-cockpit-row-accent--today {
+  background: #fb923c;
+}
+
+.aos-cockpit-row-accent--soon {
+  background: #38bdf8;
+}
+
+.aos-cockpit-row-accent--waiting {
+  background: #a78bfa;
+}
+
+.aos-cockpit-row-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--aos-cockpit-text);
+}
+
+.aos-cockpit-row-title--strong {
+  font-weight: 600;
+}
+
+.aos-cockpit-row-meta {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  font-size: 0.625rem;
+  color: var(--aos-cockpit-text-muted);
+}
+
+.aos-cockpit-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: 1.15rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.aos-cockpit-status-chip--new {
+  background: rgb(56 189 248 / 0.16);
+  color: #7dd3fc;
+}
+
+.aos-cockpit-status-chip--overdue {
+  background: rgb(248 113 113 / 0.16);
+  color: #fca5a5;
+}
+
+.aos-cockpit-status-chip--today {
+  background: rgb(251 146 60 / 0.16);
+  color: #fdba74;
+}
+
+.aos-cockpit-status-chip--soon {
+  background: rgb(56 189 248 / 0.14);
+  color: #7dd3fc;
+}
+
+.aos-cockpit-status-chip--waiting {
+  background: rgb(167 139 250 / 0.16);
+  color: #c4b5fd;
+}
+
+.aos-cockpit-next-step {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  border: 1px solid rgb(167 139 250 / 0.28);
+  background: rgb(22 28 36 / 0.55);
+  transition: background 140ms, border-color 140ms;
+}
+
+.aos-cockpit-next-step:hover {
+  border-color: rgb(167 139 250 / 0.42);
+  background: rgb(28 34 48 / 0.7);
+}
+
+.aos-cockpit-next-step-banner {
+  padding: 0.35rem 0.7rem;
+  background: linear-gradient(90deg, rgb(139 92 246 / 0.35), rgb(99 102 241 / 0.18));
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ddd6fe;
+}
+
+.aos-cockpit-next-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0.7rem 0.7rem;
+}
+
+.aos-cockpit-next-step-label {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+
+.aos-cockpit-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgb(56 140 220 / 0.42), rgb(30 64 110 / 0.72));
+  border: 1px solid rgb(125 211 252 / 0.28);
+  box-shadow:
+    0 0 0 1px rgb(15 23 42 / 0.35),
+    0 6px 12px -6px rgb(0 0 0 / 0.55);
+  color: #f1f5f9;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+}
+
+.aos-cockpit-avatar--sm {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.5625rem;
+}
+
+.aos-cockpit-avatar--md {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.6875rem;
+}
+
+.aos-cockpit-avatar-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
+
+.aos-cockpit-shell .aos-sidebar-user-card {
+  margin: 0.5rem;
+  padding: 0.7rem 0.75rem !important;
+  border-radius: 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: 0 8px 16px -14px rgb(0 0 0 / 0.55);
+}
+
+.aos-cockpit-shell .aos-sidebar-user-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.aos-cockpit-shell .aos-sidebar-user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.aos-cockpit-shell .aos-sidebar-user-role {
+  margin-top: 0.1rem;
+  font-size: 0.6875rem;
+  color: rgb(148 163 184 / 0.95);
+}
+
+.aos-cockpit-shell .aos-nav-link-active {
+  background: rgb(56 189 248 / 0.12);
+  color: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgb(56 189 248 / 0.12);
+}
+
+.aos-cockpit-shell .aos-cockpit-work-card > div:first-child {
+  padding-top: 0.55rem;
+}
+
+.aos-cockpit-shell .aos-cockpit-work-card .aos-link,
+.aos-cockpit-shell .aos-cockpit-rail-card .aos-link {
+  font-size: 0.6875rem;
+}
+
+.aos-cockpit-row-title {
+  color: #f1f5f9;
+}
+
+.aos-cockpit-row-meta {
+  color: rgb(125 145 165 / 0.95);
+}
