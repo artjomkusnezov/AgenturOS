@@ -1,0 +1,43 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "WABA_TEST_001",
+      "changes": [
+        {
+          "field": "history",
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550001111",
+              "phone_number_id": "PHONE_ID_TEST"
+            },
+            "history": [
+              {
+                "metadata": {
+                  "phase": 0,
+                  "chunk_order": 1,
+                  "progress": 10
+                },
+                "threads": [
+                  {
+                    "id": "491701234567",
+                    "messages": [
+                      {
+                        "from": "491701234567",
+                        "id": "wamid.TEST_HISTORY_001",
+                        "timestamp": "1725400000",
+                        "type": "text",
+                        "text": { "body": "REDACTED_HISTORY_BODY_DO_NOT_LOG" }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

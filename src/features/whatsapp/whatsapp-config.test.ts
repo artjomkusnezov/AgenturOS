@@ -19,6 +19,8 @@ const ENV_KEYS = [
   'WHATSAPP_PHONE_NUMBER_ID',
   'WHATSAPP_BUSINESS_ACCOUNT_ID',
   'WHATSAPP_SKIP_SIGNATURE_VERIFY',
+  'WHATSAPP_WEBHOOK_ALLOWED_WABA_IDS',
+  'WHATSAPP_WEBHOOK_ALLOWED_PHONE_NUMBER_IDS',
   'NODE_ENV',
 ] as const
 
@@ -103,6 +105,26 @@ describe('whatsapp config fail-fast', () => {
     assert.ok(config)
     assert.equal(config?.skipSignatureVerify, false)
     assert.equal(config?.phoneNumberId, 'test-phone-id')
+    assert.deepEqual(config?.webhookAllowedWabaIds, [])
+    assert.deepEqual(config?.webhookAllowedPhoneNumberIds, [])
+  })
+
+  it('parses optional webhook allowlists without enabling them by default', () => {
+    setNodeEnv('production')
+    process.env.INBOUND_WHATSAPP_AGENCY_ID = 'agency'
+    process.env.INBOUND_WHATSAPP_ACTOR_USER_ID = 'actor'
+    process.env.WHATSAPP_VERIFY_TOKEN = 'verify'
+    process.env.WHATSAPP_ACCESS_TOKEN = 'token'
+    process.env.META_APP_SECRET = 'app-secret'
+    process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-phone-id'
+    process.env.WHATSAPP_BUSINESS_ACCOUNT_ID = 'test-waba'
+    process.env.WHATSAPP_WEBHOOK_ALLOWED_WABA_IDS = 'waba-a, waba-b'
+    process.env.WHATSAPP_WEBHOOK_ALLOWED_PHONE_NUMBER_IDS = 'phone-1'
+
+    const config = getInboundWhatsAppRuntimeConfig()
+    assert.ok(config)
+    assert.deepEqual(config?.webhookAllowedWabaIds, ['waba-a', 'waba-b'])
+    assert.deepEqual(config?.webhookAllowedPhoneNumberIds, ['phone-1'])
   })
 
   it('reuses existing inbound email agency context when WhatsApp-specific ids are absent', () => {

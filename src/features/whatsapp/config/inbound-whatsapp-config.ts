@@ -1,3 +1,5 @@
+import { parseOptionalIdAllowlist } from '@/features/whatsapp/lib/webhook-entry-filter'
+
 export type InboundWhatsAppRuntimeConfig = {
   agencyId: string
   actorUserId: string
@@ -14,6 +16,15 @@ export type InboundWhatsAppRuntimeConfig = {
    * Production ignoriert dieses Flag immer (auch wenn gesetzt).
    */
   skipSignatureVerify: boolean
+  /**
+   * Optional future allowlist (comma-separated env). Empty = no filter (current behavior).
+   * Never hardcode real production WABA / phone ids.
+   */
+  webhookAllowedWabaIds: string[]
+  /**
+   * Optional future allowlist (comma-separated env). Empty = no filter (current behavior).
+   */
+  webhookAllowedPhoneNumberIds: string[]
 }
 
 export type WhatsAppConfigMissingField =
@@ -99,6 +110,9 @@ export function formatWhatsAppConfigError(missing: WhatsAppConfigMissingField[])
  *
  * phone_number_id / WABA-ID aus Env sind Ops-Metadaten und dürfen eingehende
  * Testnummern-Webhooks nicht blockieren (kein Match-Filter).
+ *
+ * Optional: WHATSAPP_WEBHOOK_ALLOWED_WABA_IDS / WHATSAPP_WEBHOOK_ALLOWED_PHONE_NUMBER_IDS
+ * — leer/unset = kein Filter (bisheriges Verhalten).
  */
 export function getInboundWhatsAppRuntimeConfig(): InboundWhatsAppRuntimeConfig | null {
   const missing = listMissingInboundWhatsAppEnvFields({
@@ -134,6 +148,12 @@ export function getInboundWhatsAppRuntimeConfig(): InboundWhatsAppRuntimeConfig 
     businessAccountId,
     graphApiVersion,
     skipSignatureVerify,
+    webhookAllowedWabaIds: parseOptionalIdAllowlist(
+      process.env.WHATSAPP_WEBHOOK_ALLOWED_WABA_IDS,
+    ),
+    webhookAllowedPhoneNumberIds: parseOptionalIdAllowlist(
+      process.env.WHATSAPP_WEBHOOK_ALLOWED_PHONE_NUMBER_IDS,
+    ),
   }
 }
 
