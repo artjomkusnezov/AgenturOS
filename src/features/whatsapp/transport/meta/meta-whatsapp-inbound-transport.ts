@@ -63,13 +63,19 @@ export async function processMetaWhatsAppInboundWebhook(input: {
   const verifySignature = input.deps?.verifySignature ?? verifyMetaSignature256
 
   if (!config.skipSignatureVerify) {
+    const signatureHeader = input.signatureHeader?.trim() ?? ''
     const valid = verifySignature({
       rawBody: input.rawBody,
       signatureHeader: input.signatureHeader,
       appSecret: config.metaAppSecret,
     })
     if (!valid) {
-      logWhatsAppInbound('signature_invalid', {})
+      logWhatsAppInbound('signature_invalid', {
+        signaturePresent: signatureHeader.length > 0,
+        signatureSha256Format: /^sha256=[0-9a-fA-F]{64}$/.test(signatureHeader),
+        signatureLength: signatureHeader.length,
+        rawBodyBytes: Buffer.byteLength(input.rawBody, 'utf8'),
+      })
       return { success: false, error: 'Ungültige Webhook-Signatur.', status: 401 }
     }
   } else {
@@ -102,7 +108,6 @@ export async function processMetaWhatsAppInboundWebhook(input: {
 
   const extracted = extractMetaWhatsAppMessages(payload)
 
-  // Nur Status-Events / leere Changes: schnell 200, kein Intake.
   if (extracted.messages.length === 0) {
     logWhatsAppInbound('ignored', {
       reason: 'statuses_or_empty',
