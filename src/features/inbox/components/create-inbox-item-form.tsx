@@ -12,6 +12,8 @@ import {
   aosWorkspaceActionClassName,
   aosWorkspaceActionEmphasisClassName,
   aosWorkspaceSurfaceClassName,
+  aosWsTextMutedClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type CreateInboxItemFormProps = {
@@ -35,8 +37,8 @@ export function CreateInboxItemForm({ onCancel, onCreated }: CreateInboxItemForm
   return (
     <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
       <div className={aosPanelHeaderClassName}>
-        <h2 className="text-[15px] font-semibold tracking-tight text-zinc-900">Neu erfassen</h2>
-        <p className="mt-1 text-[11px] text-zinc-400">
+        <h2 className={`text-[15px] font-semibold tracking-tight ${aosWsTextPrimaryClassName}`}>Neu erfassen</h2>
+        <p className={`mt-1 text-[11px] ${aosWsTextMutedClassName}`}>
           Die Verwendung entscheiden Sie später.
         </p>
       </div>

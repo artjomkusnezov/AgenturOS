@@ -75,16 +75,29 @@
   --aos-shadow-zentrale-panel: 0 10px 28px -12px rgb(0 0 0 / 0.5), 0 2px 8px -4px rgb(0 0 0 / 0.38);
   --aos-shadow-zentrale-glow: inset 0 1px 0 rgb(255 255 255 / 0.05);
 
-  /* Cockpit panel palette (REFERENCE-03) */
+  /* Cockpit / global /app workspace palette (38B → 38C) */
   --aos-cockpit-bg: #0d1117;
   --aos-cockpit-sidebar: #0f1318;
   --aos-cockpit-panel: rgb(22 28 36 / 0.92);
   --aos-cockpit-panel-elevated: rgb(28 36 46 / 0.95);
   --aos-cockpit-border: rgb(255 255 255 / 0.07);
   --aos-cockpit-border-subtle: rgb(255 255 255 / 0.04);
-  --aos-cockpit-text: #e8edf4;
-  --aos-cockpit-text-secondary: #9aa8b8;
-  --aos-cockpit-text-muted: #6b7a8c;
+  --aos-cockpit-border-active: rgb(56 189 248 / 0.45);
+  /* Workspace text hierarchy (PRIMARY → DISABLED) */
+  --aos-cockpit-text: #f1f5f9;
+  --aos-cockpit-text-primary: #f8fafc;
+  --aos-cockpit-text-secondary: #a8b6c7;
+  --aos-cockpit-text-meta: #8fa0b3;
+  --aos-cockpit-text-muted: #7d8fa3;
+  --aos-cockpit-text-disabled: #5b6b7c;
+  --aos-cockpit-accent-blue: #38bdf8;
+  --aos-cockpit-accent-cyan: #22d3ee;
+  --aos-cockpit-accent-orange: #fb923c;
+  --aos-cockpit-accent-red: #f87171;
+  --aos-cockpit-accent-purple: #a78bfa;
+  --aos-cockpit-accent-green: #34d399;
+  --aos-cockpit-hover: rgb(255 255 255 / 0.05);
+  --aos-cockpit-focus-ring: 0 0 0 3px rgb(56 189 248 / 0.18);
 
   /* Spacing (4px base) */
   --aos-space-0: 0;

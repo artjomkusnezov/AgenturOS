@@ -19,6 +19,7 @@ import {
   Mic,
   PenLine,
   Phone,
+  Settings,
   SquareCheck,
   Target,
   User,
@@ -170,6 +171,11 @@ export function DashboardIconFile(props: IconProps) {
 export function DashboardIconCheck(props: IconProps) {
   const { className, ...rest } = props
   return <Check {...lucideProps(className, rest)} strokeWidth={2} />
+}
+
+export function DashboardIconSettings(props: IconProps) {
+  const { className, ...rest } = props
+  return <Settings {...lucideProps(className, rest)} />
 }
 
 const accentTileClass: Record<DashboardAccent, string> = {

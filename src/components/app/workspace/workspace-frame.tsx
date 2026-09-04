@@ -56,7 +56,9 @@ export function WorkspaceFrame({
 
   if (compact) {
     return (
-      <div className={`${aosWorkspacePageCompactClassName} ${className}`}>
+      <div
+        className={`${aosWorkspacePageCompactClassName} ${narrow ? 'max-w-3xl' : ''} ${className}`}
+      >
         <div className={aosWorkspaceChromeClassName}>
           <h1 className={aosWorkspaceChromeTitleClassName}>{pageTitle}</h1>
           {meta ? (

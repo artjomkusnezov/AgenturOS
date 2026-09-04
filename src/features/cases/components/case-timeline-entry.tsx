@@ -13,6 +13,8 @@ import {
   aosTimelineDotSystemClassName,
   aosTimelineItemClassName,
   aosWorkspaceMetaClassName,
+  aosWsTextPrimaryClassName,
+  aosWsTextSecondaryClassName,
 } from '@/lib/design-system'
 
 type CaseTimelineEntryProps = {
@@ -32,7 +34,9 @@ function SystemEntry({
       <div className={aosTimelineDotSystemClassName} aria-hidden="true" />
       <article className="min-w-0 flex-1 pt-0.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-          <p className="text-[13px] font-medium text-zinc-700">{label}</p>
+          <p className={`aos-ws-timeline-action text-[13px] font-medium ${aosWsTextSecondaryClassName}`}>
+            {label}
+          </p>
           <time className={aosWorkspaceMetaClassName} dateTime={entry.created_at}>
             {formatTaskDateTime(entry.created_at)}
           </time>
@@ -47,7 +51,9 @@ function AttachmentPreview({ entry }: { entry: CaseTimelineEntryModel }) {
 
   if (!file) {
     return (
-      <p className="mt-1.5 text-[13px] text-zinc-600">{entry.content}</p>
+      <p className={`aos-ws-timeline-body mt-1.5 text-[13px] ${aosWsTextPrimaryClassName}`}>
+        {entry.content}
+      </p>
     )
   }
 
@@ -110,7 +116,7 @@ export function CaseTimelineEntryView({
         <div className={aosTimelineDotNoteClassName} aria-hidden="true" />
         <article className="min-w-0 flex-1 pt-0.5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <p className="text-[13px] font-semibold text-zinc-900">
+            <p className={`aos-ws-timeline-person text-[13px] font-semibold ${aosWsTextSecondaryClassName}`}>
               {authorName} hat eine Datei hinzugefügt
             </p>
             <time className={aosWorkspaceMetaClassName} dateTime={entry.created_at}>
@@ -128,12 +134,16 @@ export function CaseTimelineEntryView({
       <div className={aosTimelineDotNoteClassName} aria-hidden="true" />
       <article className="min-w-0 flex-1 pt-0.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-          <p className="text-[13px] font-semibold text-zinc-900">{authorName}</p>
+          <p className={`aos-ws-timeline-person text-[13px] font-semibold ${aosWsTextSecondaryClassName}`}>
+            {authorName}
+          </p>
           <time className={aosWorkspaceMetaClassName} dateTime={entry.created_at}>
             {formatTaskDateTime(entry.created_at)}
           </time>
         </div>
-        <p className="mt-1.5 text-[14px] leading-relaxed whitespace-pre-wrap text-zinc-800">
+        <p
+          className={`aos-ws-timeline-body mt-1.5 text-[14px] leading-relaxed whitespace-pre-wrap ${aosWsTextPrimaryClassName}`}
+        >
           {entry.content}
         </p>
       </article>

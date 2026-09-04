@@ -8,8 +8,8 @@ import type { CaseTimelineFileMutationState } from '@/features/cases/actions/att
 import { createCaseTimelineNoteAction } from '@/features/cases/actions/create-case-timeline-note-action'
 import type { CaseTimelineNoteMutationState } from '@/features/cases/actions/create-case-timeline-note-action'
 import {
-  aosDocBodyClassName,
   aosFieldErrorClassName,
+  aosTextareaClassName,
   aosWorkspaceActionAccentClassName,
   aosWorkspaceActionEmphasisClassName,
 } from '@/lib/design-system'
@@ -104,7 +104,7 @@ export function CaseTimelineComposer({ caseId }: CaseTimelineComposerProps) {
             rows={3}
             disabled={isPending}
             placeholder="Notiz hinzufügen..."
-            className={`${aosDocBodyClassName} min-h-[4.5rem] rounded-md border border-zinc-200/60 bg-zinc-50/40 px-3 py-2.5`}
+            className={`${aosTextareaClassName} min-h-[4.5rem]`}
           />
           {noteState.fieldErrors?.content ? (
             <p className={`mt-2 ${aosFieldErrorClassName}`}>{noteState.fieldErrors.content}</p>
@@ -134,7 +134,7 @@ export function CaseTimelineComposer({ caseId }: CaseTimelineComposerProps) {
             name="file"
             type="file"
             disabled={isPending}
-            className="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-zinc-800 hover:file:bg-zinc-200"
+            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-200 hover:file:bg-white/15"
             onChange={(event) => {
               const form = event.currentTarget.form
               if (form && event.currentTarget.files?.length) {

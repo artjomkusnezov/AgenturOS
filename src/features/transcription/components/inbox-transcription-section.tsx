@@ -16,6 +16,7 @@ import {
   aosFieldErrorSmClassName,
   aosWorkspaceMetaClassName,
   aosWorkspaceSectionClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type InboxTranscriptionSectionProps = {
@@ -97,7 +98,7 @@ export function InboxTranscriptionSection({
 
       {showCompleted && item.transcript_text ? (
         <div className="space-y-2">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800">
+          <p className={`whitespace-pre-wrap text-sm leading-relaxed ${aosWsTextPrimaryClassName}`}>
             {item.transcript_text}
           </p>
           {item.detected_language ? (

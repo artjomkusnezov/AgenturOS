@@ -7,6 +7,7 @@ import {
   aosIconAccentOrangeClassName,
   aosIconAccentVioletClassName,
   aosWorkspaceSectionTitleClassName,
+  aosWsTextMetaClassName,
 } from '@/lib/design-system'
 
 const accentClass: Record<DashboardAccent, string> = {
@@ -14,7 +15,7 @@ const accentClass: Record<DashboardAccent, string> = {
   green: aosIconAccentGreenClassName,
   violet: aosIconAccentVioletClassName,
   orange: aosIconAccentOrangeClassName,
-  neutral: 'text-zinc-500',
+  neutral: aosWsTextMetaClassName,
 }
 
 type WorkspaceSectionHeadingProps = {
@@ -41,7 +42,7 @@ export function WorkspaceSectionHeading({
         <h3 className={aosWorkspaceSectionTitleClassName}>
           {title}
           {typeof count === 'number' && count > 0 ? (
-            <span className="ml-1.5 text-[11px] font-normal text-zinc-400">{count}</span>
+            <span className={`ml-1.5 text-[11px] font-normal ${aosWsTextMetaClassName}`}>{count}</span>
           ) : null}
         </h3>
       </div>

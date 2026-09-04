@@ -36,19 +36,19 @@ export function FileUploadQueueItem({
   const canRetry = !isUploading && item.status === 'error'
 
   return (
-    <li className="rounded-xl border border-zinc-200/70 bg-white px-3 py-2.5">
+    <li className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-zinc-900" title={item.file.name}>
+          <p className="truncate text-sm font-medium text-slate-100" title={item.file.name}>
             {item.file.name}
           </p>
-          <p className="mt-0.5 truncate text-xs text-zinc-500">
+          <p className="mt-0.5 truncate text-xs text-slate-400">
             {formatMimeTypeLabel(item.file.type || 'application/octet-stream')} ·{' '}
             {formatFileSize(item.file.size)}
           </p>
           <p
             className={`mt-1.5 text-xs ${
-              item.status === 'error' ? 'text-red-600' : 'text-zinc-500'
+              item.status === 'error' ? 'text-red-400' : 'text-slate-400'
             }`}
             aria-live={item.status === 'error' ? 'polite' : 'off'}
           >
@@ -71,7 +71,7 @@ export function FileUploadQueueItem({
               type="button"
               onClick={() => onRemove(item.clientId)}
               aria-label={`${item.file.name} aus Auswahl entfernen`}
-              className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="rounded-lg px-2 py-1 text-xs font-medium text-slate-400 transition-colors duration-150 hover:bg-white/10 hover:text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               Entfernen
             </button>

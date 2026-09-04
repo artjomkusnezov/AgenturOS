@@ -4,17 +4,12 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
-import { WorkspaceFrame } from '@/components/app/workspace'
+import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
 import { FileDetailPanel } from '@/features/files/components/file-detail-panel'
 import { FileEmptyDetail } from '@/features/files/components/file-empty-detail'
 import { FileList } from '@/features/files/components/file-list'
 import { FileUploadZone } from '@/features/files/components/file-upload-zone'
 import type { FileRecord } from '@/features/files/types/file'
-import {
-  aosWorkspaceDetailPaneClassName,
-  aosWorkspaceListPaneClassName,
-  aosWorkspaceSplitClassName,
-} from '@/lib/design-system'
 
 type FilesWorkspaceProps = {
   files: FileRecord[]
@@ -65,58 +60,49 @@ export function FilesWorkspace({ files, initialFileId = null }: FilesWorkspacePr
   const totalCount = files.length
   const countLabel =
     totalCount === 0
-      ? 'Noch keine Dateien vorhanden'
+      ? 'Noch keine Dateien'
       : totalCount === 1
         ? '1 Datei'
         : `${totalCount} Dateien`
 
   return (
-    <WorkspaceFrame meta={countLabel} bodyClassName="pt-0">
-      <div className={aosWorkspaceSplitClassName}>
-      <section
-        aria-label="Dateiliste und Upload"
-        className={`${aosWorkspaceListPaneClassName} ${
-          showMobileDetail ? 'hidden lg:flex' : 'flex'
-        }`}
-      >
-        <FileUploadZone onUploaded={handleUploaded} />
-
-        <div className="mt-5 min-h-0 flex-1">
-          {totalCount === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-200/80 bg-white/40 px-4 py-5">
-              <EmptyState
-                title="Noch keine Dateien"
-                description="Wählen Sie Dateien aus oder legen Sie sie oben ab. Nach dem Upload erscheinen sie hier."
-              />
+    <WorkspaceFrame compact meta={countLabel}>
+      <WorkspaceSplit
+        listLabel="Dateiliste und Upload"
+        detailLabel="Dateidetails"
+        showMobileDetail={showMobileDetail}
+        list={
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <FileUploadZone onUploaded={handleUploaded} />
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {totalCount === 0 ? (
+                <EmptyState
+                  title="Noch keine Dateien"
+                  description="Wählen Sie Dateien aus oder legen Sie sie oben ab. Nach dem Upload erscheinen sie hier."
+                />
+              ) : (
+                <FileList
+                  files={files}
+                  selectedFileId={selectedFileId}
+                  onSelectFile={handleSelectFile}
+                />
+              )}
             </div>
-          ) : (
-            <FileList
-              files={files}
-              selectedFileId={selectedFileId}
-              onSelectFile={handleSelectFile}
+          </div>
+        }
+        detail={
+          selectedFile ? (
+            <FileDetailPanel
+              key={selectedFile.id}
+              file={selectedFile}
+              onBack={handleBackToList}
+              onDeleted={handleDeleted}
             />
-          )}
-        </div>
-      </section>
-
-      <section
-        aria-label="Dateidetails"
-        className={`${aosWorkspaceDetailPaneClassName} ${
-          showMobileDetail ? 'flex' : 'hidden lg:flex'
-        }`}
-      >
-        {selectedFile ? (
-          <FileDetailPanel
-            key={selectedFile.id}
-            file={selectedFile}
-            onBack={handleBackToList}
-            onDeleted={handleDeleted}
-          />
-        ) : (
-          <FileEmptyDetail />
-        )}
-      </section>
-      </div>
+          ) : (
+            <FileEmptyDetail />
+          )
+        }
+      />
     </WorkspaceFrame>
   )
 }

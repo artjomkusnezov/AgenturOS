@@ -35,6 +35,7 @@ import {
   aosWorkspaceMetaClassName,
   aosWorkspaceSectionClassName,
   aosWorkspaceSurfaceClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 export type CaseInboxOriginView = {
@@ -149,7 +150,7 @@ export function CaseDetailPanel({
               <span className="mx-1.5 text-zinc-300">·</span>
               <span>{formatInboxDateTime(origin.inboxItem.created_at)}</span>
             </p>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">
+            <p className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed ${aosWsTextPrimaryClassName}`}>
               {origin.inboxItem.content}
             </p>
             <div className="mt-3">

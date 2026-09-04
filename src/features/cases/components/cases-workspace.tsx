@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
+import { CaseEmptyDetail } from '@/features/cases/components/case-empty-detail'
 import {
   CaseDetailPanel,
   type CaseInboxOriginView,
@@ -86,12 +87,7 @@ export function CasesWorkspace({
     router.refresh()
   }, [router])
 
-  let detail = (
-    <EmptyState
-      title="Vorgang auswählen"
-      description="Wählen Sie einen Eintrag aus der Liste."
-    />
-  )
+  let detail = <CaseEmptyDetail />
 
   if (selectedCase && isCreatingTask) {
     detail = (
@@ -118,10 +114,12 @@ export function CasesWorkspace({
     )
   } else if (selectedCaseId) {
     detail = (
-      <EmptyState
-        title="Vorgang nicht gefunden"
-        description="Der angeforderte Vorgang ist nicht verfügbar oder Sie haben keinen Zugriff."
-      />
+      <div className="aos-ws-empty-detail">
+        <h2 className="aos-ws-empty-title">Vorgang nicht gefunden</h2>
+        <p className="aos-ws-empty-copy">
+          Der angeforderte Vorgang ist nicht verfügbar oder Sie haben keinen Zugriff.
+        </p>
+      </div>
     )
   }
 

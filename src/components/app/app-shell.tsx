@@ -34,7 +34,7 @@ export function AppShell({
   badgeCounts,
 }: AppShellProps) {
   const pathname = usePathname()
-  const isCockpit = pathname === '/app'
+  const isAppWorkspace = pathname === '/app' || pathname.startsWith('/app/')
   const currentMember = agencyMembers.find((member) => member.userId === currentUserId)
   const userRoleLabel =
     currentMember?.role === 'owner'
@@ -57,7 +57,7 @@ export function AppShell({
   }
 
   return (
-    <div className={`flex min-h-screen ${isCockpit ? 'aos-cockpit-shell' : 'bg-zinc-50'}`}>
+    <div className={`flex min-h-screen ${isAppWorkspace ? 'aos-cockpit-shell' : 'bg-zinc-50'}`}>
       <AppSidebar
         userDisplayName={userDisplayName}
         userRoleLabel={userRoleLabel}
@@ -78,7 +78,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader onOpenMobileMenu={() => setMobileMenuOpen(true)} />
 
-        {isCockpit ? (
+        {isAppWorkspace ? (
           <div className="aos-cockpit-topbar">
             <div className="aos-cockpit-search-placeholder" aria-hidden="true">
               <SearchIcon className="h-3.5 w-3.5 shrink-0" />

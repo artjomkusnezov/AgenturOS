@@ -1,6 +1,6 @@
 import { DashboardIconBriefcase } from '@/features/dashboard/components/dashboard-icons'
 
-export function TaskEmptyDetail() {
+export function CaseEmptyDetail() {
   return (
     <div className="aos-ws-empty-detail">
       <span className="aos-ws-empty-icon" aria-hidden="true">

@@ -1,12 +1,15 @@
-import { EmptyState } from '@/components/app/empty-state'
+import { DashboardIconUser } from '@/features/dashboard/components/dashboard-icons'
 
 export function ContactEmptyDetail() {
   return (
-    <div className="flex h-full min-h-[20rem] items-center justify-center rounded-xl border border-zinc-200/60 bg-white/50">
-      <EmptyState
-        title="Kontakt auswählen"
-        description="Wählen Sie links einen Kontakt aus oder legen Sie einen neuen an."
-      />
+    <div className="aos-ws-empty-detail">
+      <span className="aos-ws-empty-icon" aria-hidden="true">
+        <DashboardIconUser className="h-5 w-5" />
+      </span>
+      <h2 className="aos-ws-empty-title">Kein Kontakt ausgewählt</h2>
+      <p className="aos-ws-empty-copy">
+        Wähle links einen Kontakt aus, um Details zu öffnen.
+      </p>
     </div>
   )
 }

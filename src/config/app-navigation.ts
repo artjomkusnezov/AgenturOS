@@ -103,35 +103,36 @@ export function isNavItemActive(pathname: string, href: string): boolean {
     return pathname === '/app'
   }
 
+  // /app/tasks is its own nav target (nested "Aufgaben"); never mark "Vorgänge" active there.
   if (href === '/app/cases') {
-    return (
-      pathname === '/app/cases'
-      || pathname.startsWith('/app/cases/')
-      || pathname === '/app/tasks'
-      || pathname.startsWith('/app/tasks/')
-    )
+    if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
+      return false
+    }
+    return pathname === '/app/cases' || pathname.startsWith('/app/cases/')
   }
 
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 export function getNavItemByPathname(pathname: string): AppNavItem | undefined {
+  // Alias-Route: Seititel bleibt bei Vorgänge; Active State der Kind-View separat.
+  if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
+    return appNavigation.find((item) => item.href === '/app/cases')
+  }
+
   return appNavigation.find((item) => isNavItemActive(pathname, item.href))
 }
 
 export function isCaseViewNavActive(
   pathname: string,
-  searchParams: URLSearchParams,
+  _searchParams: URLSearchParams,
   viewKey: string,
 ): boolean {
+  // Dedicated alias route: only nested "Aufgaben" carries the active chrome.
   if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
     return viewKey === 'tasks'
   }
 
-  if (pathname !== '/app/cases' && !pathname.startsWith('/app/cases/')) {
-    return false
-  }
-
-  const currentView = searchParams.get('view') || 'tasks'
-  return currentView === viewKey
+  // On /app/cases (any ?view=), only parent "Vorgänge" is active — never children.
+  return false
 }

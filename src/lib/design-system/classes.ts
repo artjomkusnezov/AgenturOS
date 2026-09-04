@@ -17,6 +17,14 @@ export const aosTextLabelClassName = 'aos-text-label'
 export const aosTextLabelSmClassName = 'aos-text-label-sm'
 export const aosTextMetaClassName = 'aos-text-meta'
 
+/** Dark workspace text hierarchy (shared across inbox / cases / tasks). */
+export const aosWsTextPrimaryClassName = 'aos-ws-text-primary'
+export const aosWsTextSecondaryClassName = 'aos-ws-text-secondary'
+export const aosWsTextMetaClassName = 'aos-ws-text-meta'
+export const aosWsTextMutedClassName = 'aos-ws-text-muted'
+export const aosWsTextDisabledClassName = 'aos-ws-text-disabled'
+export const aosWsEmptyDetailClassName = 'aos-ws-empty-detail'
+
 export const aosInputClassName = 'aos-input'
 export const aosInputLgClassName = 'aos-input aos-input-lg'
 export const aosTextareaClassName = 'aos-textarea'

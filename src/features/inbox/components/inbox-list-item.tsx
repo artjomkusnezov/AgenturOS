@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { truncateInboxContentPreview } from '@/features/inbox/lib/format-inbox-content'
@@ -17,6 +19,8 @@ import {
   aosListSelectedClassName,
   aosListStatusBtnClassName,
   aosListStatusBtnDoneClassName,
+  aosWsTextMetaClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type InboxListItemProps = {
@@ -28,6 +32,14 @@ type InboxListItemProps = {
 }
 
 const initialState: InboxItemMutationState = {}
+
+const CHANNEL_ACCENT_CLASS: Record<DashboardAccent, string> = {
+  blue: 'aos-inbox-channel--blue',
+  green: 'aos-inbox-channel--green',
+  violet: 'aos-inbox-channel--violet',
+  orange: 'aos-inbox-channel--orange',
+  neutral: 'aos-inbox-channel--neutral',
+}
 
 function InboxStatusForm({
   itemId,
@@ -109,6 +121,7 @@ export function InboxListItem({
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
+  const sourceVisual = resolveInboxSourceVisual(item.source)
 
   return (
     <div
@@ -125,25 +138,37 @@ export function InboxListItem({
         variant={isUnprocessed ? 'process' : 'reopen'}
       />
 
+      <span
+        className={`aos-inbox-channel ${CHANNEL_ACCENT_CLASS[sourceVisual.accent]}`}
+        aria-hidden="true"
+      >
+        <span className="[&_svg]:h-4 [&_svg]:w-4">{sourceVisual.icon}</span>
+      </span>
+
       <button
         type="button"
         onClick={() => onSelect(item.id)}
         aria-current={isSelected ? 'true' : undefined}
         className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <p
-          className={`truncate text-[13px] leading-snug ${
-            subdued ? 'font-normal text-zinc-500' : 'font-medium text-zinc-900'
-          }`}
-        >
-          {truncateInboxContentPreview(item.content)}
-        </p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p
+            className={`min-w-0 flex-1 truncate text-[13px] leading-snug font-medium ${aosWsTextPrimaryClassName}`}
+          >
+            {truncateInboxContentPreview(item.content)}
+          </p>
+          {isUnprocessed ? <span className="aos-inbox-chip-new">Neu</span> : null}
+        </div>
 
-        <p className="mt-0.5 truncate text-[11px] leading-none text-zinc-400">
+        <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
           <span>{getInboxSourceLabel(item.source)}</span>
-          <span className="mx-1 text-zinc-300">·</span>
+          <span className="mx-1" aria-hidden="true">
+            ·
+          </span>
           <span>{creatorName}</span>
-          <span className="mx-1 text-zinc-300">·</span>
+          <span className="mx-1" aria-hidden="true">
+            ·
+          </span>
           <span>{formatInboxListDate(item.created_at)}</span>
         </p>
       </button>

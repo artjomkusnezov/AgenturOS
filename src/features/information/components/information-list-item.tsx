@@ -8,6 +8,8 @@ import {
   aosListRowClassName,
   aosListRowHoverClassName,
   aosListSelectedClassName,
+  aosWsTextMetaClassName,
+  aosWsTextPrimaryClassName,
 } from '@/lib/design-system'
 
 type InformationListItemProps = {
@@ -35,17 +37,21 @@ export function InformationListItem({
         isSelected ? aosListSelectedClassName : aosListRowHoverClassName
       } focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
-      <p className="w-full truncate text-[13px] font-medium leading-snug text-zinc-900">
+      <p className={`w-full truncate text-[13px] font-medium leading-snug ${aosWsTextPrimaryClassName}`}>
         {item.title}
       </p>
-      <p className="w-full truncate text-[11px] leading-none text-zinc-400">
+      <p className={`w-full truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
         <span>{formatInformationListDate(item.updated_at)}</span>
-        <span className="mx-1 text-zinc-300">·</span>
+        <span className="mx-1" aria-hidden="true">
+          ·
+        </span>
         <span>{creatorName}</span>
         {preview ? (
           <>
-            <span className="mx-1 text-zinc-300">·</span>
-            <span className="text-zinc-500">{preview}</span>
+            <span className="mx-1" aria-hidden="true">
+              ·
+            </span>
+            <span>{preview}</span>
           </>
         ) : null}
       </p>

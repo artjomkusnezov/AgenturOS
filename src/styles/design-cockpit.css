@@ -1,6 +1,7 @@
 /**
  * AgenturOS Cockpit – Punkt 38B Phase A
- * Scoped to .aos-cockpit-shell (only /app dashboard).
+ * Scoped to .aos-cockpit-shell (all /app/* workspace pages).
+ * Agenturzentrale composition lives in design-agenturzentrale.css.
  * Other /app/* pages remain light.
  */
 
@@ -22,11 +23,11 @@
     border-color: var(--aos-cockpit-border);
   }
 
-  .aos-cockpit-shell .aos-app-sidebar a[href="/app"] {
+  .aos-cockpit-shell .aos-sidebar-brand-link {
     color: var(--aos-cockpit-text);
   }
 
-  .aos-cockpit-shell .aos-app-sidebar a[href="/app"]:hover {
+  .aos-cockpit-shell .aos-sidebar-brand-link:hover {
     color: #fff;
   }
 

@@ -18,6 +18,8 @@ import {
   aosWorkspaceActionAccentClassName,
   aosWorkspaceMetaClassName,
   aosWorkspaceSectionClassName,
+  aosWsTextPrimaryClassName,
+  aosWsTextSecondaryClassName,
 } from '@/lib/design-system'
 
 type CaseTasksSectionProps = {
@@ -105,7 +107,7 @@ function CaseTaskRow({ task, subdued = false }: { task: Task; subdued?: boolean 
         <Link
           href={`/app/tasks?task=${encodeURIComponent(task.id)}`}
           className={`block truncate text-[13px] leading-snug transition-colors hover:text-zinc-950 ${
-            subdued ? 'font-normal text-zinc-500' : 'font-medium text-zinc-900'
+            subdued ? `font-normal ${aosWsTextSecondaryClassName}` : `font-medium ${aosWsTextPrimaryClassName}`
           }`}
         >
           {task.title}

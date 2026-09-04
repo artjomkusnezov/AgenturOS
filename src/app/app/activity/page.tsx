@@ -3,7 +3,7 @@ import { WorkspaceFrame } from '@/components/app/workspace'
 
 export default function ActivityPage() {
   return (
-    <WorkspaceFrame narrow>
+    <WorkspaceFrame compact narrow>
       <ActivityPageContent />
     </WorkspaceFrame>
   )

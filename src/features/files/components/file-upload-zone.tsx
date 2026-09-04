@@ -307,8 +307,8 @@ export function FileUploadZone({ onUploaded }: FileUploadZoneProps) {
   ).length
 
   const dropZoneClassName = isDragging
-    ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
-    : 'border-zinc-300/80 bg-white/50 hover:border-zinc-400/80 hover:bg-white/80'
+    ? 'border-sky-400/50 bg-sky-400/10 ring-2 ring-sky-400/20'
+    : 'border-white/15 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]'
 
   return (
     <div className="space-y-3">
@@ -341,7 +341,7 @@ export function FileUploadZone({ onUploaded }: FileUploadZoneProps) {
           isUploading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
         }`}
       >
-        <p className="text-sm font-semibold text-zinc-800">
+        <p className="text-sm font-semibold text-slate-100">
           {isDragging ? 'Dateien loslassen zum Hochladen' : 'Dateien hier ablegen'}
         </p>
         <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
@@ -360,7 +360,7 @@ export function FileUploadZone({ onUploaded }: FileUploadZoneProps) {
               <button
                 type="button"
                 onClick={() => setQueue([])}
-                className="text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="text-xs font-medium text-slate-400 transition-colors duration-150 hover:text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Auswahl leeren
               </button>
@@ -388,9 +388,9 @@ export function FileUploadZone({ onUploaded }: FileUploadZoneProps) {
         <div
           role="status"
           aria-live="polite"
-          className="rounded-xl border border-zinc-200/70 bg-zinc-50 px-4 py-3"
+          className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3"
         >
-          <p className="text-sm font-medium text-zinc-900">
+          <p className="text-sm font-medium text-slate-100">
             Upload läuft … ({uploadProgress.current} von {uploadProgress.total})
           </p>
           <div

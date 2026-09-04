@@ -5,7 +5,11 @@ import {
   getActivityDateGroupKey,
 } from '@/features/activity/lib/format-activity-date'
 import type { TaskActivityItem } from '@/features/activity/types/task-activity'
-import { aosLinkClassName } from '@/lib/design-system'
+import {
+  aosLinkClassName,
+  aosWsTextMetaClassName,
+  aosWsTextPrimaryClassName,
+} from '@/lib/design-system'
 
 type ActivityListItemProps = {
   item: TaskActivityItem
@@ -129,18 +133,17 @@ export function ActivityListItem({ item }: ActivityListItemProps) {
   const timestampLabel = formatActivityTimestamp(item.occurredAt, groupKey)
 
   return (
-    <article className="flex gap-3 border-b border-zinc-100 py-3.5 last:border-b-0">
-      <div className="mt-0.5 shrink-0 text-zinc-400" aria-hidden="true">
+    <article className="aos-activity-row flex gap-3 border-b py-3.5 last:border-b-0">
+      <div className="aos-activity-row-icon mt-0.5 shrink-0" aria-hidden="true">
         <ActivityKindIcon kind={item.kind} />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm leading-relaxed break-words text-zinc-800">{item.summary}</p>
-        <p className="mt-1 text-xs text-zinc-500">{timestampLabel}</p>
-        <Link
-          href={item.taskHref}
-          className={`mt-2 ${aosLinkClassName}`}
-        >
+        <p className={`text-sm leading-relaxed break-words ${aosWsTextPrimaryClassName}`}>
+          {item.summary}
+        </p>
+        <p className={`mt-1 text-xs ${aosWsTextMetaClassName}`}>{timestampLabel}</p>
+        <Link href={item.taskHref} className={`mt-2 ${aosLinkClassName}`}>
           <span className="break-words">{item.taskTitle}</span>
         </Link>
       </div>
