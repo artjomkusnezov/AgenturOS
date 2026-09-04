@@ -1,0 +1,40 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "WABA_TEST_001",
+      "changes": [
+        {
+          "field": "messages",
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550001111",
+              "phone_number_id": "PHONE_ID_TEST"
+            },
+            "contacts": [
+              {
+                "profile": { "name": "Erika Beispiel" },
+                "wa_id": "491701112223"
+              }
+            ],
+            "messages": [
+              {
+                "from": "491701112223",
+                "id": "wamid.TEST_AUDIO_001",
+                "timestamp": "1725440500",
+                "type": "audio",
+                "audio": {
+                  "mime_type": "audio/ogg; codecs=opus",
+                  "sha256": "abc",
+                  "id": "MEDIA_AUDIO_001",
+                  "voice": true
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
