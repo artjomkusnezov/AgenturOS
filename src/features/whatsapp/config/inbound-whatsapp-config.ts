@@ -25,8 +25,26 @@ export type WhatsAppConfigMissingField =
   | 'WHATSAPP_PHONE_NUMBER_ID'
   | 'WHATSAPP_BUSINESS_ACCOUNT_ID'
 
+function resolveInboundAgencyId(): string {
+  return (
+    process.env.INBOUND_WHATSAPP_AGENCY_ID?.trim() ||
+    process.env.INBOUND_EMAIL_AGENCY_ID?.trim() ||
+    ''
+  )
+}
+
+function resolveInboundActorUserId(): string {
+  return (
+    process.env.INBOUND_WHATSAPP_ACTOR_USER_ID?.trim() ||
+    process.env.INBOUND_EMAIL_ACTOR_USER_ID?.trim() ||
+    ''
+  )
+}
+
 /**
  * Welche Env-Namen fehlen — ohne Werte. Für Fail-Fast-Meldungen.
+ * WhatsApp darf den bereits produktiv gesetzten Inbound-E-Mail-Kontext wiederverwenden,
+ * solange keine kanal-spezifische Agency-/Actor-Zuordnung gesetzt ist.
  */
 export function listMissingInboundWhatsAppEnvFields(input?: {
   requirePhoneNumberId?: boolean
@@ -36,10 +54,10 @@ export function listMissingInboundWhatsAppEnvFields(input?: {
   const requireBusinessAccountId = input?.requireBusinessAccountId ?? true
   const missing: WhatsAppConfigMissingField[] = []
 
-  if (!(process.env.INBOUND_WHATSAPP_AGENCY_ID?.trim())) {
+  if (!resolveInboundAgencyId()) {
     missing.push('INBOUND_WHATSAPP_AGENCY_ID')
   }
-  if (!(process.env.INBOUND_WHATSAPP_ACTOR_USER_ID?.trim())) {
+  if (!resolveInboundActorUserId()) {
     missing.push('INBOUND_WHATSAPP_ACTOR_USER_ID')
   }
   if (!(process.env.WHATSAPP_VERIFY_TOKEN?.trim())) {
@@ -91,8 +109,8 @@ export function getInboundWhatsAppRuntimeConfig(): InboundWhatsAppRuntimeConfig 
     return null
   }
 
-  const agencyId = process.env.INBOUND_WHATSAPP_AGENCY_ID!.trim()
-  const actorUserId = process.env.INBOUND_WHATSAPP_ACTOR_USER_ID!.trim()
+  const agencyId = resolveInboundAgencyId()
+  const actorUserId = resolveInboundActorUserId()
   const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN!.trim()
   const metaAppSecret = process.env.META_APP_SECRET?.trim() ?? ''
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN!.trim()
