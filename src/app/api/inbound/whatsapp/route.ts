@@ -85,5 +85,8 @@ export async function POST(request: Request) {
     skippedUnsupported: result.skippedUnsupported,
     statusEvents: result.statusEvents,
     inboxItemIds: result.inboxItemIds,
+    coexistenceAcknowledged: result.coexistenceAcknowledged,
+    unknownFieldsAcknowledged: result.unknownFieldsAcknowledged,
+    filteredOut: result.filteredOut,
   })
 }

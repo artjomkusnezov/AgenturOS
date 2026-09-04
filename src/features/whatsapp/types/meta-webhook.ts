@@ -1,6 +1,9 @@
 /**
- * Minimale Meta Cloud API Webhook-Typen (nur was 39A braucht).
+ * Minimale Meta Cloud API Webhook-Typen (nur was AgenturOS braucht).
  * Bleiben im Transport/Mapping — nicht im Intake-Kern.
+ *
+ * Coexistence fields (`smb_message_echoes`, `history`, `smb_app_state_sync`, …)
+ * are classified separately; nested shapes stay intentionally loose.
  */
 
 export type MetaWhatsAppContact = {
@@ -42,12 +45,23 @@ export type MetaWhatsAppMetadata = {
   phone_number_id?: string
 }
 
+/**
+ * Value bag for `messages` and loosely for other webhook fields.
+ * Coexistence-specific arrays (message_echoes, history, state_sync) are not
+ * typed in depth — classification reads structural counts only.
+ */
 export type MetaWhatsAppValue = {
   messaging_product?: string
   metadata?: MetaWhatsAppMetadata
   contacts?: MetaWhatsAppContact[]
   messages?: MetaWhatsAppMessage[]
   statuses?: MetaWhatsAppStatus[]
+  /** Coexistence: Business App outbound echoes (shape may vary). */
+  message_echoes?: unknown[]
+  /** Coexistence: history / backfill chunks (shape may vary). */
+  history?: unknown[]
+  /** Coexistence: app state sync entries (shape may vary). */
+  state_sync?: unknown[]
 }
 
 export type MetaWhatsAppChange = {

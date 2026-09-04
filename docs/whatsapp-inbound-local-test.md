@@ -40,6 +40,8 @@ Verify Token = exakt der Wert von `WHATSAPP_VERIFY_TOKEN` in Production Env.
 Webhook fields abonnieren: mindestens **`messages`**.  
 (Statuses dürfen ankommen; erzeugen keinen Eingang.)
 
+Für spätere Coexistence (noch **nicht** aktivieren auf der Produktionsnummer): Felder wie `smb_message_echoes`, `history`, `smb_app_state_sync` werden vom Code bereits erkannt und mit HTTP 200 ohne Inbox-Eintrag quittiert — siehe `docs/whatsapp-coexistence-readiness.md`.
+
 ### META STEP 5
 Unter **API Setup / To** einen **Testempfänger** (eigene Handynummer) hinzufügen und den Meta-Code bestätigen.
 
@@ -65,4 +67,5 @@ Dann POST Fixture gegen lokalen Server — siehe frühere 39A-Hinweise.
 
 ## Verbote
 
-Keine produktive Nummer (`+49 5481 …9041`), keine Coexistence, kein Outbound, keine Migration.
+Keine produktive Nummer (`+49 5481 …9041`) hier onboarden, kein Outbound, keine Migration.  
+Coexistence-Onboarding der Produktionsnummer bleibt owner-gesteuert (siehe `docs/whatsapp-coexistence-readiness.md`).

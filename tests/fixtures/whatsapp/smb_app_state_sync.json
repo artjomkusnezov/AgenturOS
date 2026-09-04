@@ -1,0 +1,31 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "WABA_TEST_001",
+      "changes": [
+        {
+          "field": "smb_app_state_sync",
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550001111",
+              "phone_number_id": "PHONE_ID_TEST"
+            },
+            "state_sync": [
+              {
+                "type": "contact",
+                "action": "add",
+                "contact": {
+                  "full_name": "REDACTED_NAME",
+                  "first_name": "REDACTED",
+                  "phone_number": "491701234567"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
