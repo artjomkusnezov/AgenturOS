@@ -11,6 +11,8 @@ import { shortenWhatsAppExternalId } from '@/features/whatsapp/lib/whatsapp-inbo
 const ENV_KEYS = [
   'INBOUND_WHATSAPP_AGENCY_ID',
   'INBOUND_WHATSAPP_ACTOR_USER_ID',
+  'INBOUND_EMAIL_AGENCY_ID',
+  'INBOUND_EMAIL_ACTOR_USER_ID',
   'WHATSAPP_VERIFY_TOKEN',
   'WHATSAPP_ACCESS_TOKEN',
   'META_APP_SECRET',
@@ -101,6 +103,26 @@ describe('whatsapp config fail-fast', () => {
     assert.ok(config)
     assert.equal(config?.skipSignatureVerify, false)
     assert.equal(config?.phoneNumberId, 'test-phone-id')
+  })
+
+  it('reuses existing inbound email agency context when WhatsApp-specific ids are absent', () => {
+    setNodeEnv('production')
+    process.env.INBOUND_EMAIL_AGENCY_ID = 'email-agency'
+    process.env.INBOUND_EMAIL_ACTOR_USER_ID = 'email-actor'
+    process.env.WHATSAPP_VERIFY_TOKEN = 'verify'
+    process.env.WHATSAPP_ACCESS_TOKEN = 'token'
+    process.env.META_APP_SECRET = 'app-secret'
+    process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-phone-id'
+    process.env.WHATSAPP_BUSINESS_ACCOUNT_ID = 'test-waba'
+
+    const missing = listMissingInboundWhatsAppEnvFields()
+    assert.equal(missing.includes('INBOUND_WHATSAPP_AGENCY_ID'), false)
+    assert.equal(missing.includes('INBOUND_WHATSAPP_ACTOR_USER_ID'), false)
+
+    const config = getInboundWhatsAppRuntimeConfig()
+    assert.ok(config)
+    assert.equal(config?.agencyId, 'email-agency')
+    assert.equal(config?.actorUserId, 'email-actor')
   })
 })
 
