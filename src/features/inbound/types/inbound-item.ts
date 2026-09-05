@@ -12,7 +12,7 @@
  */
 
 /** Quellfamilie am InboundItem (erweiterbar). Keine Quellen-Sonderlogik. */
-export const INBOUND_CHANNELS = ['manual', 'whatsapp', 'email'] as const
+export const INBOUND_CHANNELS = ['manual', 'whatsapp', 'email', 'website'] as const
 
 export type InboundChannel = (typeof INBOUND_CHANNELS)[number]
 

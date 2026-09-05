@@ -169,6 +169,9 @@ Shape analog zu `sender` (`displayName`, `address`, `addressKind`).
 
 - `title` = optionaler Titel (z. B. E-Mail-Betreff), generisch
 - `origin` = optionaler ursprünglicher Urheber (Shape wie `sender`)
+- `channel` = `manual` | `whatsapp` | `email` | `website` (erweiterbar; `website` = Landingpage/Formular-Acquisition)
+
+Kfz Landingpage-Intake (Gate 2): siehe [`docs/kfz-inbound-local-test.md`](./kfz-inbound-local-test.md).
 
 ## Abgrenzung 36C.1 / 37C
 
