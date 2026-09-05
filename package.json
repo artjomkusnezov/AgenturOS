@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:inbound": "tsx --test src/features/inbound/inbound-intake.smoke.test.ts src/features/email/email-adapter.test.ts src/features/email/email-intake.smoke.test.ts src/features/whatsapp/whatsapp-adapter.test.ts src/features/whatsapp/whatsapp-intake.smoke.test.ts src/features/whatsapp/whatsapp-config.test.ts tests/ai/inbound-analysis.test.ts"
+    "test:inbound": "tsx --test src/features/inbound/inbound-intake.smoke.test.ts src/features/inbound/kfz/kfz-intake.smoke.test.ts src/features/email/email-adapter.test.ts src/features/email/email-intake.smoke.test.ts src/features/whatsapp/whatsapp-adapter.test.ts src/features/whatsapp/whatsapp-intake.smoke.test.ts src/features/whatsapp/whatsapp-config.test.ts tests/ai/inbound-analysis.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
