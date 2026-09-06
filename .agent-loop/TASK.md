@@ -60,3 +60,12 @@ WhatsApp/Meta onboarding remains paused. PR #14 may remain open and must not blo
 - No Vercel/domain change or deployment.
 - No merge or auto-merge.
 
+
+## Final review correction
+- Keep this correction test-only unless the corrected assertion exposes a real product defect.
+- In `src/features/inbound/kfz/kfz-intake.smoke.test.ts` test 9c, keep identity/contact, `consentVersion`, and `consentTimestamp` identical across both submissions.
+- Change only inquiry-specific content (for example `inquiryReason` or `contextNotes`).
+- Prove that the same person submitting genuinely different inquiry content creates a second Inbox item.
+- Preserve the separate identical-replay and explicit-`submissionId` tests.
+- Rerun `npm run test:inbound`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, CI, and independent review.
+
