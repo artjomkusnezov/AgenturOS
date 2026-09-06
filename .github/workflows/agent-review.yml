@@ -4,6 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [master]
+  repository_dispatch:
+    types: [agent-branch-updated]
 
 permissions:
   contents: read
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   review:
-    if: startsWith(github.head_ref, 'agent/')
+    if: github.event_name == 'repository_dispatch' || startsWith(github.head_ref, 'agent/')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -19,6 +21,7 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.ref || github.ref }}
           fetch-depth: 0
 
       - name: Setup Node
@@ -38,10 +41,10 @@ jobs:
           npm run build
 
       - name: Verify task provenance
-        if: startsWith(github.head_ref, 'agent/issue-')
+        if: startsWith(github.event_name == 'repository_dispatch' && github.event.client_payload.ref || github.head_ref, 'agent/issue-')
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REF: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.ref || github.head_ref }}
         run: |
           ISSUE_NUMBER="${HEAD_REF#agent/issue-}"
           case "$ISSUE_NUMBER" in (*[!0-9]*|'') echo "Invalid agent issue branch"; exit 1;; esac
@@ -100,9 +103,10 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.pr_number || github.event.pull_request.number }}
         run: |
           if [ -s /tmp/review.txt ]; then
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/review.txt
+            gh pr comment "$PR_NUMBER" --body-file /tmp/review.txt
           else
             echo "Reviewer produced no output; nothing to publish."
           fi
