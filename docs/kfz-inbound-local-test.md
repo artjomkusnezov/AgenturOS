@@ -40,7 +40,7 @@ Die Suite `src/features/inbound/kfz/kfz-intake.smoke.test.ts` deckt u. a. ab:
 8. hostile HTML/Script → sicherer Klartext  
 9. explizites `submissionId`-Replay → kein zweites Inbox-Item  
 9b. identisches Replay ohne `submissionId` → kein Duplikat  
-9c. gleiche Person/Kontakt, anderes Anliegen → neues Inbox-Item  
+9c. gleiche Person/Kontakt + gleiches Consent, anderes Anliegen → neues Inbox-Item  
 10. UTM/Source normalisiert und in `inbound_metadata.acquisition` behalten  
 
 Zusätzlich: `+491701234567` bleibt `+491701234567`.

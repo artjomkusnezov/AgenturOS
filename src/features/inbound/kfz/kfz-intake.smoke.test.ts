@@ -424,39 +424,50 @@ describe('kfz public validation + intake', () => {
     })
   })
 
-  it('9c. same contact with a different inquiry creates a new inbox item', async () => {
+  it('9c. same person/contact with different inquiry content creates a new inbox item', async () => {
     await withKfzEnv(async () => {
       const store = createMemoryInboundIntakeStore()
-      const sharedContact = {
+      // Identity/contact + consent must stay identical; only inquiry content differs.
+      const sharedIdentityAndConsent = {
         submissionId: null,
         fullName: 'Anna Beispiel',
         phone: '+491701234567',
         email: null,
         postalCode: '10115',
         city: 'Berlin',
+        preferredChannel: 'phone' as const,
         consentVersion: 'kfz-lp-2026-09-01',
         consentTimestamp: '2026-09-05T11:59:00.000Z',
-      } as const
+      }
+
+      const firstPayload = basePayload({
+        ...sharedIdentityAndConsent,
+        inquiryReason: 'Preischeck Kfz-Versicherung',
+        contextNotes: 'Erstfahrzeug Kompaktklasse',
+      })
+      const secondPayload = basePayload({
+        ...sharedIdentityAndConsent,
+        inquiryReason: 'Schadenmeldung Frontscheibe',
+        contextNotes: 'Glasschaden nach Steinschlag',
+      })
+
+      assert.equal(firstPayload.consentVersion, secondPayload.consentVersion)
+      assert.equal(firstPayload.consentTimestamp, secondPayload.consentTimestamp)
+      assert.equal(firstPayload.fullName, secondPayload.fullName)
+      assert.equal(firstPayload.phone, secondPayload.phone)
+      assert.equal(firstPayload.email, secondPayload.email)
+      assert.notEqual(firstPayload.inquiryReason, secondPayload.inquiryReason)
+      assert.notEqual(firstPayload.contextNotes, secondPayload.contextNotes)
 
       const first = await processKfzWebsiteInquiry({
-        rawBody: asJson(
-          basePayload({
-            ...sharedContact,
-            inquiryReason: 'Preischeck Kfz-Versicherung',
-          }),
-        ),
+        rawBody: asJson(firstPayload),
         authorizationHeader: `Bearer ${SECRET}`,
         rateLimitKey: 'test-9c-a',
         store,
         receivedAt: RECEIVED_AT,
       })
       const second = await processKfzWebsiteInquiry({
-        rawBody: asJson(
-          basePayload({
-            ...sharedContact,
-            inquiryReason: 'Schadenmeldung Frontscheibe',
-          }),
-        ),
+        rawBody: asJson(secondPayload),
         authorizationHeader: `Bearer ${SECRET}`,
         rateLimitKey: 'test-9c-b',
         store,
