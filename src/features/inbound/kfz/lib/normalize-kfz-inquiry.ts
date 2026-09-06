@@ -28,13 +28,29 @@ export type NormalizeKfzInquiryResult =
   | NormalizeKfzInquirySuccess
   | NormalizeKfzInquiryFailure
 
+/**
+ * Fallback-Idempotenz ohne submissionId: Hash aus stabilen normalisierten
+ * Anfragefeldern (Identität + Anliegen + Consent-Version/-Timestamp).
+ * Der gespeicherte Key enthält keine Klartext-PII — nur den Digest.
+ * Fingerprint-Inputs nicht loggen.
+ */
 function buildExternalId(input: {
   submissionId: string | null | undefined
   fullName: string
   phone: string | null
   email: string | null
-  consentVersion: string
   postalCode: string
+  city: string
+  preferredChannel: string
+  inquiryReason: string
+  language: string | null
+  vehicleMake: string | null
+  vehicleModel: string | null
+  vehicleYear: string | null
+  contextNotes: string | null
+  consentVersion: string
+  /** Nur Client-Consent-Timestamp — nie server-receivedAt (Replay-instabil). */
+  consentTimestamp: string | null
 }): string {
   const clientId = input.submissionId?.trim()
   if (clientId && clientId.length > 0 && clientId.length <= KFZ_PUBLIC_LIMITS.submissionId) {
@@ -46,7 +62,16 @@ function buildExternalId(input: {
     input.phone ?? '',
     input.email?.toLowerCase() ?? '',
     input.postalCode,
+    input.city.toLowerCase(),
+    input.preferredChannel,
+    input.inquiryReason.toLowerCase(),
+    input.language ?? '',
+    input.vehicleMake?.toLowerCase() ?? '',
+    input.vehicleModel?.toLowerCase() ?? '',
+    input.vehicleYear ?? '',
+    input.contextNotes?.toLowerCase() ?? '',
     input.consentVersion,
+    input.consentTimestamp ?? '',
   ].join('|')
 
   const hash = createHash('sha256').update(fingerprint, 'utf8').digest('hex').slice(0, 32)
@@ -122,10 +147,11 @@ export function normalizeKfzInquiry(
   )
   const postalCode = payload.postalCode.trim()
 
-  const consentedAt =
+  const clientConsentTimestamp =
     payload.consentTimestamp?.trim() && payload.consentTimestamp.trim().length > 0
       ? payload.consentTimestamp.trim()
-      : receivedAt
+      : null
+  const consentedAt = clientConsentTimestamp ?? receivedAt
 
   const vehicleYear =
     payload.vehicleYear === undefined || payload.vehicleYear === null
@@ -133,14 +159,41 @@ export function normalizeKfzInquiry(
       : sanitizePlainTextField(String(payload.vehicleYear), KFZ_PUBLIC_LIMITS.vehicleYear) ||
         null
 
+  const vehicleMake =
+    payload.vehicleMake == null
+      ? null
+      : sanitizePlainTextField(payload.vehicleMake, KFZ_PUBLIC_LIMITS.vehicleMake) || null
+  const vehicleModel =
+    payload.vehicleModel == null
+      ? null
+      : sanitizePlainTextField(payload.vehicleModel, KFZ_PUBLIC_LIMITS.vehicleModel) || null
+  const contextNotes =
+    payload.contextNotes == null
+      ? null
+      : sanitizePlainTextField(payload.contextNotes, KFZ_PUBLIC_LIMITS.contextNotes) || null
+  const language = payload.language === undefined ? null : payload.language
+  const consentVersion = sanitizePlainTextField(
+    payload.consentVersion,
+    KFZ_PUBLIC_LIMITS.consentVersion,
+  )
+
   const inquiry: NormalizedKfzInquiry = {
     externalId: buildExternalId({
       submissionId: payload.submissionId,
       fullName,
       phone,
       email,
-      consentVersion: payload.consentVersion.trim(),
       postalCode,
+      city,
+      preferredChannel: payload.preferredChannel,
+      inquiryReason,
+      language,
+      vehicleMake,
+      vehicleModel,
+      vehicleYear,
+      contextNotes,
+      consentVersion,
+      consentTimestamp: clientConsentTimestamp,
     }),
     fullName,
     postalCode,
@@ -149,29 +202,15 @@ export function normalizeKfzInquiry(
     email,
     preferredChannel: payload.preferredChannel,
     inquiryReason,
-    language: payload.language === undefined ? null : payload.language,
-    vehicleMake:
-      payload.vehicleMake == null
-        ? null
-        : sanitizePlainTextField(payload.vehicleMake, KFZ_PUBLIC_LIMITS.vehicleMake) || null,
-    vehicleModel:
-      payload.vehicleModel == null
-        ? null
-        : sanitizePlainTextField(payload.vehicleModel, KFZ_PUBLIC_LIMITS.vehicleModel) ||
-          null,
+    language,
+    vehicleMake,
+    vehicleModel,
     vehicleYear,
-    contextNotes:
-      payload.contextNotes == null
-        ? null
-        : sanitizePlainTextField(payload.contextNotes, KFZ_PUBLIC_LIMITS.contextNotes) ||
-          null,
+    contextNotes,
     consent: {
       purpose: KFZ_CONSENT_PURPOSE,
       granted: true,
-      version: sanitizePlainTextField(
-        payload.consentVersion,
-        KFZ_PUBLIC_LIMITS.consentVersion,
-      ),
+      version: consentVersion,
       consentedAt,
       receivedAt,
     },

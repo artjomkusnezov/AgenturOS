@@ -64,9 +64,9 @@ function resolveSenderAddress(inquiry: NormalizedKfzInquiry): {
  * Reine Übersetzung: NormalizedKfzInquiry → InboundItem.
  * Keine Businesslogik, kein Provider-Wissen, kein KI-Aufruf.
  *
- * Persistenz-Hinweis: channel/source `website` erfordert eine additive
- * Owner-Migration der inbox_items CHECK-Constraints vor Produktions-Inserts
- * (siehe docs/kfz-inbound-local-test.md).
+ * Persistenz: channel/source `website` sind über die additive Migration
+ * `supabase/migrations/20260906120000_inbox_website_channel_source.sql`
+ * im Schema-Vertrag abgedeckt (Anwenden der Migration ist Owner-Schritt).
  */
 export function toInboundItemFromKfzInquiry(inquiry: NormalizedKfzInquiry): InboundItem {
   const senderAddress = resolveSenderAddress(inquiry)

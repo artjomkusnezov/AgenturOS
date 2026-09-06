@@ -356,7 +356,7 @@ describe('kfz public validation + intake', () => {
     })
   })
 
-  it('9. deduplicates replayed submissions (no duplicate inbox item)', async () => {
+  it('9. deduplicates explicit submissionId replay (no duplicate inbox item)', async () => {
     await withKfzEnv(async () => {
       const store = createMemoryInboundIntakeStore()
       const body = asJson(basePayload({ submissionId: 'replay-001' }))
@@ -383,6 +383,96 @@ describe('kfz public validation + intake', () => {
       assert.equal(second.deduplicated, true)
       assert.equal(second.inboxItemId, first.inboxItemId)
       assert.equal(store.items.length, 1)
+    })
+  })
+
+  it('9b. identical replay without submissionId creates no duplicate', async () => {
+    await withKfzEnv(async () => {
+      const store = createMemoryInboundIntakeStore()
+      const body = asJson(
+        basePayload({
+          submissionId: null,
+          inquiryReason: 'Preischeck Kfz-Versicherung',
+          consentTimestamp: '2026-09-05T11:59:00.000Z',
+        }),
+      )
+
+      const first = await processKfzWebsiteInquiry({
+        rawBody: body,
+        authorizationHeader: `Bearer ${SECRET}`,
+        rateLimitKey: 'test-9b-a',
+        store,
+        receivedAt: RECEIVED_AT,
+      })
+      const second = await processKfzWebsiteInquiry({
+        rawBody: body,
+        authorizationHeader: `Bearer ${SECRET}`,
+        rateLimitKey: 'test-9b-b',
+        store,
+        receivedAt: '2026-09-05T12:10:00.000Z',
+      })
+
+      assert.equal(first.success, true)
+      assert.equal(second.success, true)
+      if (!first.success || !second.success) return
+
+      assert.equal(second.deduplicated, true)
+      assert.equal(second.inboxItemId, first.inboxItemId)
+      assert.equal(store.items.length, 1)
+      assert.match(store.items[0].external_id ?? '', /^kfz:fp:/)
+      assert.doesNotMatch(store.items[0].external_id ?? '', /anna|beispiel|1701234567|@/i)
+    })
+  })
+
+  it('9c. same contact with a different inquiry creates a new inbox item', async () => {
+    await withKfzEnv(async () => {
+      const store = createMemoryInboundIntakeStore()
+      const sharedContact = {
+        submissionId: null,
+        fullName: 'Anna Beispiel',
+        phone: '+491701234567',
+        email: null,
+        postalCode: '10115',
+        city: 'Berlin',
+        consentVersion: 'kfz-lp-2026-09-01',
+        consentTimestamp: '2026-09-05T11:59:00.000Z',
+      } as const
+
+      const first = await processKfzWebsiteInquiry({
+        rawBody: asJson(
+          basePayload({
+            ...sharedContact,
+            inquiryReason: 'Preischeck Kfz-Versicherung',
+          }),
+        ),
+        authorizationHeader: `Bearer ${SECRET}`,
+        rateLimitKey: 'test-9c-a',
+        store,
+        receivedAt: RECEIVED_AT,
+      })
+      const second = await processKfzWebsiteInquiry({
+        rawBody: asJson(
+          basePayload({
+            ...sharedContact,
+            inquiryReason: 'Schadenmeldung Frontscheibe',
+            consentTimestamp: '2026-09-06T09:00:00.000Z',
+          }),
+        ),
+        authorizationHeader: `Bearer ${SECRET}`,
+        rateLimitKey: 'test-9c-b',
+        store,
+        receivedAt: '2026-09-06T09:01:00.000Z',
+      })
+
+      assert.equal(first.success, true)
+      assert.equal(second.success, true)
+      if (!first.success || !second.success) return
+
+      assert.equal(first.deduplicated, false)
+      assert.equal(second.deduplicated, false)
+      assert.notEqual(second.inboxItemId, first.inboxItemId)
+      assert.equal(store.items.length, 2)
+      assert.notEqual(store.items[0].external_id, store.items[1].external_id)
     })
   })
 
