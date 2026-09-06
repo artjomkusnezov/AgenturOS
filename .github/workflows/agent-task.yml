@@ -191,6 +191,20 @@ jobs:
           fi
           gh issue comment "${{ github.event.issue.number }}" --body "Agent implementation complete: $PR_URL"
 
+      - name: Dispatch CI and independent review
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: agent/issue-${{ github.event.issue.number }}
+        run: |
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --base master --state open --json number --jq '.[0].number // empty')
+          test -n "$PR_NUMBER" || { echo "Open PR not found for $BRANCH"; exit 1; }
+          gh api --method POST "repos/${{ github.repository }}/dispatches" \
+            -f event_type='agent-branch-updated' \
+            -F "client_payload[ref]=$BRANCH" \
+            -F "client_payload[pr_number]=$PR_NUMBER"
+          echo "Dispatched CI and Agent Review for PR #$PR_NUMBER ($BRANCH)."
+
       - name: Comment when no changes
         if: steps.changes.outputs.changed == 'false'
         env:
