@@ -1,0 +1,43 @@
+import type { Metadata } from 'next'
+
+import { KfzLandingForm } from '@/features/inbound/kfz/components/kfz-landing-form'
+import { KfzLandingShell } from '@/features/inbound/kfz/components/kfz-landing-shell'
+import { readKfzLandingAttributionFromSearchParams } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
+import {
+  KFZ_LANDING_AGENCY_NAME,
+  KFZ_LANDING_REGION_LABEL,
+} from '@/features/inbound/kfz/lib/kfz-landing-constants'
+
+export const metadata: Metadata = {
+  title: `Kfz-Versicherung ${KFZ_LANDING_REGION_LABEL} | ${KFZ_LANDING_AGENCY_NAME}`,
+  description: `Unverbindliche Kfz-Anfrage bei ${KFZ_LANDING_AGENCY_NAME} in ${KFZ_LANDING_REGION_LABEL}. Persönliche Beratung — ohne Online-Preisgarantie.`,
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: `Kfz-Versicherung · ${KFZ_LANDING_AGENCY_NAME}`,
+    description: `Anfrage für Kfz-Versicherung in ${KFZ_LANDING_REGION_LABEL}.`,
+    locale: 'de_DE',
+    type: 'website',
+  },
+}
+
+type KfzPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+/**
+ * Öffentlicher Kfz-Funnel unter /kfz (später routingfähig für kfz.artkus.de).
+ * Sendet über Server Action in denselben Handler wie POST /api/inbound/kfz.
+ */
+export default async function KfzLandingPage({ searchParams }: KfzPageProps) {
+  const params = await searchParams
+  const attribution = readKfzLandingAttributionFromSearchParams(params)
+
+  return (
+    <KfzLandingShell>
+      <KfzLandingForm attribution={attribution} />
+    </KfzLandingShell>
+  )
+}

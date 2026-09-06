@@ -3,8 +3,8 @@
 Provider-neutraler Landingpage-Intake:
 
 ```text
-kfz.artkus.de form
-  → POST /api/inbound/kfz (Bearer + rate-limit seam)
+/kfz (Browser) oder kfz.artkus.de form
+  → Server Action / POST /api/inbound/kfz (Bearer + rate-limit seam)
   → public validation
   → domain normalization
   → Kfz adapter → InboundItem (channel=website)
@@ -48,7 +48,14 @@ Zusätzlich: `+491701234567` bleibt `+491701234567`.
 Datenbank-Vertrag (ohne DB-Apply): `tests/inbound/inbox-website-db-contract.test.ts`
 prüft, dass die eingecheckten Migrationen `channel='website'` und `source='website'` erlauben.
 
-## Landingpage-Integrationspunkt (nächster Schritt)
+## Öffentliche Landingpage (Gate 3 Slice)
+
+**Browser:** `http://localhost:3000/kfz`  
+Regional für Allianz Kusnezov / Lengerich. Formular baut den Gate-2-`PublicKfzInquiryPayload`, setzt `submissionId` client-seitig und sendet über Server Action in denselben Handler wie `POST /api/inbound/kfz` (Bearer-Secret nur auf dem Server).
+
+Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` (Payload-Mapping, Consent, Submit-Lock, Success/Failure-Phasen, Landing→Intake).
+
+## Landingpage-Integrationspunkt (API)
 
 **URL:** `POST /api/inbound/kfz`  
 **Auth:** `Authorization: Bearer <INBOUND_KFZ_INTAKE_SECRET>`  
@@ -96,13 +103,14 @@ curl -sS -X POST "http://localhost:3000/api/inbound/kfz" \
 
 Erwartete Antwort bei Erfolg: `{ "ok": true, "deduplicated": false, "inboxItemId": "…" }`.
 
-## Follow-ups (bewusst nicht Gate 2)
+## Follow-ups (bewusst nicht in diesem Slice)
 
-1. **Migration anwenden (Owner):** `20260906120000_inbox_website_channel_source.sql` ist eingecheckt; Apply auf Preview/Staging/Production bleibt Owner-Schritt.  
+1. **Migration anwenden (Owner):** `20260906120000_inbox_website_channel_source.sql` ist eingecheckt; Apply auf Preview/Staging/Production bleibt Owner-Entscheidung.  
 2. **Inbox-Label:** `INBOX_SOURCE_LABELS.website` (z. B. „Website“) in der Inbox-UI.  
 3. **Dokumentablage:** sichere Bytes-Pipeline wiederverwenden oder eigenen Seam — Gate 2 speichert nur Upload-Metadaten.  
 4. **Retention/Löschung:** Anfrage-/Consent-Nachweise und Metadaten löschbar machen, falls noch nicht vorhanden.  
 5. **Rate-Limit Production:** `consumeRateLimit`-Seam durch shared store ersetzen.  
-6. **AI:** weiterhin nur über den bestehenden advisory Analysis-Seam; keine kundenwirksame Aktion.
+6. **Domain/Routing:** `kfz.artkus.de` → `/kfz` (oder eigenes Deployment) — Owner/DNS/Vercel, nicht Teil dieses Slices.  
+7. **AI:** weiterhin nur über den bestehenden advisory Analysis-Seam; keine kundenwirksame Aktion.
 
 WhatsApp/Meta-Onboarding und PR #14 bleiben unabhängig und blockieren diesen Intake nicht.

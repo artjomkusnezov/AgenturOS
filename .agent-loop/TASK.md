@@ -1,71 +1,59 @@
 STATUS: READY
 
 ## Goal
-Repair the existing Draft PR #19 for Gate 2 of the approved Kfz Funnel Masterplan. Keep the current secure, provider-neutral Kfz lead intake, and close only the two concrete production-review gaps: database compatibility for the website channel and correct fallback replay protection.
+Continue the approved Kfz Funnel on the existing `agent/issue-18` branch and existing Draft PR #19. Gate 2 (secure website intake into AgenturOS) has passed CI + independent review. Build the next coherent browser-visible slice: a real local Kfz landing page for Allianz Kusnezov / Lengerich that sends a valid inquiry through the already implemented Kfz intake endpoint into the AgenturOS Inbox.
 
-Expected flow:
-`kfz.artkus.de form -> authenticated/abuse-resistant intake endpoint -> normalized inbound item -> AgenturOS Inbox`
+Expected visible flow:
+`visitor opens local Kfz page -> understands offer -> enters contact + vehicle/inquiry data -> gives required consent -> submits -> sees clear success/failure state -> existing /api/inbound/kfz path receives the inquiry`
 
-Owner approval for the small additive database migration was explicitly recorded on Draft PR #19. Implement the migration file and its tests only; do not apply it to any database and do not deploy.
-
-WhatsApp/Meta onboarding remains paused. PR #14 may remain open and must not block this repair.
+This is a functional conversion page, not final ad-campaign polish. Keep WhatsApp/Meta onboarding paused. Do not merge, deploy, change domains, apply DB migrations, spend money, or touch production data.
 
 ## Acceptance criteria
-- Continue on the existing `agent/issue-18` branch and update Draft PR #19; do not open a second PR.
-- Preserve the already implemented intake behavior and keep this repair narrowly limited to the review findings.
-- Add an additive Supabase migration that updates the relevant `inbox_items` channel/source constraints so `website` is accepted without removing or weakening existing allowed values.
-- Do not execute the migration against local, preview, staging, or production databases.
-- Add a deterministic database-contract regression test that fails if the persisted Kfz intake shape (`channel='website'`, `source='website'`) is incompatible with the checked-in schema/migration contract. Memory-store-only coverage is insufficient.
-- Correct fallback replay protection when `submissionId` is absent: identical replay of the same normalized inquiry must deduplicate, while a later distinct inquiry from the same person must create a separate Inbox item.
-- The fallback idempotency key must incorporate stable normalized inquiry-specific data (including inquiry content and consent timestamp/version as appropriate), must not expose PII, and must remain deterministic.
-- Add deterministic tests proving:
-  1. identical replay without `submissionId` creates no duplicate
-  2. same identity/contact with a different inquiry creates a new item
-  3. explicit `submissionId` replay still deduplicates
-  4. the website channel/source values are accepted by the checked-in database contract
-- Preserve a leading `+` when normalizing international phone numbers.
-- Preserve existing email and WhatsApp inbound behavior.
-- Do not log customer payloads, documents, tokens, signatures, consent text, or idempotency inputs.
-- Public validation stays separate from domain normalization.
-- Unknown values remain unknown.
-- AI analysis remains proposal-only; no customer-facing AI action.
+- Continue on existing `agent/issue-18` and update existing Draft PR #19; do not open a second PR.
+- Add one public browser page for the Kfz funnel, suitable for later use under `kfz.artkus.de` or an equivalent routed page, without changing DNS/domain/Vercel settings now.
+- The page must be clearly regional: Allianz Kusnezov, Lengerich and nearby area. Do not make unsupported price promises or claim a cheapest-price guarantee.
+- Keep text short and conversion-oriented: clear headline, trust/local section, simple benefits, one primary form, clear privacy/consent wording, and contact fallback.
+- Form must use the existing Gate-2 Kfz intake contract/API rather than inventing a second lead pipeline.
+- Collect only fields already supported or safely optional in the current contract. Reuse current normalization/validation where appropriate.
+- Preserve international phone numbers including leading `+`.
+- Generate/use `submissionId` client-side where appropriate so an accidental double-submit is safe; do not expose PII in URLs/logs.
+- Disable or visibly lock the submit action while a request is in flight; prevent accidental duplicate clicks.
+- Show understandable success state and retryable technical error state. Never claim a lead was saved when the endpoint failed.
+- Do not display AI-generated tariff/pricing claims. AI inbound analysis remains proposal-only after ingestion.
+- Add accessible labels, keyboard-usable controls and reasonable mobile layout. Functional/clean is enough; no expensive visual redesign.
+- Add page metadata/SEO basics for local Kfz intent without keyword stuffing.
+- Add focused deterministic tests for form payload mapping, consent, duplicate-submit protection and success/failure handling where practical.
+- Preserve existing inbound email/WhatsApp behavior and existing AgenturOS dashboard paths.
 - `npm run test:inbound` passes.
 - `npx tsc --noEmit` passes.
 - `npm run lint` passes.
 - `npm run build` passes.
-- The independent production review must pass.
-- Report exact results in the existing Draft PR #19.
-- Avoid overlapping changes with PR #14; if unavoidable, stop and report the blocker.
+- Independent production review must pass.
+- Update existing Draft PR #19 with exact check results.
 
 ## Allowed paths
-- `src/app/api/inbound/**`
+- `src/app/**`
+- `src/components/**`
 - `src/features/inbound/**`
 - `src/features/ai-inbound/**`
 - `src/lib/**`
+- `src/styles/**`
+- `src/config/**`
 - `tests/**`
 - `docs/**`
-- `supabase/migrations/**`
-- `.agent-loop/TASK.md` (workflow task snapshot only)
+- `.agent-loop/TASK.md`
 - `.env.example`
 - `package.json`
 
 ## Out of scope
-- No public landing-page visual design or upload UI.
-- No new standalone CRM/lead module.
-- No Meta campaign, Pixel or CAPI.
-- No WhatsApp onboarding or outbound automation.
-- No production secrets, real customer documents, or production data changes.
-- No automatic customer message, task, case creation, tariff statement, or contractual action.
-- Do not apply any migration.
-- No Vercel/domain change or deployment.
 - No merge or auto-merge.
-
-
-## Final review correction
-- Keep this correction test-only unless the corrected assertion exposes a real product defect.
-- In `src/features/inbound/kfz/kfz-intake.smoke.test.ts` test 9c, keep identity/contact, `consentVersion`, and `consentTimestamp` identical across both submissions.
-- Change only inquiry-specific content (for example `inquiryReason` or `contextNotes`).
-- Prove that the same person submitting genuinely different inquiry content creates a second Inbox item.
-- Preserve the separate identical-replay and explicit-`submissionId` tests.
-- Rerun `npm run test:inbound`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, CI, and independent review.
+- No deployment, Vercel/domain/DNS changes.
+- Do not apply any Supabase migration.
+- No Meta campaign, Pixel, CAPI or advertising spend.
+- No WhatsApp onboarding/outbound automation.
+- No customer-facing AI messages, tariff recommendations or automatic tasks/cases.
+- No new CRM/lead subsystem; use the existing Inbox/intake pipeline.
+- No real customer data or secrets.
+- No broad AgenturOS redesign unrelated to the funnel.
+- No fake testimonials, fake customer counts, fake savings or unsupported Allianz pricing claims.
 
