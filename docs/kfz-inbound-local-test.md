@@ -72,6 +72,18 @@ Die Liste und das Dashboard nutzen den persistierten Titel (`Kfz-Anfrage · Name
 
 Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-presentation.smoke.test.ts` (Landing-Payload → `handleKfzInboundHttpRequest` → Inbox-Review-Modell).
 
+## Manuelle Inbox-Prüfung (bestehende Aktionen)
+
+Im Kfz-Review-Panel bleiben Quelle, Kunde, Anliegen und fehlende Angaben faktisch. Der nächste Schritt ist intern:
+
+- Prüfung starten (interne Notizgrenze, kein neuer Status)
+- Interne Notiz am bestehenden Inbox-Inhalt oder interne Folgeaufgabe (`convert-inbox-to-task`)
+- Als erledigt markieren nur über `processInboxItem` — nie automatisch nach Intake oder KI-Vorschlag
+
+Keine automatische Kundenantwort, keine Case-/Tarifaktion, kein Versand. KI bleibt als **KI-Vorschlag · Entwurf** getrennt.
+
+Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-manual-triage.smoke.test.ts`.
+
 ## Inbox KI-Vorschlag (Gate 4 Slice)
 
 Nach Intake erscheint für Kfz-Website-Items im Inbox-Detail ein interner **KI-Vorschlag · Entwurf** (`src/features/ai-inbound`): Kategorie, Produkt, Dringlichkeit, fehlende Infos, Abschlussimpuls (als Vorschlag), nächster menschlicher Schritt, Antwortentwurf, Human-Takeover-Flag.

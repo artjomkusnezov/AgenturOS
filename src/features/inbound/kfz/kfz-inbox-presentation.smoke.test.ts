@@ -140,8 +140,20 @@ describe('kfz landing → HTTP → inbox presentation', () => {
         review.urgencyNote,
         'Kein Unfall- oder Schadenhinweis in den Angaben.',
       )
-      assert.match(review.nextManualAction, /telefonisch kontaktieren/)
+      assert.match(review.nextManualAction, /Prüfung starten/)
       assert.match(review.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
+      assert.equal(review.phase, 'needs_review')
+      assert.equal(item.processed_at, null)
+      assert.ok(
+        review.availableActions.some(
+          (action) => action.id === 'start_review' && action.available,
+        ),
+      )
+      assert.ok(
+        review.availableActions.some(
+          (action) => action.id === 'mark_handled' && action.available,
+        ),
+      )
 
       assert.equal(getInboxItemSourceLabel(item), KFZ_WEBSITE_SOURCE_LABEL)
       assert.equal(getInboxListTitle(item), 'Kfz-Anfrage · Max Mustermann')
@@ -179,7 +191,7 @@ describe('kfz landing → HTTP → inbox presentation', () => {
           'Fahrzeugdaten (Marke/Modell/Jahr — falls relevant)',
         ),
       )
-      assert.match(review.nextManualAction, /per E-Mail kontaktieren/)
+      assert.match(review.nextManualAction, /Prüfung starten/)
       assert.match(review.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
     })
   })

@@ -16,6 +16,7 @@ import { InboxAiProposalSection } from '@/features/ai-inbound/components/inbox-a
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
+import { InboxKfzTriageActions } from '@/features/inbox/components/inbox-kfz-triage-actions'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
@@ -134,7 +135,7 @@ export function InboxDetailPanel({
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxSourceVisual(item.source)
-  const kfzReview = presentKfzWebsiteInboxItem(item)
+  const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
 
   useEffect(() => {
     if (deleteState.success && !handledDeleteRef.current) {
@@ -193,6 +194,14 @@ export function InboxDetailPanel({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <InboxKfzReviewSection review={kfzReview} />
+        {kfzReview ? (
+          <InboxKfzTriageActions
+            item={item}
+            linkedTaskId={linkedTaskId}
+            review={kfzReview}
+            onStatusChange={onStatusChange}
+          />
+        ) : null}
 
         <form id={updateFormId} action={updateAction} className="flex flex-col">
           <input type="hidden" name="itemId" value={item.id} />

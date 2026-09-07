@@ -5,12 +5,18 @@
 
 import { isKfzWebsiteInboxItem } from '@/features/ai-inbound/lib/is-kfz-website-inbox-item'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
+import {
+  buildKfzNextManualAction,
+  listKfzManualTriageActions,
+  resolveKfzTriagePhase,
+  type KfzManualTriageAction,
+  type KfzTriagePhase,
+} from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
-export const KFZ_WEBSITE_SOURCE_LABEL = 'Website · Kfz' as const
+export { KFZ_REVIEW_NO_AUTO_ACTION } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 
-export const KFZ_REVIEW_NO_AUTO_ACTION =
-  'Nichts wird automatisch gesendet oder angelegt.'
+export const KFZ_WEBSITE_SOURCE_LABEL = 'Website · Kfz' as const
 
 export type KfzWebsiteInboxReview = {
   headline: string
@@ -27,6 +33,8 @@ export type KfzWebsiteInboxReview = {
   missingInformation: string[]
   urgencyNote: string
   nextManualAction: string
+  phase: KfzTriagePhase
+  availableActions: KfzManualTriageAction[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -109,28 +117,6 @@ function collectMissing(input: {
   return missing
 }
 
-function buildNextManualAction(input: {
-  preferredChannel: string | null
-  phone: string | null
-  email: string | null
-}): string {
-  const suffix = KFZ_REVIEW_NO_AUTO_ACTION
-
-  if (input.preferredChannel === 'email' && input.email) {
-    return `Anfrage prüfen und per E-Mail kontaktieren. ${suffix}`
-  }
-  if (input.preferredChannel === 'whatsapp' && input.phone) {
-    return `Anfrage prüfen und per WhatsApp kontaktieren. ${suffix}`
-  }
-  if (input.phone) {
-    return `Anfrage prüfen und telefonisch kontaktieren. ${suffix}`
-  }
-  if (input.email) {
-    return `Anfrage prüfen und per E-Mail kontaktieren. ${suffix}`
-  }
-  return `Anfrage prüfen und einen Kontaktweg wählen. ${suffix}`
-}
-
 /**
  * Builds a factual review model from the persisted inbox working copy.
  * Returns null when the item is not a Kfz website inquiry.
@@ -139,7 +125,10 @@ export function presentKfzWebsiteInboxItem(
   item: Pick<
     InboxItem,
     'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'sender'
-  >,
+  > & {
+    processed_at?: string | null
+  },
+  options?: { linkedTaskId?: string | null },
 ): KfzWebsiteInboxReview | null {
   if (!isKfzWebsiteInboxItem(item)) {
     return null
@@ -194,10 +183,17 @@ export function presentKfzWebsiteInboxItem(
       location: locationLabel,
     }),
     urgencyNote: detectUrgencyNote(reason, contextNotes),
-    nextManualAction: buildNextManualAction({
-      preferredChannel,
-      phone,
-      email,
-    }),
+    nextManualAction: buildKfzNextManualAction(
+      { content: item.content, processed_at: item.processed_at ?? null },
+      options?.linkedTaskId ?? null,
+    ),
+    phase: resolveKfzTriagePhase(
+      { content: item.content, processed_at: item.processed_at ?? null },
+      options?.linkedTaskId ?? null,
+    ),
+    availableActions: listKfzManualTriageActions(
+      { content: item.content, processed_at: item.processed_at ?? null },
+      options?.linkedTaskId ?? null,
+    ),
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import type { InboundAnalysisInput } from '@/features/ai/inbound-analysis'
+import { stripInternalInboxNotes } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -69,7 +70,7 @@ export function mapInboxItemToAnalysisInput(
     channel: item.channel || item.source || 'unknown',
     externalId: item.external_id,
     title: item.title,
-    content: item.content,
+    content: stripInternalInboxNotes(item.content),
     kind: item.message_kind,
     receivedAt: item.received_at,
     sender: readSender(item),
