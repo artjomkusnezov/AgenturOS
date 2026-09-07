@@ -20,6 +20,7 @@ import {
 import { normalizeInternationalPhone } from '@/features/inbound/kfz/lib/normalize-phone'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { validatePublicKfzInquiry } from '@/features/inbound/kfz/lib/validate-public-kfz-inquiry'
+import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
 
@@ -150,6 +151,19 @@ describe('kfz landing payload mapping', () => {
       return
     }
     assert.equal(built.code, 'missing_contact')
+  })
+
+  it('rejects empty required fields without inventing values', () => {
+    const built = buildKfzLandingPayload({
+      values: baseValues({ fullName: '   ', inquiryReason: '' }),
+      submissionId: 'lp-missing-fields',
+      consentTimestamp: '2026-09-06T12:00:00.000Z',
+    })
+    assert.equal(built.ok, false)
+    if (built.ok) {
+      return
+    }
+    assert.equal(built.code, 'missing_field')
   })
 
   it('rejects empty submissionId', () => {
@@ -317,5 +331,132 @@ describe('kfz landing → Gate-2 intake (success/failure)', () => {
       assert.equal(second.deduplicated, true)
       assert.equal(store.items.length, 1)
     })
+  })
+})
+
+describe('kfz landing → shared HTTP handler (production entry)', () => {
+  beforeEach(() => {
+    resetRateLimitBucketsForTests()
+  })
+
+  function landingRequest(payload: unknown, secret = SECRET): Request {
+    return new Request('http://localhost/api/inbound/kfz', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  it('accepts a landing-mapped payload through handleKfzInboundHttpRequest', async () => {
+    await withKfzEnv(async () => {
+      const built = buildKfzLandingPayload({
+        values: baseValues(),
+        submissionId: 'lp-http-ok',
+        consentTimestamp: '2026-09-06T12:00:00.000Z',
+      })
+      assert.equal(built.ok, true)
+      if (!built.ok) {
+        return
+      }
+
+      const store = createMemoryInboundIntakeStore()
+      const result = await handleKfzInboundHttpRequest(landingRequest(built.payload), {
+        store,
+      })
+
+      assert.equal(result.ok, true)
+      if (!result.ok) {
+        return
+      }
+      assert.equal(result.status, 200)
+      assert.equal(result.body.ok, true)
+      assert.equal(result.body.deduplicated, false)
+      assert.equal(store.items.length, 1)
+      assert.equal(store.items[0].channel, 'website')
+      assert.equal(store.items[0].source, 'website')
+    })
+  })
+
+  it('does not claim success when consent is missing on the HTTP path', async () => {
+    await withKfzEnv(async () => {
+      const store = createMemoryInboundIntakeStore()
+      const result = await handleKfzInboundHttpRequest(
+        landingRequest({
+          fullName: 'Max Mustermann',
+          postalCode: '49525',
+          city: 'Lengerich',
+          phone: '+491701234567',
+          preferredChannel: 'phone',
+          inquiryReason: 'Test',
+          inquiryProcessingConsent: false,
+          consentVersion: KFZ_LANDING_CONSENT_VERSION,
+          submissionId: 'lp-http-no-consent',
+        }),
+        { store },
+      )
+
+      assert.equal(result.ok, false)
+      if (result.ok) {
+        return
+      }
+      assert.equal(result.body.code, 'invalid_consent')
+      assert.equal(store.items.length, 0)
+    })
+  })
+
+  it('fails honestly with config_missing when intake env is absent', async () => {
+    const prev = {
+      agency: process.env.INBOUND_KFZ_AGENCY_ID,
+      actor: process.env.INBOUND_KFZ_ACTOR_USER_ID,
+      secret: process.env.INBOUND_KFZ_INTAKE_SECRET,
+      emailAgency: process.env.INBOUND_EMAIL_AGENCY_ID,
+      emailActor: process.env.INBOUND_EMAIL_ACTOR_USER_ID,
+    }
+
+    delete process.env.INBOUND_KFZ_AGENCY_ID
+    delete process.env.INBOUND_KFZ_ACTOR_USER_ID
+    delete process.env.INBOUND_KFZ_INTAKE_SECRET
+    delete process.env.INBOUND_EMAIL_AGENCY_ID
+    delete process.env.INBOUND_EMAIL_ACTOR_USER_ID
+
+    try {
+      const store = createMemoryInboundIntakeStore()
+      const result = await handleKfzInboundHttpRequest(
+        landingRequest({
+          fullName: 'Max Mustermann',
+          postalCode: '49525',
+          city: 'Lengerich',
+          phone: '+491701234567',
+          preferredChannel: 'phone',
+          inquiryReason: 'Test',
+          inquiryProcessingConsent: true,
+          consentVersion: KFZ_LANDING_CONSENT_VERSION,
+          submissionId: 'lp-http-no-env',
+        }),
+        { store },
+      )
+
+      assert.equal(result.ok, false)
+      if (result.ok) {
+        return
+      }
+      assert.equal(result.status, 503)
+      assert.equal(result.body.code, 'config_missing')
+      assert.equal(store.items.length, 0)
+    } finally {
+      if (prev.agency === undefined) delete process.env.INBOUND_KFZ_AGENCY_ID
+      else process.env.INBOUND_KFZ_AGENCY_ID = prev.agency
+      if (prev.actor === undefined) delete process.env.INBOUND_KFZ_ACTOR_USER_ID
+      else process.env.INBOUND_KFZ_ACTOR_USER_ID = prev.actor
+      if (prev.secret === undefined) delete process.env.INBOUND_KFZ_INTAKE_SECRET
+      else process.env.INBOUND_KFZ_INTAKE_SECRET = prev.secret
+      if (prev.emailAgency === undefined) delete process.env.INBOUND_EMAIL_AGENCY_ID
+      else process.env.INBOUND_EMAIL_AGENCY_ID = prev.emailAgency
+      if (prev.emailActor === undefined) delete process.env.INBOUND_EMAIL_ACTOR_USER_ID
+      else process.env.INBOUND_EMAIL_ACTOR_USER_ID = prev.emailActor
+    }
   })
 })

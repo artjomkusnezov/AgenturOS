@@ -16,8 +16,11 @@ type KfzLandingShellProps = {
  */
 export function KfzLandingShell({ children }: KfzLandingShellProps) {
   return (
-    <div className="min-h-full flex-1 bg-gradient-to-b from-slate-100 via-white to-slate-50">
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+    <div
+      lang="de"
+      className="min-h-full flex-1 bg-gradient-to-b from-slate-100 via-white to-slate-50"
+    >
+      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-14">
         <header className="mb-8 border-b border-zinc-200 pb-7">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-800">
             {KFZ_LANDING_AGENCY_NAME}
