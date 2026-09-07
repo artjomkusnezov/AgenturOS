@@ -1,6 +1,6 @@
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
-export function isInboxItemUnprocessed(item: InboxItem): boolean {
+export function isInboxItemUnprocessed(item: Pick<InboxItem, 'processed_at'>): boolean {
   return item.processed_at === null
 }
 

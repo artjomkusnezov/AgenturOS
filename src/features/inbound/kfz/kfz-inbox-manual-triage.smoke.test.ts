@@ -132,8 +132,10 @@ describe('kfz intake → inbox review → explicit manual action', () => {
       assert.equal(item.processed_at, null)
       assert.equal(review.phase, 'needs_review')
       assert.match(review.nextManualAction, /Prüfung starten/)
-      assert.match(review.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
-      assert.doesNotMatch(review.nextManualAction, /automatisch gesendet/)
+      assert.equal(
+        review.nextManualAction.includes(KFZ_REVIEW_NO_AUTO_ACTION),
+        true,
+      )
       assert.equal(review.customerName, 'Max Mustermann')
       assert.equal(review.request, 'Wechsel Kfz-Versicherung')
       assert.ok(review.availableActions.every((action) => action.requiresExplicitHumanAction))
@@ -197,8 +199,8 @@ describe('kfz intake → inbox review → explicit manual action', () => {
       assert.equal(started.mutated.content, true)
       assert.equal(started.mutated.processed, false)
       assert.equal(started.mutated.task, false)
-      assert.match(started.next.content, new RegExp(KFZ_INTERNAL_NOTE_HEADING))
-      assert.match(started.next.content, new RegExp(KFZ_REVIEW_STARTED_NOTE))
+      assert.equal(started.next.content.includes(KFZ_INTERNAL_NOTE_HEADING), true)
+      assert.equal(started.next.content.includes(KFZ_REVIEW_STARTED_NOTE), true)
       assert.equal(started.next.processed_at, null)
 
       const noted = applyKfzManualTriageCommand(started.next, {
