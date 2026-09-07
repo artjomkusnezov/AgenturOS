@@ -62,9 +62,11 @@ jobs:
         run: |
           set -euo pipefail
           TASK=$(cat .cursor-controller/TASK.md)
+          STARTING_REF=$(sed -nE "s/^STARTING_REF:[[:space:]]+(.+)$/\\1/p" .cursor-controller/TASK.md | head -n 1)
+          test -n "$STARTING_REF" || { echo "REFUSED: TASK.md has no STARTING_REF"; exit 5; }
           SAFETY='\n\nController safety: Read AGENTS.md first. Work only on the new Cursor-created branch. Never write master, merge, deploy, change production data, inspect or expose secrets, activate external services, send customer communication, rewrite history, force-push, reset/clean user work, or self-assign another task. Preserve provider-neutral intake boundaries and human review for AI suggestions. Run npm run test:inbound, npx tsc --noEmit, npm run lint, and npm run build once after implementation; repair only concrete deterministic failures. Use browser/computer for functional smoke checks when browser truth matters.'
           PROMPT="${TASK}${SAFETY}"
-          PAYLOAD=$(jq -n --arg prompt "$PROMPT" '{
+          PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg starting_ref "$STARTING_REF" '{
             name: "AgenturOS Controller Task",
             prompt: {text: $prompt},
             repos: [{
@@ -88,7 +90,7 @@ jobs:
             echo "- Run: `$RUN_ID`"
             echo "- Status: `$RUN_STATUS`"
             echo "- Cursor: $AGENT_URL"
-            echo '- Source: `agent/issue-18`'
+            echo "- Source: \`$STARTING_REF\`"
             echo '- Work branch: separate Cursor-created branch'
             echo '- Auto PR: disabled'
             echo '- Merge/deploy: not performed'
