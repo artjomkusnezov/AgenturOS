@@ -53,7 +53,9 @@ prüft, dass die eingecheckten Migrationen `channel='website'` und `source='webs
 **Browser:** `http://localhost:3000/kfz`  
 Regional für Allianz Kusnezov / Lengerich. Formular baut den Gate-2-`PublicKfzInquiryPayload`, setzt `submissionId` client-seitig und sendet über Server Action in denselben Handler wie `POST /api/inbound/kfz` (Bearer-Secret nur auf dem Server).
 
-Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` (Payload-Mapping, Consent, Submit-Lock, Success/Failure-Phasen, Landing→Intake).
+Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` (Payload-Mapping, Consent, Submit-Lock, Success/Failure-Phasen, Landing→Intake, Landing→`handleKfzInboundHttpRequest`).
+
+Der HTTP-Handler ist derselbe Einstieg wie `POST /api/inbound/kfz` und die `/kfz` Server Action. Tests dürfen einen Memory-Store injizieren; Production bleibt beim Service-Role-Store. Fehlt die Intake-Konfiguration, antwortet der Handler ehrlich mit `config_missing` (kein Erfolg).
 
 ## Inbox KI-Vorschlag (Gate 4 Slice)
 

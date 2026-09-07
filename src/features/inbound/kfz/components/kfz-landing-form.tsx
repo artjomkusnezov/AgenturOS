@@ -52,9 +52,18 @@ type KfzLandingFormProps = {
 }
 
 const fieldClassName =
-  'mt-1.5 w-full rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-zinc-100'
+  'mt-1.5 w-full min-h-11 rounded-md border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-zinc-100'
 
 const labelClassName = 'block text-sm font-medium text-zinc-800'
+
+function RequiredMark() {
+  return (
+    <span className="text-red-700" aria-hidden="true">
+      {' '}
+      *
+    </span>
+  )
+}
 
 export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
   const formId = useId()
@@ -65,10 +74,17 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
   const [isPending, startTransition] = useTransition()
   const submissionIdRef = useRef<string | null>(null)
   const inFlightRef = useRef(false)
+  const errorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     submissionIdRef.current = createKfzLandingSubmissionId()
   }, [])
+
+  useEffect(() => {
+    if (clientError || serverError) {
+      errorRef.current?.focus()
+    }
+  }, [clientError, serverError])
 
   const locked = isKfzLandingSubmitLocked(phase) || isPending
 
@@ -167,16 +183,25 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       noValidate
       aria-describedby={`${formId}-privacy`}
     >
+      <p className="text-xs text-zinc-500">
+        <span className="text-red-700" aria-hidden="true">
+          *
+        </span>{' '}
+        Pflichtangaben. Telefon oder E-Mail reicht als Kontakt.
+      </p>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className={labelClassName} htmlFor={`${formId}-fullName`}>
             Name
+            <RequiredMark />
           </label>
           <input
             id={`${formId}-fullName`}
             name="fullName"
             autoComplete="name"
             required
+            aria-required="true"
             disabled={locked}
             className={fieldClassName}
             value={values.fullName}
@@ -187,6 +212,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
         <div>
           <label className={labelClassName} htmlFor={`${formId}-postalCode`}>
             PLZ
+            <RequiredMark />
           </label>
           <input
             id={`${formId}-postalCode`}
@@ -194,6 +220,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
             autoComplete="postal-code"
             inputMode="numeric"
             required
+            aria-required="true"
             disabled={locked}
             className={fieldClassName}
             value={values.postalCode}
@@ -204,12 +231,14 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
         <div>
           <label className={labelClassName} htmlFor={`${formId}-city`}>
             Ort
+            <RequiredMark />
           </label>
           <input
             id={`${formId}-city`}
             name="city"
             autoComplete="address-level2"
             required
+            aria-required="true"
             disabled={locked}
             className={fieldClassName}
             value={values.city}
@@ -281,11 +310,13 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       <div>
         <label className={labelClassName} htmlFor={`${formId}-inquiryReason`}>
           Ihr Anliegen
+          <RequiredMark />
         </label>
         <textarea
           id={`${formId}-inquiryReason`}
           name="inquiryReason"
           required
+          aria-required="true"
           rows={3}
           disabled={locked}
           className={fieldClassName}
@@ -357,18 +388,19 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       </div>
 
       <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-3">
-        <div className="flex gap-3">
+        <div className="flex items-start gap-3">
           <input
             id={`${formId}-consent`}
             name="inquiryProcessingConsent"
             type="checkbox"
             required
+            aria-required="true"
             disabled={locked}
-            className="mt-1 h-4 w-4 shrink-0 rounded border-zinc-400 text-blue-700 focus:ring-blue-600"
+            className="mt-0.5 h-5 w-5 shrink-0 rounded border-zinc-400 text-blue-700 focus:ring-blue-600"
             checked={values.inquiryProcessingConsent}
             onChange={(e) => updateField('inquiryProcessingConsent', e.target.checked)}
           />
-          <label htmlFor={`${formId}-consent`} className="text-sm leading-relaxed text-zinc-700">
+          <label htmlFor={`${formId}-consent`} className="min-h-11 text-sm leading-relaxed text-zinc-700">
             Ich willige ein, dass Allianz Kusnezov meine Angaben zur Bearbeitung dieser
             Kfz-Anfrage speichert und mich dazu kontaktiert. Es handelt sich nicht um
             eine Einwilligung für Werbung. Details:{' '}
@@ -381,6 +413,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
               Datenschutz
             </a>
             . (Consent-Stand: {KFZ_LANDING_CONSENT_VERSION})
+            <RequiredMark />
           </label>
         </div>
         <p id={`${formId}-privacy`} className="mt-2 text-xs text-zinc-500">
@@ -390,20 +423,22 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       </div>
 
       {(clientError || serverError) && (
-        <Alert variant="error">
-          <p className="font-medium">Anfrage nicht gespeichert</p>
-          <p className="mt-1 text-sm">{clientError ?? serverError}</p>
-          <p className="mt-2 text-sm">
-            Sie können es erneut versuchen oder uns direkt unter{' '}
-            <a
-              className="font-medium underline-offset-2 hover:underline"
-              href={`mailto:${KFZ_LANDING_CONTACT_EMAIL}`}
-            >
-              {KFZ_LANDING_CONTACT_EMAIL}
-            </a>{' '}
-            erreichen.
-          </p>
-        </Alert>
+        <div ref={errorRef} tabIndex={-1} className="outline-none">
+          <Alert variant="error">
+            <p className="font-medium">Anfrage nicht gespeichert</p>
+            <p className="mt-1 text-sm">{clientError ?? serverError}</p>
+            <p className="mt-2 text-sm">
+              Sie können es erneut versuchen oder uns direkt unter{' '}
+              <a
+                className="font-medium underline-offset-2 hover:underline"
+                href={`mailto:${KFZ_LANDING_CONTACT_EMAIL}`}
+              >
+                {KFZ_LANDING_CONTACT_EMAIL}
+              </a>{' '}
+              erreichen.
+            </p>
+          </Alert>
+        </div>
       )}
 
       <Button
@@ -411,7 +446,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
         variant="primary-lg"
         disabled={locked}
         aria-busy={phase === 'submitting' || isPending}
-        className="w-full sm:w-auto"
+        className="min-h-12 w-full sm:w-auto"
       >
         {phase === 'submitting' || isPending
           ? 'Wird gesendet …'

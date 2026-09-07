@@ -12,6 +12,7 @@ import {
 import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
 import { createServiceRoleInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
+import type { InboundIntakeStore } from '@/features/inbound/types/inbound-intake-store'
 
 export type KfzInboundHttpResult =
   | {
@@ -27,9 +28,12 @@ export type KfzInboundHttpResult =
 
 /**
  * Entspricht dem Verhalten von `POST /api/inbound/kfz`.
+ * `options.store` ist nur für deterministische Tests — Production bleibt
+ * beim Service-Role-Store.
  */
 export async function handleKfzInboundHttpRequest(
   request: Request,
+  options?: { store?: InboundIntakeStore },
 ): Promise<KfzInboundHttpResult> {
   const missing = listMissingInboundKfzEnvFields()
   if (missing.length > 0) {
@@ -43,7 +47,7 @@ export async function handleKfzInboundHttpRequest(
 
   let store
   try {
-    store = createServiceRoleInboundIntakeStore()
+    store = options?.store ?? createServiceRoleInboundIntakeStore()
   } catch {
     logKfzInbound('store_unavailable', {})
     return {
