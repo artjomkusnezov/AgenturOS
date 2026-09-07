@@ -1,29 +1,40 @@
 STATUS: READY
 
 ## Goal
-Continue the approved Kfz Funnel on the existing `agent/issue-18` branch and existing Draft PR #19. Gate 2 (secure website intake into AgenturOS) has passed CI + independent review. Build the next coherent browser-visible slice: a real local Kfz landing page for Allianz Kusnezov / Lengerich that sends a valid inquiry through the already implemented Kfz intake endpoint into the AgenturOS Inbox.
+Continue the approved Kfz Funnel on the existing `agent/issue-18` branch and existing Draft PR #19. Gate 3 (public Lengerich Kfz landing page wired into the secure website intake) has passed CI + independent review. Build the next coherent slice: after a Kfz website inquiry reaches AgenturOS Inbox, produce and show a safe AI analysis PROPOSAL for the agent — never an automatic customer action.
 
-Expected visible flow:
-`visitor opens local Kfz page -> understands offer -> enters contact + vehicle/inquiry data -> gives required consent -> submits -> sees clear success/failure state -> existing /api/inbound/kfz path receives the inquiry`
+Expected internal flow:
+`Kfz website inquiry -> existing AgenturOS Inbox item -> AI analysis proposal -> visible internal summary for the human agent`
 
-This is a functional conversion page, not final ad-campaign polish. Keep WhatsApp/Meta onboarding paused. Do not merge, deploy, change domains, apply DB migrations, spend money, or touch production data.
+This task is about useful internal triage. No outbound message, no automatic task/case creation, no tariff promise, no production deployment, no production migration, no customer communication.
+
+## Required proposal fields
+Reuse the existing AI inbound foundation and existing domain terminology where already present. For Kfz website leads, the visible proposal should cover only supported fields such as:
+- category/service type;
+- product = Kfz where confidently known;
+- urgency;
+- missing information;
+- closing intent / sales readiness as a proposal, not fact;
+- suggested next human step;
+- draft response text clearly marked as draft/proposal;
+- human-takeover flag when information is ambiguous, sensitive, contradictory or high-risk.
+
+Do not invent personal data, prices, discounts, tariff results, binding insurance advice or coverage promises. Unknown remains unknown.
 
 ## Acceptance criteria
 - Continue on existing `agent/issue-18` and update existing Draft PR #19; do not open a second PR.
-- Add one public browser page for the Kfz funnel, suitable for later use under `kfz.artkus.de` or an equivalent routed page, without changing DNS/domain/Vercel settings now.
-- The page must be clearly regional: Allianz Kusnezov, Lengerich and nearby area. Do not make unsupported price promises or claim a cheapest-price guarantee.
-- Keep text short and conversion-oriented: clear headline, trust/local section, simple benefits, one primary form, clear privacy/consent wording, and contact fallback.
-- Form must use the existing Gate-2 Kfz intake contract/API rather than inventing a second lead pipeline.
-- Collect only fields already supported or safely optional in the current contract. Reuse current normalization/validation where appropriate.
-- Preserve international phone numbers including leading `+`.
-- Generate/use `submissionId` client-side where appropriate so an accidental double-submit is safe; do not expose PII in URLs/logs.
-- Disable or visibly lock the submit action while a request is in flight; prevent accidental duplicate clicks.
-- Show understandable success state and retryable technical error state. Never claim a lead was saved when the endpoint failed.
-- Do not display AI-generated tariff/pricing claims. AI inbound analysis remains proposal-only after ingestion.
-- Add accessible labels, keyboard-usable controls and reasonable mobile layout. Functional/clean is enough; no expensive visual redesign.
-- Add page metadata/SEO basics for local Kfz intent without keyword stuffing.
-- Add focused deterministic tests for form payload mapping, consent, duplicate-submit protection and success/failure handling where practical.
-- Preserve existing inbound email/WhatsApp behavior and existing AgenturOS dashboard paths.
+- Use the existing inbound item and AI-analysis foundations; do not create a parallel CRM/lead database or second AI pipeline.
+- Kfz website items can produce an AI proposal from the normalized inbound data already stored/available.
+- The proposal is internal-only and visibly labeled as AI suggestion / Entwurf / Vorschlag.
+- No automatic send, customer contact, case creation, task creation, contract/tariff action, status change or follow-up scheduling.
+- If the AI provider/config is unavailable, the Inbox item must remain usable and show a safe unavailable/not-generated state rather than breaking the page.
+- Do not log raw customer payloads, prompts containing unnecessary PII, secrets, provider tokens, or model credentials.
+- Keep AI output schema deterministic/validated at the application boundary; malformed provider output must fail safely.
+- Reuse existing fields and contracts where possible. Do not add speculative fields just because a model can generate them.
+- Add a simple internal visible section in the relevant Inbox/detail flow showing the proposal fields that are already supported.
+- Add focused deterministic tests for schema validation, Kfz mapping, missing/unknown data, provider failure, and the guarantee that proposal generation does not trigger outbound/customer-facing side effects.
+- Preserve Gate 2 intake, Gate 3 landing page, email/WhatsApp inbound behavior and existing dashboard paths.
+- Do not create temporary repository-root helper files such as `.gate4-checks.sh`; run validation commands directly or use files inside allowed paths only.
 - `npm run test:inbound` passes.
 - `npx tsc --noEmit` passes.
 - `npm run lint` passes.
@@ -36,6 +47,7 @@ This is a functional conversion page, not final ad-campaign polish. Keep WhatsAp
 - `src/components/**`
 - `src/features/inbound/**`
 - `src/features/ai-inbound/**`
+- `src/features/inbox/**`
 - `src/lib/**`
 - `src/styles/**`
 - `src/config/**`
@@ -48,12 +60,11 @@ This is a functional conversion page, not final ad-campaign polish. Keep WhatsAp
 ## Out of scope
 - No merge or auto-merge.
 - No deployment, Vercel/domain/DNS changes.
-- Do not apply any Supabase migration.
+- Do not apply any Supabase migration or change production data.
 - No Meta campaign, Pixel, CAPI or advertising spend.
 - No WhatsApp onboarding/outbound automation.
-- No customer-facing AI messages, tariff recommendations or automatic tasks/cases.
-- No new CRM/lead subsystem; use the existing Inbox/intake pipeline.
+- No automatic customer messages, tasks, cases, appointments, tariff recommendations or contractual actions.
 - No real customer data or secrets.
-- No broad AgenturOS redesign unrelated to the funnel.
-- No fake testimonials, fake customer counts, fake savings or unsupported Allianz pricing claims.
+- No broad AgenturOS redesign unrelated to the Kfz inbound/AI proposal flow.
+- No fake AI confidence, unsupported pricing claims or invented customer facts.
 

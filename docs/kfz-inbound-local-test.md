@@ -55,6 +55,15 @@ Regional für Allianz Kusnezov / Lengerich. Formular baut den Gate-2-`PublicKfzI
 
 Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` (Payload-Mapping, Consent, Submit-Lock, Success/Failure-Phasen, Landing→Intake).
 
+## Inbox KI-Vorschlag (Gate 4 Slice)
+
+Nach Intake erscheint für Kfz-Website-Items im Inbox-Detail ein interner **KI-Vorschlag · Entwurf** (`src/features/ai-inbound`): Kategorie, Produkt, Dringlichkeit, fehlende Infos, Abschlussimpuls (als Vorschlag), nächster menschlicher Schritt, Antwortentwurf, Human-Takeover-Flag.
+
+- Keine automatische Kundenaktion, kein Case/Task, kein Versand.
+- Lokale Heuristik hinter dem bestehenden `InboundAnalysisProvider`-Vertrag; Abschalten: `INBOUND_AI_ANALYSIS_ENABLED=false`.
+- Tests: `tests/ai/kfz-ai-proposal.test.ts` (Teil von `npm run test:inbound`).
+- Details: `docs/ai-inbound-analysis.md`.
+
 ## Landingpage-Integrationspunkt (API)
 
 **URL:** `POST /api/inbound/kfz`  
@@ -106,11 +115,10 @@ Erwartete Antwort bei Erfolg: `{ "ok": true, "deduplicated": false, "inboxItemId
 ## Follow-ups (bewusst nicht in diesem Slice)
 
 1. **Migration anwenden (Owner):** `20260906120000_inbox_website_channel_source.sql` ist eingecheckt; Apply auf Preview/Staging/Production bleibt Owner-Entscheidung.  
-2. **Inbox-Label:** `INBOX_SOURCE_LABELS.website` (z. B. „Website“) in der Inbox-UI.  
-3. **Dokumentablage:** sichere Bytes-Pipeline wiederverwenden oder eigenen Seam — Gate 2 speichert nur Upload-Metadaten.  
-4. **Retention/Löschung:** Anfrage-/Consent-Nachweise und Metadaten löschbar machen, falls noch nicht vorhanden.  
-5. **Rate-Limit Production:** `consumeRateLimit`-Seam durch shared store ersetzen.  
-6. **Domain/Routing:** `kfz.artkus.de` → `/kfz` (oder eigenes Deployment) — Owner/DNS/Vercel, nicht Teil dieses Slices.  
-7. **AI:** weiterhin nur über den bestehenden advisory Analysis-Seam; keine kundenwirksame Aktion.
+2. **Dokumentablage:** sichere Bytes-Pipeline wiederverwenden oder eigenen Seam — Gate 2 speichert nur Upload-Metadaten.  
+3. **Retention/Löschung:** Anfrage-/Consent-Nachweise und Metadaten löschbar machen, falls noch nicht vorhanden.  
+4. **Rate-Limit Production:** `consumeRateLimit`-Seam durch shared store ersetzen.  
+5. **Domain/Routing:** `kfz.artkus.de` → `/kfz` (oder eigenes Deployment) — Owner/DNS/Vercel, nicht Teil dieses Slices.  
+6. **Externe KI-Provider:** optionaler Modell-Host hinter dem bestehenden `InboundAnalysisProvider` — Owner-Entscheidung; Gate 4 nutzt lokale Heuristik + Inbox-`KI-Vorschlag`.
 
 WhatsApp/Meta-Onboarding und PR #14 bleiben unabhängig und blockieren diesen Intake nicht.

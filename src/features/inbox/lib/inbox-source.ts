@@ -13,6 +13,7 @@ export const INBOX_SOURCE_LABELS: Record<string, string> = {
   universal_capture: 'Neu erfasst',
   whatsapp: 'WhatsApp',
   email: 'E-Mail',
+  website: 'Website',
 }
 
 export function getInboxSourceLabel(source: InboxItem['source']): string {
