@@ -1,0 +1,95 @@
+name: Cursor Cloud Controller v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "controller/cursor-cloud-v1"
+    paths:
+      - ".cursor-controller/TRIGGER.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cursor-cloud-controller-agenturos
+  cancel-in-progress: false
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout controller branch
+        uses: actions/checkout@v4
+        with:
+          ref: controller/cursor-cloud-v1
+
+      - name: Safety preflight
+        shell: bash
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" != "master" || { echo "REFUSED: controller may not run on master"; exit 1; }
+          test -n "${CURSOR_API_KEY:-}" || { echo "REFUSED: CURSOR_API_KEY secret is unavailable"; exit 2; }
+          test -f .cursor-controller/TASK.md || { echo "REFUSED: TASK.md is missing"; exit 3; }
+          grep -Eq '^STATUS:[[:space:]]+READY[[:space:]]*$' .cursor-controller/TASK.md || {
+            echo "REFUSED: controller task is not STATUS: READY"
+            exit 4
+          }
+
+      - name: Refuse duplicate active AgenturOS Cloud Agent
+        shell: bash
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl --silent --show-error --fail --url 'https://api.cursor.com/v1/agents?limit=100' --user "${CURSOR_API_KEY}:")
+          ACTIVE_IDS=$(printf '%s' "$RESPONSE" | jq -r '.items[]? | select(.status == "ACTIVE") | .id')
+          for ID in $ACTIVE_IDS; do
+            DETAIL=$(curl --silent --show-error --fail --url "https://api.cursor.com/v1/agents/${ID}" --user "${CURSOR_API_KEY}:")
+            if printf '%s' "$DETAIL" | jq -e '.repos[]? | select(.url == "https://github.com/artjomkusnezov/AgenturOS")' >/dev/null; then
+              echo "REFUSED: an ACTIVE Cursor Cloud Agent already targets AgenturOS (${ID})"
+              exit 10
+            fi
+          done
+
+      - name: Start exactly one Cursor Cloud Agent
+        shell: bash
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          set -euo pipefail
+          TASK=$(cat .cursor-controller/TASK.md)
+          SAFETY='\n\nController safety: Read AGENTS.md first. Work only on the new Cursor-created branch. Never write master, merge, deploy, change production data, inspect or expose secrets, activate external services, send customer communication, rewrite history, force-push, reset/clean user work, or self-assign another task. Preserve provider-neutral intake boundaries and human review for AI suggestions. Run npm run test:inbound, npx tsc --noEmit, npm run lint, and npm run build once after implementation; repair only concrete deterministic failures. Use browser/computer for functional smoke checks when browser truth matters.'
+          PROMPT="${TASK}${SAFETY}"
+          PAYLOAD=$(jq -n --arg prompt "$PROMPT" '{
+            name: "AgenturOS Controller Task",
+            prompt: {text: $prompt},
+            repos: [{
+              url: "https://github.com/artjomkusnezov/AgenturOS",
+              startingRef: "agent/issue-18"
+            }],
+            workOnCurrentBranch: false,
+            autoCreatePR: false,
+            mode: "agent"
+          }')
+          RESPONSE=$(curl --silent --show-error --fail-with-body --request POST --url 'https://api.cursor.com/v1/agents' --user "${CURSOR_API_KEY}:" --header 'Content-Type: application/json' --data "$PAYLOAD")
+          AGENT_ID=$(printf '%s' "$RESPONSE" | jq -r '.agent.id')
+          RUN_ID=$(printf '%s' "$RESPONSE" | jq -r '.run.id')
+          AGENT_URL=$(printf '%s' "$RESPONSE" | jq -r '.agent.url')
+          RUN_STATUS=$(printf '%s' "$RESPONSE" | jq -r '.run.status')
+          test -n "$AGENT_ID" && test "$AGENT_ID" != "null"
+          {
+            echo '## Cursor Cloud Agent launched'
+            echo
+            echo "- Agent: `$AGENT_ID`"
+            echo "- Run: `$RUN_ID`"
+            echo "- Status: `$RUN_STATUS`"
+            echo "- Cursor: $AGENT_URL"
+            echo '- Source: `agent/issue-18`'
+            echo '- Work branch: separate Cursor-created branch'
+            echo '- Auto PR: disabled'
+            echo '- Merge/deploy: not performed'
+          } >> "$GITHUB_STEP_SUMMARY"
