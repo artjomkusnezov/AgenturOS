@@ -37,8 +37,7 @@ const ICON_KPI = 'h-5 w-5'
 const ICON_SM = 'h-3.5 w-3.5'
 
 /**
- * Vorbereitete Quellschlüssel. Nur `manual_text` und `universal_capture`
- * werden aktuell aus dem Datenmodell angezeigt.
+ * Vorbereitete Quellschlüssel für Inbox- und Dashboard-Anzeige.
  */
 export type PreparedInboxSourceKey =
   | InboxItem['source']
@@ -93,6 +92,11 @@ const PREPARED_INBOX_SOURCE_VISUALS: Record<PreparedInboxSourceKey, DashboardVis
     label: 'Sprachnachricht',
     accent: 'green',
     icon: <DashboardIconMic className={ICON_LG} />,
+  },
+  website: {
+    label: 'Website',
+    accent: 'orange',
+    icon: <DashboardIconFileText className={ICON_LG} />,
   },
 }
 

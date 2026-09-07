@@ -7,8 +7,8 @@ import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-ico
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
-import { truncateInboxContentPreview } from '@/features/inbox/lib/format-inbox-content'
-import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
+import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
@@ -155,13 +155,13 @@ export function InboxListItem({
           <p
             className={`min-w-0 flex-1 truncate text-[13px] leading-snug font-medium ${aosWsTextPrimaryClassName}`}
           >
-            {truncateInboxContentPreview(item.content)}
+            {getInboxListTitle(item)}
           </p>
           {isUnprocessed ? <span className="aos-inbox-chip-new">Neu</span> : null}
         </div>
 
         <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
-          <span>{getInboxSourceLabel(item.source)}</span>
+          <span>{getInboxItemSourceLabel(item)}</span>
           <span className="mx-1" aria-hidden="true">
             ·
           </span>

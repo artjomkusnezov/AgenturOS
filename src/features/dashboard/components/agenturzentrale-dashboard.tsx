@@ -20,10 +20,7 @@ import type {
   DashboardAttentionItem,
 } from '@/features/dashboard/lib/dashboard-attention'
 import { getDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
-import {
-  formatDashboardDateOrTime,
-  splitInboxFeedContent,
-} from '@/features/dashboard/lib/dashboard-format'
+import { formatDashboardDateOrTime } from '@/features/dashboard/lib/dashboard-format'
 import {
   getDashboardDateLabel,
   getFirstNameFromUser,
@@ -36,7 +33,8 @@ import type {
 } from '@/features/dashboard/lib/dashboard-my-work'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 import type { DashboardTaskItem, DashboardTeamTasksResult } from '@/features/dashboard/lib/dashboard-tasks'
-import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
+import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
@@ -199,7 +197,7 @@ function InboxPanel({
       ) : (
         <ul className="az-list">
           {preview.map((item) => {
-            const { title } = splitInboxFeedContent(item.content)
+            const title = getInboxListTitle(item)
             const visual = resolveInboxSourceVisual(item.source)
             const creator = resolveInboxAttributionLabel(item, memberNameMap)
             const isNew = isInboxItemUnprocessed(item)
@@ -220,7 +218,7 @@ function InboxPanel({
                   <span className="az-row-main">
                     <span className="az-row-title">{title}</span>
                     <span className="az-row-meta">
-                      <span>{getInboxSourceLabel(item.source)}</span>
+                      <span>{getInboxItemSourceLabel(item)}</span>
                       <span aria-hidden="true">·</span>
                       <span className="truncate">{creator}</span>
                       <span aria-hidden="true">·</span>

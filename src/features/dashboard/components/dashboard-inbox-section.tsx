@@ -6,14 +6,12 @@ import {
   DashboardSection,
   DashboardSectionEmpty,
 } from '@/features/dashboard/components/dashboard-section'
-import {
-  formatDashboardDateOrTime,
-  splitInboxFeedContent,
-} from '@/features/dashboard/lib/dashboard-format'
+import { formatDashboardDateOrTime } from '@/features/dashboard/lib/dashboard-format'
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 import { dashboardSectionPaddingClassName } from '@/features/dashboard/lib/dashboard-surface'
-import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
+import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
@@ -30,7 +28,7 @@ function DashboardInboxRow({
   item: InboxItem
   memberNameMap: Record<string, string>
 }) {
-  const { title } = splitInboxFeedContent(item.content)
+  const title = getInboxListTitle(item)
   const timeLabel = formatDashboardDateOrTime(item.created_at)
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
@@ -46,7 +44,7 @@ function DashboardInboxRow({
           {title}
         </span>
         <span className="aos-cockpit-row-meta">
-          <span>{getInboxSourceLabel(item.source)}</span>
+          <span>{getInboxItemSourceLabel(item)}</span>
           <span aria-hidden="true">·</span>
           <span className="truncate">{creatorName}</span>
           <span aria-hidden="true">·</span>

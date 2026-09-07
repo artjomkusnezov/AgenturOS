@@ -15,7 +15,9 @@ import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-ite
 import { InboxAiProposalSection } from '@/features/ai-inbound/components/inbox-ai-proposal-section'
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
-import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
+import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import type {
@@ -132,6 +134,7 @@ export function InboxDetailPanel({
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxSourceVisual(item.source)
+  const kfzReview = presentKfzWebsiteInboxItem(item)
 
   useEffect(() => {
     if (deleteState.success && !handledDeleteRef.current) {
@@ -164,7 +167,7 @@ export function InboxDetailPanel({
               <span className="[&_svg]:h-4 [&_svg]:w-4">{sourceVisual.icon}</span>
             </span>
             <p className={`min-w-0 flex-1 ${aosWorkspaceMetaClassName}`}>
-              <span>{getInboxSourceLabel(item.source)}</span>
+              <span>{getInboxItemSourceLabel(item)}</span>
               <span className="mx-1.5 text-zinc-300">·</span>
               <span>
                 {item.channel === 'whatsapp' ||
@@ -189,6 +192,8 @@ export function InboxDetailPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <InboxKfzReviewSection review={kfzReview} />
+
         <form id={updateFormId} action={updateAction} className="flex flex-col">
           <input type="hidden" name="itemId" value={item.id} />
 

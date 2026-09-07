@@ -57,6 +57,21 @@ Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test
 
 Der HTTP-Handler ist derselbe Einstieg wie `POST /api/inbound/kfz` und die `/kfz` Server Action. Tests dürfen einen Memory-Store injizieren; Production bleibt beim Service-Role-Store. Fehlt die Intake-Konfiguration, antwortet der Handler ehrlich mit `config_missing` (kein Erfolg).
 
+## Inbox-Darstellung (menschliche Prüfung)
+
+Nach Intake erscheint das Item in der bestehenden Inbox (`channel/source=website`), nicht in einer zweiten Lead-Datenbank.
+
+Operator-sichtbar ohne KI:
+
+- Quelle: `Website · Kfz` (plus Acquisition-Source, z. B. `kfz.artkus.de`)
+- Kunde, Ort, Kontakt, bevorzugter Kanal, Anliegen, Fahrzeug
+- Fehlende Angaben und ein Hinweis zur Dringlichkeit aus den gespeicherten Feldern
+- Nächster manueller Schritt — ausdrücklich ohne automatisches Senden oder Anlegen
+
+Die Liste und das Dashboard nutzen den persistierten Titel (`Kfz-Anfrage · Name`), nicht nur den Inhaltstext.
+
+Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-presentation.smoke.test.ts` (Landing-Payload → `handleKfzInboundHttpRequest` → Inbox-Review-Modell).
+
 ## Inbox KI-Vorschlag (Gate 4 Slice)
 
 Nach Intake erscheint für Kfz-Website-Items im Inbox-Detail ein interner **KI-Vorschlag · Entwurf** (`src/features/ai-inbound`): Kategorie, Produkt, Dringlichkeit, fehlende Infos, Abschlussimpuls (als Vorschlag), nächster menschlicher Schritt, Antwortentwurf, Human-Takeover-Flag.
