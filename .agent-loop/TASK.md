@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: DONE
 
 ## Goal
 Continue the approved Kfz Funnel on the existing `agent/issue-18` branch and existing Draft PR #19. Gate 3 (public Lengerich Kfz landing page wired into the secure website intake) has passed CI + independent review. Build the next coherent slice: after a Kfz website inquiry reaches AgenturOS Inbox, produce and show a safe AI analysis PROPOSAL for the agent — never an automatic customer action.
