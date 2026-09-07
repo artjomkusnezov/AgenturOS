@@ -19,7 +19,6 @@ import {
   buildKfzLandingPayload,
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
-import { KFZ_LANDING_CONSENT_VERSION } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
