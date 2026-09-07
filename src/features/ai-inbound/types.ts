@@ -52,25 +52,8 @@ export type InboxAiProposal =
   | InboxAiProposalUnavailable
   | InboxAiProposalNotApplicable
 
-export type InboxAiProposalSideEffectProbe = {
-  outboundContactAttempted: boolean
-  caseCreated: boolean
-  taskCreated: boolean
-  statusChanged: boolean
-  followUpScheduled: boolean
-}
-
-/** Result of a proposal generation call — includes side-effect probe for tests. */
+/** Result of a proposal generation call (advisory only — no domain mutations). */
 export type GetInboxAiProposalResult = {
   proposal: InboxAiProposal
-  sideEffects: InboxAiProposalSideEffectProbe
   analysisResult: InboundAnalysisResult | null
-}
-
-export const EMPTY_AI_PROPOSAL_SIDE_EFFECTS: InboxAiProposalSideEffectProbe = {
-  outboundContactAttempted: false,
-  caseCreated: false,
-  taskCreated: false,
-  statusChanged: false,
-  followUpScheduled: false,
 }

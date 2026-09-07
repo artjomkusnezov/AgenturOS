@@ -50,6 +50,7 @@ Kfz website inquiry → Inbox item → getInboxAiProposal → visible internal K
 - Labeled **KI-Vorschlag · Entwurf** — internal triage only.
 - No automatic send, case/task creation, status change, or follow-up scheduling.
 - Supported visible fields reuse the existing analysis contract (category/intent, product, urgency, missing info, purchaseIntent as proposal, next human step via `suggestedTask`, draft reply, human-takeover flag).
+- Advisory-only boundary for `getInboxAiProposal` + resolved providers is locked by a static import/call graph assertion in `tests/ai/kfz-ai-proposal.test.ts` (not a cosmetic return-value probe).
 
 Deterministic tests: `tests/ai/inbound-analysis.test.ts`, `tests/ai/kfz-ai-proposal.test.ts` (via `npm run test:inbound`).
 

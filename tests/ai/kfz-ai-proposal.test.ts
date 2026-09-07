@@ -2,10 +2,13 @@
  * Gate 4 — Kfz website Inbox AI proposal (advisory only).
  *
  * Covers: schema validation path, Kfz mapping, missing/unknown data,
- * provider/config failure, and no outbound/customer-facing side effects.
+ * provider/config failure, and an enforceable no-side-effect import/call lock.
  */
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, it } from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import {
   analyzeInboundItem,
@@ -21,7 +24,6 @@ import {
   createNotConfiguredAnalysisProvider,
 } from '@/features/ai-inbound/providers/local-kfz-analysis-provider'
 import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'
-import { EMPTY_AI_PROPOSAL_SIDE_EFFECTS } from '@/features/ai-inbound/types'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import type { Json } from '@/lib/supabase/types'
 
@@ -89,17 +91,6 @@ function baseInboxItem(overrides: Partial<InboxItem> = {}): InboxItem {
     transcription_status: 'none',
     ...overrides,
   }
-}
-
-function assertNoSideEffects(
-  sideEffects: typeof EMPTY_AI_PROPOSAL_SIDE_EFFECTS,
-): void {
-  assert.deepEqual(sideEffects, EMPTY_AI_PROPOSAL_SIDE_EFFECTS)
-  assert.equal(sideEffects.outboundContactAttempted, false)
-  assert.equal(sideEffects.caseCreated, false)
-  assert.equal(sideEffects.taskCreated, false)
-  assert.equal(sideEffects.statusChanged, false)
-  assert.equal(sideEffects.followUpScheduled, false)
 }
 
 describe('Kfz website inbox detection + mapping', () => {
@@ -237,7 +228,6 @@ describe('getInboxAiProposal integration', () => {
   it('generates an internal proposal for Kfz website items via analyzeInboundItem', async () => {
     const result = await getInboxAiProposal(baseInboxItem())
     assert.equal(result.proposal.status, 'proposal')
-    assertNoSideEffects(result.sideEffects)
     if (result.proposal.status !== 'proposal') {
       return
     }
@@ -257,7 +247,6 @@ describe('getInboxAiProposal integration', () => {
       }),
     )
     assert.equal(result.proposal.status, 'not_applicable')
-    assertNoSideEffects(result.sideEffects)
   })
 
   it('shows safe unavailable state when analysis is disabled', async () => {
@@ -269,7 +258,6 @@ describe('getInboxAiProposal integration', () => {
     assert.equal(result.proposal.reason, 'not_configured')
     assert.equal(result.proposal.generated, false)
     assert.match(result.proposal.message, /nicht konfiguriert|manuell/i)
-    assertNoSideEffects(result.sideEffects)
   })
 
   it('uses safe fallback for malformed provider output without side effects', async () => {
@@ -284,7 +272,6 @@ describe('getInboxAiProposal integration', () => {
       provider: brokenProvider,
     })
     assert.equal(result.proposal.status, 'proposal')
-    assertNoSideEffects(result.sideEffects)
     if (result.proposal.status !== 'proposal') {
       return
     }
@@ -307,7 +294,6 @@ describe('getInboxAiProposal integration', () => {
       provider: failingProvider,
     })
     assert.equal(result.proposal.status, 'proposal')
-    assertNoSideEffects(result.sideEffects)
     if (result.proposal.status !== 'proposal') {
       return
     }
@@ -341,8 +327,271 @@ describe('getInboxAiProposal integration', () => {
   })
 })
 
-describe('proposal generation side-effect guarantee', () => {
-  it('generation does not flip any customer-facing side-effect flags', async () => {
+/**
+ * Enforceable advisory-only lock for proposal generation.
+ *
+ * Walks the static import graph of get-inbox-ai-proposal.ts and the providers
+ * resolveInboundAnalysisProvider can load, then fails if any module imports or
+ * references outbound messaging / case / task / inbox-status / follow-up writers.
+ */
+describe('proposal generation side-effect boundary', () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../..',
+  )
+  const srcRoot = path.join(repoRoot, 'src')
+
+  const ENTRY_RELATIVE_PATHS = [
+    'features/ai-inbound/services/get-inbox-ai-proposal.ts',
+    'features/ai-inbound/providers/resolve-inbound-analysis-provider.ts',
+    'features/ai-inbound/providers/local-kfz-analysis-provider.ts',
+  ] as const
+
+  /** Path fragments that must never appear in the proposal generation graph. */
+  const FORBIDDEN_IMPORT_FRAGMENTS = [
+    // Outbound / messaging
+    'features/email/',
+    'features/whatsapp/',
+    'node_modules/resend',
+    // Case creation / promotion / follow-up scheduling
+    'features/cases/actions/',
+    'features/cases/services/inbox-promotion-service',
+    'features/cases/services/case-promotion-writers',
+    'features/cases/services/case-task-service',
+    'features/cases/repositories/case-create-repository',
+    'features/cases/repositories/case-workflow-repository',
+    // Task creation
+    'features/tasks/actions/',
+    'features/tasks/repositories/tasks-repository',
+    // Inbox status mutation / conversion
+    'features/inbox/actions/',
+    'features/inbox/repositories/inbox-repository',
+  ] as const
+
+  /** External packages that must not be pulled into proposal generation. */
+  const FORBIDDEN_EXTERNAL_PACKAGES = ['resend'] as const
+
+  /**
+   * Identifiers that imply customer-facing or domain write side effects.
+   * Presence as a call/import binding in the reachable graph fails the lock.
+   */
+  const FORBIDDEN_IDENTIFIERS = [
+    'createCaseFromInboxItem',
+    'createTaskCaseFromInboxItem',
+    'createTaskFromInboxItem',
+    'createTaskCaseForCurrentUser',
+    'createCaseForCurrentUser',
+    'createTaskForCurrentUser',
+    'promoteInboxItem',
+    'promoteInboxItemToGenericCase',
+    'createTaskAction',
+    'createCaseAction',
+    'processInboxItemAction',
+    'processInboxItemForCurrentUser',
+    'reopenInboxItemAction',
+    'reopenInboxItemForCurrentUser',
+    'updateInboxItemAction',
+    'updateInboxItemContentForCurrentUser',
+    'convertInboxItemToTask',
+    'convertInboxItemToOffer',
+    'convertInboxItemToClaim',
+    'createInformationFromInboxItem',
+    'updateCaseForCurrentUser',
+    'updateCaseWorkflowAction',
+  ] as const
+
+  const IMPORT_SPEC_RE =
+    /(?:import|export)\s+(?:type\s+)?(?:[^'"\n;]+?\s+from\s+)?['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|require\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+
+  function resolveToSourceFile(specifierBase: string): string | null {
+    const candidates = [
+      specifierBase,
+      `${specifierBase}.ts`,
+      `${specifierBase}.tsx`,
+      `${specifierBase}.js`,
+      `${specifierBase}.mjs`,
+      path.join(specifierBase, 'index.ts'),
+      path.join(specifierBase, 'index.tsx'),
+    ]
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return path.normalize(candidate)
+      }
+    }
+    return null
+  }
+
+  function resolveImport(
+    fromFile: string,
+    specifier: string,
+  ): { kind: 'source'; file: string } | { kind: 'external'; name: string } | null {
+    if (specifier.startsWith('@/')) {
+      const resolved = resolveToSourceFile(path.join(srcRoot, specifier.slice(2)))
+      return resolved ? { kind: 'source', file: resolved } : null
+    }
+    if (specifier.startsWith('.')) {
+      const resolved = resolveToSourceFile(
+        path.resolve(path.dirname(fromFile), specifier),
+      )
+      return resolved ? { kind: 'source', file: resolved } : null
+    }
+    const packageName = specifier.startsWith('@')
+      ? specifier.split('/').slice(0, 2).join('/')
+      : specifier.split('/')[0]
+    return { kind: 'external', name: packageName }
+  }
+
+  function collectProposalModuleGraph(entryFiles: string[]): {
+    files: string[]
+    externalPackages: string[]
+  } {
+    const visited = new Set<string>()
+    const externals = new Set<string>()
+    const queue = [...entryFiles]
+
+    while (queue.length > 0) {
+      const current = queue.pop()
+      if (!current || visited.has(current)) {
+        continue
+      }
+      visited.add(current)
+
+      const source = fs.readFileSync(current, 'utf8')
+      IMPORT_SPEC_RE.lastIndex = 0
+      let match: RegExpExecArray | null
+      while ((match = IMPORT_SPEC_RE.exec(source)) !== null) {
+        const specifier = match[1] ?? match[2] ?? match[3]
+        if (!specifier) {
+          continue
+        }
+        const resolved = resolveImport(current, specifier)
+        if (!resolved) {
+          continue
+        }
+        if (resolved.kind === 'external') {
+          externals.add(resolved.name)
+          continue
+        }
+        if (!visited.has(resolved.file)) {
+          queue.push(resolved.file)
+        }
+      }
+    }
+
+    return {
+      files: [...visited].sort(),
+      externalPackages: [...externals].sort(),
+    }
+  }
+
+  function assertNoForbiddenImports(files: string[]): void {
+    const violations: string[] = []
+    for (const file of files) {
+      const normalized = file.split(path.sep).join('/')
+      for (const fragment of FORBIDDEN_IMPORT_FRAGMENTS) {
+        if (normalized.includes(fragment)) {
+          violations.push(`${path.relative(repoRoot, file)} imports/reaches ${fragment}`)
+        }
+      }
+    }
+    assert.equal(
+      violations.length,
+      0,
+      `Proposal generation must not reach mutation/outbound modules:\n${violations.join('\n')}`,
+    )
+  }
+
+  function assertNoForbiddenExternals(packages: string[]): void {
+    const hits = packages.filter((name) =>
+      (FORBIDDEN_EXTERNAL_PACKAGES as readonly string[]).includes(name),
+    )
+    assert.equal(
+      hits.length,
+      0,
+      `Proposal generation must not import outbound packages: ${hits.join(', ')}`,
+    )
+  }
+
+  function assertNoForbiddenIdentifiers(files: string[]): void {
+    const violations: string[] = []
+    for (const file of files) {
+      const source = fs.readFileSync(file, 'utf8')
+      for (const identifier of FORBIDDEN_IDENTIFIERS) {
+        const pattern = new RegExp(`\\b${identifier}\\b`)
+        if (pattern.test(source)) {
+          violations.push(
+            `${path.relative(repoRoot, file)} references forbidden symbol ${identifier}`,
+          )
+        }
+      }
+    }
+    assert.equal(
+      violations.length,
+      0,
+      `Proposal generation must not call mutation/outbound APIs:\n${violations.join('\n')}`,
+    )
+  }
+
+  it('forbidden boundary targets exist so the lock cannot go false-green from typos', () => {
+    const expectedExisting = [
+      'features/cases/services/inbox-promotion-service.ts',
+      'features/cases/services/case-promotion-writers.ts',
+      'features/cases/services/case-task-service.ts',
+      'features/cases/repositories/case-create-repository.ts',
+      'features/cases/repositories/case-workflow-repository.ts',
+      'features/tasks/repositories/tasks-repository.ts',
+      'features/inbox/repositories/inbox-repository.ts',
+      'features/inbox/actions/process-inbox-item.ts',
+      'features/tasks/actions/create-task.ts',
+      'features/cases/actions/create-case-action.ts',
+      'features/email/lib/email-adapter.ts',
+      'features/whatsapp/lib/whatsapp-adapter.ts',
+    ] as const
+
+    for (const relative of expectedExisting) {
+      const absolute = path.join(srcRoot, relative)
+      assert.ok(
+        fs.existsSync(absolute),
+        `boundary target missing (lock would be weak): ${relative}`,
+      )
+      assert.ok(
+        FORBIDDEN_IMPORT_FRAGMENTS.some((fragment) =>
+          absolute.split(path.sep).join('/').includes(fragment),
+        ),
+        `expectedExisting path is not covered by FORBIDDEN_IMPORT_FRAGMENTS: ${relative}`,
+      )
+    }
+  })
+
+  it('getInboxAiProposal + resolved providers never import or call mutation/outbound writers', () => {
+    const entries = ENTRY_RELATIVE_PATHS.map((relative) =>
+      path.join(srcRoot, relative),
+    )
+    for (const entry of entries) {
+      assert.ok(fs.existsSync(entry), `missing entry file: ${entry}`)
+    }
+
+    const graph = collectProposalModuleGraph(entries)
+    assert.ok(graph.files.length > 0, 'expected a non-empty module graph')
+    assert.ok(
+      graph.files.some((file) =>
+        file.endsWith(`${path.sep}get-inbox-ai-proposal.ts`),
+      ),
+      'graph must include get-inbox-ai-proposal.ts',
+    )
+    assert.ok(
+      graph.files.some((file) =>
+        file.endsWith(`${path.sep}local-kfz-analysis-provider.ts`),
+      ),
+      'graph must include the resolved local Kfz provider',
+    )
+
+    assertNoForbiddenImports(graph.files)
+    assertNoForbiddenExternals(graph.externalPackages)
+    assertNoForbiddenIdentifiers(graph.files)
+  })
+
+  it('proposal generation remains advisory across success, disabled, and malformed paths', async () => {
     const runs = await Promise.all([
       getInboxAiProposal(baseInboxItem()),
       getInboxAiProposal(baseInboxItem(), { enabled: false }),
@@ -357,7 +606,14 @@ describe('proposal generation side-effect guarantee', () => {
     ])
 
     for (const run of runs) {
-      assertNoSideEffects(run.sideEffects)
+      assert.ok(
+        run.proposal.status === 'proposal' ||
+          run.proposal.status === 'unavailable' ||
+          run.proposal.status === 'not_applicable',
+      )
+      if (run.proposal.status === 'proposal') {
+        assert.equal(run.proposal.suggestion.suggestedCaseAction, 'none')
+      }
     }
   })
 })

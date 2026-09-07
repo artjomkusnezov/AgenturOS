@@ -2,15 +2,10 @@ export type {
   GetInboxAiProposalResult,
   InboxAiProposal,
   InboxAiProposalNotApplicable,
-  InboxAiProposalSideEffectProbe,
   InboxAiProposalUnavailable,
   InboxAiProposalUnavailableReason,
   InboxAiProposalView,
   InboxAiProposalStatus,
-} from '@/features/ai-inbound/types'
-
-export {
-  EMPTY_AI_PROPOSAL_SIDE_EFFECTS,
 } from '@/features/ai-inbound/types'
 
 export { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'

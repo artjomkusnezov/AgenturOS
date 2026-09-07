@@ -1,4 +1,4 @@
-STATUS: DONE
+STATUS: READY
 
 ## Goal
 Continue the approved Kfz Funnel on the existing `agent/issue-18` branch and existing Draft PR #19. Gate 3 (public Lengerich Kfz landing page wired into the secure website intake) has passed CI + independent review. Build the next coherent slice: after a Kfz website inquiry reaches AgenturOS Inbox, produce and show a safe AI analysis PROPOSAL for the agent — never an automatic customer action.
@@ -41,6 +41,15 @@ Do not invent personal data, prices, discounts, tariff results, binding insuranc
 - `npm run build` passes.
 - Independent production review must pass.
 - Update existing Draft PR #19 with exact check results.
+
+## Final review correction
+- Keep this correction limited to the false-green side-effect test unless a real defect is exposed.
+- Remove the cosmetic `sideEffects`/constant probe as a claimed runtime guarantee, or stop relying on it as proof.
+- Add an enforceable test lock covering `get-inbox-ai-proposal.ts` and the providers it resolves: the test must fail if proposal generation imports or calls outbound messaging, case creation, task creation, inbox-status mutation, or follow-up scheduling code.
+- A static import/call boundary assertion is acceptable; a spy/mock that fails on any write is also acceptable.
+- Preserve advisory-only production behavior and all existing proposal tests.
+- Run `npm run test:inbound`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, then independent review.
+- Do not add product features or begin another gate.
 
 ## Allowed paths
 - `src/app/**`
