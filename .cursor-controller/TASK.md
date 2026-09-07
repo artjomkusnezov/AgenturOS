@@ -1,4 +1,4 @@
-STATUS: DRAFT
+STATUS: READY
 
 # AgenturOS Cursor Cloud pilot
 
