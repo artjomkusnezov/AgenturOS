@@ -1,24 +1,23 @@
 STATUS: READY
-STARTING_REF: cursor/agenturos-controller-task-5fa3
+STARTING_REF: cursor/agenturos-controller-task-099b
 
-# AgenturOS — Kfz intake to human-review inbox
+# AgenturOS — manual Kfz inbox triage
 
 ## Goal
-Continue the completed Kfz landing/intake branch above. Make the manual-first operator path reviewable end to end: a valid Kfz website inquiry enters the existing normalized inbound boundary and is presented in AgenturOS as a clear inbox item for human review. AgenturOS remains a unified inbound operating layer, not a CRM replacement.
+Continue the Kfz inquiry presentation branch. Make a new Kfz website inquiry usable by an employee through the existing manual inbox workflow, without contacting the customer or creating a second CRM.
 
 ## Required work
-- Read AGENTS.md and inspect the previous Cursor commit before editing.
-- Preserve the secure public Kfz form and its real HTTP handler.
-- Trace the real path from landing submission into the existing inbound store/inbox UI.
-- Fix only concrete gaps preventing an operator from recognizing source, customer details, request, urgency/missing information and the next manual action.
-- AI output, if already present, must remain a suggestion requiring human review. Do not send or execute anything automatically.
-- Add deterministic regression coverage for the real form → HTTP → normalized intake → inbox presentation path.
+- Read AGENTS.md and inspect existing inbox/task actions before editing.
+- Use existing status/task/note boundaries only.
+- From the Kfz review panel, make the next manual action clear and functional where existing domain actions permit: claim/start review, record an internal note or create an internal follow-up task, and mark handled only through an explicit human action.
+- Preserve factual source/customer/request/missing-information display and keep AI output clearly labeled as a suggestion.
+- No automatic reply, case creation, tariff/coverage advice or external transmission.
+- Add deterministic tests covering normalized Kfz intake → inbox review → explicit manual action and preventing automatic side effects.
 - Run `npm run test:inbound`, `npx tsc --noEmit`, `npm run lint`, and `npm run build`.
-- Browser-check the public Kfz form at desktop/mobile and the authenticated inbox only if safely available in the Cloud environment. Record exact evidence and honest blockers.
-- Commit only to the new Cursor-created branch and report changed files, checks, browser evidence and recommended PR target.
+- Browser-check desktop/mobile where safely available and report exact evidence/blockers.
 
-## Out of scope
-No merge/deploy, master writes, production data, secrets, customer communication, automatic reply/case creation, tariff or coverage advice, Meta/WhatsApp activation, paid service, CRM duplication, broad redesign, legal/privacy/business decisions.
+## Safety
+Cursor-created branch only. No master, merge, deploy, production data, secrets, customer communication, Meta/WhatsApp, paid services, CRM duplication or legal/privacy/business decisions.
 
 ## Done
-A developer can demonstrate the deterministic Kfz inquiry path into a human-review inbox, all touched checks are green, and browser claims are backed by fresh evidence.
+An employee can understand and explicitly advance a Kfz inquiry using existing internal workflow actions; nothing is sent automatically; tests/checks and browser evidence are reported.
