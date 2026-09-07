@@ -1,5 +1,5 @@
 # Cursor Cloud trigger
 
-STATE: NOT_STARTED
-
-This file starts a run only after TASK.md is changed to `STATUS: READY` and this trigger is updated.
+STATE: START_REQUESTED
+REQUESTED_AT: 2026-09-07T21:00:02.512Z
+REASON: Launch first bounded AgenturOS Cloud pilot for Kfz Funnel Gate 2.
