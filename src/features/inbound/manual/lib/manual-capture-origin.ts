@@ -3,6 +3,7 @@
  * Not a new inbound channel — still `manual` / `plain_text`.
  */
 
+import { KFZ_ACQUISITION_PRODUCT } from '@/features/inbound/kfz/lib/build-kfz-inquiry-metadata'
 import {
   MANUAL_CAPTURE_ORIGIN_KIND_EMAIL_LABEL,
   MANUAL_CAPTURE_ORIGIN_KIND_NOTE_LABEL,
@@ -39,6 +40,7 @@ export type ManualCaptureMetadata = {
   family: typeof MANUAL_CAPTURE_FAMILY
   kind: typeof MANUAL_CAPTURE_KIND
   originKind: ManualCaptureOriginKind
+  product?: typeof KFZ_ACQUISITION_PRODUCT
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,16 +60,50 @@ export function parseManualCaptureOriginKind(value: unknown): ManualCaptureOrigi
   return isManualCaptureOriginKind(trimmed) ? trimmed : null
 }
 
+export function parseManualKfzCaseChoice(value: unknown): boolean {
+  return value === true || value === 'true' || value === 'on' || value === '1'
+}
+
 export function buildManualCaptureMetadata(
   originKind: ManualCaptureOriginKind,
+  options?: { kfzCase?: boolean },
 ): { capture: ManualCaptureMetadata } {
-  return {
-    capture: {
-      family: MANUAL_CAPTURE_FAMILY,
-      kind: MANUAL_CAPTURE_KIND,
-      originKind,
-    },
+  const capture: ManualCaptureMetadata = {
+    family: MANUAL_CAPTURE_FAMILY,
+    kind: MANUAL_CAPTURE_KIND,
+    originKind,
   }
+
+  if (options?.kfzCase) {
+    capture.product = KFZ_ACQUISITION_PRODUCT
+  }
+
+  return { capture }
+}
+
+/** True only when an employee explicitly marked the working copy as Kfz. */
+export function readManualKfzCaseChoice(metadata: unknown): boolean {
+  if (!isRecord(metadata)) {
+    return false
+  }
+
+  const capture = metadata.capture
+  if (isRecord(capture) && capture.family === MANUAL_CAPTURE_FAMILY) {
+    if (capture.product === KFZ_ACQUISITION_PRODUCT) {
+      return true
+    }
+  }
+
+  const acquisition = metadata.acquisition
+  if (
+    isRecord(acquisition) &&
+    acquisition.family === MANUAL_CAPTURE_FAMILY &&
+    acquisition.product === KFZ_ACQUISITION_PRODUCT
+  ) {
+    return true
+  }
+
+  return false
 }
 
 /** Reads the employee-chosen origin from provider-neutral inbound metadata. */

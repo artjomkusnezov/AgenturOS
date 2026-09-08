@@ -70,7 +70,7 @@ export type KfzWorkQueueRow = {
   headline: string
   customerName: string
   requestFacts: string
-  sourceLabel: typeof KFZ_WEBSITE_SOURCE_LABEL
+  sourceLabel: string
   phase: KfzWorkQueuePhase
   phaseLabel: string
   triagePhase: KfzTriagePhase
@@ -92,7 +92,7 @@ export type KfzFollowUpTaskVisibility = {
   taskHref: string
   sourceHref: string
   sourceLinkLabel: typeof KFZ_FOLLOW_UP_SOURCE_LABEL
-  sourceLabel: typeof KFZ_WEBSITE_SOURCE_LABEL
+  sourceLabel: string
   appearsInTaskArea: true
   noExternalSideEffect: true
 }
@@ -109,6 +109,7 @@ export type KfzWorkQueueItemFields = Pick<
   | 'content'
   | 'processed_at'
   | 'sender'
+  | 'origin'
 >
 
 function isKfzWorkQueuePhase(value: string): value is KfzWorkQueuePhase {
@@ -241,7 +242,14 @@ function presentQueueChip(phase: KfzWorkQueuePhase): KfzWorkQueueStatusChip {
 export function resolveKfzWorkQueuePhase(
   item: Pick<
     InboxItem,
-    'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at' | 'sender'
+    | 'channel'
+    | 'source'
+    | 'inbound_metadata'
+    | 'title'
+    | 'content'
+    | 'processed_at'
+    | 'sender'
+    | 'origin'
   >,
   linkedTaskId: string | null = null,
 ): KfzWorkQueuePhase | null {
@@ -256,7 +264,14 @@ export function resolveKfzWorkQueuePhase(
 export function presentInboxStatusChip(
   item: Pick<
     InboxItem,
-    'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at' | 'sender'
+    | 'channel'
+    | 'source'
+    | 'inbound_metadata'
+    | 'title'
+    | 'content'
+    | 'processed_at'
+    | 'sender'
+    | 'origin'
   >,
   linkedTaskId: string | null = null,
 ): KfzWorkQueueStatusChip | null {
@@ -293,7 +308,7 @@ export function presentKfzWorkQueueRow(
     headline: getInboxListTitle(item),
     customerName: review.customerName,
     requestFacts: buildRequestFacts(review),
-    sourceLabel: KFZ_WEBSITE_SOURCE_LABEL,
+    sourceLabel: review.sourceLabel,
     phase,
     phaseLabel: KFZ_WORK_QUEUE_PHASE_LABELS[phase],
     triagePhase: review.phase,

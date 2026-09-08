@@ -44,9 +44,9 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
   }
 
   return (
-    <section aria-label="Kfz-Website-Anfrage" className={aosWorkspaceSectionClassName}>
+    <section aria-label="Kfz-Anfrage" className={aosWorkspaceSectionClassName}>
       <WorkspaceSectionHeading
-        title="Kfz-Website-Anfrage"
+        title="Kfz-Anfrage"
         accent="orange"
         icon={<DashboardIconUser className="h-4 w-4" />}
         trailing={

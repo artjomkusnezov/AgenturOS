@@ -1,4 +1,8 @@
 import type { InboundItem } from '@/features/inbound/types/inbound-item'
+import {
+  buildKfzInquiryMetadata,
+  KFZ_ACQUISITION_PRODUCT,
+} from '@/features/inbound/kfz/lib/build-kfz-inquiry-metadata'
 import type { NormalizedKfzInquiry } from '@/features/inbound/kfz/types/normalized-kfz-inquiry'
 
 function buildContent(inquiry: NormalizedKfzInquiry): string {
@@ -74,26 +78,22 @@ export function toInboundItemFromKfzInquiry(inquiry: NormalizedKfzInquiry): Inbo
   const metadata: Record<string, unknown> = {
     acquisition: {
       family: 'website',
-      product: 'kfz',
+      product: KFZ_ACQUISITION_PRODUCT,
       ...inquiry.attribution,
     },
-    inquiry: {
+    inquiry: buildKfzInquiryMetadata({
       reason: inquiry.inquiryReason,
       preferredChannel: inquiry.preferredChannel,
       language: inquiry.language,
-      location: {
-        postalCode: inquiry.postalCode,
-        city: inquiry.city,
-      },
-      vehicle: {
-        make: inquiry.vehicleMake,
-        model: inquiry.vehicleModel,
-        year: inquiry.vehicleYear,
-      },
+      postalCode: inquiry.postalCode,
+      city: inquiry.city,
+      vehicleMake: inquiry.vehicleMake,
+      vehicleModel: inquiry.vehicleModel,
+      vehicleYear: inquiry.vehicleYear,
       contextNotes: inquiry.contextNotes,
       phone: inquiry.phone,
       email: inquiry.email,
-    },
+    }),
     /**
      * Nachweis nur für Anfragebearbeitung — getrennt von künftigem Marketing-Consent.
      * Kein Consent-Volltext.
