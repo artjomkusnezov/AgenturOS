@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-2ebd
 
 # AgenturOS — One unified inbox for landing and manual intake
@@ -21,3 +21,6 @@ Let an employee see Kfz landing submissions and manually captured phone, email a
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
+
+CONTROLLER_AGENT_ID: bc-925c4c4c-72f6-48ac-a7d3-d392cec33dfd
+CONTROLLER_STARTED_AT: 2026-09-08T15:46:32Z
