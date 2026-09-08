@@ -20,8 +20,14 @@ import {
   presentKfzFollowUpTask,
   presentKfzWorkQueueRow,
   presentTaskSourceInboxLink,
+  resolveKfzWorkQueueBucket,
+  sumKfzWorkQueueCounts,
 } from '@/features/inbox/lib/kfz-work-queue'
-import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
+import { buildKfzWorkQueuePreviewItems } from '@/features/inbox/lib/kfz-work-queue-preview'
+import {
+  KFZ_URGENCY_FACTUAL_NOTE,
+  presentKfzWebsiteInboxItem,
+} from '@/features/inbox/lib/present-kfz-website-inbox'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import {
   buildKfzLandingPayload,
@@ -158,9 +164,14 @@ describe('kfz work-queue filter persistence', () => {
     assert.equal(parseKfzWorkQueueFilter(''), 'all')
     assert.equal(parseKfzWorkQueueFilter('unknown'), 'all')
     assert.equal(parseKfzWorkQueueFilter('in_review'), 'in_review')
+    assert.equal(parseKfzWorkQueueFilter('missing_information'), 'missing_information')
     assert.equal(buildInboxHref(), '/app/inbox')
     assert.equal(buildInboxHref({ phase: 'all' }), '/app/inbox')
     assert.equal(buildInboxHref({ phase: 'needs_review' }), '/app/inbox?phase=needs_review')
+    assert.equal(
+      buildInboxHref({ phase: 'missing_information' }),
+      '/app/inbox?phase=missing_information',
+    )
     assert.equal(
       buildInboxHref({
         phase: 'handled',
@@ -168,6 +179,18 @@ describe('kfz work-queue filter persistence', () => {
       }),
       '/app/inbox?phase=handled&item=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     )
+    assert.equal(
+      buildInboxHref({
+        phase: 'in_review',
+        itemId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        basePath: '/dev/kfz-work-queue',
+      }),
+      '/dev/kfz-work-queue?phase=in_review&item=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    )
+    assert.equal(resolveKfzWorkQueueBucket('needs_review', 2), 'missing_information')
+    assert.equal(resolveKfzWorkQueueBucket('in_review', 1), 'missing_information')
+    assert.equal(resolveKfzWorkQueueBucket('handled', 3), 'handled')
+    assert.equal(resolveKfzWorkQueueBucket('in_review', 0), 'in_review')
   })
 })
 
@@ -189,10 +212,21 @@ describe('kfz intake → review → follow-up visibility', () => {
       assert.equal(review.phase, 'needs_review')
       assert.equal(row.phase, 'needs_review')
       assert.equal(row.phaseLabel, 'Neu')
+      assert.equal(row.triagePhase, 'needs_review')
+      assert.equal(row.customerName, 'Max Mustermann')
+      assert.match(row.requestFacts, /Wechsel Kfz-Versicherung/)
+      assert.match(row.requestFacts, /VW Golf 2019/)
+      assert.equal(row.hasFactualUrgency, false)
+      assert.equal(row.urgencyNote, null)
+      assert.equal(row.missingCount, 0)
+      assert.equal(row.missingCountLabel, 'Angaben vollständig')
+      assert.match(row.nextActionLabel, /Prüfung starten/)
+      assert.doesNotMatch(row.nextActionLabel, /automatisch gesendet/)
       assert.equal(row.sourceLabel, 'Website · Kfz')
       assert.equal(row.href, `/app/inbox?item=${item.id}`)
       assert.deepEqual(chip, { label: 'Neu', kind: 'new' })
       assert.equal(countKfzWorkQueue([item]).needs_review, 1)
+      assert.equal(countKfzWorkQueue([item]).missing_information, 0)
       assert.equal(AI_PROPOSAL_BADGE_LABEL, 'KI-Vorschlag · Entwurf')
       assert.equal(ai.proposal.status, 'proposal')
       assert.match(review.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
@@ -347,12 +381,15 @@ describe('kfz intake → review → follow-up visibility', () => {
 
       const countsWithoutTask = countKfzWorkQueue(items)
       assert.equal(countsWithoutTask.needs_review, 1)
+      assert.equal(countsWithoutTask.missing_information, 0)
       assert.equal(countsWithoutTask.in_review, 1)
       assert.equal(countsWithoutTask.handled, 1)
+      assert.equal(sumKfzWorkQueueCounts(countsWithoutTask), 3)
 
       const withLinkedTask = countKfzWorkQueue(items, relations)
       assert.equal(withLinkedTask.needs_review, 0)
       assert.equal(withLinkedTask.in_review, 2)
+      assert.equal(withLinkedTask.missing_information, 0)
 
       const onlyReview = filterInboxItemsByKfzPhase(items, 'in_review')
       assert.deepEqual(
@@ -360,6 +397,7 @@ describe('kfz intake → review → follow-up visibility', () => {
         [inReview.id],
       )
       assert.equal(filterInboxItemsByKfzPhase(items, 'needs_review').length, 1)
+      assert.equal(filterInboxItemsByKfzPhase(items, 'missing_information').length, 0)
       assert.equal(filterInboxItemsByKfzPhase(items, 'handled').length, 1)
       assert.equal(filterInboxItemsByKfzPhase(items, 'all').length, 4)
       assert.equal(presentKfzWorkQueueRow(email), null)
@@ -377,5 +415,113 @@ describe('kfz intake → review → follow-up visibility', () => {
     )
     assert.equal(presentTaskSourceInboxLink(null), null)
     assert.equal(presentKfzFollowUpTask({ inboxItemId: '', taskId: '' }), null)
+  })
+
+  it('puts incomplete inquiries into Fehlende Angaben without changing status', async () => {
+    await withKfzEnv(async () => {
+      const item = await submitLandingToInbox(
+        baseValues({
+          phone: '',
+          email: 'max@example.com',
+          preferredChannel: 'phone',
+          vehicleMake: '',
+          vehicleModel: '',
+          vehicleYear: '',
+          inquiryReason: 'Unfall Kfz-Versicherung',
+          contextNotes: 'Sofort nach Schaden',
+        }),
+        'lp-queue-missing',
+      )
+      const processedBefore = item.processed_at
+      const row = presentKfzWorkQueueRow(item)
+      const review = presentKfzWebsiteInboxItem(item)
+
+      assert.ok(row)
+      assert.ok(review)
+      assert.equal(item.processed_at, processedBefore)
+      assert.equal(review.phase, 'needs_review')
+      assert.equal(row.triagePhase, 'needs_review')
+      assert.equal(row.phase, 'missing_information')
+      assert.equal(row.phaseLabel, 'Fehlende Angaben')
+      assert.deepEqual(row.chip, { label: 'Fehlende Angaben', kind: 'gaps' })
+      assert.equal(row.customerName, 'Max Mustermann')
+      assert.match(row.requestFacts, /Unfall Kfz-Versicherung/)
+      assert.equal(row.hasFactualUrgency, true)
+      assert.equal(row.urgencyNote, KFZ_URGENCY_FACTUAL_NOTE)
+      assert.equal(row.missingCount, 2)
+      assert.match(row.nextActionLabel, /fehlende Angaben intern prüfen/)
+      assert.match(row.nextActionLabel, /Prüfung starten/)
+      assert.match(row.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
+      assert.equal(countKfzWorkQueue([item]).missing_information, 1)
+      assert.equal(countKfzWorkQueue([item]).needs_review, 0)
+      assert.equal(
+        filterInboxItemsByKfzPhase([item], 'missing_information')[0]?.id,
+        item.id,
+      )
+    })
+  })
+
+  it('keeps missing-information as the daily pile after an explicit start-review', async () => {
+    await withKfzEnv(async () => {
+      const item = await submitLandingToInbox(
+        baseValues({
+          phone: '',
+          email: 'anna@example.com',
+          preferredChannel: 'phone',
+          vehicleMake: '',
+          vehicleModel: '',
+          vehicleYear: '',
+        }),
+        'lp-queue-missing-review',
+      )
+      const started = applyKfzManualTriageCommand(
+        { content: item.content, processed_at: item.processed_at, linkedTaskId: null },
+        { type: 'start_review' },
+      )
+      assert.equal(started.ok, true)
+      if (!started.ok) {
+        return
+      }
+
+      const reviewedItem = { ...item, content: started.next.content }
+      const row = presentKfzWorkQueueRow(reviewedItem)
+
+      assert.ok(row)
+      assert.equal(row.triagePhase, 'in_review')
+      assert.equal(row.phase, 'missing_information')
+      assert.equal(row.phaseLabel, 'Fehlende Angaben')
+      assert.equal(started.next.processed_at, null)
+      assert.equal(started.mutated.processed, false)
+    })
+  })
+
+  it('presents the local daily queue fixtures as four exclusive piles', () => {
+    const preview = buildKfzWorkQueuePreviewItems()
+    const items = [...preview.unprocessedItems, ...preview.processedItems]
+    const counts = countKfzWorkQueue(items, preview.taskRelationsByItemId)
+    const rows = items.map((item) =>
+      presentKfzWorkQueueRow(item, {
+        linkedTaskId: preview.taskRelationsByItemId[item.id] ?? null,
+      }),
+    )
+
+    assert.equal(counts.needs_review, 1)
+    assert.equal(counts.missing_information, 1)
+    assert.equal(counts.in_review, 1)
+    assert.equal(counts.handled, 1)
+    assert.equal(sumKfzWorkQueueCounts(counts), 4)
+    assert.deepEqual(
+      rows.map((row) => row?.phase),
+      ['needs_review', 'missing_information', 'in_review', 'handled'],
+    )
+    const missing = rows[1]
+    assert.ok(missing)
+    assert.equal(missing.hasFactualUrgency, true)
+    assert.match(missing.nextActionLabel, /fehlende Angaben/)
+    assert.equal(missing.href.startsWith('/app/inbox?item='), true)
+    const reviewing = rows[2]
+    assert.ok(reviewing)
+    assert.equal(reviewing.followUpTaskHref, `/app/tasks?task=${preview.taskRelationsByItemId[reviewing.itemId]}`)
+    assert.match(reviewing.nextActionLabel, /Folgeaufgabe/)
   })
 })

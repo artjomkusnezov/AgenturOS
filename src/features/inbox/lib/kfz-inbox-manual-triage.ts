@@ -119,6 +119,7 @@ export function resolveKfzTriagePhase(
 export function buildKfzNextManualAction(
   item: Pick<InboxItem, 'processed_at' | 'content'>,
   linkedTaskId: string | null = null,
+  missingCount = 0,
 ): string {
   const suffix = KFZ_REVIEW_NO_AUTO_ACTION
   const phase = resolveKfzTriagePhase(item, linkedTaskId)
@@ -126,16 +127,24 @@ export function buildKfzNextManualAction(
   if (phase === 'handled') {
     return `Bereits manuell als bearbeitet markiert. ${suffix}`
   }
+
+  const missingLead =
+    missingCount > 0
+      ? missingCount === 1
+        ? '1 fehlende Angabe intern prüfen. '
+        : `${missingCount} fehlende Angaben intern prüfen. `
+      : ''
+
   if (phase === 'in_review') {
     if (linkedTaskId) {
-      return `Interne Folgeaufgabe ist angelegt. Prüfung fortsetzen oder manuell als erledigt markieren. ${suffix}`
+      return `${missingLead}Interne Folgeaufgabe ist angelegt. Prüfung fortsetzen oder manuell als erledigt markieren. ${suffix}`
     }
     if (hasKfzResponseDraft(item.content)) {
-      return `Interner Antwortentwurf ist gespeichert. Prüfung fortsetzen, Notiz ergänzen oder manuell als erledigt markieren. ${suffix}`
+      return `${missingLead}Interner Antwortentwurf ist gespeichert. Prüfung fortsetzen, Notiz ergänzen oder manuell als erledigt markieren. ${suffix}`
     }
-    return `Prüfung läuft intern. Notiz ergänzen, interne Folgeaufgabe anlegen oder manuell als erledigt markieren. ${suffix}`
+    return `${missingLead}Prüfung läuft intern. Notiz ergänzen, interne Folgeaufgabe anlegen oder manuell als erledigt markieren. ${suffix}`
   }
-  return `Prüfung starten — interne Notiz erfassen oder interne Folgeaufgabe anlegen. ${suffix}`
+  return `${missingLead}Prüfung starten — interne Notiz erfassen oder interne Folgeaufgabe anlegen. ${suffix}`
 }
 
 export function listKfzManualTriageActions(

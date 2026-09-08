@@ -10,8 +10,7 @@ import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-ite
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { presentInboxStatusChip } from '@/features/inbox/lib/kfz-work-queue'
-import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
+import { presentInboxStatusChip, presentKfzWorkQueueRow } from '@/features/inbox/lib/kfz-work-queue'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
@@ -127,12 +126,12 @@ export function InboxListItem({
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxSourceVisual(item.source)
-  const statusChip = presentInboxStatusChip(item, linkedTaskId)
-  const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
+  const statusChip = queueRow?.chip ?? presentInboxStatusChip(item, linkedTaskId)
 
   return (
     <div
-      className={`${aosListRowClassName} ${
+      className={`${aosListRowClassName} ${queueRow ? 'items-start py-2' : ''} ${
         isSelected
           ? aosListSelectedClassName
           : subdued
@@ -180,15 +179,23 @@ export function InboxListItem({
           </span>
           <span>{formatInboxListDate(item.created_at)}</span>
         </p>
-        {kfzReview ? (
-          <p className="mt-1 flex min-w-0 items-center gap-1.5">
-            <span className={`min-w-0 truncate text-[11px] leading-snug ${aosWsTextMetaClassName}`}>
-              {kfzReview.listSummary}
-            </span>
-            {kfzReview.missingCount > 0 ? (
-              <span className="aos-inbox-chip-gaps">{kfzReview.missingCountLabel}</span>
+        {queueRow ? (
+          <div className="aos-inbox-queue-copy">
+            <p className="aos-inbox-queue-line">{queueRow.requestFacts}</p>
+            {queueRow.urgencyNote ? (
+              <p className="aos-inbox-queue-urgency">{queueRow.urgencyNote}</p>
             ) : null}
-          </p>
+            <p className="mt-1 flex min-w-0 items-center gap-1.5">
+              <span
+                className={
+                  queueRow.missingCount > 0 ? 'aos-inbox-chip-gaps' : 'aos-inbox-chip-handled'
+                }
+              >
+                {queueRow.missingCountLabel}
+              </span>
+            </p>
+            <p className="aos-inbox-queue-next">{queueRow.nextActionLabel}</p>
+          </div>
         ) : null}
       </button>
     </div>

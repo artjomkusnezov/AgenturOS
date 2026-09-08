@@ -18,6 +18,7 @@ type InboxWorkspaceProps = {
   taskRelationsByItemId: Record<string, string>
   selectedItemId: string | null
   phaseFilter?: KfzWorkQueueFilter
+  hrefBasePath?: string
   attachments?: InboxLinkedFile[]
   memberNameMap?: Record<string, string>
   aiProposal?: InboxAiProposal | null
@@ -29,6 +30,7 @@ export function InboxWorkspace({
   taskRelationsByItemId,
   selectedItemId,
   phaseFilter = 'all',
+  hrefBasePath = '/app/inbox',
   attachments = [],
   memberNameMap = {},
   aiProposal = null,
@@ -50,14 +52,14 @@ export function InboxWorkspace({
 
   const navigateToItem = useCallback(
     (itemId: string) => {
-      router.push(buildInboxHref({ itemId, phase: phaseFilter }))
+      router.push(buildInboxHref({ itemId, phase: phaseFilter, basePath: hrefBasePath }))
     },
-    [phaseFilter, router]
+    [hrefBasePath, phaseFilter, router]
   )
 
   const navigateToList = useCallback(() => {
-    router.push(buildInboxHref({ phase: phaseFilter }))
-  }, [phaseFilter, router])
+    router.push(buildInboxHref({ phase: phaseFilter, basePath: hrefBasePath }))
+  }, [hrefBasePath, phaseFilter, router])
 
   const handleSelectItem = useCallback(
     (itemId: string) => {
@@ -104,6 +106,7 @@ export function InboxWorkspace({
               memberNameMap={memberNameMap}
               taskRelationsByItemId={taskRelationsByItemId}
               phaseFilter={phaseFilter}
+              hrefBasePath={hrefBasePath}
             />
           )
         }

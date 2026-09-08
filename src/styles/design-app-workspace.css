@@ -34,7 +34,7 @@
   /* Notebook: keep inbox list compact; detail takes remaining width */
   @media (min-width: 1024px) {
     .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-list-pane {
-      width: 17.5rem;
+      width: 20.5rem;
     }
   }
 
@@ -425,6 +425,43 @@
     flex-shrink: 0;
     background: rgb(251 146 60 / 0.16);
     color: #fdba74;
+  }
+
+  .aos-inbox-queue-copy {
+    margin-top: 0.35rem;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .aos-inbox-queue-line,
+  .aos-inbox-queue-next,
+  .aos-inbox-queue-urgency {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.6875rem;
+    line-height: 1.35;
+  }
+
+  .aos-inbox-queue-line {
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .aos-inbox-queue-urgency {
+    color: #fdba74;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .aos-inbox-queue-next {
+    color: var(--aos-cockpit-text-meta, #94a3b8);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .aos-kfz-checklist {

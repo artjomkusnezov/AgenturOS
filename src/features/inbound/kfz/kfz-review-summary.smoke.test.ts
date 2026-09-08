@@ -152,6 +152,7 @@ describe('kfz review summary and missing-information checklist', () => {
     assert.equal(item.processed_at, processedBefore)
     assert.equal(review.phase, 'needs_review')
     assert.equal(review.missingCount, 2)
+    assert.equal(review.hasFactualUrgency, false)
     assert.deepEqual(review.missingInformation, [
       'Telefonnummer für den bevorzugten Kanal',
       'Fahrzeugdaten (Marke/Modell/Jahr — falls relevant)',

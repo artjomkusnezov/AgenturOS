@@ -145,6 +145,7 @@ describe('kfz landing → HTTP → inbox presentation', () => {
       assert.equal(review.listSummary, 'Wechsel Kfz-Versicherung · VW Golf 2019')
       assert.ok(review.submittedFacts.some((fact) => fact.id === 'vehicle'))
       assert.ok(review.missingInformationChecklist.every((item) => item.present))
+      assert.equal(review.hasFactualUrgency, false)
       assert.equal(
         review.urgencyNote,
         'Kein Unfall- oder Schadenhinweis in den Angaben.',

@@ -37,11 +37,11 @@ import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   buildInboxHref,
   countKfzWorkQueue,
   presentInboxStatusChip,
+  presentKfzWorkQueueRow,
   resolveInboxLinkedTaskId,
   type KfzWorkQueueCounts,
 } from '@/features/inbox/lib/kfz-work-queue'
@@ -219,7 +219,7 @@ function InboxPanel({
             const creator = resolveInboxAttributionLabel(item, memberNameMap)
             const linkedTaskId = resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)
             const statusChip = presentInboxStatusChip(item, linkedTaskId)
-            const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+            const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
 
             return (
               <li key={item.id} className="az-list-item">
@@ -242,10 +242,18 @@ function InboxPanel({
                       <span className="truncate">{creator}</span>
                       <span aria-hidden="true">·</span>
                       <span>{formatDashboardDateOrTime(item.created_at)}</span>
-                      {kfzReview && kfzReview.missingCount > 0 ? (
+                      {queueRow ? (
                         <>
                           <span aria-hidden="true">·</span>
-                          <span>{kfzReview.missingCountLabel}</span>
+                          <span className="truncate">{queueRow.requestFacts}</span>
+                          {queueRow.hasFactualUrgency ? (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span>Dringlich</span>
+                            </>
+                          ) : null}
+                          <span aria-hidden="true">·</span>
+                          <span>{queueRow.missingCountLabel}</span>
                         </>
                       ) : null}
                     </span>
