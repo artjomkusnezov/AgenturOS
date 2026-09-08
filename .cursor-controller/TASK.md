@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-a84f
 
 # AgenturOS — Kfz work queue and follow-up visibility
@@ -21,3 +21,5 @@ Cursor-created branch only. No master, merge, deploy, production data, secrets, 
 
 ## Done
 An employee can find a Kfz inquiry by workflow state, create an internal follow-up explicitly, see it in the existing task area and return to the source inquiry; no external side effect occurs; tests and browser evidence are reported.
+
+CONTROLLER_NOTE: Launched before queue monitor installation; do not relaunch this task.
