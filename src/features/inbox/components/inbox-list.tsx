@@ -4,7 +4,15 @@ import { useMemo, useState } from 'react'
 
 import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
 import { InboxListItem } from '@/features/inbox/components/inbox-list-item'
+import { InboxSourceFilterNav } from '@/features/inbox/components/inbox-source-filter'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
+import {
+  buildInboxSourceFilterHrefs,
+  countInboxSourceFilters,
+  filterInboxItemsBySource,
+  INBOX_SOURCE_FILTER_LABELS,
+  type InboxSourceFilter,
+} from '@/features/inbox/lib/inbox-source-filter'
 import {
   countKfzWorkQueue,
   filterInboxItemsByKfzPhase,
@@ -26,6 +34,7 @@ type InboxListProps = {
   memberNameMap?: Record<string, string>
   taskRelationsByItemId?: Record<string, string>
   phaseFilter?: KfzWorkQueueFilter
+  sourceFilter?: InboxSourceFilter
   hrefBasePath?: string | null
 }
 
@@ -37,6 +46,7 @@ export function InboxList({
   memberNameMap = {},
   taskRelationsByItemId = {},
   phaseFilter = 'all',
+  sourceFilter = 'all',
   hrefBasePath = null,
 }: InboxListProps) {
   const [archiveExpanded, setArchiveExpanded] = useState(false)
@@ -48,6 +58,17 @@ export function InboxList({
     () => countKfzWorkQueue(allItems, taskRelationsByItemId),
     [allItems, taskRelationsByItemId],
   )
+  const sourceCounts = useMemo(() => countInboxSourceFilters(allItems), [allItems])
+  const sourceFilterHrefs = useMemo(
+    () =>
+      buildInboxSourceFilterHrefs({
+        selectedItemId,
+        selectedItem: allItems.find((item) => item.id === selectedItemId) ?? null,
+        phase: phaseFilter,
+        basePath: hrefBasePath,
+      }),
+    [allItems, hrefBasePath, phaseFilter, selectedItemId],
+  )
   const selectedItem = allItems.find((item) => item.id === selectedItemId) ?? null
   const selectedPhase = selectedItem
     ? resolveKfzWorkQueuePhase(
@@ -56,12 +77,22 @@ export function InboxList({
       )
     : null
   const visibleUnprocessedItems = useMemo(
-    () => filterInboxItemsByKfzPhase(unprocessedItems, phaseFilter, taskRelationsByItemId),
-    [phaseFilter, taskRelationsByItemId, unprocessedItems],
+    () =>
+      filterInboxItemsByKfzPhase(
+        filterInboxItemsBySource(unprocessedItems, sourceFilter),
+        phaseFilter,
+        taskRelationsByItemId,
+      ),
+    [phaseFilter, sourceFilter, taskRelationsByItemId, unprocessedItems],
   )
   const filteredProcessedItems = useMemo(
-    () => filterInboxItemsByKfzPhase(processedItems, phaseFilter, taskRelationsByItemId),
-    [phaseFilter, processedItems, taskRelationsByItemId],
+    () =>
+      filterInboxItemsByKfzPhase(
+        filterInboxItemsBySource(processedItems, sourceFilter),
+        phaseFilter,
+        taskRelationsByItemId,
+      ),
+    [phaseFilter, processedItems, sourceFilter, taskRelationsByItemId],
   )
 
   const visibleProcessedItems = useMemo(() => {
@@ -79,22 +110,32 @@ export function InboxList({
 
   return (
     <div className="space-y-3">
+      <InboxSourceFilterNav
+        activeSource={sourceFilter}
+        counts={sourceCounts}
+        hrefs={sourceFilterHrefs}
+      />
       <InboxKfzPhaseFilter
         activePhase={phaseFilter}
         counts={kfzCounts}
         selectedItemId={selectedItemId}
         selectedPhase={selectedPhase}
+        sourceFilter={sourceFilter}
         hrefBasePath={hrefBasePath}
       />
 
       {filterEmpty ? (
         <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">
-            Keine Kfz-Anfragen in dieser Tagesliste.
+          {sourceFilter !== 'all' || queueMode
+            ? 'Keine Einträge für diesen Filter.'
+            : 'Keine Kfz-Anfragen in dieser Tagesliste.'}
         </p>
       ) : queueMode ? (
         <div>
           <h3 className={aosListGroupLabelClassName}>
-            {KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter]}
+            {sourceFilter !== 'all'
+              ? `${INBOX_SOURCE_FILTER_LABELS[sourceFilter]} · ${KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter]}`
+              : KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter]}
           </h3>
           <ul className="flex flex-col">
             {queueItems.map((item) => (
@@ -106,6 +147,9 @@ export function InboxList({
                   linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
                   onSelect={onSelectItem}
                   memberNameMap={memberNameMap}
+                  phaseFilter={phaseFilter}
+                  sourceFilter={sourceFilter}
+                  hrefBasePath={hrefBasePath}
                 />
               </li>
             ))}
@@ -127,6 +171,9 @@ export function InboxList({
                       linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
                       onSelect={onSelectItem}
                       memberNameMap={memberNameMap}
+                      phaseFilter={phaseFilter}
+                      sourceFilter={sourceFilter}
+                      hrefBasePath={hrefBasePath}
                     />
                   </li>
                 ))}
@@ -147,6 +194,9 @@ export function InboxList({
                       linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
                       onSelect={onSelectItem}
                       memberNameMap={memberNameMap}
+                      phaseFilter={phaseFilter}
+                      sourceFilter={sourceFilter}
+                      hrefBasePath={hrefBasePath}
                     />
                   </li>
                 ))}

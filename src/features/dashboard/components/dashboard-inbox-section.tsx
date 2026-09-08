@@ -12,17 +12,12 @@ import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-
 import { dashboardSectionPaddingClassName } from '@/features/dashboard/lib/dashboard-surface'
 import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
-import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
-import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import {
-  buildInboxHref,
   countKfzWorkQueue,
-  presentInboxStatusChip,
-  presentKfzWorkQueueRow,
   resolveInboxLinkedTaskId,
   type KfzWorkQueueCounts,
 } from '@/features/inbox/lib/kfz-work-queue'
-import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
+import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
@@ -35,63 +30,49 @@ type DashboardInboxSectionProps = {
 
 function DashboardInboxRow({
   item,
-  memberNameMap,
   linkedTaskId,
 }: {
   item: InboxItem
-  memberNameMap: Record<string, string>
   linkedTaskId: string | null
 }) {
-  const title = getInboxListTitle(item)
-  const timeLabel = formatDashboardDateOrTime(item.created_at)
+  const card = presentUnifiedInboxCard(item, { linkedTaskId })
+  const timeLabel = formatDashboardDateOrTime(card.receivedAt)
   const isUnprocessed = isInboxItemUnprocessed(item)
-  const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
-  const statusChip = presentInboxStatusChip(item, linkedTaskId)
-  const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
 
   return (
     <Link
-      href={buildInboxHref({ itemId: item.id })}
+      href={card.href}
       className="aos-cockpit-row"
     >
       <DashboardInboxSourceIcon item={item} />
       <span className="min-w-0 flex-1">
         <span className={`aos-cockpit-row-title ${isUnprocessed ? 'aos-cockpit-row-title--strong' : ''}`}>
-          {title}
+          {card.headline}
         </span>
         <span className="aos-cockpit-row-meta">
-          <span>{getInboxItemSourceLabel(item)}</span>
+          <span>{card.sourceLabel}</span>
           <span aria-hidden="true">·</span>
-          <span className="truncate">{creatorName}</span>
+          <span className="truncate">{card.customerContact}</span>
           <span aria-hidden="true">·</span>
           <span className="tabular-nums">{timeLabel}</span>
-          {queueRow ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="truncate">{queueRow.requestFacts}</span>
-              {queueRow.hasFactualUrgency ? (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span>Dringlich</span>
-                </>
-              ) : null}
-              <span aria-hidden="true">·</span>
-              <span>{queueRow.missingCountLabel}</span>
-            </>
-          ) : null}
+          <span aria-hidden="true">·</span>
+          <span className="truncate">{card.requestSummary}</span>
+          <span aria-hidden="true">·</span>
+          <span>{card.missingInformationLabel}</span>
         </span>
       </span>
-      {statusChip ? (
-        <InboxStatusChip label={statusChip.label} kind={statusChip.kind} surface="cockpit" />
-      ) : null}
-      {creatorName ? <DashboardAvatar name={creatorName} /> : null}
+      <InboxStatusChip
+        label={card.reviewStatus.label}
+        kind={card.reviewStatus.kind}
+        surface="cockpit"
+      />
+      {card.customerContact ? <DashboardAvatar name={card.customerContact} /> : null}
     </Link>
   )
 }
 
 export function DashboardInboxSection({
   items,
-  memberNameMap = {},
   taskRelationsByItemId = {},
   kfzQueueCounts,
 }: DashboardInboxSectionProps) {
@@ -128,7 +109,6 @@ export function DashboardInboxSection({
             <DashboardInboxRow
               key={item.id}
               item={item}
-              memberNameMap={memberNameMap}
               linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
             />
           ))}

@@ -16,6 +16,7 @@ type InboxKfzPhaseFilterProps = {
   counts: KfzWorkQueueCounts
   selectedItemId?: string | null
   selectedPhase?: KfzWorkQueuePhase | null
+  sourceFilter?: string | null
   variant?: 'inbox' | 'dashboard'
   hrefBasePath?: string | null
 }
@@ -25,6 +26,7 @@ export function InboxKfzPhaseFilter({
   counts,
   selectedItemId = null,
   selectedPhase = null,
+  sourceFilter = null,
   variant = 'inbox',
   hrefBasePath = null,
 }: InboxKfzPhaseFilterProps) {
@@ -36,6 +38,7 @@ export function InboxKfzPhaseFilter({
   const hrefs = buildKfzWorkQueueFilterHrefs({
     selectedItemId,
     selectedPhase,
+    source: sourceFilter,
     basePath: hrefBasePath,
   })
 

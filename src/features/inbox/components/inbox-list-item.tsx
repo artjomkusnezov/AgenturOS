@@ -8,11 +8,10 @@ import type { DashboardAccent } from '@/features/dashboard/components/dashboard-
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
-import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
-import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { presentInboxStatusChip, presentKfzWorkQueueRow } from '@/features/inbox/lib/kfz-work-queue'
-import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
-import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
+import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
+import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
+import type { KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
+import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 import {
   aosListRowClassName,
@@ -32,6 +31,9 @@ type InboxListItemProps = {
   linkedTaskId?: string | null
   onSelect: (itemId: string) => void
   memberNameMap?: Record<string, string>
+  phaseFilter?: KfzWorkQueueFilter
+  sourceFilter?: InboxSourceFilter
+  hrefBasePath?: string | null
 }
 
 const initialState: InboxItemMutationState = {}
@@ -121,17 +123,22 @@ export function InboxListItem({
   subdued = false,
   linkedTaskId = null,
   onSelect,
-  memberNameMap = {},
+  phaseFilter = 'all',
+  sourceFilter = 'all',
+  hrefBasePath = null,
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
-  const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxItemSourceVisual(item)
-  const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
-  const statusChip = queueRow?.chip ?? presentInboxStatusChip(item, linkedTaskId)
+  const card = presentUnifiedInboxCard(item, {
+    linkedTaskId,
+    phase: phaseFilter,
+    source: sourceFilter,
+    basePath: hrefBasePath,
+  })
 
   return (
     <div
-      className={`${aosListRowClassName} ${queueRow ? 'items-start py-2' : ''} ${
+      className={`${aosListRowClassName} items-start py-2 ${
         isSelected
           ? aosListSelectedClassName
           : subdued
@@ -161,42 +168,37 @@ export function InboxListItem({
           <p
             className={`min-w-0 flex-1 truncate text-[13px] leading-snug font-medium ${aosWsTextPrimaryClassName}`}
           >
-            {getInboxListTitle(item)}
+            {card.headline}
           </p>
-          {statusChip ? (
-            <InboxStatusChip label={statusChip.label} kind={statusChip.kind} />
-          ) : null}
+          <InboxStatusChip label={card.reviewStatus.label} kind={card.reviewStatus.kind} />
         </div>
 
         <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
-          <span>{getInboxItemSourceLabel(item)}</span>
+          <span>{card.sourceLabel}</span>
           <span className="mx-1" aria-hidden="true">
             ·
           </span>
-          <span>{creatorName}</span>
-          <span className="mx-1" aria-hidden="true">
-            ·
-          </span>
-          <span>{formatInboxListDate(item.created_at)}</span>
+          <span>{card.receivedAtLabel}</span>
         </p>
-        {queueRow ? (
-          <div className="aos-inbox-queue-copy">
-            <p className="aos-inbox-queue-line">{queueRow.requestFacts}</p>
-            {queueRow.urgencyNote ? (
-              <p className="aos-inbox-queue-urgency">{queueRow.urgencyNote}</p>
-            ) : null}
-            <p className="mt-1 flex min-w-0 items-center gap-1.5">
-              <span
-                className={
-                  queueRow.missingCount > 0 ? 'aos-inbox-chip-gaps' : 'aos-inbox-chip-handled'
-                }
-              >
-                {queueRow.missingCountLabel}
-              </span>
-            </p>
-            <p className="aos-inbox-queue-next">{queueRow.nextActionLabel}</p>
-          </div>
-        ) : null}
+        <div className="aos-inbox-queue-copy">
+          <p className="aos-inbox-queue-line">{card.customerContact}</p>
+          <p className="aos-inbox-queue-line">{card.requestSummary}</p>
+          {card.urgencyNote ? (
+            <p className="aos-inbox-queue-urgency">{card.urgencyNote}</p>
+          ) : null}
+          <p className="mt-1 flex min-w-0 items-center gap-1.5">
+            <span
+              className={
+                card.missingCount > 0 ? 'aos-inbox-chip-gaps' : 'aos-inbox-chip-handled'
+              }
+            >
+              {card.missingInformationLabel}
+            </span>
+          </p>
+          {card.nextActionLabel ? (
+            <p className="aos-inbox-queue-next">{card.nextActionLabel}</p>
+          ) : null}
+        </div>
       </button>
     </div>
   )

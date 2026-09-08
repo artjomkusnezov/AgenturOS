@@ -142,6 +142,7 @@ export function formatKfzWorkQueueMeta(counts: KfzWorkQueueCounts): string | nul
 export function buildKfzWorkQueueFilterHrefs(options?: {
   selectedItemId?: string | null
   selectedPhase?: KfzWorkQueuePhase | null
+  source?: string | null
   basePath?: string | null
 }): Record<KfzWorkQueueFilter, string> {
   const hrefs = {} as Record<KfzWorkQueueFilter, string>
@@ -152,6 +153,7 @@ export function buildKfzWorkQueueFilterHrefs(options?: {
       (filter === 'all' || options?.selectedPhase === filter)
     hrefs[filter] = buildInboxHref({
       phase: filter,
+      source: options?.source,
       itemId: keepItem ? options?.selectedItemId : null,
       basePath: options?.basePath,
     })
@@ -178,10 +180,16 @@ export function parseKfzWorkQueueFilter(
 export function buildInboxHref(options?: {
   itemId?: string | null
   phase?: KfzWorkQueueFilter | null
+  source?: string | null
   basePath?: string | null
 }): string {
   const params = new URLSearchParams()
+  const source = options?.source?.trim() ?? ''
   const phase = options?.phase ?? 'all'
+
+  if (source && source !== 'all') {
+    params.set('source', source)
+  }
 
   if (phase !== 'all') {
     params.set(KFZ_WORK_QUEUE_FILTER_PARAM, phase)
@@ -292,6 +300,7 @@ export function presentKfzWorkQueueRow(
   options?: {
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
+    source?: string | null
     basePath?: string | null
   },
 ): KfzWorkQueueRow | null {
@@ -316,6 +325,7 @@ export function presentKfzWorkQueueRow(
     href: buildInboxHref({
       itemId: item.id,
       phase: options?.phase ?? 'all',
+      source: options?.source ?? 'all',
       basePath: options?.basePath,
     }),
     linkedTaskId,
