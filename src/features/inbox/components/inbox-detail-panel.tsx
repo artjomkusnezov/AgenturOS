@@ -186,7 +186,7 @@ export function InboxDetailPanel({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800 lg:hidden"
+              className="inline-flex min-h-11 items-center px-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800 lg:hidden"
             >
               ← Liste
             </button>
@@ -194,14 +194,14 @@ export function InboxDetailPanel({
           {isHistoryView ? (
             <Link
               href={history.workHref}
-              className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
+              className="inline-flex min-h-11 items-center px-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
             >
               ← {INBOX_HISTORY_RETURN_LABEL}
             </Link>
           ) : (
             <Link
               href={history.historyHref}
-              className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
+              className="inline-flex min-h-11 items-center px-1 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
             >
               {INBOX_HISTORY_OPEN_LABEL}
             </Link>
