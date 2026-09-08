@@ -1,24 +1,21 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-0f60
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-d280
 
-# AgenturOS — Manual phone, email and note capture
+# AgenturOS — Human-reviewed duplicate warning for manual capture
 
 ## Goal
-Extend the finished fast text capture so an employee can label where information came from — phone call, pasted email or personal note — while keeping one unified inbox and human confirmation.
+Help an employee avoid creating the same manually captured inquiry twice, while keeping the decision completely manual.
 
 ## Required work
-- Reuse the finished paste/type → review → confirm → inbox flow.
-- Add a simple source choice: Telefonat, E-Mail eingefügt, Eigene Notiz.
-- Keep the original text unchanged and store the selected source in existing provider-neutral metadata.
-- Show only safe local suggestions for title/contact facts and label them as suggestions.
-- Require explicit human confirmation before creating the inbox item.
-- After confirmation, open the existing review workspace and show the source clearly.
-- No provider connection, automatic reply, customer contact, task/status automation, Meta/WhatsApp or CRM replacement.
+- Build on the finished phone, pasted email and personal-note capture flow.
+- Before final confirmation, compare the current draft with existing inbox items using deterministic local facts already available: unchanged source text, phone/email and recent title.
+- If a likely duplicate exists, show a clear warning and link/open the existing inbox item.
+- Never block automatically: the employee must explicitly choose either open the existing item or create the new item anyway.
+- Do not merge records, change statuses, create tasks, send replies or contact customers automatically.
+- Keep source labels and original text unchanged.
+- Reuse the safe local preview route and fixtures without production data.
 - Add deterministic tests; run inbound tests, TypeScript, lint and build.
-- Browser-check desktop/mobile on a safe local route and record exact evidence or blockers.
+- Browser-check desktop/mobile and record exact evidence or blockers.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
-
-CONTROLLER_AGENT_ID: bc-5b7ff910-bb6c-43e8-964f-b603ed0c6918
-CONTROLLER_STARTED_AT: 2026-09-08T11:47:39Z
+Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp or paid services.
