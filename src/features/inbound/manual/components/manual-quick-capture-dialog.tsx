@@ -23,6 +23,21 @@ import {
   MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL,
   MANUAL_CAPTURE_EMPTY_ERROR,
   MANUAL_CAPTURE_FIELDS_HEADING,
+  MANUAL_CAPTURE_KFZ_CASE_HINT,
+  MANUAL_CAPTURE_KFZ_CASE_LABEL,
+  MANUAL_CAPTURE_KFZ_CITY_LABEL,
+  MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE,
+  MANUAL_CAPTURE_KFZ_CUSTOMER_LABEL,
+  MANUAL_CAPTURE_KFZ_EMAIL_LABEL,
+  MANUAL_CAPTURE_KFZ_FIELDS_HEADING,
+  MANUAL_CAPTURE_KFZ_MISSING_HEADING,
+  MANUAL_CAPTURE_KFZ_PHONE_LABEL,
+  MANUAL_CAPTURE_KFZ_POSTAL_CODE_LABEL,
+  MANUAL_CAPTURE_KFZ_PREFERRED_CHANNEL_LABEL,
+  MANUAL_CAPTURE_KFZ_REASON_LABEL,
+  MANUAL_CAPTURE_KFZ_VEHICLE_MAKE_LABEL,
+  MANUAL_CAPTURE_KFZ_VEHICLE_MODEL_LABEL,
+  MANUAL_CAPTURE_KFZ_VEHICLE_YEAR_LABEL,
   MANUAL_CAPTURE_KIND_LABEL,
   MANUAL_CAPTURE_KIND_VALUE,
   MANUAL_CAPTURE_NO_AUTO_ACTION,
@@ -53,6 +68,10 @@ import {
   presentManualCaptureDraft,
   presentManualCaptureDuplicateWarning,
 } from '@/features/inbound/manual/lib/present-manual-capture'
+import {
+  buildKfzMissingInformationChecklist,
+  labelKfzMissingCount,
+} from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   aosAlertWarningClassName,
   aosBadgeNeutralSubduedClassName,
@@ -95,6 +114,7 @@ export function ManualQuickCaptureDialog({
   const [step, setStep] = useState<CaptureStep>('compose')
   const [sourceText, setSourceText] = useState('')
   const [originKind, setOriginKind] = useState<ManualCaptureOriginKind | ''>('')
+  const [kfzCase, setKfzCase] = useState(false)
   const [title, setTitle] = useState('')
   const [originDisplayName, setOriginDisplayName] = useState('')
   const [originAddress, setOriginAddress] = useState('')
@@ -106,6 +126,30 @@ export function ManualQuickCaptureDialog({
     originName: false,
     originAddress: false,
   })
+  const [kfzFields, setKfzFields] = useState({
+    fullName: '',
+    phone: '',
+    email: '',
+    postalCode: '',
+    city: '',
+    preferredChannel: '',
+    inquiryReason: '',
+    vehicleMake: '',
+    vehicleModel: '',
+    vehicleYear: '',
+  })
+  const [kfzSuggestionFlags, setKfzSuggestionFlags] = useState({
+    fullName: false,
+    phone: false,
+    email: false,
+    postalCode: false,
+    city: false,
+    preferredChannel: false,
+    inquiryReason: false,
+    vehicleMake: false,
+    vehicleModel: false,
+    vehicleYear: false,
+  })
   const [isLocalPending, setIsLocalPending] = useState(false)
   const handledSuccessRef = useRef<string | null>(null)
   const [state, formAction, isPending] = useActionState(confirmManualCaptureAction, initialState)
@@ -114,6 +158,7 @@ export function ManualQuickCaptureDialog({
     setStep('compose')
     setSourceText('')
     setOriginKind('')
+    setKfzCase(false)
     setTitle('')
     setOriginDisplayName('')
     setOriginAddress('')
@@ -121,6 +166,30 @@ export function ManualQuickCaptureDialog({
     setComposeError(null)
     setLocalError(null)
     setSuggestionFlags({ title: false, originName: false, originAddress: false })
+    setKfzFields({
+      fullName: '',
+      phone: '',
+      email: '',
+      postalCode: '',
+      city: '',
+      preferredChannel: '',
+      inquiryReason: '',
+      vehicleMake: '',
+      vehicleModel: '',
+      vehicleYear: '',
+    })
+    setKfzSuggestionFlags({
+      fullName: false,
+      phone: false,
+      email: false,
+      postalCode: false,
+      city: false,
+      preferredChannel: false,
+      inquiryReason: false,
+      vehicleMake: false,
+      vehicleModel: false,
+      vehicleYear: false,
+    })
     setIsLocalPending(false)
   }, [])
 
@@ -147,7 +216,7 @@ export function ManualQuickCaptureDialog({
   }, [onClose, resetForm, reviewHrefBase, router, state.itemId, state.success])
 
   const openReview = useCallback(() => {
-    const result = buildManualCaptureDraft(sourceText, { originKind })
+    const result = buildManualCaptureDraft(sourceText, { originKind, kfzCase })
     if (!result.ok) {
       setComposeError(result.error)
       return
@@ -156,6 +225,7 @@ export function ManualQuickCaptureDialog({
     const review = presentManualCaptureDraft(result.draft)
     setSourceText(result.draft.sourceText)
     setOriginKind(result.draft.originKind)
+    setKfzCase(result.draft.kfzCase)
     setTitle(result.draft.proposed.title ?? '')
     setOriginDisplayName(result.draft.proposed.origin?.displayName ?? '')
     setOriginAddress(result.draft.proposed.origin?.address ?? '')
@@ -167,10 +237,47 @@ export function ManualQuickCaptureDialog({
         review.fields.find((field) => field.id === 'originAddress')?.suggestion,
       ),
     })
+
+    const kfz = review.kfz
+    const valueFor = (id: string) => kfz?.fields.find((field) => field.id === id)?.value ?? ''
+    const suggested = (id: string) =>
+      Boolean(kfz?.fields.find((field) => field.id === id)?.suggestion)
+    setKfzFields({
+      fullName: valueFor('fullName') || (result.draft.proposed.origin?.displayName ?? ''),
+      phone:
+        valueFor('phone') ||
+        (result.draft.proposed.origin?.addressKind === 'phone'
+          ? (result.draft.proposed.origin.address ?? '')
+          : ''),
+      email:
+        valueFor('email') ||
+        (result.draft.proposed.origin?.addressKind === 'email'
+          ? (result.draft.proposed.origin.address ?? '')
+          : ''),
+      postalCode: valueFor('postalCode'),
+      city: valueFor('city'),
+      preferredChannel: result.draft.kfzFacts?.preferredChannel ?? '',
+      inquiryReason: valueFor('inquiryReason'),
+      vehicleMake: valueFor('vehicleMake'),
+      vehicleModel: valueFor('vehicleModel'),
+      vehicleYear: valueFor('vehicleYear'),
+    })
+    setKfzSuggestionFlags({
+      fullName: suggested('fullName'),
+      phone: suggested('phone'),
+      email: suggested('email'),
+      postalCode: suggested('postalCode'),
+      city: suggested('city'),
+      preferredChannel: suggested('preferredChannel'),
+      inquiryReason: suggested('inquiryReason'),
+      vehicleMake: suggested('vehicleMake'),
+      vehicleModel: suggested('vehicleModel'),
+      vehicleYear: suggested('vehicleYear'),
+    })
     setComposeError(null)
     setLocalError(null)
     setStep('review')
-  }, [originKind, sourceText])
+  }, [kfzCase, originKind, sourceText])
 
   const duplicateWarning = useMemo(() => {
     if (step !== 'review') {
@@ -203,6 +310,37 @@ export function ManualQuickCaptureDialog({
     title,
   ])
 
+  const kfzMissing = useMemo(() => {
+    if (step !== 'review' || !kfzCase) {
+      return null
+    }
+
+    const vehicleLabel =
+      [kfzFields.vehicleMake, kfzFields.vehicleModel, kfzFields.vehicleYear]
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(' ') || null
+    const locationLabel =
+      [kfzFields.postalCode, kfzFields.city].map((part) => part.trim()).filter(Boolean).join(' ') ||
+      null
+    const checklist = buildKfzMissingInformationChecklist({
+      phone: kfzFields.phone.trim() || null,
+      email: kfzFields.email.trim() || null,
+      preferredChannel: kfzFields.preferredChannel.trim() || null,
+      reason: kfzFields.inquiryReason.trim() || null,
+      vehicle: vehicleLabel,
+      location: locationLabel,
+    })
+    const missingInformation = checklist.filter((item) => !item.present).map((item) => item.label)
+
+    return {
+      checklist,
+      missingInformation,
+      missingCount: missingInformation.length,
+      missingCountLabel: labelKfzMissingCount(missingInformation.length),
+    }
+  }, [kfzCase, kfzFields, step])
+
   const handleLocalConfirm = useCallback(() => {
     if (isLocalPending) {
       return
@@ -223,6 +361,21 @@ export function ManualQuickCaptureDialog({
             ? originAddressKind
             : null,
       }),
+      kfzCase,
+      kfz: kfzCase
+        ? {
+            fullName: kfzFields.fullName,
+            phone: kfzFields.phone,
+            email: kfzFields.email,
+            postalCode: kfzFields.postalCode,
+            city: kfzFields.city,
+            preferredChannel: kfzFields.preferredChannel,
+            inquiryReason: kfzFields.inquiryReason,
+            vehicleMake: kfzFields.vehicleMake,
+            vehicleModel: kfzFields.vehicleModel,
+            vehicleYear: kfzFields.vehicleYear,
+          }
+        : null,
     })
 
     setIsLocalPending(false)
@@ -249,6 +402,8 @@ export function ManualQuickCaptureDialog({
     router,
     sourceText,
     title,
+    kfzCase,
+    kfzFields,
   ])
 
   const handleComposeSubmit = useCallback(
@@ -379,6 +534,22 @@ export function ManualQuickCaptureDialog({
             disabled={busy}
             error={originKindError}
           />
+          <label className="mt-5 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-zinc-200/80 bg-white px-3 py-3">
+            <input
+              type="checkbox"
+              name="kfzCase"
+              checked={kfzCase}
+              disabled={busy}
+              onChange={(event) => setKfzCase(event.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-zinc-800"
+            />
+            <span>
+              <span className={aosTextLabelClassName}>{MANUAL_CAPTURE_KFZ_CASE_LABEL}</span>
+              <span className={`mt-1 block ${aosTextMetaClassName}`}>
+                {MANUAL_CAPTURE_KFZ_CASE_HINT}
+              </span>
+            </span>
+          </label>
           <div className="mt-5 flex flex-col gap-1.5">
             <label htmlFor="manual-capture-source" className={aosTextLabelClassName}>
               {MANUAL_CAPTURE_SOURCE_LABEL}
@@ -408,6 +579,7 @@ export function ManualQuickCaptureDialog({
           <input type="hidden" name="sourceText" value={sourceText} />
           <input type="hidden" name="originKind" value={originKind} />
           <input type="hidden" name="originAddressKind" value={originAddressKind} />
+          {kfzCase ? <input type="hidden" name="kfzCase" value="true" /> : null}
 
           {duplicateWarning ? (
             <div className={aosAlertWarningClassName} role="status">
@@ -477,6 +649,136 @@ export function ManualQuickCaptureDialog({
             <ReadonlyProposedField label={MANUAL_CAPTURE_SENDER_LABEL} value={MANUAL_CAPTURE_SENDER_VALUE} />
           </section>
 
+          {kfzCase ? (
+            <section className="space-y-3">
+              <h3 className={aosTextLabelClassName}>{MANUAL_CAPTURE_KFZ_FIELDS_HEADING}</h3>
+              <p className={aosTextMetaClassName}>{MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE}</p>
+              <input type="hidden" name="kfzPreferredChannel" value={kfzFields.preferredChannel} />
+
+              <EditableProposedField
+                id="manual-capture-kfz-name"
+                name="kfzFullName"
+                label={MANUAL_CAPTURE_KFZ_CUSTOMER_LABEL}
+                value={kfzFields.fullName}
+                onChange={(value) => setKfzFields((current) => ({ ...current, fullName: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.fullName}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-phone"
+                name="kfzPhone"
+                label={MANUAL_CAPTURE_KFZ_PHONE_LABEL}
+                value={kfzFields.phone}
+                onChange={(value) => setKfzFields((current) => ({ ...current, phone: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.phone}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-email"
+                name="kfzEmail"
+                label={MANUAL_CAPTURE_KFZ_EMAIL_LABEL}
+                value={kfzFields.email}
+                onChange={(value) => setKfzFields((current) => ({ ...current, email: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.email}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-postal"
+                name="kfzPostalCode"
+                label={MANUAL_CAPTURE_KFZ_POSTAL_CODE_LABEL}
+                value={kfzFields.postalCode}
+                onChange={(value) => setKfzFields((current) => ({ ...current, postalCode: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.postalCode}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-city"
+                name="kfzCity"
+                label={MANUAL_CAPTURE_KFZ_CITY_LABEL}
+                value={kfzFields.city}
+                onChange={(value) => setKfzFields((current) => ({ ...current, city: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.city}
+              />
+              <ReadonlyProposedField
+                label={MANUAL_CAPTURE_KFZ_PREFERRED_CHANNEL_LABEL}
+                value={
+                  kfzFields.preferredChannel === 'phone'
+                    ? 'Telefon'
+                    : kfzFields.preferredChannel === 'email'
+                      ? 'E-Mail'
+                      : kfzFields.preferredChannel === 'whatsapp'
+                        ? 'WhatsApp'
+                        : ''
+                }
+                suggested={kfzSuggestionFlags.preferredChannel}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-reason"
+                name="kfzInquiryReason"
+                label={MANUAL_CAPTURE_KFZ_REASON_LABEL}
+                value={kfzFields.inquiryReason}
+                onChange={(value) =>
+                  setKfzFields((current) => ({ ...current, inquiryReason: value }))
+                }
+                disabled={busy}
+                suggested={kfzSuggestionFlags.inquiryReason}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-make"
+                name="kfzVehicleMake"
+                label={MANUAL_CAPTURE_KFZ_VEHICLE_MAKE_LABEL}
+                value={kfzFields.vehicleMake}
+                onChange={(value) => setKfzFields((current) => ({ ...current, vehicleMake: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.vehicleMake}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-model"
+                name="kfzVehicleModel"
+                label={MANUAL_CAPTURE_KFZ_VEHICLE_MODEL_LABEL}
+                value={kfzFields.vehicleModel}
+                onChange={(value) =>
+                  setKfzFields((current) => ({ ...current, vehicleModel: value }))
+                }
+                disabled={busy}
+                suggested={kfzSuggestionFlags.vehicleModel}
+              />
+              <EditableProposedField
+                id="manual-capture-kfz-year"
+                name="kfzVehicleYear"
+                label={MANUAL_CAPTURE_KFZ_VEHICLE_YEAR_LABEL}
+                value={kfzFields.vehicleYear}
+                onChange={(value) => setKfzFields((current) => ({ ...current, vehicleYear: value }))}
+                disabled={busy}
+                suggested={kfzSuggestionFlags.vehicleYear}
+              />
+
+              {kfzMissing ? (
+                <div>
+                  <h4 className={aosTextLabelClassName}>{MANUAL_CAPTURE_KFZ_MISSING_HEADING}</h4>
+                  <p className={`mt-1 ${aosTextMetaClassName}`}>{kfzMissing.missingCountLabel}</p>
+                  <ul aria-label="Prüfliste fehlender Angaben" className="aos-kfz-checklist mt-2">
+                    {kfzMissing.checklist.map((item) => (
+                      <li
+                        key={item.id}
+                        className={
+                          item.present
+                            ? 'aos-kfz-check aos-kfz-check--present'
+                            : 'aos-kfz-check aos-kfz-check--missing'
+                        }
+                      >
+                        <span aria-hidden="true">{item.present ? '✓' : '○'}</span>
+                        <span>{item.label}</span>
+                        <span className="sr-only">{item.present ? 'vorhanden' : 'fehlt'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           <p className={aosWorkspaceMetaClassName}>{MANUAL_CAPTURE_NO_AUTO_ACTION}</p>
           {globalError ? <p className={aosFieldErrorSmClassName}>{globalError}</p> : null}
         </form>
@@ -536,12 +838,25 @@ function OriginKindPicker({
   )
 }
 
-function ReadonlyProposedField({ label, value }: { label: string; value: string }) {
+function ReadonlyProposedField({
+  label,
+  value,
+  suggested = false,
+}: {
+  label: string
+  value: string
+  suggested?: boolean
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <p className={aosTextLabelClassName}>{label}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className={aosTextLabelClassName}>{label}</p>
+        {suggested ? (
+          <span className={aosBadgeNeutralSubduedClassName}>{MANUAL_FIELD_SUGGESTION_LABEL}</span>
+        ) : null}
+      </div>
       <p className={`rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-2 text-sm text-zinc-800`}>
-        {value}
+        {value || '—'}
       </p>
     </div>
   )

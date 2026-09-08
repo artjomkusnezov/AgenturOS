@@ -26,6 +26,37 @@ export const MANUAL_CAPTURE_ORIGIN_KIND_NOTE_LABEL = 'Eigene Notiz' as const
 
 export const MANUAL_CAPTURE_ORIGIN_KIND_ERROR = 'Bitte wählen Sie die Quelle.' as const
 
+export const MANUAL_CAPTURE_KFZ_CASE_LABEL = 'Kfz-Anfrage' as const
+
+export const MANUAL_CAPTURE_KFZ_CASE_HINT =
+  'Nur manuell zuordnen. Es wird nichts automatisch klassifiziert.' as const
+
+export const MANUAL_CAPTURE_KFZ_FIELDS_HEADING = 'Kfz-Angaben' as const
+
+export const MANUAL_CAPTURE_KFZ_MISSING_HEADING = 'Fehlende Angaben' as const
+
+export const MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE = 'Kfz (manuell zugeordnet)' as const
+
+export const MANUAL_CAPTURE_KFZ_CUSTOMER_LABEL = 'Kunde' as const
+
+export const MANUAL_CAPTURE_KFZ_PHONE_LABEL = 'Telefon' as const
+
+export const MANUAL_CAPTURE_KFZ_EMAIL_LABEL = 'E-Mail' as const
+
+export const MANUAL_CAPTURE_KFZ_POSTAL_CODE_LABEL = 'PLZ' as const
+
+export const MANUAL_CAPTURE_KFZ_CITY_LABEL = 'Ort' as const
+
+export const MANUAL_CAPTURE_KFZ_REASON_LABEL = 'Anliegen' as const
+
+export const MANUAL_CAPTURE_KFZ_VEHICLE_MAKE_LABEL = 'Fahrzeug (Marke)' as const
+
+export const MANUAL_CAPTURE_KFZ_VEHICLE_MODEL_LABEL = 'Fahrzeug (Modell)' as const
+
+export const MANUAL_CAPTURE_KFZ_VEHICLE_YEAR_LABEL = 'Fahrzeug (Jahr)' as const
+
+export const MANUAL_CAPTURE_KFZ_PREFERRED_CHANNEL_LABEL = 'Bevorzugter Kanal' as const
+
 export const MANUAL_CAPTURE_SOURCE_LABEL = 'Quelltext' as const
 
 export const MANUAL_CAPTURE_SOURCE_PLACEHOLDER =

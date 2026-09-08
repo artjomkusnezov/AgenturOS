@@ -7,8 +7,16 @@ import type { InboundIntakeStore } from '@/features/inbound/types/inbound-intake
 import type { InboundSender } from '@/features/inbound/types/inbound-item'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import { MANUAL_CAPTURE_EMPTY_ERROR, MANUAL_CAPTURE_ORIGIN_KIND_ERROR } from '@/features/inbound/manual/lib/manual-capture-copy'
-import { parseManualCaptureOriginKind } from '@/features/inbound/manual/lib/manual-capture-origin'
+import {
+  parseManualCaptureOriginKind,
+  parseManualKfzCaseChoice,
+} from '@/features/inbound/manual/lib/manual-capture-origin'
 import { toInboundItemFromManualText } from '@/features/inbound/manual/lib/manual-adapter'
+import {
+  normalizeManualKfzInquiry,
+  type ManualKfzInquiryInput,
+} from '@/features/inbound/manual/lib/normalize-manual-kfz-inquiry'
+import { suggestManualKfzFacts } from '@/features/inbound/manual/lib/suggest-manual-kfz-facts'
 import { sanitizeManualCaptureText, sanitizeManualCaptureTitle } from '@/features/inbound/manual/lib/sanitize-manual-text'
 import type { NormalizedManualCapture } from '@/features/inbound/manual/types/normalized-manual-capture'
 
@@ -20,6 +28,8 @@ export type ConfirmManualCaptureInput = {
   capturer?: InboundSender
   capturedAt?: string
   externalId?: string
+  kfzCase?: unknown
+  kfz?: ManualKfzInquiryInput | null
 }
 
 export type ConfirmManualCaptureResult =
@@ -37,6 +47,32 @@ const DEFAULT_CAPTURER: InboundSender = {
   displayName: 'Mitarbeiter',
   address: null,
   addressKind: 'other',
+}
+
+function contactFromOrigin(origin: InboundSender | null): {
+  displayName: string | null
+  phone: string | null
+  email: string | null
+} {
+  if (!origin) {
+    return { displayName: null, phone: null, email: null }
+  }
+
+  const displayName = origin.displayName?.trim() || null
+  const address = origin.address?.trim() || null
+  if (!address) {
+    return { displayName, phone: null, email: null }
+  }
+
+  if (origin.addressKind === 'email' || address.includes('@')) {
+    return { displayName, phone: null, email: address }
+  }
+
+  if (origin.addressKind === 'phone') {
+    return { displayName, phone: address, email: null }
+  }
+
+  return { displayName, phone: null, email: null }
 }
 
 function normalizeOrigin(origin: InboundSender | null | undefined): InboundSender | null {
@@ -75,6 +111,26 @@ export function buildConfirmedManualCapture(
     ? sanitizeManualCaptureTitle(titleInput) ?? titleInput.slice(0, 120)
     : null
 
+  const origin = normalizeOrigin(input.origin)
+  const fromOrigin = contactFromOrigin(origin)
+  const kfzCase = parseManualKfzCaseChoice(input.kfzCase)
+  const suggestedKfz = kfzCase ? suggestManualKfzFacts(sourceText, originKind) : null
+  const kfzInquiry = kfzCase
+    ? normalizeManualKfzInquiry({
+        fullName: input.kfz?.fullName ?? suggestedKfz?.fullName ?? fromOrigin.displayName,
+        phone: input.kfz?.phone ?? suggestedKfz?.phone ?? fromOrigin.phone,
+        email: input.kfz?.email ?? suggestedKfz?.email ?? fromOrigin.email,
+        postalCode: input.kfz?.postalCode ?? suggestedKfz?.postalCode,
+        city: input.kfz?.city ?? suggestedKfz?.city,
+        preferredChannel: input.kfz?.preferredChannel ?? suggestedKfz?.preferredChannel,
+        inquiryReason: input.kfz?.inquiryReason ?? suggestedKfz?.inquiryReason,
+        vehicleMake: input.kfz?.vehicleMake ?? suggestedKfz?.vehicleMake,
+        vehicleModel: input.kfz?.vehicleModel ?? suggestedKfz?.vehicleModel,
+        vehicleYear: input.kfz?.vehicleYear ?? suggestedKfz?.vehicleYear,
+        contextNotes: input.kfz?.contextNotes ?? suggestedKfz?.contextNotes,
+      })
+    : null
+
   return {
     ok: true,
     capture: {
@@ -89,7 +145,9 @@ export function buildConfirmedManualCapture(
         address: input.capturer?.address?.trim() || null,
         addressKind: input.capturer?.addressKind ?? 'other',
       },
-      origin: normalizeOrigin(input.origin),
+      origin,
+      kfzCase,
+      kfzInquiry,
     },
   }
 }

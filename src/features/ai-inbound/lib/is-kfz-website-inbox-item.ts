@@ -3,6 +3,8 @@
  * Uses channel/source + normalized inbound_metadata — no parallel lead DB.
  */
 
+import { KFZ_ACQUISITION_PRODUCT } from '@/features/inbound/kfz/lib/build-kfz-inquiry-metadata'
+import { readManualKfzCaseChoice } from '@/features/inbound/manual/lib/manual-capture-origin'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -13,6 +15,12 @@ export function isWebsiteInboxItem(
   item: Pick<InboxItem, 'channel' | 'source'>,
 ): boolean {
   return item.channel === 'website' || item.source === 'website'
+}
+
+export function isManualInboxItem(
+  item: Pick<InboxItem, 'channel' | 'source'>,
+): boolean {
+  return item.channel === 'manual' || item.source === 'manual_text'
 }
 
 /**
@@ -28,7 +36,7 @@ export function isKfzWebsiteInboxItem(
   const meta = item.inbound_metadata
   if (isRecord(meta)) {
     const acquisition = meta.acquisition
-    if (isRecord(acquisition) && acquisition.product === 'kfz') {
+    if (isRecord(acquisition) && acquisition.product === KFZ_ACQUISITION_PRODUCT) {
       return true
     }
   }
@@ -44,4 +52,25 @@ export function isKfzWebsiteInboxItem(
   }
 
   return false
+}
+
+/**
+ * True only when an employee explicitly marked a manual capture as Kfz.
+ * Never inferred from the source text.
+ */
+export function isManualKfzInboxItem(
+  item: Pick<InboxItem, 'channel' | 'source' | 'inbound_metadata'>,
+): boolean {
+  if (!isManualInboxItem(item)) {
+    return false
+  }
+
+  return readManualKfzCaseChoice(item.inbound_metadata)
+}
+
+/** Website Kfz intake or an explicitly chosen manual Kfz working copy. */
+export function isKfzInboxItem(
+  item: Pick<InboxItem, 'channel' | 'source' | 'inbound_metadata' | 'title' | 'content'>,
+): boolean {
+  return isKfzWebsiteInboxItem(item) || isManualKfzInboxItem(item)
 }

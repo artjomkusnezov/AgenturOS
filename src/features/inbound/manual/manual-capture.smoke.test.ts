@@ -9,10 +9,13 @@ import { fileURLToPath } from 'node:url'
 import { describe, it } from 'node:test'
 
 import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'
+import { isKfzInboxItem, isKfzWebsiteInboxItem, isManualKfzInboxItem } from '@/features/ai-inbound/lib/is-kfz-website-inbox-item'
 import { ingestInboundItem } from '@/features/inbound/services/inbound-intake-service'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
+import { presentAuthenticatedKfzReviewWorkspace } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import { buildInboxHref } from '@/features/inbox/lib/kfz-work-queue'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import { buildManualCaptureDraft } from '@/features/inbound/manual/lib/build-manual-capture-draft'
 import { toInboundItemFromManualText } from '@/features/inbound/manual/lib/manual-adapter'
 import {
@@ -26,6 +29,11 @@ import {
   MANUAL_CAPTURE_DUPLICATE_REASON_SOURCE_TEXT,
   MANUAL_CAPTURE_DUPLICATE_WARNING,
   MANUAL_CAPTURE_EMPTY_ERROR,
+  MANUAL_CAPTURE_KFZ_CASE_HINT,
+  MANUAL_CAPTURE_KFZ_CASE_LABEL,
+  MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE,
+  MANUAL_CAPTURE_KFZ_FIELDS_HEADING,
+  MANUAL_CAPTURE_KFZ_MISSING_HEADING,
   MANUAL_CAPTURE_NO_AUTO_ACTION,
   MANUAL_CAPTURE_ORIGIN_KIND_EMAIL_LABEL,
   MANUAL_CAPTURE_ORIGIN_KIND_ERROR,
@@ -171,6 +179,7 @@ describe('manual capture draft review', () => {
     assert.equal(titleField?.suggestionLabel, MANUAL_FIELD_SUGGESTION_LABEL)
     assert.equal(originAddress?.value, 'vera@example.com')
     assert.equal(originAddress?.suggestionLabel, MANUAL_FIELD_SUGGESTION_LABEL)
+    assert.equal(review.kfz, null)
   })
 
   it('extracts a phone token as an origin suggestion without customer matching', () => {
@@ -194,6 +203,8 @@ describe('manual capture draft review', () => {
     if (!result.ok) return
     assert.equal(result.draft.originKind, 'personal_note')
     assert.equal(result.draft.proposed.origin?.address, 'vera@example.com')
+    assert.equal(result.draft.kfzCase, false)
+    assert.equal(result.draft.kfzFacts, null)
   })
 
   it('strips markup from pasted text and keeps readable content', () => {
@@ -654,6 +665,171 @@ describe('manual capture confirmation → inbox', () => {
   })
 })
 
+describe('manual capture → Kfz review card', () => {
+  const kfzSourceText = [
+    'Rückruf Kunde Anna Beispiel',
+    'Anliegen: Preischeck Kfz-Versicherung',
+    'Ort: 49525 Lengerich',
+    'Fahrzeug: VW Golf 2019',
+    'Telefon: +491701234567',
+  ].join('\n')
+
+  it('does not classify a Kfz case from the source text alone', () => {
+    const drafted = buildManualCaptureDraft(SAMPLE_TEXT, { originKind: 'phone_call' })
+    assert.equal(drafted.ok, true)
+    if (!drafted.ok) return
+
+    assert.equal(drafted.draft.kfzCase, false)
+    assert.equal(drafted.draft.kfzFacts, null)
+    assert.match(drafted.draft.sourceText, /Kfz-Versicherung/)
+    assert.equal(presentManualCaptureDraft(drafted.draft).kfz, null)
+  })
+
+  it('extracts Kfz facts as suggestions only after an explicit employee choice', () => {
+    const drafted = buildManualCaptureDraft(kfzSourceText, {
+      originKind: 'phone_call',
+      kfzCase: true,
+    })
+    assert.equal(drafted.ok, true)
+    if (!drafted.ok) return
+
+    assert.equal(drafted.draft.kfzCase, true)
+    assert.equal(drafted.draft.sourceText, kfzSourceText)
+    assert.equal(drafted.draft.kfzFacts?.fullName, 'Anna Beispiel')
+    assert.equal(drafted.draft.kfzFacts?.phone, '+491701234567')
+    assert.equal(drafted.draft.kfzFacts?.inquiryReason, 'Preischeck Kfz-Versicherung')
+    assert.equal(drafted.draft.kfzFacts?.postalCode, '49525')
+    assert.equal(drafted.draft.kfzFacts?.city, 'Lengerich')
+    assert.equal(drafted.draft.kfzFacts?.vehicleMake, 'VW')
+    assert.equal(drafted.draft.kfzFacts?.vehicleModel, 'Golf')
+    assert.equal(drafted.draft.kfzFacts?.vehicleYear, '2019')
+    assert.equal(drafted.draft.kfzFacts?.preferredChannel, 'phone')
+
+    const review = presentManualCaptureDraft(drafted.draft)
+    assert.equal(review.kfz?.chosen, true)
+    assert.equal(review.kfz?.classification, MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE)
+    assert.equal(review.kfz?.missingCount, 0)
+    assert.equal(
+      review.kfz?.fields.find((field) => field.id === 'fullName')?.suggestion,
+      true,
+    )
+    assert.equal(
+      review.kfz?.fields.find((field) => field.id === 'inquiryReason')?.suggestionLabel,
+      MANUAL_FIELD_SUGGESTION_LABEL,
+    )
+  })
+
+  it('lists missing Kfz information without inventing facts', () => {
+    const drafted = buildManualCaptureDraft(SAMPLE_TEXT, {
+      originKind: 'phone_call',
+      kfzCase: true,
+    })
+    assert.equal(drafted.ok, true)
+    if (!drafted.ok) return
+
+    const review = presentManualCaptureDraft(drafted.draft)
+    assert.ok(review.kfz)
+    assert.equal(review.kfz?.fields.find((field) => field.id === 'fullName')?.value, 'Müller')
+    assert.equal(
+      review.kfz?.fields.find((field) => field.id === 'email')?.value,
+      'mueller@example.com',
+    )
+    assert.equal(review.kfz?.fields.find((field) => field.id === 'vehicleMake')?.value, '')
+    assert.ok(review.kfz && review.kfz.missingCount > 0)
+    assert.ok(
+      review.kfz?.missingInformation.some((entry) => /Fahrzeugdaten/.test(entry)),
+    )
+    assert.ok(review.kfz?.missingInformation.some((entry) => /Ort \/ PLZ/.test(entry)))
+  })
+
+  it('opens the existing Kfz review workspace after explicit confirm', async () => {
+    const store = createMemoryInboundIntakeStore()
+    const result = await confirmManualCapture({
+      store,
+      agencyId: AGENCY_ID,
+      actorUserId: ACTOR_ID,
+      capture: {
+        sourceText: kfzSourceText,
+        originKind: 'phone_call',
+        kfzCase: true,
+        capturedAt: RECEIVED_AT,
+        externalId: 'manual:kfz-review-001',
+      },
+    })
+
+    assert.equal(result.success, true)
+    if (!result.success) return
+
+    assert.equal(result.item.channel, 'manual')
+    assert.equal(result.item.source, 'manual_text')
+    assert.equal(result.item.content, kfzSourceText)
+    assert.equal(result.item.processed_at, null)
+    assert.equal(readManualCaptureOriginKind(result.item.inbound_metadata), 'phone_call')
+    assert.equal(isManualKfzInboxItem(result.item), true)
+    assert.equal(isKfzWebsiteInboxItem(result.item), false)
+    assert.equal(isKfzInboxItem(result.item), true)
+    assert.equal(getInboxItemSourceLabel(result.item), MANUAL_CAPTURE_ORIGIN_KIND_PHONE_LABEL)
+
+    const review = presentKfzWebsiteInboxItem(result.item)
+    assert.ok(review)
+    assert.equal(review.sourceLabel, MANUAL_CAPTURE_ORIGIN_KIND_PHONE_LABEL)
+    assert.equal(review.sourceContent, kfzSourceText)
+    assert.equal(review.customerName, 'Anna Beispiel')
+    assert.equal(review.phone, '+491701234567')
+    assert.equal(review.request, 'Preischeck Kfz-Versicherung')
+    assert.equal(review.vehicle, 'VW Golf 2019')
+    assert.equal(review.location, '49525 Lengerich')
+    assert.equal(review.missingCount, 0)
+    assert.ok(review.submittedFacts.some((fact) => fact.id === 'source' && fact.value === 'Telefonat'))
+    assert.ok(
+      review.submittedFacts.some(
+        (fact) =>
+          fact.id === 'classification' && fact.value === MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE,
+      ),
+    )
+
+    const workspace = presentAuthenticatedKfzReviewWorkspace(result.item)
+    assert.ok(workspace)
+    assert.equal(workspace.sections.facts, true)
+    assert.equal(workspace.sections.missingInformation, true)
+    assert.equal(workspace.sections.task, true)
+    assert.equal(workspace.sections.notes, true)
+    assert.equal(workspace.sections.editableDraft, true)
+    assert.equal(workspace.task.linkedTaskId, null)
+    assert.equal(workspace.manualStatusOnly, true)
+    assert.equal(workspace.noExternalSideEffect, true)
+
+    const proposal = await getInboxAiProposal(result.item)
+    assert.equal(proposal.proposal.status, 'not_applicable')
+    assert.equal('links' in store ? store.links.length : 0, 0)
+    assert.equal(
+      buildInboxHref({ itemId: result.item.id }),
+      `/app/inbox?item=${result.item.id}`,
+    )
+  })
+
+  it('keeps a confirmed non-Kfz capture off the Kfz review card', async () => {
+    const store = createMemoryInboundIntakeStore()
+    const result = await confirmManualCapture({
+      store,
+      agencyId: AGENCY_ID,
+      actorUserId: ACTOR_ID,
+      capture: {
+        sourceText: SAMPLE_TEXT,
+        originKind: 'phone_call',
+        capturedAt: RECEIVED_AT,
+        externalId: 'manual:not-kfz',
+      },
+    })
+
+    assert.equal(result.success, true)
+    if (!result.success) return
+    assert.equal(isKfzInboxItem(result.item), false)
+    assert.equal(presentKfzWebsiteInboxItem(result.item), null)
+    assert.equal(presentAuthenticatedKfzReviewWorkspace(result.item), null)
+  })
+})
+
 describe('manual capture UI contract', () => {
   it('exposes one obvious text-capture action in the authenticated app menu', () => {
     const inboxAction = QUICK_ACTIONS.find((action) => action.mode === 'inbox')
@@ -700,6 +876,11 @@ describe('manual capture UI contract', () => {
     assert.match(copy, new RegExp(MANUAL_CAPTURE_DUPLICATE_WARNING))
     assert.match(copy, new RegExp(MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL))
     assert.match(copy, new RegExp(MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL))
+    assert.equal(copy.includes(MANUAL_CAPTURE_KFZ_CASE_LABEL), true)
+    assert.equal(copy.includes(MANUAL_CAPTURE_KFZ_CASE_HINT), true)
+    assert.equal(copy.includes(MANUAL_CAPTURE_KFZ_FIELDS_HEADING), true)
+    assert.equal(copy.includes(MANUAL_CAPTURE_KFZ_MISSING_HEADING), true)
+    assert.equal(copy.includes(MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE), true)
     assert.match(dialog, /MANUAL_CAPTURE_REVIEW_LABEL/)
     assert.match(dialog, /MANUAL_CAPTURE_CONFIRM_LABEL/)
     assert.match(dialog, /MANUAL_CAPTURE_NO_AUTO_ACTION/)
@@ -710,11 +891,16 @@ describe('manual capture UI contract', () => {
     assert.match(dialog, /OriginKindPicker/)
     assert.match(dialog, /radiogroup/)
     assert.match(dialog, /originKind/)
+    assert.match(dialog, /kfzCase/)
+    assert.match(dialog, /MANUAL_CAPTURE_KFZ_CASE_LABEL/)
+    assert.match(dialog, /MANUAL_CAPTURE_KFZ_MISSING_HEADING/)
+    assert.match(dialog, /buildKfzMissingInformationChecklist/)
     assert.match(dialog, /buildInboxHref/)
     assert.match(workspace, /existingItems=\{items\}/)
     assert.doesNotMatch(dialog, /convertInboxToTask|processInboxItem|resend|whatsapp-outbound/)
     assert.match(action, /confirmManualCapture/)
     assert.match(action, /originKind/)
+    assert.match(action, /kfzCase/)
     assert.match(action, /createSupabaseInboundIntakeStore/)
     assert.doesNotMatch(action, /createServiceRoleInboundIntakeStore/)
     assert.doesNotMatch(action, /convertInboxToTask|processInboxItem|resend|whatsapp-outbound/)
@@ -730,6 +916,9 @@ describe('manual capture UI contract', () => {
     assert.match(inboxSource, /readManualCaptureOriginKind/)
     assert.match(detail, /getInboxItemSourceLabel/)
     assert.match(detail, /resolveInboxItemSourceVisual/)
+    assert.match(detail, /presentKfzWebsiteInboxItem/)
+    assert.match(detail, /InboxKfzReviewSection/)
+    assert.match(detail, /InboxKfzResponseDraftSection/)
   })
 
   it('keeps the local preview off the production inbox path', () => {
@@ -764,6 +953,8 @@ describe('manual capture side-effect boundary', () => {
     'features/inbound/manual/lib/present-manual-capture.ts',
     'features/inbound/manual/lib/manual-capture-origin.ts',
     'features/inbound/manual/lib/find-likely-manual-capture-duplicate.ts',
+    'features/inbound/manual/lib/suggest-manual-kfz-facts.ts',
+    'features/inbound/manual/lib/normalize-manual-kfz-inquiry.ts',
     'features/inbound/manual/services/confirm-manual-capture.ts',
   ] as const
 

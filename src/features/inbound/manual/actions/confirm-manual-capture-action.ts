@@ -51,6 +51,8 @@ export async function confirmManualCaptureAction(
   const originDisplayName = String(formData.get('originDisplayName') ?? '')
   const originAddress = String(formData.get('originAddress') ?? '')
   const originAddressKind = parseAddressKind(String(formData.get('originAddressKind') ?? ''))
+  const kfzCase = formData.get('kfzCase')
+  const kfzPreferredChannel = String(formData.get('kfzPreferredChannel') ?? '')
 
   if (!originKind) {
     return { fieldErrors: { originKind: MANUAL_CAPTURE_ORIGIN_KIND_ERROR } }
@@ -73,6 +75,25 @@ export async function confirmManualCaptureAction(
         displayName: getDisplayName(user) ?? 'Mitarbeiter',
         address: null,
         addressKind: 'other',
+      },
+      kfzCase,
+      kfz: {
+        fullName: String(formData.get('kfzFullName') ?? ''),
+        phone: String(formData.get('kfzPhone') ?? ''),
+        email: String(formData.get('kfzEmail') ?? ''),
+        postalCode: String(formData.get('kfzPostalCode') ?? ''),
+        city: String(formData.get('kfzCity') ?? ''),
+        preferredChannel:
+          kfzPreferredChannel === 'phone' ||
+          kfzPreferredChannel === 'email' ||
+          kfzPreferredChannel === 'whatsapp'
+            ? kfzPreferredChannel
+            : null,
+        inquiryReason: String(formData.get('kfzInquiryReason') ?? ''),
+        vehicleMake: String(formData.get('kfzVehicleMake') ?? ''),
+        vehicleModel: String(formData.get('kfzVehicleModel') ?? ''),
+        vehicleYear: String(formData.get('kfzVehicleYear') ?? ''),
+        contextNotes: String(formData.get('kfzContextNotes') ?? ''),
       },
     },
   })

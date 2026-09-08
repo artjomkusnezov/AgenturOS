@@ -3,7 +3,7 @@
  * Reads the existing normalized inbound item — no CRM, no AI, no side effects.
  */
 
-import { isKfzWebsiteInboxItem } from '@/features/ai-inbound/lib/is-kfz-website-inbox-item'
+import { isKfzInboxItem, isKfzWebsiteInboxItem } from '@/features/ai-inbound/lib/is-kfz-website-inbox-item'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import {
   buildKfzNextManualAction,
@@ -12,6 +12,11 @@ import {
   type KfzManualTriageAction,
   type KfzTriagePhase,
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
+import {
+  getManualCaptureOriginKindLabel,
+  readManualCaptureOriginKind,
+} from '@/features/inbound/manual/lib/manual-capture-origin'
+import { MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE } from '@/features/inbound/manual/lib/manual-capture-copy'
 import {
   hasKfzResponseDraft,
   readInboxSourceContent,
@@ -54,7 +59,7 @@ export type KfzMissingInfoCheck = {
 
 export type KfzWebsiteInboxReview = {
   headline: string
-  sourceLabel: typeof KFZ_WEBSITE_SOURCE_LABEL
+  sourceLabel: string
   acquisitionSource: string | null
   customerName: string
   location: string | null
@@ -242,6 +247,7 @@ export function buildKfzListSummary(input: {
 function buildSubmittedFacts(input: {
   sourceLabel: string
   acquisitionSource: string | null
+  classification?: string | null
   customerName: string
   location: string | null
   phone: string | null
@@ -259,12 +265,21 @@ function buildSubmittedFacts(input: {
         ? `${input.sourceLabel} · ${input.acquisitionSource}`
         : input.sourceLabel,
     },
-    {
-      id: 'customer',
-      label: 'Kunde',
-      value: input.customerName,
-    },
   ]
+
+  if (input.classification) {
+    facts.push({
+      id: 'classification',
+      label: 'Einordnung',
+      value: input.classification,
+    })
+  }
+
+  facts.push({
+    id: 'customer',
+    label: 'Kunde',
+    value: input.customerName,
+  })
 
   if (input.location) {
     facts.push({ id: 'location', label: 'Ort', value: input.location })
@@ -298,9 +313,55 @@ function buildSubmittedFacts(input: {
   return facts
 }
 
+function readOriginName(origin: InboxItem['origin'] | undefined): string | null {
+  if (!isRecord(origin)) {
+    return null
+  }
+  return asNullableString(origin.displayName)
+}
+
+function readOriginContact(origin: InboxItem['origin'] | undefined): {
+  phone: string | null
+  email: string | null
+} {
+  if (!isRecord(origin)) {
+    return { phone: null, email: null }
+  }
+
+  const address = asNullableString(origin.address)
+  if (!address) {
+    return { phone: null, email: null }
+  }
+
+  const kind = asNullableString(origin.addressKind)
+  if (kind === 'email' || address.includes('@')) {
+    return { phone: null, email: address }
+  }
+  if (kind === 'phone') {
+    return { phone: address, email: null }
+  }
+
+  return { phone: null, email: null }
+}
+
+function resolveKfzReviewSourceLabel(
+  item: Pick<InboxItem, 'channel' | 'source' | 'inbound_metadata' | 'title' | 'content'>,
+): string {
+  if (isKfzWebsiteInboxItem(item)) {
+    return KFZ_WEBSITE_SOURCE_LABEL
+  }
+
+  const originKind = readManualCaptureOriginKind(item.inbound_metadata)
+  if (originKind) {
+    return getManualCaptureOriginKindLabel(originKind)
+  }
+
+  return 'Manuell'
+}
+
 /**
  * Builds a factual review model from the persisted inbox working copy.
- * Returns null when the item is not a Kfz website inquiry.
+ * Returns null when the item is not a Kfz website or explicitly marked manual Kfz inquiry.
  */
 export function presentKfzWebsiteInboxItem(
   item: Pick<
@@ -308,21 +369,26 @@ export function presentKfzWebsiteInboxItem(
     'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'sender'
   > & {
     processed_at?: string | null
+    origin?: InboxItem['origin']
   },
   options?: { linkedTaskId?: string | null },
 ): KfzWebsiteInboxReview | null {
-  if (!isKfzWebsiteInboxItem(item)) {
+  if (!isKfzInboxItem(item)) {
     return null
   }
 
+  const websiteItem = isKfzWebsiteInboxItem(item)
+  const sourceLabel = resolveKfzReviewSourceLabel(item)
+  const classification = websiteItem ? null : MANUAL_CAPTURE_KFZ_CLASSIFICATION_VALUE
   const meta = isRecord(item.inbound_metadata) ? item.inbound_metadata : null
   const acquisition = meta && isRecord(meta.acquisition) ? meta.acquisition : null
   const inquiry = meta && isRecord(meta.inquiry) ? meta.inquiry : null
   const location = inquiry && isRecord(inquiry.location) ? inquiry.location : null
   const vehicle = inquiry && isRecord(inquiry.vehicle) ? inquiry.vehicle : null
+  const originContact = readOriginContact(item.origin)
 
-  const phone = asNullableString(inquiry?.phone)
-  const email = asNullableString(inquiry?.email)
+  const phone = asNullableString(inquiry?.phone) ?? originContact.phone
+  const email = asNullableString(inquiry?.email) ?? originContact.email
   const reason = asNullableString(inquiry?.reason)
   const preferredChannel = asNullableString(inquiry?.preferredChannel)
   const contextNotes = asNullableString(inquiry?.contextNotes)
@@ -339,6 +405,8 @@ export function presentKfzWebsiteInboxItem(
       .join(' ') || null
 
   const customerName =
+    asNullableString(inquiry?.fullName) ??
+    readOriginName(item.origin) ??
     readSenderName(item.sender) ??
     asNullableString(item.title?.replace(/^kfz-anfrage\s*·\s*/i, '')) ??
     'Unbekannt'
@@ -357,11 +425,12 @@ export function presentKfzWebsiteInboxItem(
     .map((itemCheck) => itemCheck.label)
   const missingCount = missingInformation.length
   const urgencyNote = detectUrgencyNote(reason, contextNotes)
+  const acquisitionSource = websiteItem ? asNullableString(acquisition?.source) : null
 
   return {
     headline: getInboxListTitle(item),
-    sourceLabel: KFZ_WEBSITE_SOURCE_LABEL,
-    acquisitionSource: asNullableString(acquisition?.source),
+    sourceLabel,
+    acquisitionSource,
     customerName,
     location: locationLabel,
     phone,
@@ -385,8 +454,9 @@ export function presentKfzWebsiteInboxItem(
       vehicle: vehicleLabel,
     }),
     submittedFacts: buildSubmittedFacts({
-      sourceLabel: KFZ_WEBSITE_SOURCE_LABEL,
-      acquisitionSource: asNullableString(acquisition?.source),
+      sourceLabel,
+      acquisitionSource,
+      classification,
       customerName,
       location: locationLabel,
       phone,
