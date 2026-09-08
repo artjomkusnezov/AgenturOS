@@ -1,40 +1,47 @@
 /**
- * Kfz work-queue visibility on existing inbox / dashboard / task surfaces.
+ * Daily Kfz inquiry work queue on existing inbox / dashboard / task surfaces.
  * Reads persisted inbox items and task relations — no CRM, no auto-contact.
  */
 
-import { isKfzWebsiteInboxItem } from '@/features/ai-inbound/lib/is-kfz-website-inbox-item'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import {
-  resolveKfzTriagePhase,
+  KFZ_REVIEW_NO_AUTO_ACTION,
   type KfzTriagePhase,
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
-import { KFZ_WEBSITE_SOURCE_LABEL } from '@/features/inbox/lib/present-kfz-website-inbox'
+import {
+  KFZ_WEBSITE_SOURCE_LABEL,
+  presentKfzWebsiteInboxItem,
+  type KfzWebsiteInboxReview,
+} from '@/features/inbox/lib/present-kfz-website-inbox'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export const KFZ_WORK_QUEUE_FILTER_PARAM = 'phase' as const
+export const KFZ_INBOX_HREF_BASE = '/app/inbox' as const
 
 export const KFZ_WORK_QUEUE_PHASES = [
   'needs_review',
+  'missing_information',
   'in_review',
   'handled',
-] as const satisfies readonly KfzTriagePhase[]
+] as const
 
 export type KfzWorkQueuePhase = (typeof KFZ_WORK_QUEUE_PHASES)[number]
 
 export type KfzWorkQueueFilter = KfzWorkQueuePhase | 'all'
 
-export type KfzWorkQueueChipKind = 'new' | 'review' | 'handled'
+export type KfzWorkQueueChipKind = 'new' | 'gaps' | 'review' | 'handled'
 
 export const KFZ_WORK_QUEUE_PHASE_LABELS: Record<KfzWorkQueuePhase, string> = {
   needs_review: 'Neu',
+  missing_information: 'Fehlende Angaben',
   in_review: 'In Prüfung',
   handled: 'Erledigt',
 }
 
 export const KFZ_WORK_QUEUE_PHASE_CHIP: Record<KfzWorkQueuePhase, KfzWorkQueueChipKind> = {
   needs_review: 'new',
+  missing_information: 'gaps',
   in_review: 'review',
   handled: 'handled',
 }
@@ -49,13 +56,22 @@ export type KfzWorkQueueStatusChip = {
 export type KfzWorkQueueRow = {
   itemId: string
   headline: string
+  customerName: string
+  requestFacts: string
   sourceLabel: typeof KFZ_WEBSITE_SOURCE_LABEL
   phase: KfzWorkQueuePhase
   phaseLabel: string
+  triagePhase: KfzTriagePhase
   chip: KfzWorkQueueStatusChip
   href: string
   linkedTaskId: string | null
   followUpTaskHref: string | null
+  missingCount: number
+  missingCountLabel: string
+  hasFactualUrgency: boolean
+  urgencyNote: string | null
+  nextActionLabel: string
+  nextManualAction: string
 }
 
 export type KfzFollowUpTaskVisibility = {
@@ -71,8 +87,33 @@ export type KfzFollowUpTaskVisibility = {
 
 export type KfzWorkQueueCounts = Record<KfzWorkQueuePhase, number>
 
+export type KfzWorkQueueItemFields = Pick<
+  InboxItem,
+  | 'id'
+  | 'channel'
+  | 'source'
+  | 'inbound_metadata'
+  | 'title'
+  | 'content'
+  | 'processed_at'
+  | 'sender'
+>
+
 function isKfzWorkQueuePhase(value: string): value is KfzWorkQueuePhase {
   return (KFZ_WORK_QUEUE_PHASES as readonly string[]).includes(value)
+}
+
+export function emptyKfzWorkQueueCounts(): KfzWorkQueueCounts {
+  return {
+    needs_review: 0,
+    missing_information: 0,
+    in_review: 0,
+    handled: 0,
+  }
+}
+
+export function sumKfzWorkQueueCounts(counts: KfzWorkQueueCounts): number {
+  return KFZ_WORK_QUEUE_PHASES.reduce((sum, phase) => sum + counts[phase], 0)
 }
 
 export function parseKfzWorkQueueFilter(
@@ -93,6 +134,7 @@ export function parseKfzWorkQueueFilter(
 export function buildInboxHref(options?: {
   itemId?: string | null
   phase?: KfzWorkQueueFilter | null
+  basePath?: string | null
 }): string {
   const params = new URLSearchParams()
   const phase = options?.phase ?? 'all'
@@ -106,8 +148,9 @@ export function buildInboxHref(options?: {
     params.set('item', itemId)
   }
 
+  const basePath = options?.basePath?.trim() || KFZ_INBOX_HREF_BASE
   const query = params.toString()
-  return query ? `/app/inbox?${query}` : '/app/inbox'
+  return query ? `${basePath}?${query}` : basePath
 }
 
 export function buildTaskHref(taskId: string): string {
@@ -121,30 +164,62 @@ export function resolveInboxLinkedTaskId(
   return taskRelationsByItemId[itemId] ?? null
 }
 
+export function resolveKfzWorkQueueBucket(
+  triagePhase: KfzTriagePhase,
+  missingCount: number,
+): KfzWorkQueuePhase {
+  if (triagePhase === 'handled') {
+    return 'handled'
+  }
+  if (missingCount > 0) {
+    return 'missing_information'
+  }
+  if (triagePhase === 'in_review') {
+    return 'in_review'
+  }
+  return 'needs_review'
+}
+
+export function compactKfzQueueNextAction(nextManualAction: string): string {
+  return nextManualAction.replace(KFZ_REVIEW_NO_AUTO_ACTION, '').replace(/\s+/g, ' ').trim()
+}
+
+function buildRequestFacts(review: KfzWebsiteInboxReview): string {
+  return [review.listSummary, review.location].filter(Boolean).join(' · ')
+}
+
+function presentQueueChip(phase: KfzWorkQueuePhase): KfzWorkQueueStatusChip {
+  return {
+    label: KFZ_WORK_QUEUE_PHASE_LABELS[phase],
+    kind: KFZ_WORK_QUEUE_PHASE_CHIP[phase],
+  }
+}
+
 export function resolveKfzWorkQueuePhase(
-  item: Pick<InboxItem, 'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at'>,
+  item: Pick<
+    InboxItem,
+    'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at' | 'sender'
+  >,
   linkedTaskId: string | null = null,
 ): KfzWorkQueuePhase | null {
-  if (!isKfzWebsiteInboxItem(item)) {
+  const review = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  if (!review) {
     return null
   }
 
-  return resolveKfzTriagePhase(
-    { content: item.content, processed_at: item.processed_at ?? null },
-    linkedTaskId,
-  )
+  return resolveKfzWorkQueueBucket(review.phase, review.missingCount)
 }
 
 export function presentInboxStatusChip(
-  item: Pick<InboxItem, 'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at'>,
+  item: Pick<
+    InboxItem,
+    'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at' | 'sender'
+  >,
   linkedTaskId: string | null = null,
 ): KfzWorkQueueStatusChip | null {
   const phase = resolveKfzWorkQueuePhase(item, linkedTaskId)
   if (phase) {
-    return {
-      label: KFZ_WORK_QUEUE_PHASE_LABELS[phase],
-      kind: KFZ_WORK_QUEUE_PHASE_CHIP[phase],
-    }
+    return presentQueueChip(phase)
   }
 
   if (item.processed_at === null) {
@@ -155,34 +230,44 @@ export function presentInboxStatusChip(
 }
 
 export function presentKfzWorkQueueRow(
-  item: Pick<
-    InboxItem,
-    'id' | 'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'processed_at'
-  >,
+  item: KfzWorkQueueItemFields,
   options?: {
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
+    basePath?: string | null
   },
 ): KfzWorkQueueRow | null {
   const linkedTaskId = options?.linkedTaskId ?? null
-  const phase = resolveKfzWorkQueuePhase(item, linkedTaskId)
-  if (!phase) {
+  const review = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  if (!review) {
     return null
   }
+
+  const phase = resolveKfzWorkQueueBucket(review.phase, review.missingCount)
 
   return {
     itemId: item.id,
     headline: getInboxListTitle(item),
+    customerName: review.customerName,
+    requestFacts: buildRequestFacts(review),
     sourceLabel: KFZ_WEBSITE_SOURCE_LABEL,
     phase,
     phaseLabel: KFZ_WORK_QUEUE_PHASE_LABELS[phase],
-    chip: {
-      label: KFZ_WORK_QUEUE_PHASE_LABELS[phase],
-      kind: KFZ_WORK_QUEUE_PHASE_CHIP[phase],
-    },
-    href: buildInboxHref({ itemId: item.id, phase: options?.phase ?? 'all' }),
+    triagePhase: review.phase,
+    chip: presentQueueChip(phase),
+    href: buildInboxHref({
+      itemId: item.id,
+      phase: options?.phase ?? 'all',
+      basePath: options?.basePath,
+    }),
     linkedTaskId,
     followUpTaskHref: linkedTaskId ? buildTaskHref(linkedTaskId) : null,
+    missingCount: review.missingCount,
+    missingCountLabel: review.missingCountLabel,
+    hasFactualUrgency: review.hasFactualUrgency,
+    urgencyNote: review.hasFactualUrgency ? review.urgencyNote : null,
+    nextActionLabel: compactKfzQueueNextAction(review.nextManualAction),
+    nextManualAction: review.nextManualAction,
   }
 }
 
@@ -205,11 +290,7 @@ export function countKfzWorkQueue(
   items: InboxItem[],
   taskRelationsByItemId: Record<string, string> = {},
 ): KfzWorkQueueCounts {
-  const counts: KfzWorkQueueCounts = {
-    needs_review: 0,
-    in_review: 0,
-    handled: 0,
-  }
+  const counts = emptyKfzWorkQueueCounts()
 
   for (const item of items) {
     const linkedTaskId = resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)

@@ -27,6 +27,12 @@ export const KFZ_REVIEW_FACT_LABEL = 'Bestand aus dem Eingang' as const
 export const KFZ_REVIEW_AI_SEPARATE_LABEL =
   'KI bleibt ein getrennter Vorschlag — keine Tatsachenfeststellung.' as const
 
+export const KFZ_URGENCY_FACTUAL_NOTE =
+  'Anliegen nennt Unfall, Schaden oder Eilhinweis — bitte vorrangig manuell prüfen.' as const
+
+export const KFZ_URGENCY_NONE_NOTE =
+  'Kein Unfall- oder Schadenhinweis in den Angaben.' as const
+
 export type KfzSubmittedFact = {
   id: string
   label: string
@@ -67,6 +73,7 @@ export type KfzWebsiteInboxReview = {
   missingCount: number
   missingCountLabel: string
   urgencyNote: string
+  hasFactualUrgency: boolean
   nextManualAction: string
   phase: KfzTriagePhase
   availableActions: KfzManualTriageAction[]
@@ -114,9 +121,9 @@ function labelPreferredChannel(channel: string | null): string {
 function detectUrgencyNote(reason: string | null, notes: string | null): string {
   const text = `${reason ?? ''} ${notes ?? ''}`.toLowerCase()
   if (/unfall|schaden|abschlepp|airbag|notfall|sofort|dringend/.test(text)) {
-    return 'Anliegen nennt Unfall, Schaden oder Eilhinweis — bitte vorrangig manuell prüfen.'
+    return KFZ_URGENCY_FACTUAL_NOTE
   }
-  return 'Kein Unfall- oder Schadenhinweis in den Angaben.'
+  return KFZ_URGENCY_NONE_NOTE
 }
 
 function contactValue(phone: string | null, email: string | null): string | null {
@@ -348,6 +355,8 @@ export function presentKfzWebsiteInboxItem(
   const missingInformation = missingInformationChecklist
     .filter((itemCheck) => !itemCheck.present)
     .map((itemCheck) => itemCheck.label)
+  const missingCount = missingInformation.length
+  const urgencyNote = detectUrgencyNote(reason, contextNotes)
 
   return {
     headline: getInboxListTitle(item),
@@ -389,12 +398,14 @@ export function presentKfzWebsiteInboxItem(
     }),
     missingInformationChecklist,
     missingInformation,
-    missingCount: missingInformation.length,
-    missingCountLabel: labelKfzMissingCount(missingInformation.length),
-    urgencyNote: detectUrgencyNote(reason, contextNotes),
+    missingCount,
+    missingCountLabel: labelKfzMissingCount(missingCount),
+    urgencyNote,
+    hasFactualUrgency: urgencyNote === KFZ_URGENCY_FACTUAL_NOTE,
     nextManualAction: buildKfzNextManualAction(
       { content: item.content, processed_at: item.processed_at ?? null },
       options?.linkedTaskId ?? null,
+      missingCount,
     ),
     phase: resolveKfzTriagePhase(
       { content: item.content, processed_at: item.processed_at ?? null },

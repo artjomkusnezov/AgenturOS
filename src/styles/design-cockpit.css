@@ -1216,6 +1216,11 @@
   color: #94a3b8;
 }
 
+.aos-cockpit-status-chip--gaps {
+  background: rgb(251 146 60 / 0.16);
+  color: #fdba74;
+}
+
 .aos-cockpit-next-step {
   display: flex;
   flex-direction: column;

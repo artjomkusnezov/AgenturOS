@@ -14,11 +14,11 @@ import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   buildInboxHref,
   countKfzWorkQueue,
   presentInboxStatusChip,
+  presentKfzWorkQueueRow,
   resolveInboxLinkedTaskId,
   type KfzWorkQueueCounts,
 } from '@/features/inbox/lib/kfz-work-queue'
@@ -47,7 +47,7 @@ function DashboardInboxRow({
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const statusChip = presentInboxStatusChip(item, linkedTaskId)
-  const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
 
   return (
     <Link
@@ -65,10 +65,18 @@ function DashboardInboxRow({
           <span className="truncate">{creatorName}</span>
           <span aria-hidden="true">·</span>
           <span className="tabular-nums">{timeLabel}</span>
-          {kfzReview && kfzReview.missingCount > 0 ? (
+          {queueRow ? (
             <>
               <span aria-hidden="true">·</span>
-              <span>{kfzReview.missingCountLabel}</span>
+              <span className="truncate">{queueRow.requestFacts}</span>
+              {queueRow.hasFactualUrgency ? (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>Dringlich</span>
+                </>
+              ) : null}
+              <span aria-hidden="true">·</span>
+              <span>{queueRow.missingCountLabel}</span>
             </>
           ) : null}
         </span>

@@ -24,6 +24,7 @@ type InboxListProps = {
   memberNameMap?: Record<string, string>
   taskRelationsByItemId?: Record<string, string>
   phaseFilter?: KfzWorkQueueFilter
+  hrefBasePath?: string | null
 }
 
 export function InboxList({
@@ -34,6 +35,7 @@ export function InboxList({
   memberNameMap = {},
   taskRelationsByItemId = {},
   phaseFilter = 'all',
+  hrefBasePath = null,
 }: InboxListProps) {
   const [archiveExpanded, setArchiveExpanded] = useState(false)
   const allItems = useMemo(
@@ -79,11 +81,12 @@ export function InboxList({
         counts={kfzCounts}
         selectedItemId={selectedItemId}
         selectedPhase={selectedPhase}
+        hrefBasePath={hrefBasePath}
       />
 
       {filterEmpty ? (
         <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">
-          Keine Kfz-Anfragen in diesem Stand.
+            Keine Kfz-Anfragen in dieser Tagesliste.
         </p>
       ) : null}
 

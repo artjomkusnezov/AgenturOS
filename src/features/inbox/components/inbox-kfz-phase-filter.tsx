@@ -4,6 +4,7 @@ import {
   buildInboxHref,
   KFZ_WORK_QUEUE_PHASE_LABELS,
   KFZ_WORK_QUEUE_PHASES,
+  sumKfzWorkQueueCounts,
   type KfzWorkQueueCounts,
   type KfzWorkQueueFilter,
   type KfzWorkQueuePhase,
@@ -15,6 +16,7 @@ type InboxKfzPhaseFilterProps = {
   selectedItemId?: string | null
   selectedPhase?: KfzWorkQueuePhase | null
   variant?: 'inbox' | 'dashboard'
+  hrefBasePath?: string | null
 }
 
 const FILTERS: Array<{ id: KfzWorkQueueFilter; label: string }> = [
@@ -31,15 +33,16 @@ export function InboxKfzPhaseFilter({
   selectedItemId = null,
   selectedPhase = null,
   variant = 'inbox',
+  hrefBasePath = null,
 }: InboxKfzPhaseFilterProps) {
-  const totalKfz = counts.needs_review + counts.in_review + counts.handled
+  const totalKfz = sumKfzWorkQueueCounts(counts)
   if (totalKfz === 0) {
     return null
   }
 
   return (
     <nav
-      aria-label="Kfz-Arbeitsstand"
+      aria-label="Kfz-Tagesliste"
       className={variant === 'dashboard' ? 'az-kfz-filter' : 'aos-inbox-phase-filter'}
     >
       {FILTERS.map((filter) => {
@@ -49,6 +52,7 @@ export function InboxKfzPhaseFilter({
         const href = buildInboxHref({
           phase: filter.id,
           itemId: keepItem ? selectedItemId : null,
+          basePath: hrefBasePath,
         })
         const count =
           filter.id === 'all' ? totalKfz : counts[filter.id as KfzWorkQueuePhase]

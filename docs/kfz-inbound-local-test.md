@@ -95,15 +95,18 @@ Im Kfz-Inbox-Detail kann die Mitarbeiterin einen **internen Antwortentwurf** zur
 
 Deterministische Tests: `src/features/inbound/kfz/kfz-response-draft.smoke.test.ts`.
 
-## Kfz-Arbeitsstand (Inbox / Dashboard / Folgeaufgabe)
+## Kfz-Tagesliste (Inbox / Dashboard / Folgeaufgabe)
 
-Bestehende Inbox- und Dashboard-Listen unterscheiden Kfz-Anfragen nach Arbeitsstand:
+Die bestehende Inbox ist die tägliche Kfz-Arbeitsschlange. Filter und Zähler (ohne automatischen Statuswechsel):
 
-- **Neu** (`needs_review`) — frischer Eingang, noch keine interne Prüfung
-- **In Prüfung** (`in_review`) — interne Notiz / Prüfung gestartet oder Folgeaufgabe verknüpft, noch unbearbeitet
+- **Neu** (`needs_review`) — frischer vollständiger Eingang, noch keine interne Prüfung
+- **Fehlende Angaben** (`missing_information`) — unerledigt, Prüfliste hat Lücken (auch während der Prüfung)
+- **In Prüfung** (`in_review`) — interne Notiz / Entwurf / Folgeaufgabe, Angaben vollständig, noch unbearbeitet
 - **Erledigt** (`handled`) — manuell über `processInboxItem` geschlossen
 
-Der Stand bleibt in der bestehenden Inbox-URL persistiert: `/app/inbox?phase=in_review` (optional plus `item=`). Dashboard-Chips und Filter verlinken auf denselben Parameter.
+Jede Zeile zeigt Kunden-/Anfragefakten, faktische Dringlichkeit falls im Bestand, den Lückenstand und den nächsten manuellen Schritt. Öffnen führt in den bestehenden Prüfschirm (`/app/inbox?item=`).
+
+Der Filter bleibt in der Inbox-URL persistiert: `/app/inbox?phase=missing_information` (optional plus `item=`). Dashboard-Chips und Filter verlinken auf denselben Parameter.
 
 Eine explizit angelegte interne Folgeaufgabe (`convert-inbox-to-task`) erscheint in `/app/tasks?task=…`. Zurück zur Anfrage führt der bestehende Ursprung `cases.source_inbox_item_id` → `/app/inbox?item=…` („Zum Eingang“ / „Zur Anfrage“). Kein automatischer Kundenkontakt.
 
