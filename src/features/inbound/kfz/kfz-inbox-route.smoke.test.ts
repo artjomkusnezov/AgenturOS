@@ -193,8 +193,11 @@ describe('authenticated Kfz inbox / dashboard route', () => {
       assert.match(view.metaLabel, /Fehlende Angaben 0/)
       assert.match(view.metaLabel, /In Prüfung 0/)
       assert.match(view.metaLabel, /Erledigt 0/)
-      assert.equal(view.filterHrefs.all, '/app/inbox')
-      assert.equal(view.filterHrefs.needs_review, '/app/inbox?phase=needs_review')
+      assert.equal(view.filterHrefs.all, `/app/inbox?item=${item.id}`)
+      assert.equal(
+        view.filterHrefs.needs_review,
+        `/app/inbox?phase=needs_review&item=${item.id}`,
+      )
       assert.equal(
         view.filterHrefs.missing_information,
         '/app/inbox?phase=missing_information',
