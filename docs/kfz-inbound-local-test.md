@@ -55,9 +55,13 @@ Regionale Landingpage für Allianz Kusnezov / Lengerich. Drei kurze Schritte (An
 
 Standard-Rückkanal ist WhatsApp; Alternativen in dieser Reihenfolge: WhatsApp, Telefon, E-Mail. Gespeichert wird nur die Kundenwahl — keine WhatsApp-/Meta-API, keine Nachricht.
 
-Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` und `src/features/inbound/kfz/kfz-landing-flow.smoke.test.ts` (Schritte, WhatsApp-Default, Alternativkanal, Dokumentwahl/-validierung, Submit→Inbox, kein automatischer Versand).
+Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts`, `src/features/inbound/kfz/kfz-landing-flow.smoke.test.ts` und `src/features/inbound/kfz/kfz-landing-submit.smoke.test.ts` (Schritte, WhatsApp-Default, Alternativkanal, Dokumentwahl/-validierung, Submit→Inbox, Submit-Status, stabile Submission-ID, Timeout/Retry ohne Duplikat, Draft-Restore ohne Consent/Dateien, kein automatischer Versand).
 
 Der HTTP-Handler ist derselbe Einstieg wie `POST /api/inbound/kfz` und die `/kfz` Server Action. Tests dürfen einen Memory-Store injizieren; Production bleibt beim Service-Role-Store. Fehlt die Intake-Konfiguration, antwortet der Handler ehrlich mit `config_missing` (kein Erfolg).
+
+Submit-Zustände auf der Landingpage (Deutsch): bereit, wird gesendet, angekommen, fehlgeschlagen/erneut versuchen. Dieselbe `submissionId` bleibt bei Timeout, Zurück/Vor und Retry erhalten — der Intake legt kein zweites Inbox-Item an. Nach einem Fehler bleiben Felder und lokale Dateivorschauen stehen; nach einem Neuladen werden Text/Select-Felder aus `sessionStorage` wiederhergestellt, Consent bleibt unchecked, Unterlagen müssen erneut gewählt werden. Nach bestätigtem Erfolg wird der lokale Draft gelöscht. Keine automatische Weiterleitung und keine Nachricht.
+
+Lokale Retry-Vorschau (nicht Production): `http://localhost:3000/dev/kfz-landing` — erster Versand schlägt absichtlich fehl, der Retry geht durch denselben Handler in einen Memory-Store.
 
 ## Inbox-Darstellung (menschliche Prüfung)
 

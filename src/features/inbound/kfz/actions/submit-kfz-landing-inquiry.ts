@@ -9,16 +9,10 @@ import {
 } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
+import type { KfzLandingSubmitState } from '@/features/inbound/kfz/types/kfz-landing-submit'
 import type { PublicKfzInquiryPayload } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
-export type KfzLandingSubmitState =
-  | { ok: true; deduplicated: boolean }
-  | {
-      ok: false
-      error: string
-      code?: string
-      retryable: boolean
-    }
+export type { KfzLandingSubmitState }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
