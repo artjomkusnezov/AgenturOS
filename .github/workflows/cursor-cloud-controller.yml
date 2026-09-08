@@ -1,7 +1,9 @@
-name: Cursor Cloud Controller v1
+name: Cursor Cloud Controller v2
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
   push:
     branches:
       - "controller/cursor-cloud-v1"
@@ -9,37 +11,34 @@ on:
       - ".cursor-controller/TRIGGER.md"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: cursor-cloud-controller-agenturos
   cancel-in-progress: false
 
 jobs:
-  launch:
+  monitor-and-launch:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Checkout controller branch
+      - name: Checkout controller state
         uses: actions/checkout@v4
         with:
           ref: controller/cursor-cloud-v1
+          fetch-depth: 0
 
-      - name: Safety preflight
+      - name: Preflight
         shell: bash
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" != "master" || { echo "REFUSED: controller may not run on master"; exit 1; }
-          test -n "${CURSOR_API_KEY:-}" || { echo "REFUSED: CURSOR_API_KEY secret is unavailable"; exit 2; }
+          test -n "${CURSOR_API_KEY:-}" || { echo "REFUSED: CURSOR_API_KEY is unavailable"; exit 2; }
           test -f .cursor-controller/TASK.md || { echo "REFUSED: TASK.md is missing"; exit 3; }
-          grep -Eq '^STATUS:[[:space:]]+READY[[:space:]]*$' .cursor-controller/TASK.md || {
-            echo "REFUSED: controller task is not STATUS: READY"
-            exit 4
-          }
 
-      - name: Refuse duplicate active AgenturOS Cloud Agent
+      - name: Check active agent and select next READY task
+        id: select
         shell: bash
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -50,48 +49,71 @@ jobs:
           for ID in $ACTIVE_IDS; do
             DETAIL=$(curl --silent --show-error --fail --url "https://api.cursor.com/v1/agents/${ID}" --user "${CURSOR_API_KEY}:")
             if printf '%s' "$DETAIL" | jq -e '.repos[]? | select(.url == "https://github.com/artjomkusnezov/AgenturOS")' >/dev/null; then
-              echo "REFUSED: an ACTIVE Cursor Cloud Agent already targets AgenturOS (${ID})"
-              exit 10
+              echo "active=true" >> "$GITHUB_OUTPUT"
+              echo "ACTIVE: ${ID}; no second agent will be launched." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
             fi
           done
 
+          TASK_FILE=""
+          for CANDIDATE in .cursor-controller/TASK.md $(find .cursor-controller/queue -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort); do
+            if grep -Eq '^STATUS:[[:space:]]+READY[[:space:]]*$' "$CANDIDATE"; then
+              TASK_FILE="$CANDIDATE"
+              break
+            fi
+          done
+          if [ -z "$TASK_FILE" ]; then
+            echo "active=false" >> "$GITHUB_OUTPUT"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "IDLE: no READY task in the controller queue." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "active=false" >> "$GITHUB_OUTPUT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "task_file=$TASK_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Start exactly one Cursor Cloud Agent
+        id: launch
+        if: steps.select.outputs.active != 'true' && steps.select.outputs.ready == 'true'
         shell: bash
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          TASK_FILE: ${{ steps.select.outputs.task_file }}
         run: |
           set -euo pipefail
-          TASK=$(cat .cursor-controller/TASK.md)
-          STARTING_REF=$(sed -nE "s/^STARTING_REF:[[:space:]]+(.+)$/\\1/p" .cursor-controller/TASK.md | head -n 1)
-          test -n "$STARTING_REF" || { echo "REFUSED: TASK.md has no STARTING_REF"; exit 5; }
-          SAFETY='\n\nController safety: Read AGENTS.md first. Work only on the new Cursor-created branch. Never write master, merge, deploy, change production data, inspect or expose secrets, activate external services, send customer communication, rewrite history, force-push, reset/clean user work, or self-assign another task. Preserve provider-neutral intake boundaries and human review for AI suggestions. Run npm run test:inbound, npx tsc --noEmit, npm run lint, and npm run build once after implementation; repair only concrete deterministic failures. Use browser/computer for functional smoke checks when browser truth matters.'
-          PROMPT="${TASK}${SAFETY}"
-          PAYLOAD=$(jq -n --arg prompt "$PROMPT" --arg starting_ref "$STARTING_REF" '{
-            name: "AgenturOS Controller Task",
-            prompt: {text: $prompt},
-            repos: [{
-              url: "https://github.com/artjomkusnezov/AgenturOS",
-              startingRef: "agent/issue-18"
-            }],
-            workOnCurrentBranch: false,
-            autoCreatePR: false,
-            mode: "agent"
-          }')
+          TASK=$(cat "$TASK_FILE")
+          STARTING_REF=$(sed -nE 's/^STARTING_REF:[[:space:]]+(.+)$/\1/p' "$TASK_FILE" | head -n 1)
+          if [ "$STARTING_REF" = "AUTO_LATEST_CURSOR" ]; then
+            git fetch origin '+refs/heads/cursor/*:refs/remotes/origin/cursor/*'
+            STARTING_REF=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/cursor/ | head -n 1 | sed 's#^origin/##')
+          fi
+          test -n "$STARTING_REF" || { echo "REFUSED: no STARTING_REF"; exit 5; }
+          SAFETY='\n\nController safety: Work only on the new Cursor-created branch. Never write main, merge, deploy, change production data, inspect/expose secrets, rewrite history, force-push, reset/clean user work, or self-assign another task. Read AGENTS.md first. Preserve provider-neutral intake and mandatory human review. Never contact customers or activate Meta/WhatsApp. Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build once.'
+          PAYLOAD=$(jq -n --arg prompt "${TASK}${SAFETY}" --arg starting_ref "$STARTING_REF" '{name:"AgenturOS Controller Task",prompt:{text:$prompt},repos:[{url:"https://github.com/artjomkusnezov/AgenturOS",startingRef:$starting_ref}],workOnCurrentBranch:false,autoCreatePR:false,mode:"agent"}')
           RESPONSE=$(curl --silent --show-error --fail-with-body --request POST --url 'https://api.cursor.com/v1/agents' --user "${CURSOR_API_KEY}:" --header 'Content-Type: application/json' --data "$PAYLOAD")
           AGENT_ID=$(printf '%s' "$RESPONSE" | jq -r '.agent.id')
           RUN_ID=$(printf '%s' "$RESPONSE" | jq -r '.run.id')
-          AGENT_URL=$(printf '%s' "$RESPONSE" | jq -r '.agent.url')
           RUN_STATUS=$(printf '%s' "$RESPONSE" | jq -r '.run.status')
           test -n "$AGENT_ID" && test "$AGENT_ID" != "null"
+          echo "agent_id=$AGENT_ID" >> "$GITHUB_OUTPUT"
+          echo "Launched $AGENT_ID / $RUN_ID / $RUN_STATUS from $STARTING_REF using $TASK_FILE." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Mark queue item STARTED
+        if: steps.launch.outputs.agent_id != ''
+        shell: bash
+        env:
+          TASK_FILE: ${{ steps.select.outputs.task_file }}
+          AGENT_ID: ${{ steps.launch.outputs.agent_id }}
+        run: |
+          set -euo pipefail
+          sed -i -E 's/^STATUS:[[:space:]]+READY[[:space:]]*$/STATUS: STARTED/' "$TASK_FILE"
           {
-            echo '## Cursor Cloud Agent launched'
             echo
-            echo "- Agent: `$AGENT_ID`"
-            echo "- Run: `$RUN_ID`"
-            echo "- Status: `$RUN_STATUS`"
-            echo "- Cursor: $AGENT_URL"
-            echo "- Source: \`$STARTING_REF\`"
-            echo '- Work branch: separate Cursor-created branch'
-            echo '- Auto PR: disabled'
-            echo '- Merge/deploy: not performed'
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "CONTROLLER_AGENT_ID: $AGENT_ID"
+            echo "CONTROLLER_STARTED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$TASK_FILE"
+          git config user.name "cursor-cloud-controller"
+          git config user.email "actions@users.noreply.github.com"
+          git add "$TASK_FILE"
+          git commit -m "controller: claim $(basename "$TASK_FILE") for $AGENT_ID"
+          git push origin HEAD:controller/cursor-cloud-v1
