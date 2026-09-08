@@ -1,24 +1,22 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-d280
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-dd22
 
-# AgenturOS — Human-reviewed duplicate warning for manual capture
+# AgenturOS — Manual capture into the Kfz review card
 
 ## Goal
-Help an employee avoid creating the same manually captured inquiry twice, while keeping the decision completely manual.
+Let an employee turn a manually entered phone call, pasted email or own note into the existing normalized Kfz human-review card without automatic decisions.
 
 ## Required work
-- Build on the finished phone, pasted email and personal-note capture flow.
-- Before final confirmation, compare the current draft with existing inbox items using deterministic local facts already available: unchanged source text, phone/email and recent title.
-- If a likely duplicate exists, show a clear warning and link/open the existing inbox item.
-- Never block automatically: the employee must explicitly choose either open the existing item or create the new item anyway.
-- Do not merge records, change statuses, create tasks, send replies or contact customers automatically.
-- Keep source labels and original text unchanged.
-- Reuse the safe local preview route and fixtures without production data.
+- Build on the finished manual source choice and duplicate warning.
+- Add one explicit employee choice that the inquiry is a Kfz case; do not classify it automatically.
+- Reuse the existing Kfz normalization and review workspace instead of creating a second system.
+- Carry the unchanged source text and selected source into the Kfz card.
+- Show extracted factual fields as suggestions and list missing information clearly.
+- Require explicit human confirmation before the item enters the inbox.
+- After confirmation, open the existing Kfz review card with source, facts, missing information, notes, task and editable draft.
+- No automatic reply, status change, task creation, customer contact, provider connection, Meta/WhatsApp or CRM replacement.
 - Add deterministic tests; run inbound tests, TypeScript, lint and build.
-- Browser-check desktop/mobile and record exact evidence or blockers.
+- Browser-check desktop/mobile on safe local fixtures and record exact evidence or blockers.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp or paid services.
-
-CONTROLLER_AGENT_ID: bc-cf99e310-2917-4cd0-8ed8-f8720dad88e1
-CONTROLLER_STARTED_AT: 2026-09-08T12:45:21Z
+Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
