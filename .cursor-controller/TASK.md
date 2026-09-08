@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-0f60
 
 # AgenturOS — Manual phone, email and note capture
@@ -19,3 +19,6 @@ Extend the finished fast text capture so an employee can label where information
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
+
+CONTROLLER_AGENT_ID: bc-5b7ff910-bb6c-43e8-964f-b603ed0c6918
+CONTROLLER_STARTED_AT: 2026-09-08T11:47:39Z
