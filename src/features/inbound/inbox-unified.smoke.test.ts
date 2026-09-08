@@ -24,7 +24,6 @@ import {
 import { buildInboxHref } from '@/features/inbox/lib/kfz-work-queue'
 import {
   presentAuthenticatedKfzInbox,
-  AUTHENTICATED_INBOX_PATH,
   isAuthenticatedInboxHref,
 } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import {
