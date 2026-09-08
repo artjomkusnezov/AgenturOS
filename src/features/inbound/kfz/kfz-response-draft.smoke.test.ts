@@ -146,7 +146,7 @@ describe('kfz manual response draft workspace', () => {
       assert.match(review.sourceContent, /Kfz-Anfrage von Max Mustermann/)
       assert.equal(hasKfzResponseDraft(item.content), false)
       assert.equal(item.processed_at, null)
-      assert.doesNotMatch(item.content, new RegExp(KFZ_RESPONSE_DRAFT_HEADING))
+      assert.equal(item.content.includes(KFZ_RESPONSE_DRAFT_HEADING), false)
     })
   })
 
@@ -229,7 +229,7 @@ describe('kfz manual response draft workspace', () => {
 
       assert.equal(readInboxSourceContent(drafted.next.content), source)
       assert.match(drafted.next.content, /Rückruf intern vormerken/)
-      assert.match(drafted.next.content, new RegExp(KFZ_INTERNAL_NOTE_HEADING))
+      assert.equal(drafted.next.content.includes(KFZ_INTERNAL_NOTE_HEADING), true)
       assert.equal(drafted.next.linkedTaskId, taskId)
       assert.equal(drafted.next.processed_at, null)
       assert.equal(drafted.mutated.task, false)
@@ -281,8 +281,8 @@ describe('kfz manual response draft workspace', () => {
       })
       assert.doesNotMatch(analysisInput.content ?? '', /Geheimnisvoller Kundenentwurf/)
       assert.doesNotMatch(analysisInput.content ?? '', /Geheime interne Bewertung/)
-      assert.doesNotMatch(analysisInput.content ?? '', new RegExp(KFZ_RESPONSE_DRAFT_HEADING))
-      assert.doesNotMatch(analysisInput.content ?? '', new RegExp(KFZ_INTERNAL_NOTE_HEADING))
+      assert.equal((analysisInput.content ?? '').includes(KFZ_RESPONSE_DRAFT_HEADING), false)
+      assert.equal((analysisInput.content ?? '').includes(KFZ_INTERNAL_NOTE_HEADING), false)
       assert.match(analysisInput.content ?? '', /Kfz-Anfrage von Max Mustermann/)
 
       const ai = await getInboxAiProposal({
@@ -503,11 +503,15 @@ describe('kfz response draft side-effect boundary', () => {
     )
 
     assert.match(draftUi, /Internen Entwurf speichern/)
-    assert.match(draftUi, /menschliche Prüfung erforderlich/)
-    assert.doesNotMatch(draftUi, /type="submit"[^>]*>[\s\S]*Senden/)
-    assert.doesNotMatch(draftUi, /WhatsApp|Resend|sendEmail|sendWhatsApp/)
+    assert.match(draftUi, /KFZ_AI_DRAFT_REVIEW_LABEL/)
+    assert.match(draftUi, /Als Ausgangsentwurf übernehmen/)
+    assert.doesNotMatch(draftUi, /Nachricht senden|Kundenantwort senden|sendEmail|sendWhatsApp/)
     assert.doesNotMatch(detailUi, /Kundenantwort senden|Nachricht senden/)
     assert.doesNotMatch(action, /features\/email|features\/whatsapp|resend/)
     assert.match(action, /no send, status, case or task side effect/)
+    assert.equal(
+      KFZ_AI_DRAFT_REVIEW_LABEL,
+      'KI-Text ist ein Vorschlag — menschliche Prüfung erforderlich',
+    )
   })
 })
