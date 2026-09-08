@@ -477,7 +477,7 @@ describe('review history stays off production send paths', () => {
       'utf8',
     )
     assert.doesNotMatch(historyLib, /send-whatsapp|whatsapp-outbound|resend/)
-    assert.match(historyLib, /Do not invent actors or timestamps/)
+    assert.match(historyLib, /Does not invent actors or timestamps/)
 
     const previewPage = fs.readFileSync(path.join(srcRoot, 'app/dev/inbox/page.tsx'), 'utf8')
     assert.match(previewPage, /allowLocalHistoryFixtureFacts/)
