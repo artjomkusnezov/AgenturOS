@@ -18,3 +18,8 @@ export const KFZ_LANDING_REGION_LABEL = 'Lengerich und Umgebung' as const
 export const KFZ_LANDING_DEFAULT_CITY = 'Lengerich' as const
 
 export const KFZ_LANDING_DEFAULT_POSTAL_CODE = '49525' as const
+
+export const KFZ_LANDING_CONFIRMATION_TITLE = 'Anfrage ist angekommen.' as const
+
+export const KFZ_LANDING_CONFIRMATION_BODY =
+  'Wir prüfen sie persönlich und melden uns auf dem gewünschten Weg.' as const
