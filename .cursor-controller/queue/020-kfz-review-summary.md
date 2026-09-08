@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: AUTO_LATEST_CURSOR
 
 # AgenturOS — Kfz review summary and missing information
@@ -15,3 +15,6 @@ Continue the latest completed Cursor result. Make each Kfz inquiry ready for fas
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp or CRM replacement.
+
+CONTROLLER_AGENT_ID: bc-63b84bdb-2780-4d67-a5d9-964f882c0e3a
+CONTROLLER_STARTED_AT: 2026-09-08T05:42:58Z
