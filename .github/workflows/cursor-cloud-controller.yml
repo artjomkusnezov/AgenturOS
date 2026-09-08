@@ -25,7 +25,7 @@ jobs:
   monitor-and-launch:
     if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'cursor/')
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - name: Checkout controller state
         uses: actions/checkout@v4
@@ -49,15 +49,32 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
           set -euo pipefail
-          RESPONSE=$(curl --silent --show-error --fail --url 'https://api.cursor.com/v1/agents?limit=100' --user "${CURSOR_API_KEY}:")
-          ACTIVE_IDS=$(printf '%s' "$RESPONSE" | jq -r '.items[]? | select(.status == "ACTIVE") | .id')
-          for ID in $ACTIVE_IDS; do
-            DETAIL=$(curl --silent --show-error --fail --url "https://api.cursor.com/v1/agents/${ID}" --user "${CURSOR_API_KEY}:")
-            if printf '%s' "$DETAIL" | jq -e '.repos[]? | select(.url == "https://github.com/artjomkusnezov/AgenturOS")' >/dev/null; then
+          MAX_CHECKS=1
+          CHECK_DELAY=30
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            MAX_CHECKS=30
+          fi
+          for ATTEMPT in $(seq 1 "$MAX_CHECKS"); do
+            RESPONSE=$(curl --silent --show-error --fail --url 'https://api.cursor.com/v1/agents?limit=100' --user "${CURSOR_API_KEY}:")
+            ACTIVE_ID=""
+            ACTIVE_IDS=$(printf '%s' "$RESPONSE" | jq -r '.items[]? | select(.status == "ACTIVE") | .id')
+            for ID in $ACTIVE_IDS; do
+              DETAIL=$(curl --silent --show-error --fail --url "https://api.cursor.com/v1/agents/${ID}" --user "${CURSOR_API_KEY}:")
+              if printf '%s' "$DETAIL" | jq -e '.repos[]? | select(.url == "https://github.com/artjomkusnezov/AgenturOS")' >/dev/null; then
+                ACTIVE_ID="$ID"
+                break
+              fi
+            done
+            if [ -z "$ACTIVE_ID" ]; then
+              break
+            fi
+            if [ "$ATTEMPT" -eq "$MAX_CHECKS" ]; then
               echo "active=true" >> "$GITHUB_OUTPUT"
-              echo "ACTIVE: ${ID}; no second agent will be launched." >> "$GITHUB_STEP_SUMMARY"
+              echo "ACTIVE: ${ACTIVE_ID}; no second agent will be launched." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
+            echo "Cursor agent ${ACTIVE_ID} is still finishing; check ${ATTEMPT}/${MAX_CHECKS}. Waiting ${CHECK_DELAY}s."
+            sleep "$CHECK_DELAY"
           done
 
           TASK_FILE=""
