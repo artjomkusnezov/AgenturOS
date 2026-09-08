@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-0f60
 
 # AgenturOS — Fast manual intake into the real inbox
@@ -19,3 +19,6 @@ Let an employee capture a new customer information item in under 10 seconds by p
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp, paid services or CRM replacement.
+
+CONTROLLER_AGENT_ID: bc-16e5a58a-6924-4a55-875c-c73c2e0e25d6
+CONTROLLER_STARTED_AT: 2026-09-08T10:43:04Z
