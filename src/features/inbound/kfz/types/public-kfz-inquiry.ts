@@ -9,11 +9,15 @@ export type KfzPreferredChannel = (typeof KFZ_PREFERRED_CHANNELS)[number]
 export const KFZ_LANGUAGES = ['de', 'ru', 'en'] as const
 export type KfzLanguage = (typeof KFZ_LANGUAGES)[number]
 
+export const KFZ_UPLOAD_GROUPS = ['fahrzeugschein', 'vorversicherung'] as const
+export type KfzUploadGroup = (typeof KFZ_UPLOAD_GROUPS)[number]
+
 /** Optionaler Upload-Metadaten-Seam — keine Binärdaten in Gate 2. */
 export type PublicKfzUploadMeta = {
   filename: string
   mimeType?: string | null
   sizeBytes?: number | null
+  group?: KfzUploadGroup | null
 }
 
 /**
@@ -71,5 +75,6 @@ export const KFZ_PUBLIC_LIMITS = {
   submissionId: 128,
   uploadFilename: 180,
   uploadMimeType: 120,
-  maxUploads: 5,
+  uploadGroup: 32,
+  maxUploads: 6,
 } as const

@@ -85,14 +85,21 @@ function normalizeUploadMeta(
     return []
   }
 
-  return uploads.map((entry) => ({
-    filename: sanitizePlainTextField(entry.filename, KFZ_PUBLIC_LIMITS.uploadFilename),
-    mimeType:
-      entry.mimeType == null
-        ? entry.mimeType
-        : sanitizePlainTextField(entry.mimeType, KFZ_PUBLIC_LIMITS.uploadMimeType) || null,
-    sizeBytes: entry.sizeBytes ?? null,
-  }))
+  return uploads.map((entry) => {
+    const meta: PublicKfzUploadMeta = {
+      filename: sanitizePlainTextField(entry.filename, KFZ_PUBLIC_LIMITS.uploadFilename),
+      mimeType:
+        entry.mimeType == null
+          ? entry.mimeType
+          : sanitizePlainTextField(entry.mimeType, KFZ_PUBLIC_LIMITS.uploadMimeType) ||
+            null,
+      sizeBytes: entry.sizeBytes ?? null,
+    }
+    if (entry.group) {
+      meta.group = entry.group
+    }
+    return meta
+  })
 }
 
 /**

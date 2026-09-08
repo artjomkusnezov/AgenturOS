@@ -83,6 +83,11 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
             ))}
             <MetaRow label="Prüfstand" value={KFZ_WORK_QUEUE_PHASE_LABELS[review.phase]} />
           </dl>
+          {review.documents.length > 0 ? (
+            <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
+              Nur Metadaten — keine Datei-Bytes in diesem Inbox-Pfad.
+            </p>
+          ) : null}
         </div>
 
         <div>

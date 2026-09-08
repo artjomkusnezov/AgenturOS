@@ -51,9 +51,11 @@ prüft, dass die eingecheckten Migrationen `channel='website'` und `source='webs
 ## Öffentliche Landingpage (Gate 3 Slice)
 
 **Browser:** `http://localhost:3000/kfz`  
-Regional für Allianz Kusnezov / Lengerich. Formular baut den Gate-2-`PublicKfzInquiryPayload`, setzt `submissionId` client-seitig und sendet über Server Action in denselben Handler wie `POST /api/inbound/kfz` (Bearer-Secret nur auf dem Server).
+Regionale Landingpage für Allianz Kusnezov / Lengerich. Drei kurze Schritte (Anliegen, Kontakt, optionale Unterlagen + Consent). Formular baut den Gate-2-`PublicKfzInquiryPayload`, setzt `submissionId` client-seitig und sendet über Server Action in denselben Handler wie `POST /api/inbound/kfz` (Bearer-Secret nur auf dem Server).
 
-Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` (Payload-Mapping, Consent, Submit-Lock, Success/Failure-Phasen, Landing→Intake, Landing→`handleKfzInboundHttpRequest`).
+Standard-Rückkanal ist WhatsApp; Alternativen in dieser Reihenfolge: WhatsApp, Telefon, E-Mail. Gespeichert wird nur die Kundenwahl — keine WhatsApp-/Meta-API, keine Nachricht.
+
+Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts` und `src/features/inbound/kfz/kfz-landing-flow.smoke.test.ts` (Schritte, WhatsApp-Default, Alternativkanal, Dokumentwahl/-validierung, Submit→Inbox, kein automatischer Versand).
 
 Der HTTP-Handler ist derselbe Einstieg wie `POST /api/inbound/kfz` und die `/kfz` Server Action. Tests dürfen einen Memory-Store injizieren; Production bleibt beim Service-Role-Store. Fehlt die Intake-Konfiguration, antwortet der Handler ehrlich mit `config_missing` (kein Erfolg).
 
@@ -172,7 +174,7 @@ Erwartete Antwort bei Erfolg: `{ "ok": true, "deduplicated": false, "inboxItemId
 ## Follow-ups (bewusst nicht in diesem Slice)
 
 1. **Migration anwenden (Owner):** `20260906120000_inbox_website_channel_source.sql` ist eingecheckt; Apply auf Preview/Staging/Production bleibt Owner-Entscheidung.  
-2. **Dokumentablage:** sichere Bytes-Pipeline wiederverwenden oder eigenen Seam — Gate 2 speichert nur Upload-Metadaten.  
+2. **Dokumentablage (Blocker):** `/kfz` lässt Desktop-Datei und Mobil-Foto/Galerie zu, prüft Typ/Größe und zeigt lokale Vorschauen. Der Submit trägt nur `uploads[]` (Dateiname, MIME, Größe, Gruppe `fahrzeugschein` | `vorversicherung`). Es gibt keine dauerhafte, authentifizierte Bytes-Ablage in diesem Pfad und keine Secrets-Änderung. Sichere Speicherung bleibt Follow-up (bestehende File-Pipeline braucht Bytes + Auth-Akteur).  
 3. **Retention/Löschung:** Anfrage-/Consent-Nachweise und Metadaten löschbar machen, falls noch nicht vorhanden.  
 4. **Rate-Limit Production:** `consumeRateLimit`-Seam durch shared store ersetzen.  
 5. **Domain/Routing:** `kfz.artkus.de` → `/kfz` (oder eigenes Deployment) — Owner/DNS/Vercel, nicht Teil dieses Slices.  

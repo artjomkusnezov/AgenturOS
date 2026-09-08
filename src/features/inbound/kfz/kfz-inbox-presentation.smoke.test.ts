@@ -169,6 +169,50 @@ describe('kfz landing → HTTP → inbox presentation', () => {
       assert.equal(getInboxListTitle(item), 'Kfz-Anfrage · Max Mustermann')
       assert.equal(item.channel, 'website')
       assert.equal(item.source, 'website')
+      assert.deepEqual(review.documents, [])
+    })
+  })
+
+  it('surfaces optional document metadata on the same review card', async () => {
+    await withKfzEnv(async () => {
+      const built = buildKfzLandingPayload({
+        values: baseValues({
+          preferredChannel: 'whatsapp',
+          inquiryReason: 'Versicherung wechseln',
+        }),
+        submissionId: 'lp-inbox-review-docs',
+        consentTimestamp: '2026-09-07T12:00:00.000Z',
+        uploads: [
+          {
+            filename: 'schein.jpg',
+            mimeType: 'image/jpeg',
+            sizeBytes: 12_000,
+            group: 'fahrzeugschein',
+          },
+        ],
+      })
+      assert.equal(built.ok, true)
+      if (!built.ok) {
+        return
+      }
+
+      const store = createMemoryInboundIntakeStore()
+      const result = await handleKfzInboundHttpRequest(landingRequest(built.payload), {
+        store,
+      })
+      assert.equal(result.ok, true)
+      if (!result.ok) {
+        return
+      }
+
+      const review = presentKfzWebsiteInboxItem(store.items[0])
+      assert.ok(review)
+      assert.equal(review.preferredChannelLabel, 'WhatsApp')
+      assert.equal(review.documents.length, 1)
+      assert.equal(review.documents[0]?.filename, 'schein.jpg')
+      assert.equal(review.documents[0]?.groupLabel, 'Fahrzeugschein')
+      assert.ok(review.submittedFacts.some((fact) => fact.id === 'documents'))
+      assert.equal('attachments' in store.items[0], false)
     })
   })
 

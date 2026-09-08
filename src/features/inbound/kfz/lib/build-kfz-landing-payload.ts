@@ -3,9 +3,15 @@ import {
   KFZ_LANDING_SOURCE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
+  toPublicKfzUploadMeta,
+  type KfzLandingDocumentCandidate,
+} from '@/features/inbound/kfz/lib/kfz-landing-documents'
+import { isUsableKfzLandingPhone } from '@/features/inbound/kfz/lib/kfz-landing-steps'
+import {
   KFZ_PREFERRED_CHANNELS,
   type KfzPreferredChannel,
   type PublicKfzInquiryPayload,
+  type PublicKfzUploadMeta,
 } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
 export type KfzLandingFormValues = {
@@ -39,6 +45,8 @@ export type BuildKfzLandingPayloadInput = {
   attribution?: KfzLandingAttribution
   language?: PublicKfzInquiryPayload['language']
   source?: string | null
+  uploads?: PublicKfzUploadMeta[] | null
+  documents?: readonly KfzLandingDocumentCandidate[]
 }
 
 export type BuildKfzLandingPayloadResult =
@@ -52,6 +60,7 @@ export type BuildKfzLandingPayloadResult =
         | 'missing_field'
         | 'invalid_field'
         | 'missing_submission_id'
+        | 'whatsapp_requires_phone'
     }
 
 function emptyToNull(value: string): string | null {
@@ -120,7 +129,16 @@ export function buildKfzLandingPayload(
   const phone = emptyToNull(input.values.phone)
   const email = emptyToNull(input.values.email)
 
-  if (!phone && !email) {
+  if (input.values.preferredChannel === 'whatsapp') {
+    if (!phone || !isUsableKfzLandingPhone(phone)) {
+      return {
+        ok: false,
+        error:
+          'Für WhatsApp benötigen wir eine nutzbare Telefonnummer. Sie können stattdessen Telefon oder E-Mail wählen.',
+        code: 'whatsapp_requires_phone',
+      }
+    }
+  } else if (!phone && !email) {
     return {
       ok: false,
       error: 'Bitte Telefon oder E-Mail angeben.',
@@ -154,9 +172,22 @@ export function buildKfzLandingPayload(
     utmTerm: attr.utmTerm ?? null,
     utmContent: attr.utmContent ?? null,
     submissionId,
+    uploads: resolveLandingUploads(input),
   }
 
   return { ok: true, payload }
+}
+
+function resolveLandingUploads(
+  input: BuildKfzLandingPayloadInput,
+): PublicKfzUploadMeta[] | null {
+  if (input.documents && input.documents.length > 0) {
+    return toPublicKfzUploadMeta(input.documents)
+  }
+  if (input.uploads && input.uploads.length > 0) {
+    return input.uploads
+  }
+  return null
 }
 
 /** Liest optionale UTM-/Campaign-Parameter aus einer Query-Map (ohne PII). */

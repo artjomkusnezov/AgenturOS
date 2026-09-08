@@ -22,6 +22,11 @@ import {
   readInboxSourceContent,
   readKfzResponseDraft,
 } from '@/features/inbox/lib/kfz-response-draft'
+import { labelKfzUploadGroup } from '@/features/inbound/kfz/lib/kfz-landing-documents'
+import {
+  KFZ_UPLOAD_GROUPS,
+  type KfzUploadGroup,
+} from '@/features/inbound/kfz/types/public-kfz-inquiry'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export { KFZ_REVIEW_NO_AUTO_ACTION } from '@/features/inbox/lib/kfz-inbox-manual-triage'
@@ -42,6 +47,14 @@ export type KfzSubmittedFact = {
   id: string
   label: string
   value: string
+}
+
+export type KfzSubmittedDocument = {
+  filename: string
+  group: KfzUploadGroup | null
+  groupLabel: string
+  mimeType: string | null
+  sizeBytes: number | null
 }
 
 export type KfzMissingInfoCheckId =
@@ -73,6 +86,7 @@ export type KfzWebsiteInboxReview = {
   factualSummary: string
   listSummary: string
   submittedFacts: KfzSubmittedFact[]
+  documents: KfzSubmittedDocument[]
   missingInformationChecklist: KfzMissingInfoCheck[]
   missingInformation: string[]
   missingCount: number
@@ -256,6 +270,7 @@ function buildSubmittedFacts(input: {
   request: string
   vehicle: string | null
   contextNotes: string | null
+  documents: KfzSubmittedDocument[]
 }): KfzSubmittedFact[] {
   const facts: KfzSubmittedFact[] = [
     {
@@ -310,7 +325,50 @@ function buildSubmittedFacts(input: {
     facts.push({ id: 'notes', label: 'Kontext', value: input.contextNotes })
   }
 
+  if (input.documents.length > 0) {
+    facts.push({
+      id: 'documents',
+      label: 'Dokumente',
+      value: input.documents
+        .map((doc) => `${doc.groupLabel}: ${doc.filename}`)
+        .join(' · '),
+    })
+  }
+
   return facts
+}
+
+function readSubmittedDocuments(meta: Record<string, unknown> | null): KfzSubmittedDocument[] {
+  if (!meta || !Array.isArray(meta.uploadMeta)) {
+    return []
+  }
+
+  const documents: KfzSubmittedDocument[] = []
+  for (const entry of meta.uploadMeta) {
+    if (!isRecord(entry)) {
+      continue
+    }
+    const filename = asNullableString(entry.filename)
+    if (!filename) {
+      continue
+    }
+    const groupRaw = asNullableString(entry.group)
+    const group =
+      groupRaw && (KFZ_UPLOAD_GROUPS as readonly string[]).includes(groupRaw)
+        ? (groupRaw as KfzUploadGroup)
+        : null
+    documents.push({
+      filename,
+      group,
+      groupLabel: labelKfzUploadGroup(group),
+      mimeType: asNullableString(entry.mimeType),
+      sizeBytes:
+        typeof entry.sizeBytes === 'number' && Number.isFinite(entry.sizeBytes)
+          ? entry.sizeBytes
+          : null,
+    })
+  }
+  return documents
 }
 
 function readOriginName(origin: InboxItem['origin'] | undefined): string | null {
@@ -426,6 +484,7 @@ export function presentKfzWebsiteInboxItem(
   const missingCount = missingInformation.length
   const urgencyNote = detectUrgencyNote(reason, contextNotes)
   const acquisitionSource = websiteItem ? asNullableString(acquisition?.source) : null
+  const documents = readSubmittedDocuments(meta)
 
   return {
     headline: getInboxListTitle(item),
@@ -465,7 +524,9 @@ export function presentKfzWebsiteInboxItem(
       request,
       vehicle: vehicleLabel,
       contextNotes,
+      documents,
     }),
+    documents,
     missingInformationChecklist,
     missingInformation,
     missingCount,

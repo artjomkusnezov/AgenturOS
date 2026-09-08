@@ -48,7 +48,13 @@ type PreviewInquiry = {
   reason: string
   phone: string | null
   email: string | null
-  preferredChannel: 'phone' | 'email'
+  preferredChannel: 'phone' | 'email' | 'whatsapp'
+  uploadMeta?: Array<{
+    filename: string
+    mimeType?: string | null
+    sizeBytes?: number | null
+    group?: 'fahrzeugschein' | 'vorversicherung' | null
+  }>
   vehicle: { make: string | null; model: string | null; year: string | null }
   notes: string
   draft: string
@@ -117,6 +123,9 @@ function buildPreviewItem(input: PreviewInquiry): InboxItem {
         location: { postalCode: '49525', city: 'Lengerich' },
         vehicle: input.vehicle,
       },
+      ...(input.uploadMeta && input.uploadMeta.length > 0
+        ? { uploadMeta: input.uploadMeta }
+        : {}),
       ...(input.localReviewHistory
         ? { [LOCAL_REVIEW_HISTORY_FIXTURE_KEY]: input.localReviewHistory }
         : {}),
@@ -135,12 +144,26 @@ export function buildKfzWorkQueuePreviewItems(): {
     reason: 'Wechsel Kfz-Versicherung',
     phone: '+491701234567',
     email: null,
-    preferredChannel: 'phone',
+    preferredChannel: 'whatsapp',
     vehicle: { make: 'VW', model: 'Golf', year: '2019' },
     notes: '',
     draft: '',
     processedAt: null,
     createdAt: '2026-09-08T07:10:00.000Z',
+    uploadMeta: [
+      {
+        filename: 'fahrzeugschein.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 240_000,
+        group: 'fahrzeugschein',
+      },
+      {
+        filename: 'beitragsrechnung.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 82_000,
+        group: 'vorversicherung',
+      },
+    ],
   })
 
   const missing = buildPreviewItem({

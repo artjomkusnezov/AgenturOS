@@ -2,8 +2,10 @@ import {
   KFZ_LANGUAGES,
   KFZ_PREFERRED_CHANNELS,
   KFZ_PUBLIC_LIMITS,
+  KFZ_UPLOAD_GROUPS,
   type KfzLanguage,
   type KfzPreferredChannel,
+  type KfzUploadGroup,
   type PublicKfzInquiryPayload,
   type PublicKfzUploadMeta,
 } from '@/features/inbound/kfz/types/public-kfz-inquiry'
@@ -129,7 +131,21 @@ function parseUploads(
       return { ok: false, error: 'Upload-Größe ist ungültig.', code: 'invalid_field' }
     }
 
-    uploads.push({
+    let group: KfzUploadGroup | null | undefined
+    if (entry.group === undefined) {
+      group = undefined
+    } else if (entry.group === null) {
+      group = null
+    } else if (
+      typeof entry.group === 'string' &&
+      (KFZ_UPLOAD_GROUPS as readonly string[]).includes(entry.group)
+    ) {
+      group = entry.group as KfzUploadGroup
+    } else {
+      return { ok: false, error: 'Upload-Gruppe ist ungültig.', code: 'invalid_field' }
+    }
+
+    const upload: PublicKfzUploadMeta = {
       filename: entry.filename,
       mimeType:
         entry.mimeType === undefined
@@ -139,7 +155,11 @@ function parseUploads(
         entry.sizeBytes === undefined
           ? undefined
           : (entry.sizeBytes as number | null),
-    })
+    }
+    if (group) {
+      upload.group = group
+    }
+    uploads.push(upload)
   }
 
   return { ok: true, value: uploads }
