@@ -439,6 +439,11 @@ describe('kfz landing submit UI contract', () => {
     assert.match(formSource, /data-kfz-submit-status/)
     assert.match(formSource, /Bereit zum Senden|kfzLandingSubmitStatusLabel/)
     assert.match(formSource, /draftController\.clear\(/)
+    assert.match(formSource, /function persistDraft/)
+    assert.doesNotMatch(
+      formSource,
+      /useEffect\(\(\) => \{\s*if \(phase === 'success'\)/,
+    )
     assert.match(formSource, /documentReselectNotice/)
     assert.match(formSource, /Erneut senden/)
     assert.doesNotMatch(formSource, /router\.push|window\.location|sendWhatsApp|sendEmail/)

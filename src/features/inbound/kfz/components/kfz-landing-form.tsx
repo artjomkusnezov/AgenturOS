@@ -151,31 +151,39 @@ export function KfzLandingForm({
     }
   }, [])
 
-  useEffect(() => {
-    if (phase === 'success') {
-      return
-    }
-    if (!submissionId) {
-      return
-    }
-    draftController.write({
-      submissionId,
-      step,
-      values,
-      hadDocuments: documents.length > 0 || Boolean(documentReselectNotice),
-    })
-  }, [draftController, submissionId, step, values, documents, documentReselectNotice, phase])
-
   const locked = isKfzLandingSubmitLocked(phase) || isPending
   const submitStatus = kfzLandingSubmitStatus(phase)
   const submitStatusLabel = kfzLandingSubmitStatusLabel(phase)
+
+  function persistDraft(next: {
+    step?: KfzLandingStep
+    values?: KfzLandingFormValues
+    documents?: readonly KfzLandingDocumentCandidate[]
+    notice?: string | null
+  } = {}) {
+    if (phase === 'success') {
+      return
+    }
+    const nextValues = next.values ?? values
+    const nextStep = next.step ?? step
+    const nextDocuments = next.documents ?? documents
+    const nextNotice = next.notice === undefined ? documentReselectNotice : next.notice
+    draftController.write({
+      submissionId,
+      step: nextStep,
+      values: nextValues,
+      hadDocuments: nextDocuments.length > 0 || Boolean(nextNotice),
+    })
+  }
 
   function updateField<K extends keyof KfzLandingFormValues>(
     key: K,
     value: KfzLandingFormValues[K],
   ) {
+    const nextValues = { ...values, [key]: value }
     setClientError(null)
-    setValues({ ...values, [key]: value })
+    setValues(nextValues)
+    persistDraft({ values: nextValues })
   }
 
   function goNext() {
@@ -188,6 +196,7 @@ export function KfzLandingForm({
     const next = nextKfzLandingStep(step)
     if (next) {
       setStep(next)
+      persistDraft({ step: next })
     }
   }
 
@@ -196,6 +205,7 @@ export function KfzLandingForm({
     const previous = previousKfzLandingStep(step)
     if (previous) {
       setStep(previous)
+      persistDraft({ step: previous })
     }
   }
 
@@ -224,6 +234,7 @@ export function KfzLandingForm({
     setDocuments(added.documents)
     setRejections(added.rejected)
     setDocumentReselectNotice(null)
+    persistDraft({ documents: added.documents, notice: null })
 
     const acceptedNames = new Set(
       added.documents
@@ -262,13 +273,15 @@ export function KfzLandingForm({
       URL.revokeObjectURL(url)
       delete previewUrlsRef.current[id]
     }
-    setDocuments((current) => removeKfzLandingDocument(current, id))
+    const nextDocuments = removeKfzLandingDocument(documents, id)
+    setDocuments(nextDocuments)
     setPreviews((current) => {
       const next = { ...current }
       delete next[id]
       return next
     })
     setRejections([])
+    persistDraft({ documents: nextDocuments })
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -292,6 +305,7 @@ export function KfzLandingForm({
       previews,
     }
 
+    persistDraft()
     inFlightRef.current = true
     setPhase('submitting')
 
