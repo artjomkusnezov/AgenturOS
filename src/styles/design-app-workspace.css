@@ -497,6 +497,16 @@
     padding: 0 0.15rem 0.15rem;
   }
 
+  .aos-inbox-phase-caption {
+    width: 100%;
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--aos-cockpit-text-meta, #94a3b8);
+  }
+
   .aos-inbox-phase-link {
     display: inline-flex;
     align-items: center;

@@ -4,9 +4,11 @@ import { useMemo, useState } from 'react'
 
 import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
 import { InboxListItem } from '@/features/inbox/components/inbox-list-item'
+import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import {
   countKfzWorkQueue,
   filterInboxItemsByKfzPhase,
+  KFZ_WORK_QUEUE_FILTER_LABELS,
   resolveInboxLinkedTaskId,
   resolveKfzWorkQueuePhase,
   type KfzWorkQueueFilter,
@@ -71,8 +73,9 @@ export function InboxList({
   }, [archiveExpanded, filteredProcessedItems])
 
   const canToggleArchive = filteredProcessedItems.length > ARCHIVED_PREVIEW_LIMIT
-  const filterEmpty =
-    visibleUnprocessedItems.length === 0 && filteredProcessedItems.length === 0
+  const queueMode = phaseFilter !== 'all'
+  const queueItems = [...visibleUnprocessedItems, ...filteredProcessedItems]
+  const filterEmpty = queueItems.length === 0
 
   return (
     <div className="space-y-3">
@@ -88,19 +91,18 @@ export function InboxList({
         <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">
             Keine Kfz-Anfragen in dieser Tagesliste.
         </p>
-      ) : null}
-
-      <div>
-        <h3 className={aosListGroupLabelClassName}>Unbearbeitet</h3>
-        {visibleUnprocessedItems.length === 0 ? (
-          <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">Keine unbearbeiteten Elemente.</p>
-        ) : (
+      ) : queueMode ? (
+        <div>
+          <h3 className={aosListGroupLabelClassName}>
+            {KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter]}
+          </h3>
           <ul className="flex flex-col">
-            {visibleUnprocessedItems.map((item) => (
+            {queueItems.map((item) => (
               <li key={item.id}>
                 <InboxListItem
                   item={item}
                   isSelected={item.id === selectedItemId}
+                  subdued={!isInboxItemUnprocessed(item)}
                   linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
                   onSelect={onSelectItem}
                   memberNameMap={memberNameMap}
@@ -108,38 +110,61 @@ export function InboxList({
               </li>
             ))}
           </ul>
-        )}
-      </div>
-
-      {filteredProcessedItems.length > 0 ? (
-        <div className="border-t border-zinc-200/40 pt-2.5">
-          <h3 className={aosListGroupLabelClassName}>Bearbeitet</h3>
-          <ul className="flex flex-col">
-            {visibleProcessedItems.map((item) => (
-              <li key={item.id}>
-                <InboxListItem
-                  item={item}
-                  isSelected={item.id === selectedItemId}
-                  subdued
-                  linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
-                  onSelect={onSelectItem}
-                  memberNameMap={memberNameMap}
-                />
-              </li>
-            ))}
-          </ul>
-          {canToggleArchive ? (
-            <button
-              type="button"
-              className="aos-ws-archive-toggle"
-              onClick={() => setArchiveExpanded((open) => !open)}
-              aria-expanded={archiveExpanded}
-            >
-              {archiveExpanded ? 'Archiv einklappen' : 'Alle bearbeiteten anzeigen'}
-            </button>
-          ) : null}
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div>
+            <h3 className={aosListGroupLabelClassName}>Unbearbeitet</h3>
+            {visibleUnprocessedItems.length === 0 ? (
+              <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">Keine unbearbeiteten Elemente.</p>
+            ) : (
+              <ul className="flex flex-col">
+                {visibleUnprocessedItems.map((item) => (
+                  <li key={item.id}>
+                    <InboxListItem
+                      item={item}
+                      isSelected={item.id === selectedItemId}
+                      linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
+                      onSelect={onSelectItem}
+                      memberNameMap={memberNameMap}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {filteredProcessedItems.length > 0 ? (
+            <div className="border-t border-zinc-200/40 pt-2.5">
+              <h3 className={aosListGroupLabelClassName}>Bearbeitet</h3>
+              <ul className="flex flex-col">
+                {visibleProcessedItems.map((item) => (
+                  <li key={item.id}>
+                    <InboxListItem
+                      item={item}
+                      isSelected={item.id === selectedItemId}
+                      subdued
+                      linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
+                      onSelect={onSelectItem}
+                      memberNameMap={memberNameMap}
+                    />
+                  </li>
+                ))}
+              </ul>
+              {canToggleArchive ? (
+                <button
+                  type="button"
+                  className="aos-ws-archive-toggle"
+                  onClick={() => setArchiveExpanded((open) => !open)}
+                  aria-expanded={archiveExpanded}
+                >
+                  {archiveExpanded ? 'Archiv einklappen' : 'Alle bearbeiteten anzeigen'}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   )
 }

@@ -3,14 +3,13 @@ import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
 import { enrichInboxAttachmentsWithMediaUrls } from '@/features/inbox/lib/enrich-inbox-attachments'
-import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
+import { presentAuthenticatedKfzInbox } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import {
   listFilesForInboxItem,
   listInboxItemsForCurrentUser,
 } from '@/features/inbox/repositories/inbox-repository'
 import type { InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
-import { parseKfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
@@ -19,7 +18,6 @@ type InboxPageProps = {
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
   const { item, phase } = await searchParams
-  const phaseFilter = parseKfzWorkQueueFilter(phase)
   const [result, membersResult] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
@@ -37,11 +35,15 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     ? buildMemberNameMap(membersResult.members)
     : {}
 
+  const inboxView = presentAuthenticatedKfzInbox({
+    unprocessedItems: result.unprocessedItems,
+    processedItems: result.processedItems,
+    taskRelationsByItemId: result.taskRelationsByItemId,
+    selectedItemId: item,
+    phase,
+  })
   const allItems = [...result.unprocessedItems, ...result.processedItems]
-  const selectedItemId =
-    item && isValidInboxItemId(item) && allItems.some((entry) => entry.id === item)
-      ? item
-      : null
+  const selectedItemId = inboxView.selectedItemId
 
   let attachments: InboxLinkedFile[] = []
   let aiProposal: InboxAiProposal | null = null
@@ -66,10 +68,12 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       processedItems={result.processedItems}
       taskRelationsByItemId={result.taskRelationsByItemId}
       selectedItemId={selectedItemId}
-      phaseFilter={phaseFilter}
+      phaseFilter={inboxView.phaseFilter}
+      queueMeta={inboxView.metaLabel}
       attachments={attachments}
       memberNameMap={memberNameMap}
       aiProposal={aiProposal}
+      enableManualCapture
     />
   )
 }

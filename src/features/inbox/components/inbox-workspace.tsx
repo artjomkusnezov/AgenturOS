@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
@@ -9,8 +9,17 @@ import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
-import { buildInboxHref, type KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
+import {
+  buildInboxHref,
+  countKfzWorkQueue,
+  formatKfzWorkQueueMeta,
+  KFZ_INBOX_HREF_BASE,
+  type KfzWorkQueueFilter,
+} from '@/features/inbox/lib/kfz-work-queue'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
+import { ManualQuickCaptureDialog } from '@/features/inbound/manual/components/manual-quick-capture-dialog'
+import { MANUAL_CAPTURE_ACTION_LABEL } from '@/features/inbound/manual/lib/manual-capture-copy'
+import { aosBtnPrimaryClassName } from '@/lib/design-system'
 
 type InboxWorkspaceProps = {
   unprocessedItems: InboxItem[]
@@ -19,9 +28,12 @@ type InboxWorkspaceProps = {
   selectedItemId: string | null
   phaseFilter?: KfzWorkQueueFilter
   hrefBasePath?: string
+  queueMeta?: string | null
   attachments?: InboxLinkedFile[]
   memberNameMap?: Record<string, string>
   aiProposal?: InboxAiProposal | null
+  /** Authenticated inbox: obvious plain-text capture into the real intake path. */
+  enableManualCapture?: boolean
 }
 
 export function InboxWorkspace({
@@ -30,12 +42,16 @@ export function InboxWorkspace({
   taskRelationsByItemId,
   selectedItemId,
   phaseFilter = 'all',
-  hrefBasePath = '/app/inbox',
+  hrefBasePath = KFZ_INBOX_HREF_BASE,
+  queueMeta = null,
   attachments = [],
   memberNameMap = {},
   aiProposal = null,
+  enableManualCapture = false,
 }: InboxWorkspaceProps) {
   const router = useRouter()
+  const captureTriggerRef = useRef<HTMLButtonElement>(null)
+  const [captureOpen, setCaptureOpen] = useState(false)
   const items = useMemo(
     () => [...unprocessedItems, ...processedItems],
     [unprocessedItems, processedItems]
@@ -84,19 +100,50 @@ export function InboxWorkspace({
   const showMobileDetail = selectedItem !== null
   const totalCount = items.length
   const countLabel = totalCount === 1 ? '1 Element' : `${totalCount} Elemente`
+  const derivedKfzMeta = formatKfzWorkQueueMeta(
+    countKfzWorkQueue(items, taskRelationsByItemId),
+  )
+  const chromeMeta =
+    queueMeta ?? (derivedKfzMeta ? `${derivedKfzMeta} · ${countLabel}` : countLabel)
 
   return (
-    <WorkspaceFrame compact meta={countLabel}>
+    <WorkspaceFrame
+      compact
+      meta={chromeMeta}
+      primary={
+        enableManualCapture ? (
+          <button
+            ref={captureTriggerRef}
+            type="button"
+            onClick={() => setCaptureOpen(true)}
+            className={`${aosBtnPrimaryClassName} min-h-11`}
+          >
+            {MANUAL_CAPTURE_ACTION_LABEL}
+          </button>
+        ) : null
+      }
+    >
       <WorkspaceSplit
         listLabel="Eingangsliste"
         detailLabel="Eingangsdetails"
         showMobileDetail={showMobileDetail}
         list={
           totalCount === 0 ? (
-            <EmptyState
-              title="Noch nichts erfasst"
-              description="Erfassen Sie Inhalt für den zentralen Eingang. Sie entscheiden später, wofür er verwendet wird."
-            />
+            <div className="flex flex-col items-center gap-4 py-6">
+              <EmptyState
+                title="Noch nichts erfasst"
+                description="Text einfügen oder tippen, den Entwurf prüfen und erst dann im Eingang anlegen."
+              />
+              {enableManualCapture ? (
+                <button
+                  type="button"
+                  onClick={() => setCaptureOpen(true)}
+                  className={`${aosBtnPrimaryClassName} min-h-11`}
+                >
+                  {MANUAL_CAPTURE_ACTION_LABEL}
+                </button>
+              ) : null}
+            </div>
           ) : (
             <InboxList
               unprocessedItems={unprocessedItems}
@@ -128,6 +175,13 @@ export function InboxWorkspace({
           )
         }
       />
+      {enableManualCapture ? (
+        <ManualQuickCaptureDialog
+          isOpen={captureOpen}
+          onClose={() => setCaptureOpen(false)}
+          triggerRef={captureTriggerRef}
+        />
+      ) : null}
     </WorkspaceFrame>
   )
 }

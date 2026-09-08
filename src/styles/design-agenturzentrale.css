@@ -855,6 +855,16 @@
     padding: 0.15rem 0.85rem 0.35rem;
   }
 
+  .az-kfz-filter-caption {
+    width: 100%;
+    margin: 0 0 0.1rem;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--az-text-meta, #94a3b8);
+  }
+
   .az-kfz-filter-link {
     display: inline-flex;
     align-items: center;
