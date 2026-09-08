@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-80f0
 
 # AgenturOS — Put the Kfz daily queue into the real inbox
@@ -18,3 +18,6 @@ Move the verified daily Kfz queue from the local preview into the existing authe
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or destructive git.
+
+CONTROLLER_AGENT_ID: bc-d485b5cb-dcc4-43c4-8aae-e0ecb9c68033
+CONTROLLER_STARTED_AT: 2026-09-08T08:51:23Z
