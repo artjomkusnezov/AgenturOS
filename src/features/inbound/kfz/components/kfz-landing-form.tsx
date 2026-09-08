@@ -138,6 +138,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
     key: K,
     value: KfzLandingFormValues[K],
   ) {
+    setClientError(null)
     setValues((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -597,18 +598,22 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       {(clientError || serverError) && (
         <div ref={errorRef} tabIndex={-1} className="outline-none">
           <Alert variant="error">
-            <p className="font-medium">Anfrage nicht gespeichert</p>
-            <p className="mt-1 text-sm">{clientError ?? serverError}</p>
-            <p className="mt-2 text-sm">
-              Sie können es erneut versuchen oder uns direkt unter{' '}
-              <a
-                className="font-medium underline-offset-2 hover:underline"
-                href={`mailto:${KFZ_LANDING_CONTACT_EMAIL}`}
-              >
-                {KFZ_LANDING_CONTACT_EMAIL}
-              </a>{' '}
-              erreichen.
+            <p className="font-medium">
+              {serverError ? 'Anfrage nicht gespeichert' : 'Bitte Angaben prüfen'}
             </p>
+            <p className="mt-1 text-sm">{clientError ?? serverError}</p>
+            {serverError ? (
+              <p className="mt-2 text-sm">
+                Sie können es erneut versuchen oder uns direkt unter{' '}
+                <a
+                  className="font-medium underline-offset-2 hover:underline"
+                  href={`mailto:${KFZ_LANDING_CONTACT_EMAIL}`}
+                >
+                  {KFZ_LANDING_CONTACT_EMAIL}
+                </a>{' '}
+                erreichen.
+              </p>
+            ) : null}
           </Alert>
         </div>
       )}
