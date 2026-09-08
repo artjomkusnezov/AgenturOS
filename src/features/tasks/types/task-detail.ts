@@ -17,4 +17,5 @@ export type TaskDetailLoadState =
       linkedInformation: TaskLinkedInformation[]
       availableFiles: FileRecord[]
       availableInformation: InformationItem[]
+      sourceInboxItemId?: string | null
     }

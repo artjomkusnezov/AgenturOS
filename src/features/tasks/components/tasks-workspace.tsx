@@ -256,6 +256,7 @@ export function TasksWorkspace({
           linkedInformation={detailState.linkedInformation}
           availableFiles={detailState.availableFiles}
           availableInformation={detailState.availableInformation}
+          sourceInboxItemId={detailState.sourceInboxItemId ?? null}
           memberNameMap={memberNameMap}
           agencyMembers={agencyMembers}
           onBack={handleBackToList}

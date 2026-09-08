@@ -10,14 +10,16 @@ import {
 } from '@/features/inbox/repositories/inbox-repository'
 import type { InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
+import { parseKfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
-  searchParams: Promise<{ item?: string }>
+  searchParams: Promise<{ item?: string; phase?: string }>
 }
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const { item } = await searchParams
+  const { item, phase } = await searchParams
+  const phaseFilter = parseKfzWorkQueueFilter(phase)
   const [result, membersResult] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
@@ -64,6 +66,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       processedItems={result.processedItems}
       taskRelationsByItemId={result.taskRelationsByItemId}
       selectedItemId={selectedItemId}
+      phaseFilter={phaseFilter}
       attachments={attachments}
       memberNameMap={memberNameMap}
       aiProposal={aiProposal}

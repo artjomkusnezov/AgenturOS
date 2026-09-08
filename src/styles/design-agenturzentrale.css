@@ -834,9 +834,41 @@
     background: rgb(56 189 248 / 0.14);
     color: #7dd3fc;
   }
-  .az-chip--waiting {
+  .az-chip--waiting,
+  .az-chip--review {
     background: rgb(167 139 250 / 0.16);
     color: #c4b5fd;
+  }
+  .az-chip--handled {
+    background: rgb(255 255 255 / 0.06);
+    color: #94a3b8;
+  }
+
+  .az-kfz-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.15rem 0.85rem 0.35rem;
+  }
+
+  .az-kfz-filter-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
+    color: #94a3b8;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+  }
+
+  .az-kfz-filter-link--active {
+    border-color: rgb(56 189 248 / 0.28);
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
   }
 
   /* Inbox preview: max 3 — never inflate shared row height */

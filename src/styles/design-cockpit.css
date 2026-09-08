@@ -1205,9 +1205,15 @@
   color: #7dd3fc;
 }
 
-.aos-cockpit-status-chip--waiting {
+.aos-cockpit-status-chip--waiting,
+.aos-cockpit-status-chip--review {
   background: rgb(167 139 250 / 0.16);
   color: #c4b5fd;
+}
+
+.aos-cockpit-status-chip--handled {
+  background: rgb(255 255 255 / 0.06);
+  color: #94a3b8;
 }
 
 .aos-cockpit-next-step {

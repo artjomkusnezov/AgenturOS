@@ -10,8 +10,17 @@ import { formatDashboardDateOrTime } from '@/features/dashboard/lib/dashboard-fo
 import { resolveSectionVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 import { dashboardSectionPaddingClassName } from '@/features/dashboard/lib/dashboard-surface'
+import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
+import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import {
+  buildInboxHref,
+  countKfzWorkQueue,
+  presentInboxStatusChip,
+  resolveInboxLinkedTaskId,
+  type KfzWorkQueueCounts,
+} from '@/features/inbox/lib/kfz-work-queue'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
@@ -19,23 +28,28 @@ import type { InboxItem } from '@/features/inbox/types/inbox-item'
 type DashboardInboxSectionProps = {
   items: InboxItem[]
   memberNameMap?: Record<string, string>
+  taskRelationsByItemId?: Record<string, string>
+  kfzQueueCounts?: KfzWorkQueueCounts
 }
 
 function DashboardInboxRow({
   item,
   memberNameMap,
+  linkedTaskId,
 }: {
   item: InboxItem
   memberNameMap: Record<string, string>
+  linkedTaskId: string | null
 }) {
   const title = getInboxListTitle(item)
   const timeLabel = formatDashboardDateOrTime(item.created_at)
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
+  const statusChip = presentInboxStatusChip(item, linkedTaskId)
 
   return (
     <Link
-      href={`/app/inbox?item=${encodeURIComponent(item.id)}`}
+      href={buildInboxHref({ itemId: item.id })}
       className="aos-cockpit-row"
     >
       <DashboardInboxSourceIcon source={item.source} />
@@ -51,7 +65,9 @@ function DashboardInboxRow({
           <span className="tabular-nums">{timeLabel}</span>
         </span>
       </span>
-      {isUnprocessed ? <span className="aos-cockpit-status-chip aos-cockpit-status-chip--new">Neu</span> : null}
+      {statusChip ? (
+        <InboxStatusChip label={statusChip.label} kind={statusChip.kind} surface="cockpit" />
+      ) : null}
       {creatorName ? <DashboardAvatar name={creatorName} /> : null}
     </Link>
   )
@@ -60,10 +76,13 @@ function DashboardInboxRow({
 export function DashboardInboxSection({
   items,
   memberNameMap = {},
+  taskRelationsByItemId = {},
+  kfzQueueCounts,
 }: DashboardInboxSectionProps) {
   const totalCount = sanitizeDashboardCount(items.length)
   const previewItems = items.slice(0, 3)
   const sectionVisual = resolveSectionVisual('inbox')
+  const queueCounts = kfzQueueCounts ?? countKfzWorkQueue(items, taskRelationsByItemId)
 
   return (
     <DashboardSection
@@ -80,6 +99,9 @@ export function DashboardInboxSection({
         ) : null
       }
     >
+      <div className={`${dashboardSectionPaddingClassName} pb-0`}>
+        <InboxKfzPhaseFilter activePhase="all" counts={queueCounts} variant="dashboard" />
+      </div>
       {previewItems.length === 0 ? (
         <div className={dashboardSectionPaddingClassName}>
           <DashboardSectionEmpty message="Keine neuen Eingänge." />
@@ -87,7 +109,12 @@ export function DashboardInboxSection({
       ) : (
         <div className={`${dashboardSectionPaddingClassName} divide-y divide-zinc-100/80 pb-1`}>
           {previewItems.map((item) => (
-            <DashboardInboxRow key={item.id} item={item} memberNameMap={memberNameMap} />
+            <DashboardInboxRow
+              key={item.id}
+              item={item}
+              memberNameMap={memberNameMap}
+              linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
+            />
           ))}
         </div>
       )}

@@ -18,6 +18,7 @@ import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attach
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
 import { InboxKfzTriageActions } from '@/features/inbox/components/inbox-kfz-triage-actions'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { KFZ_WORK_QUEUE_PHASE_LABELS } from '@/features/inbox/lib/kfz-work-queue'
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
@@ -180,7 +181,13 @@ export function InboxDetailPanel({
               <span className="mx-1.5 text-zinc-300">·</span>
               <span>{formatInboxDateTime(item.created_at)}</span>
               <span className="mx-1.5 text-zinc-300">·</span>
-              <span>{isUnprocessed ? 'Unbearbeitet' : 'Bearbeitet'}</span>
+              <span>
+                {kfzReview
+                  ? KFZ_WORK_QUEUE_PHASE_LABELS[kfzReview.phase]
+                  : isUnprocessed
+                    ? 'Unbearbeitet'
+                    : 'Bearbeitet'}
+              </span>
             </p>
           </div>
 

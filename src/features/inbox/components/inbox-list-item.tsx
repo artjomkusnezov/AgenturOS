@@ -7,8 +7,10 @@ import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-ico
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
+import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { presentInboxStatusChip } from '@/features/inbox/lib/kfz-work-queue'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
@@ -27,6 +29,7 @@ type InboxListItemProps = {
   item: InboxItem
   isSelected: boolean
   subdued?: boolean
+  linkedTaskId?: string | null
   onSelect: (itemId: string) => void
   memberNameMap?: Record<string, string>
 }
@@ -116,12 +119,14 @@ export function InboxListItem({
   item,
   isSelected,
   subdued = false,
+  linkedTaskId = null,
   onSelect,
   memberNameMap = {},
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxSourceVisual(item.source)
+  const statusChip = presentInboxStatusChip(item, linkedTaskId)
 
   return (
     <div
@@ -157,7 +162,9 @@ export function InboxListItem({
           >
             {getInboxListTitle(item)}
           </p>
-          {isUnprocessed ? <span className="aos-inbox-chip-new">Neu</span> : null}
+          {statusChip ? (
+            <InboxStatusChip label={statusChip.label} kind={statusChip.kind} />
+          ) : null}
         </div>
 
         <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>

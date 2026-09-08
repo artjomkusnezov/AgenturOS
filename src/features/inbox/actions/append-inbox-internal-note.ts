@@ -47,6 +47,7 @@ export async function appendInboxInternalNoteAction(
     return { error: result.error }
   }
 
+  revalidatePath('/app')
   revalidatePath('/app/inbox')
 
   return {

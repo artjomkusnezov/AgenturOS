@@ -84,6 +84,20 @@ Keine automatische Kundenantwort, keine Case-/Tarifaktion, kein Versand. KI blei
 
 Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-manual-triage.smoke.test.ts`.
 
+## Kfz-Arbeitsstand (Inbox / Dashboard / Folgeaufgabe)
+
+Bestehende Inbox- und Dashboard-Listen unterscheiden Kfz-Anfragen nach Arbeitsstand:
+
+- **Neu** (`needs_review`) — frischer Eingang, noch keine interne Prüfung
+- **In Prüfung** (`in_review`) — interne Notiz / Prüfung gestartet oder Folgeaufgabe verknüpft, noch unbearbeitet
+- **Erledigt** (`handled`) — manuell über `processInboxItem` geschlossen
+
+Der Stand bleibt in der bestehenden Inbox-URL persistiert: `/app/inbox?phase=in_review` (optional plus `item=`). Dashboard-Chips und Filter verlinken auf denselben Parameter.
+
+Eine explizit angelegte interne Folgeaufgabe (`convert-inbox-to-task`) erscheint in `/app/tasks?task=…`. Zurück zur Anfrage führt der bestehende Ursprung `cases.source_inbox_item_id` → `/app/inbox?item=…` („Zum Eingang“ / „Zur Anfrage“). Kein automatischer Kundenkontakt.
+
+Deterministische Tests: `src/features/inbound/kfz/kfz-work-queue.smoke.test.ts` (Intake → manuelle Prüfung → Folgeaufgabe sichtbar + Quell-Link).
+
 ## Inbox KI-Vorschlag (Gate 4 Slice)
 
 Nach Intake erscheint für Kfz-Website-Items im Inbox-Detail ein interner **KI-Vorschlag · Entwurf** (`src/features/ai-inbound`): Kategorie, Produkt, Dringlichkeit, fehlende Infos, Abschlussimpuls (als Vorschlag), nächster menschlicher Schritt, Antwortentwurf, Human-Takeover-Flag.

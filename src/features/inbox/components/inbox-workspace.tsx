@@ -9,6 +9,7 @@ import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
+import { buildInboxHref, type KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 
 type InboxWorkspaceProps = {
@@ -16,6 +17,7 @@ type InboxWorkspaceProps = {
   processedItems: InboxItem[]
   taskRelationsByItemId: Record<string, string>
   selectedItemId: string | null
+  phaseFilter?: KfzWorkQueueFilter
   attachments?: InboxLinkedFile[]
   memberNameMap?: Record<string, string>
   aiProposal?: InboxAiProposal | null
@@ -26,6 +28,7 @@ export function InboxWorkspace({
   processedItems,
   taskRelationsByItemId,
   selectedItemId,
+  phaseFilter = 'all',
   attachments = [],
   memberNameMap = {},
   aiProposal = null,
@@ -47,14 +50,14 @@ export function InboxWorkspace({
 
   const navigateToItem = useCallback(
     (itemId: string) => {
-      router.push(`/app/inbox?item=${itemId}`)
+      router.push(buildInboxHref({ itemId, phase: phaseFilter }))
     },
-    [router]
+    [phaseFilter, router]
   )
 
   const navigateToList = useCallback(() => {
-    router.push('/app/inbox')
-  }, [router])
+    router.push(buildInboxHref({ phase: phaseFilter }))
+  }, [phaseFilter, router])
 
   const handleSelectItem = useCallback(
     (itemId: string) => {
@@ -99,6 +102,8 @@ export function InboxWorkspace({
               selectedItemId={selectedItemId}
               onSelectItem={handleSelectItem}
               memberNameMap={memberNameMap}
+              taskRelationsByItemId={taskRelationsByItemId}
+              phaseFilter={phaseFilter}
             />
           )
         }

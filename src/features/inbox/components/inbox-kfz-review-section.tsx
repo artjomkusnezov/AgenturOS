@@ -5,6 +5,7 @@
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconUser } from '@/features/dashboard/components/dashboard-icons'
+import { KFZ_WORK_QUEUE_PHASE_LABELS } from '@/features/inbox/lib/kfz-work-queue'
 import type { KfzWebsiteInboxReview } from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   aosWorkspaceMetaClassName,
@@ -65,6 +66,7 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
               : review.sourceLabel
           }
         />
+        <MetaRow label="Prüfstand" value={KFZ_WORK_QUEUE_PHASE_LABELS[review.phase]} />
         <MetaRow label="Kunde" value={review.customerName} />
         <MetaRow label="Ort" value={review.location ?? 'Nicht angegeben'} />
         <MetaRow label="Kontakt" value={contactValue(review)} />

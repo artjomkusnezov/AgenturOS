@@ -33,10 +33,18 @@ import type {
 } from '@/features/dashboard/lib/dashboard-my-work'
 import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-data'
 import type { DashboardTaskItem, DashboardTeamTasksResult } from '@/features/dashboard/lib/dashboard-tasks'
+import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
+import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import {
+  buildInboxHref,
+  countKfzWorkQueue,
+  presentInboxStatusChip,
+  resolveInboxLinkedTaskId,
+  type KfzWorkQueueCounts,
+} from '@/features/inbox/lib/kfz-work-queue'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
-import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import type { DashboardDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
 
@@ -45,6 +53,8 @@ export type AgenturzentraleDashboardProps = {
     user_metadata?: Record<string, unknown>
   }
   unprocessedInboxItems: InboxItem[]
+  taskRelationsByItemId?: Record<string, string>
+  kfzQueueCounts?: KfzWorkQueueCounts
   attentionItems: DashboardAttentionItem[]
   attentionCount: number
   myTasks: DashboardTaskItem[]
@@ -173,9 +183,13 @@ function LageStrip({
 function InboxPanel({
   items,
   memberNameMap,
+  taskRelationsByItemId,
+  kfzQueueCounts,
 }: {
   items: InboxItem[]
   memberNameMap: Record<string, string>
+  taskRelationsByItemId: Record<string, string>
+  kfzQueueCounts: KfzWorkQueueCounts
 }) {
   const total = sanitizeDashboardCount(items.length)
   const preview = items.slice(0, 3)
@@ -192,6 +206,8 @@ function InboxPanel({
         {total > 0 ? <span className="az-count az-count--blue">{total}</span> : null}
       </header>
 
+      <InboxKfzPhaseFilter activePhase="all" counts={kfzQueueCounts} variant="dashboard" />
+
       {preview.length === 0 ? (
         <p className="az-empty">Keine neuen Eingänge.</p>
       ) : (
@@ -200,12 +216,15 @@ function InboxPanel({
             const title = getInboxListTitle(item)
             const visual = resolveInboxSourceVisual(item.source)
             const creator = resolveInboxAttributionLabel(item, memberNameMap)
-            const isNew = isInboxItemUnprocessed(item)
+            const statusChip = presentInboxStatusChip(
+              item,
+              resolveInboxLinkedTaskId(item.id, taskRelationsByItemId),
+            )
 
             return (
               <li key={item.id} className="az-list-item">
                 <Link
-                  href={`/app/inbox?item=${encodeURIComponent(item.id)}`}
+                  href={buildInboxHref({ itemId: item.id })}
                   className="az-row"
                 >
                   <span
@@ -225,7 +244,13 @@ function InboxPanel({
                       <span>{formatDashboardDateOrTime(item.created_at)}</span>
                     </span>
                   </span>
-                  {isNew ? <span className="az-chip az-chip--new">Neu</span> : null}
+                  {statusChip ? (
+                    <InboxStatusChip
+                      label={statusChip.label}
+                      kind={statusChip.kind}
+                      surface="zentrale"
+                    />
+                  ) : null}
                 </Link>
               </li>
             )
@@ -500,6 +525,8 @@ function ManagementWidgets({
 export function AgenturzentraleDashboard({
   user,
   unprocessedInboxItems,
+  taskRelationsByItemId = {},
+  kfzQueueCounts,
   attentionItems,
   attentionCount,
   myTasks,
@@ -510,6 +537,11 @@ export function AgenturzentraleDashboard({
   memberNameMap = {},
 }: AgenturzentraleDashboardProps) {
   const safeInboxItems = Array.isArray(unprocessedInboxItems) ? unprocessedInboxItems : []
+  const safeTaskRelations =
+    taskRelationsByItemId && typeof taskRelationsByItemId === 'object'
+      ? taskRelationsByItemId
+      : {}
+  const safeKfzQueueCounts = kfzQueueCounts ?? countKfzWorkQueue(safeInboxItems, safeTaskRelations)
   const safeAttentionItems = Array.isArray(attentionItems) ? attentionItems : []
   const safeMyTasks = Array.isArray(myTasks) ? myTasks : []
   const safeCaseTypeCounts = Array.isArray(caseTypeCounts) ? caseTypeCounts : []
@@ -541,7 +573,12 @@ export function AgenturzentraleDashboard({
           />
 
           <div className="az-workbench">
-            <InboxPanel items={safeInboxItems} memberNameMap={memberNameMap} />
+            <InboxPanel
+              items={safeInboxItems}
+              memberNameMap={memberNameMap}
+              taskRelationsByItemId={safeTaskRelations}
+              kfzQueueCounts={safeKfzQueueCounts}
+            />
             <AttentionPanel items={safeAttentionItems} totalCount={safeAttentionCount} />
             <NextStepPanel
               tasks={safeMyTasks}

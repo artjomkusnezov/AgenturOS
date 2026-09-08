@@ -388,16 +388,58 @@
     border-color: rgb(255 255 255 / 0.08);
   }
 
-  .aos-inbox-chip-new {
+  .aos-inbox-chip-new,
+  .aos-inbox-chip-review,
+  .aos-inbox-chip-handled {
     display: inline-flex;
     align-items: center;
     padding: 0.05rem 0.35rem;
     border-radius: 0.25rem;
     font-size: 0.625rem;
     font-weight: 650;
+    flex-shrink: 0;
+  }
+
+  .aos-inbox-chip-new {
     background: rgb(56 189 248 / 0.16);
     color: #7dd3fc;
-    flex-shrink: 0;
+  }
+
+  .aos-inbox-chip-review {
+    background: rgb(167 139 250 / 0.16);
+    color: #c4b5fd;
+  }
+
+  .aos-inbox-chip-handled {
+    background: rgb(255 255 255 / 0.06);
+    color: #94a3b8;
+  }
+
+  .aos-inbox-phase-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0 0.15rem 0.15rem;
+  }
+
+  .aos-inbox-phase-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
+    color: #94a3b8;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+  }
+
+  .aos-inbox-phase-link--active {
+    border-color: rgb(56 189 248 / 0.28);
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
   }
 
   .aos-inbox-archive-toggle,

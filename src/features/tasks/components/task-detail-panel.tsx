@@ -14,8 +14,10 @@ import { TaskDueDateLabel } from '@/features/tasks/components/task-due-date-labe
 import { TaskLinkedFiles } from '@/features/tasks/components/task-linked-files'
 import { TaskLinkedInformationSection } from '@/features/tasks/components/task-linked-information'
 import { TaskPriorityBadge } from '@/features/tasks/components/task-priority-badge'
+import { TaskSourceInboxLink } from '@/features/tasks/components/task-source-inbox-link'
 import { TaskTimeline } from '@/features/tasks/components/task-timeline'
 import { TaskTimelineNoteForm } from '@/features/tasks/components/task-timeline-note-form'
+import { presentTaskSourceInboxLink } from '@/features/inbox/lib/kfz-work-queue'
 import { resolveTaskMemberName } from '@/features/tasks/lib/resolve-task-member-name'
 import { TASK_PRIORITIES, TASK_PRIORITY_LABELS } from '@/features/tasks/lib/task-priority'
 import { formatTaskDateTime, isTaskOpen } from '@/features/tasks/lib/task-status'
@@ -49,6 +51,7 @@ type TaskDetailPanelProps = {
   linkedInformation: TaskLinkedInformation[]
   availableFiles: FileRecord[]
   availableInformation: InformationItem[]
+  sourceInboxItemId?: string | null
   memberNameMap: Record<string, string>
   agencyMembers: AgencyMember[]
   onBack?: () => void
@@ -112,6 +115,7 @@ export function TaskDetailPanel({
   linkedInformation,
   availableFiles,
   availableInformation,
+  sourceInboxItemId = null,
   memberNameMap,
   agencyMembers,
   onBack,
@@ -156,6 +160,7 @@ export function TaskDetailPanel({
 
   const isPending = isUpdatePending || isDeletePending
   const creatorName = resolveTaskMemberName(task.created_by, memberNameMap)
+  const sourceInboxLink = presentTaskSourceInboxLink(sourceInboxItemId)
 
   return (
     <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
@@ -346,6 +351,10 @@ export function TaskDetailPanel({
             )}
           </section>
         )}
+
+        {sourceInboxLink ? (
+          <TaskSourceInboxLink href={sourceInboxLink.href} label={sourceInboxLink.label} />
+        ) : null}
 
         <TaskLinkedFiles
           taskId={task.id}
