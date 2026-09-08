@@ -128,7 +128,6 @@ function emailInboxItem(id: string): InboxItem {
     id,
     agency_id: AGENCY_ID,
     user_id: ACTOR_ID,
-    created_by: ACTOR_ID,
     channel: 'email',
     source: 'email',
     title: 'Police',
@@ -136,9 +135,21 @@ function emailInboxItem(id: string): InboxItem {
     processed_at: null,
     inbound_metadata: {},
     sender: { displayName: 'Post', address: 'a@b.de', addressKind: 'email' },
+    origin: null,
+    detected_language: null,
+    external_id: null,
+    message_kind: null,
+    received_at: '2026-09-07T12:00:00.000Z',
+    transcript_text: null,
+    transcription_completed_at: null,
+    transcription_error: null,
+    transcription_model: null,
+    transcription_provider: null,
+    transcription_started_at: null,
+    transcription_status: 'idle',
     created_at: '2026-09-07T12:00:00.000Z',
     updated_at: '2026-09-07T12:00:00.000Z',
-  } as InboxItem
+  }
 }
 
 describe('kfz work-queue filter persistence', () => {
