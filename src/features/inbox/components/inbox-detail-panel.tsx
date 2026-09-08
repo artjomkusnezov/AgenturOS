@@ -18,8 +18,16 @@ import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attach
 import { InboxKfzResponseDraftSection } from '@/features/inbox/components/inbox-kfz-response-draft-section'
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
 import { InboxKfzTriageActions } from '@/features/inbox/components/inbox-kfz-triage-actions'
+import { InboxManualReviewHistorySection } from '@/features/inbox/components/inbox-manual-review-history'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { KFZ_WORK_QUEUE_PHASE_LABELS } from '@/features/inbox/lib/kfz-work-queue'
+import type { InboxItemView } from '@/features/inbox/lib/inbox-item-view'
+import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
+import {
+  INBOX_HISTORY_OPEN_LABEL,
+  INBOX_HISTORY_RETURN_LABEL,
+  presentInboxManualReviewHistory,
+} from '@/features/inbox/lib/inbox-manual-review-history'
+import { KFZ_INBOX_HREF_BASE, KFZ_WORK_QUEUE_PHASE_LABELS, type KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
@@ -51,6 +59,11 @@ type InboxDetailPanelProps = {
   memberNameMap?: Record<string, string>
   /** Internal AI proposal for Kfz website leads — advisory only. */
   aiProposal?: InboxAiProposal | null
+  phaseFilter?: KfzWorkQueueFilter
+  sourceFilter?: InboxSourceFilter
+  itemView?: InboxItemView
+  hrefBasePath?: string
+  allowLocalHistoryFixtureFacts?: boolean
   onBack?: () => void
   onDeleted: () => void
   onStatusChange: () => void
@@ -118,6 +131,11 @@ export function InboxDetailPanel({
   attachments = [],
   memberNameMap = {},
   aiProposal = null,
+  phaseFilter = 'all',
+  sourceFilter = 'all',
+  itemView = 'work',
+  hrefBasePath = KFZ_INBOX_HREF_BASE,
+  allowLocalHistoryFixtureFacts = false,
   onBack,
   onDeleted,
   onStatusChange,
@@ -138,6 +156,15 @@ export function InboxDetailPanel({
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxItemSourceVisual(item)
   const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  const history = presentInboxManualReviewHistory(item, {
+    linkedTaskId,
+    phase: phaseFilter,
+    source: sourceFilter,
+    view: itemView,
+    basePath: hrefBasePath,
+    allowLocalFixtureFacts: allowLocalHistoryFixtureFacts,
+  })
+  const isHistoryView = itemView === 'history'
   const draftFormId = `kfz-response-draft-${item.id}`
   const aiSuggestedReply =
     aiProposal?.status === 'proposal' ? aiProposal.suggestion.suggestedReplyDraft : null
@@ -154,15 +181,32 @@ export function InboxDetailPanel({
   return (
     <div className={`${aosWorkspaceSurfaceClassName} min-h-[24rem] lg:min-h-0`}>
       <div className={aosPanelHeaderClassName}>
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="mb-2 inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800 lg:hidden"
-          >
-            ← Liste
-          </button>
-        ) : null}
+        <div className="mb-2 flex flex-wrap items-center gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800 lg:hidden"
+            >
+              ← Liste
+            </button>
+          ) : null}
+          {isHistoryView ? (
+            <Link
+              href={history.workHref}
+              className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
+            >
+              ← {INBOX_HISTORY_RETURN_LABEL}
+            </Link>
+          ) : (
+            <Link
+              href={history.historyHref}
+              className="inline-flex items-center text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-800"
+            >
+              {INBOX_HISTORY_OPEN_LABEL}
+            </Link>
+          )}
+        </div>
 
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-start gap-2.5">
@@ -195,170 +239,182 @@ export function InboxDetailPanel({
             </p>
           </div>
 
-          <InboxStatusActionButton
-            itemId={item.id}
-            variant={isUnprocessed ? 'process' : 'reopen'}
-            onSuccess={onStatusChange}
-          />
+          {isHistoryView ? null : (
+            <InboxStatusActionButton
+              itemId={item.id}
+              variant={isUnprocessed ? 'process' : 'reopen'}
+              onSuccess={onStatusChange}
+            />
+          )}
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <InboxKfzReviewSection review={kfzReview} />
-        {kfzReview ? (
-          <InboxKfzTriageActions
-            item={item}
-            linkedTaskId={linkedTaskId}
-            review={kfzReview}
-            onStatusChange={onStatusChange}
-          />
-        ) : null}
-
-        {kfzReview ? (
-          <InboxKfzResponseDraftSection
-            key={`${item.id}:${kfzReview.responseDraft}`}
-            item={item}
-            review={kfzReview}
-            aiSuggestedReply={aiSuggestedReply}
-            formId={draftFormId}
-            onStatusChange={onStatusChange}
-          />
-        ) : null}
-
-        {kfzReview ? (
-          <section aria-label="Quelltext" className={aosWorkspaceSectionClassName}>
-            <WorkspaceSectionHeading
-              title="Quelltext"
-              accent="blue"
-              icon={<DashboardIconFileText className="h-4 w-4" />}
-            />
-            <p className={`mb-2 ${aosWorkspaceMetaClassName}`}>
-              Bestand aus dem Eingang — unverändert, getrennt von Entwurf und Notizen
-            </p>
-            <p className={`${aosDocBodyClassName} whitespace-pre-wrap min-h-[8rem]`}>
-              {kfzReview.sourceContent}
-            </p>
-          </section>
+        {isHistoryView ? (
+          <InboxManualReviewHistorySection history={history} />
         ) : (
-          <form id={updateFormId} action={updateAction} className="flex flex-col">
-            <input type="hidden" name="itemId" value={item.id} />
+          <>
+            <InboxKfzReviewSection review={kfzReview} />
+            {kfzReview ? (
+              <InboxKfzTriageActions
+                item={item}
+                linkedTaskId={linkedTaskId}
+                review={kfzReview}
+                onStatusChange={onStatusChange}
+              />
+            ) : null}
 
-            <section
-              aria-label="Inhalt"
-              className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}
-            >
+            {kfzReview ? (
+              <InboxKfzResponseDraftSection
+                key={`${item.id}:${kfzReview.responseDraft}`}
+                item={item}
+                review={kfzReview}
+                aiSuggestedReply={aiSuggestedReply}
+                formId={draftFormId}
+                onStatusChange={onStatusChange}
+              />
+            ) : null}
+
+            {kfzReview ? (
+              <section aria-label="Quelltext" className={aosWorkspaceSectionClassName}>
+                <WorkspaceSectionHeading
+                  title="Quelltext"
+                  accent="blue"
+                  icon={<DashboardIconFileText className="h-4 w-4" />}
+                />
+                <p className={`mb-2 ${aosWorkspaceMetaClassName}`}>
+                  Bestand aus dem Eingang — unverändert, getrennt von Entwurf und Notizen
+                </p>
+                <p className={`${aosDocBodyClassName} whitespace-pre-wrap min-h-[8rem]`}>
+                  {kfzReview.sourceContent}
+                </p>
+              </section>
+            ) : (
+              <form id={updateFormId} action={updateAction} className="flex flex-col">
+                <input type="hidden" name="itemId" value={item.id} />
+
+                <section
+                  aria-label="Inhalt"
+                  className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}
+                >
+                  <WorkspaceSectionHeading
+                    title="Inhalt"
+                    accent="blue"
+                    icon={<DashboardIconFileText className="h-4 w-4" />}
+                  />
+                  <label htmlFor={`inbox-content-${item.id}`} className="sr-only">
+                    Inhalt
+                  </label>
+                  <textarea
+                    id={`inbox-content-${item.id}`}
+                    name="content"
+                    rows={16}
+                    required
+                    defaultValue={item.content}
+                    disabled={isPending}
+                    className={`${aosDocBodyClassName} min-h-[18rem]`}
+                  />
+                  {updateState.fieldErrors?.content ? (
+                    <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.content}</p>
+                  ) : null}
+                  {updateState.error ? (
+                    <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
+                  ) : null}
+                  {updateState.success ? (
+                    <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
+                  ) : null}
+                </section>
+              </form>
+            )}
+
+            <InboxAttachmentSection attachments={attachments} />
+
+            <InboxTranscriptionSection
+              item={item}
+              attachments={attachments}
+              onStatusChange={onStatusChange}
+            />
+
+            <InboxAiProposalSection proposal={aiProposal} />
+
+            <section aria-label="Aufgabe" className={aosWorkspaceSectionClassName}>
               <WorkspaceSectionHeading
-                title="Inhalt"
-                accent="blue"
-                icon={<DashboardIconFileText className="h-4 w-4" />}
+                title="Aufgabe"
+                accent="green"
+                icon={<DashboardIconCheckSquare className="h-4 w-4" />}
               />
-              <label htmlFor={`inbox-content-${item.id}`} className="sr-only">
-                Inhalt
-              </label>
-              <textarea
-                id={`inbox-content-${item.id}`}
-                name="content"
-                rows={16}
-                required
-                defaultValue={item.content}
-                disabled={isPending}
-                className={`${aosDocBodyClassName} min-h-[18rem]`}
-              />
-              {updateState.fieldErrors?.content ? (
-                <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.content}</p>
-              ) : null}
-              {updateState.error ? (
-                <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
-              ) : null}
-              {updateState.success ? (
-                <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
-              ) : null}
+              {linkedTaskId ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={aosWorkspaceMetaClassName}>In Aufgabe übernommen</span>
+                  <Link
+                    href={`/app/tasks?task=${linkedTaskId}`}
+                    className={aosWorkspaceActionAccentClassName}
+                  >
+                    Öffnen
+                  </Link>
+                </div>
+              ) : (
+                <InboxPromotionMenu key={item.id} itemId={item.id} />
+              )}
             </section>
-          </form>
+          </>
         )}
-
-        <InboxAttachmentSection attachments={attachments} />
-
-        <InboxTranscriptionSection
-          item={item}
-          attachments={attachments}
-          onStatusChange={onStatusChange}
-        />
-
-        <InboxAiProposalSection proposal={aiProposal} />
-
-        <section aria-label="Aufgabe" className={aosWorkspaceSectionClassName}>
-          <WorkspaceSectionHeading
-            title="Aufgabe"
-            accent="green"
-            icon={<DashboardIconCheckSquare className="h-4 w-4" />}
-          />
-          {linkedTaskId ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={aosWorkspaceMetaClassName}>In Aufgabe übernommen</span>
-              <Link
-                href={`/app/tasks?task=${linkedTaskId}`}
-                className={aosWorkspaceActionAccentClassName}
-              >
-                Öffnen
-              </Link>
-            </div>
-          ) : (
-            <InboxPromotionMenu key={item.id} itemId={item.id} />
-          )}
-        </section>
       </div>
 
-      <form id={deleteFormId} action={deleteAction}>
-        <input type="hidden" name="itemId" value={item.id} />
-      </form>
+      {isHistoryView ? null : (
+        <>
+          <form id={deleteFormId} action={deleteAction}>
+            <input type="hidden" name="itemId" value={item.id} />
+          </form>
 
-      <div className={`${aosPanelFooterClassName} flex flex-wrap items-center justify-between gap-3`}>
-        <div>
-          {confirmDelete ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={aosWorkspaceMetaClassName}>Wirklich löschen?</span>
-              <button
-                type="submit"
-                form={deleteFormId}
-                disabled={isPending}
-                className={aosBtnDangerClassName}
-              >
-                {isDeletePending ? '…' : 'Löschen'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                disabled={isPending}
-                className={aosWorkspaceActionClassName}
-              >
-                Abbrechen
-              </button>
+          <div className={`${aosPanelFooterClassName} flex flex-wrap items-center justify-between gap-3`}>
+            <div>
+              {confirmDelete ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={aosWorkspaceMetaClassName}>Wirklich löschen?</span>
+                  <button
+                    type="submit"
+                    form={deleteFormId}
+                    disabled={isPending}
+                    className={aosBtnDangerClassName}
+                  >
+                    {isDeletePending ? '…' : 'Löschen'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={isPending}
+                    className={aosWorkspaceActionClassName}
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={isPending}
+                  className="text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-red-600 disabled:opacity-60"
+                >
+                  Löschen
+                </button>
+              )}
+              {deleteState.error ? (
+                <p className="mt-1 text-xs text-red-600">{deleteState.error}</p>
+              ) : null}
             </div>
-          ) : (
+
             <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
+              type="submit"
+              form={kfzReview ? draftFormId : updateFormId}
               disabled={isPending}
-              className="text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-red-600 disabled:opacity-60"
+              className={aosWorkspaceActionEmphasisClassName}
             >
-              Löschen
+              {isUpdatePending ? '…' : kfzReview ? 'Entwurf speichern' : 'Speichern'}
             </button>
-          )}
-          {deleteState.error ? (
-            <p className="mt-1 text-xs text-red-600">{deleteState.error}</p>
-          ) : null}
-        </div>
-
-        <button
-          type="submit"
-          form={kfzReview ? draftFormId : updateFormId}
-          disabled={isPending}
-          className={aosWorkspaceActionEmphasisClassName}
-        >
-          {isUpdatePending ? '…' : kfzReview ? 'Entwurf speichern' : 'Speichern'}
-        </button>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

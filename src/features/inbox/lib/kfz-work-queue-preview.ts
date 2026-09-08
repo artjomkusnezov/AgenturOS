@@ -3,10 +3,31 @@
  * Not production inbox data and not a customer send path.
  */
 
+import {
+  INBOX_HISTORY_LIMITATION,
+  LOCAL_REVIEW_HISTORY_FIXTURE_KEY,
+} from '@/features/inbox/lib/inbox-manual-review-history'
 import { composeInboxWorkingCopy } from '@/features/inbox/lib/kfz-response-draft'
 import { KFZ_REVIEW_STARTED_NOTE } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import type { Json } from '@/lib/supabase/types'
+
+/** Documented local-only employee times. Live working copies do not store these. */
+export const KFZ_WORK_QUEUE_PREVIEW_REVIEW_NOTE =
+  'Rückfrage intern notiert: Kennzeichen liegt vor.' as const
+
+export const KFZ_WORK_QUEUE_PREVIEW_HISTORY_FACTS = {
+  documentedLimitation: INBOX_HISTORY_LIMITATION,
+  reviewStartedAt: '2026-09-08T07:35:00.000Z',
+  noteSavedAtByIndex: ['2026-09-08T07:40:00.000Z'],
+  draftSavedAt: '2026-09-08T07:42:00.000Z',
+  taskCreatedAt: '2026-09-08T07:45:00.000Z',
+} as const
+
+export const KFZ_WORK_QUEUE_PREVIEW_DONE_HISTORY_FACTS = {
+  documentedLimitation: INBOX_HISTORY_LIMITATION,
+  reviewStartedAt: '2026-09-08T07:10:00.000Z',
+} as const
 
 export const KFZ_WORK_QUEUE_PREVIEW_PATH = '/dev/kfz-work-queue' as const
 
@@ -34,6 +55,7 @@ type PreviewInquiry = {
   processedAt: string | null
   createdAt: string
   contextNotes?: string
+  localReviewHistory?: Record<string, unknown>
 }
 
 function buildPreviewItem(input: PreviewInquiry): InboxItem {
@@ -95,6 +117,9 @@ function buildPreviewItem(input: PreviewInquiry): InboxItem {
         location: { postalCode: '49525', city: 'Lengerich' },
         vehicle: input.vehicle,
       },
+      ...(input.localReviewHistory
+        ? { [LOCAL_REVIEW_HISTORY_FIXTURE_KEY]: input.localReviewHistory }
+        : {}),
     } as Json,
   }
 }
@@ -141,10 +166,11 @@ export function buildKfzWorkQueuePreviewItems(): {
     email: null,
     preferredChannel: 'phone',
     vehicle: { make: 'VW', model: 'Golf', year: '2019' },
-    notes: KFZ_REVIEW_STARTED_NOTE,
+    notes: `${KFZ_REVIEW_STARTED_NOTE}\n${KFZ_WORK_QUEUE_PREVIEW_REVIEW_NOTE}`,
     draft: 'Guten Tag, intern vorbereiteter Entwurf — nicht senden.',
     processedAt: null,
     createdAt: '2026-09-08T07:30:00.000Z',
+    localReviewHistory: KFZ_WORK_QUEUE_PREVIEW_HISTORY_FACTS,
   })
 
   const done = buildPreviewItem({
@@ -159,6 +185,7 @@ export function buildKfzWorkQueuePreviewItems(): {
     draft: '',
     processedAt: '2026-09-08T08:00:00.000Z',
     createdAt: '2026-09-08T06:50:00.000Z',
+    localReviewHistory: KFZ_WORK_QUEUE_PREVIEW_DONE_HISTORY_FACTS,
   })
 
   return {

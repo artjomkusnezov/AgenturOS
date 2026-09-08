@@ -9,6 +9,7 @@ import {
   buildKfzWorkQueuePreviewItems,
   KFZ_WORK_QUEUE_PREVIEW_PATH,
 } from '@/features/inbox/lib/kfz-work-queue-preview'
+import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import { parseInboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import { parseKfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 type KfzWorkQueuePreviewPageProps = {
-  searchParams: Promise<{ item?: string; phase?: string; source?: string }>
+  searchParams: Promise<{ item?: string; phase?: string; source?: string; view?: string }>
 }
 
 /**
@@ -34,11 +35,12 @@ export default async function KfzWorkQueuePreviewPage({
     notFound()
   }
 
-  const { item, phase, source } = await searchParams
+  const { item, phase, source, view } = await searchParams
   const preview = buildKfzWorkQueuePreviewItems()
   const allItems = [...preview.unprocessedItems, ...preview.processedItems]
   const phaseFilter = parseKfzWorkQueueFilter(phase)
   const sourceFilter = parseInboxSourceFilter(source)
+  const itemView = parseInboxItemView(view)
   const selectedItemId =
     item && isValidInboxItemId(item) && allItems.some((entry) => entry.id === item)
       ? item
@@ -66,7 +68,9 @@ export default async function KfzWorkQueuePreviewPage({
           selectedItemId={selectedItemId}
           phaseFilter={phaseFilter}
           sourceFilter={sourceFilter}
+          itemView={itemView}
           hrefBasePath={KFZ_WORK_QUEUE_PREVIEW_PATH}
+          allowLocalHistoryFixtureFacts
           aiProposal={aiProposal}
         />
       </div>
