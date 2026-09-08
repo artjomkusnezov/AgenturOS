@@ -177,7 +177,12 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
 
     const added = addKfzLandingDocuments(
       documents,
-      incoming.map(({ file: _file, ...meta }) => meta),
+      incoming.map((entry) => ({
+        group: entry.group,
+        filename: entry.filename,
+        mimeType: entry.mimeType,
+        sizeBytes: entry.sizeBytes,
+      })),
     )
     setDocuments(added.documents)
     setRejections(added.rejected)

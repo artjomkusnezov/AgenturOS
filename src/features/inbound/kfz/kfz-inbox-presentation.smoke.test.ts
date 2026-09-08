@@ -212,7 +212,7 @@ describe('kfz landing → HTTP → inbox presentation', () => {
       assert.equal(review.documents[0]?.filename, 'schein.jpg')
       assert.equal(review.documents[0]?.groupLabel, 'Fahrzeugschein')
       assert.ok(review.submittedFacts.some((fact) => fact.id === 'documents'))
-      assert.equal(store.items[0].attachments, undefined)
+      assert.equal('attachments' in store.items[0], false)
     })
   })
 

@@ -383,7 +383,7 @@ describe('kfz landing submit normalization', () => {
       assert.equal(store.items.length, 1)
       assert.equal(store.items[0].channel, 'website')
       assert.equal(store.items[0].source, 'website')
-      assert.equal(store.items[0].attachments, undefined)
+      assert.equal('attachments' in store.items[0], false)
       assert.equal(store.items[0].processed_at, null)
 
       const review = presentKfzWebsiteInboxItem(store.items[0])
@@ -394,7 +394,7 @@ describe('kfz landing submit normalization', () => {
       assert.equal(review.documents.length, 2)
       assert.equal(review.documents[0]?.group, 'fahrzeugschein')
       assert.ok(review.submittedFacts.some((fact) => fact.id === 'documents'))
-      assert.match(review.nextManualAction, /keine automatische/)
+      assert.match(review.nextManualAction, /automatisch gesendet/)
       assert.equal(review.phase, 'needs_review')
     })
   })
@@ -422,19 +422,16 @@ describe('kfz landing zero automatic communication', () => {
       )
     }
 
-    assert.match(
-      fs.readFileSync(
-        path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
-        'utf8',
-      ),
-      new RegExp(KFZ_LANDING_CONFIRMATION_TITLE.replace('.', '\\.')),
+    const formSource = fs.readFileSync(
+      path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
+      'utf8',
     )
-    assert.match(
-      fs.readFileSync(
-        path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
-        'utf8',
-      ),
-      new RegExp(KFZ_LANDING_CONFIRMATION_BODY.replace('.', '\\.')),
+    assert.match(formSource, /KFZ_LANDING_CONFIRMATION_TITLE/)
+    assert.match(formSource, /KFZ_LANDING_CONFIRMATION_BODY/)
+    assert.equal(KFZ_LANDING_CONFIRMATION_TITLE, 'Anfrage ist angekommen.')
+    assert.equal(
+      KFZ_LANDING_CONFIRMATION_BODY,
+      'Wir prüfen sie persönlich und melden uns auf dem gewünschten Weg.',
     )
   })
 })
