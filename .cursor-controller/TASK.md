@@ -1,25 +1,18 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-a84f
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-3d66
 
-# AgenturOS — Kfz work queue and follow-up visibility
+# AgenturOS — One-screen manual Kfz review workspace
 
 ## Goal
-Continue the finished manual Kfz triage branch. Make Kfz website inquiries and their explicit internal follow-up tasks easy to find in the existing AgenturOS dashboard, without creating a CRM replacement or contacting customers.
+Combine the finished Kfz inquiry facts, missing-information checklist, internal follow-up task and editable response draft into one clear employee review workspace, without sending anything.
 
 ## Required work
-- Read AGENTS.md and inspect existing dashboard/inbox/task filters and persistence.
-- Reuse existing normalized inbound items and task records.
-- Make new, in-review and handled Kfz inquiries visibly distinguishable in the existing inbox/dashboard.
-- Ensure an explicitly created internal follow-up task appears in the existing task area with a clear source link back to the inquiry where current domain boundaries permit.
-- Preserve manual-only status changes, internal notes and AI-as-suggestion labeling.
-- Add deterministic tests for intake → manual review → follow-up task visibility and source traceability.
-- Run `npm run test:inbound`, `npx tsc --noEmit`, `npm run lint`, and `npm run build`.
-- Browser-check desktop/mobile where safely available and record exact evidence/blockers.
+- Reuse existing normalized inbound item, state, notes, tasks and internal draft.
+- Show source facts, missing information, current manual state, internal task and editable draft together or through an obvious short route.
+- Keep AI text clearly labeled as a suggestion requiring human review.
+- No send integration, automatic status change or customer contact.
+- Add deterministic tests and run inbound tests, TypeScript, lint and build.
+- Browser-check desktop/mobile and record exact evidence/blockers.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, production data, secrets, customer communication, Meta/WhatsApp, paid services, CRM duplication or legal/privacy/business decisions.
-
-## Done
-An employee can find a Kfz inquiry by workflow state, create an internal follow-up explicitly, see it in the existing task area and return to the source inquiry; no external side effect occurs; tests and browser evidence are reported.
-
-CONTROLLER_NOTE: Launched before queue monitor installation; do not relaunch this task.
+Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp, paid services or CRM replacement.
