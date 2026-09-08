@@ -15,6 +15,8 @@ import {
   canStartKfzLandingSubmit,
   createKfzLandingSubmissionId,
   isKfzLandingSubmitLocked,
+  kfzLandingSubmitStatus,
+  kfzLandingSubmitStatusLabel,
   resolveKfzLandingSubmitResult,
 } from '@/features/inbound/kfz/lib/kfz-landing-submit-guard'
 import { normalizeInternationalPhone } from '@/features/inbound/kfz/lib/normalize-phone'
@@ -190,6 +192,20 @@ describe('kfz landing payload mapping', () => {
 })
 
 describe('kfz landing duplicate-submit protection', () => {
+  it('exposes German ready/sending/received/failed labels', () => {
+    assert.equal(kfzLandingSubmitStatus('idle'), 'ready')
+    assert.equal(kfzLandingSubmitStatus('submitting'), 'sending')
+    assert.equal(kfzLandingSubmitStatus('success'), 'received')
+    assert.equal(kfzLandingSubmitStatus('error'), 'failed')
+    assert.equal(kfzLandingSubmitStatusLabel('idle'), 'Bereit zum Senden')
+    assert.equal(kfzLandingSubmitStatusLabel('submitting'), 'Wird gesendet …')
+    assert.equal(kfzLandingSubmitStatusLabel('success'), 'Anfrage ist angekommen.')
+    assert.equal(
+      kfzLandingSubmitStatusLabel('error'),
+      'Senden fehlgeschlagen. Sie können es erneut versuchen.',
+    )
+  })
+
   it('locks while submitting and after success', () => {
     assert.equal(canStartKfzLandingSubmit('idle'), true)
     assert.equal(canStartKfzLandingSubmit('error'), true)

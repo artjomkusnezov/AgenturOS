@@ -147,7 +147,8 @@ describe('kfz landing WhatsApp default and alternatives', () => {
       path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
       'utf8',
     )
-    assert.match(formSource, /preferredChannel: KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL/)
+    assert.match(formSource, /emptyKfzLandingDraftValues/)
+    assert.match(formSource, /data-kfz-submit-status/)
     assert.doesNotMatch(
       formSource,
       /preferredChannel: 'phone'/,
@@ -408,6 +409,9 @@ describe('kfz landing zero automatic communication', () => {
       'features/inbound/kfz/lib/kfz-landing-steps.ts',
       'features/inbound/kfz/lib/kfz-landing-documents.ts',
       'features/inbound/kfz/lib/build-kfz-landing-payload.ts',
+      'features/inbound/kfz/lib/kfz-landing-draft.ts',
+      'features/inbound/kfz/lib/kfz-landing-submit-session.ts',
+      'features/inbound/kfz/lib/kfz-landing-submit-guard.ts',
       'features/inbound/kfz/actions/submit-kfz-landing-inquiry.ts',
     ]
     const source = files

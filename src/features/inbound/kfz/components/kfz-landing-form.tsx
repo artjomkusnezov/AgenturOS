@@ -3,8 +3,10 @@
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
   type FormEvent,
 } from 'react'
@@ -12,10 +14,15 @@ import {
 import { submitKfzLandingInquiryAction } from '@/features/inbound/kfz/actions/submit-kfz-landing-inquiry'
 import { KfzLandingDocumentFields } from '@/features/inbound/kfz/components/kfz-landing-document-fields'
 import {
-  buildKfzLandingPayload,
   type KfzLandingAttribution,
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
+import {
+  createKfzLandingDraftController,
+  emptyKfzLandingDraftValues,
+  getSessionKfzLandingDraftStorage,
+  type KfzLandingDraftStorage,
+} from '@/features/inbound/kfz/lib/kfz-landing-draft'
 import {
   addKfzLandingDocuments,
   removeKfzLandingDocument,
@@ -27,20 +34,21 @@ import {
   KFZ_LANDING_CONFIRMATION_TITLE,
   KFZ_LANDING_CONSENT_VERSION,
   KFZ_LANDING_CONTACT_EMAIL,
-  KFZ_LANDING_DEFAULT_CITY,
-  KFZ_LANDING_DEFAULT_POSTAL_CODE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
-  beginKfzLandingSubmit,
   createKfzLandingSubmissionId,
   isKfzLandingSubmitLocked,
-  resolveKfzLandingSubmitResult,
+  kfzLandingSubmitStatus,
+  kfzLandingSubmitStatusLabel,
   type KfzLandingSubmitPhase,
 } from '@/features/inbound/kfz/lib/kfz-landing-submit-guard'
 import {
+  executeKfzLandingSubmitAttempt,
+  type KfzLandingSubmitFn,
+} from '@/features/inbound/kfz/lib/kfz-landing-submit-session'
+import {
   canAdvanceKfzLandingStep,
   KFZ_LANDING_CHANNEL_CHOICES,
-  KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
   KFZ_LANDING_REQUEST_TYPES,
   KFZ_LANDING_STEP_LABELS,
   nextKfzLandingStep,
@@ -54,23 +62,13 @@ import type {
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 
-const INITIAL_VALUES: KfzLandingFormValues = {
-  fullName: '',
-  postalCode: KFZ_LANDING_DEFAULT_POSTAL_CODE,
-  city: KFZ_LANDING_DEFAULT_CITY,
-  phone: '',
-  email: '',
-  preferredChannel: KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
-  inquiryReason: '',
-  inquiryProcessingConsent: false,
-  vehicleMake: '',
-  vehicleModel: '',
-  vehicleYear: '',
-  contextNotes: '',
-}
+const INITIAL_VALUES: KfzLandingFormValues = emptyKfzLandingDraftValues()
 
 type KfzLandingFormProps = {
   attribution?: KfzLandingAttribution
+  submitInquiry?: KfzLandingSubmitFn
+  draftStorage?: KfzLandingDraftStorage | null
+  submitTimeoutMs?: number
 }
 
 const fieldClassName =
@@ -97,25 +95,46 @@ function channelLabel(channel: KfzPreferredChannel): string {
   return 'Telefon'
 }
 
-export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
+export function KfzLandingForm({
+  attribution,
+  submitInquiry = submitKfzLandingInquiryAction,
+  draftStorage,
+  submitTimeoutMs,
+}: KfzLandingFormProps) {
   const formId = useId()
-  const [step, setStep] = useState<KfzLandingStep>(1)
-  const [values, setValues] = useState<KfzLandingFormValues>(INITIAL_VALUES)
+  const [localStep, setStep] = useState<KfzLandingStep | null>(null)
+  const [localValues, setValues] = useState<KfzLandingFormValues | null>(null)
   const [documents, setDocuments] = useState<KfzLandingDocumentCandidate[]>([])
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [rejections, setRejections] = useState<KfzLandingDocumentRejection[]>([])
   const [phase, setPhase] = useState<KfzLandingSubmitPhase>('idle')
   const [clientError, setClientError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [localDocumentNotice, setDocumentReselectNotice] = useState<string | null | undefined>(
+    undefined,
+  )
   const [isPending, startTransition] = useTransition()
-  const submissionIdRef = useRef<string | null>(null)
+  const generatedId = useMemo(() => createKfzLandingSubmissionId(), [])
   const inFlightRef = useRef(false)
   const errorRef = useRef<HTMLDivElement>(null)
   const previewUrlsRef = useRef<Record<string, string>>({})
-
-  useEffect(() => {
-    submissionIdRef.current = createKfzLandingSubmissionId()
-  }, [])
+  const storage = draftStorage ?? getSessionKfzLandingDraftStorage()
+  const draftController = useMemo(
+    () => createKfzLandingDraftController(storage),
+    [storage],
+  )
+  const restoredDraft = useSyncExternalStore(
+    draftController.subscribe,
+    draftController.read,
+    () => null,
+  )
+  const step = localStep ?? restoredDraft?.step ?? 1
+  const values = localValues ?? restoredDraft?.values ?? INITIAL_VALUES
+  const documentReselectNotice =
+    localDocumentNotice === undefined
+      ? restoredDraft?.documentReselectNotice ?? null
+      : localDocumentNotice
+  const submissionId = restoredDraft?.submissionId ?? generatedId
 
   useEffect(() => {
     if (clientError || serverError) {
@@ -133,13 +152,38 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
   }, [])
 
   const locked = isKfzLandingSubmitLocked(phase) || isPending
+  const submitStatus = kfzLandingSubmitStatus(phase)
+  const submitStatusLabel = kfzLandingSubmitStatusLabel(phase)
+
+  function persistDraft(next: {
+    step?: KfzLandingStep
+    values?: KfzLandingFormValues
+    documents?: readonly KfzLandingDocumentCandidate[]
+    notice?: string | null
+  } = {}) {
+    if (phase === 'success') {
+      return
+    }
+    const nextValues = next.values ?? values
+    const nextStep = next.step ?? step
+    const nextDocuments = next.documents ?? documents
+    const nextNotice = next.notice === undefined ? documentReselectNotice : next.notice
+    draftController.write({
+      submissionId,
+      step: nextStep,
+      values: nextValues,
+      hadDocuments: nextDocuments.length > 0 || Boolean(nextNotice),
+    })
+  }
 
   function updateField<K extends keyof KfzLandingFormValues>(
     key: K,
     value: KfzLandingFormValues[K],
   ) {
+    const nextValues = { ...values, [key]: value }
     setClientError(null)
-    setValues((prev) => ({ ...prev, [key]: value }))
+    setValues(nextValues)
+    persistDraft({ values: nextValues })
   }
 
   function goNext() {
@@ -152,6 +196,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
     const next = nextKfzLandingStep(step)
     if (next) {
       setStep(next)
+      persistDraft({ step: next })
     }
   }
 
@@ -160,6 +205,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
     const previous = previousKfzLandingStep(step)
     if (previous) {
       setStep(previous)
+      persistDraft({ step: previous })
     }
   }
 
@@ -187,6 +233,8 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
     )
     setDocuments(added.documents)
     setRejections(added.rejected)
+    setDocumentReselectNotice(null)
+    persistDraft({ documents: added.documents, notice: null })
 
     const acceptedNames = new Set(
       added.documents
@@ -225,13 +273,15 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       URL.revokeObjectURL(url)
       delete previewUrlsRef.current[id]
     }
-    setDocuments((current) => removeKfzLandingDocument(current, id))
+    const nextDocuments = removeKfzLandingDocument(documents, id)
+    setDocuments(nextDocuments)
     setPreviews((current) => {
       const next = { ...current }
       delete next[id]
       return next
     })
     setRejections([])
+    persistDraft({ documents: nextDocuments })
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -248,46 +298,58 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       return
     }
 
-    const nextPhase = beginKfzLandingSubmit(phase)
-    if (!nextPhase) {
-      return
-    }
-
-    if (!submissionIdRef.current) {
-      submissionIdRef.current = createKfzLandingSubmissionId()
-    }
-
-    const built = buildKfzLandingPayload({
+    const prepared = {
+      submissionId,
       values,
-      submissionId: submissionIdRef.current,
-      consentTimestamp: new Date().toISOString(),
-      attribution,
       documents,
-    })
-
-    if (!built.ok) {
-      setClientError(built.error)
-      return
+      previews,
     }
 
+    persistDraft()
     inFlightRef.current = true
-    setPhase(nextPhase)
+    setPhase('submitting')
 
     startTransition(async () => {
       try {
-        const result = await submitKfzLandingInquiryAction(built.payload)
-        if (result.ok) {
-          setPhase(resolveKfzLandingSubmitResult('submitting', 'success'))
-          setServerError(null)
+        const attempt = await executeKfzLandingSubmitAttempt({
+          phase: 'idle',
+          inFlight: false,
+          prepared,
+          attribution,
+          submit: submitInquiry,
+          timeoutMs: submitTimeoutMs,
+        })
+
+        if (attempt.locked) {
+          setPhase(phase)
           return
         }
-        setPhase(resolveKfzLandingSubmitResult('submitting', 'error'))
+
+        if (!attempt.started) {
+          setPhase('idle')
+          setClientError(attempt.result?.ok === false ? attempt.result.error : null)
+          return
+        }
+
+        if (attempt.phase === 'success') {
+          draftController.clear()
+          setPhase('success')
+          setServerError(null)
+          setValues(emptyKfzLandingDraftValues())
+          setDocuments([])
+          setPreviews({})
+          setDocumentReselectNotice(null)
+          return
+        }
+
+        setPhase('error')
         setServerError(
-          result.error ||
-            'Die Anfrage konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
+          attempt.result && !attempt.result.ok
+            ? attempt.result.error
+            : 'Die Anfrage konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
         )
       } catch {
-        setPhase(resolveKfzLandingSubmitResult('submitting', 'error'))
+        setPhase('error')
         setServerError(
           'Technischer Fehler bei der Übermittlung. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.',
         )
@@ -299,7 +361,13 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
 
   if (phase === 'success') {
     return (
-      <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 sm:p-6">
+      <div
+        className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 sm:p-6"
+        data-kfz-submit-status="received"
+      >
+        <p className="sr-only" aria-live="polite">
+          {submitStatusLabel}
+        </p>
         <Alert variant="success">
           <p className="text-lg font-semibold text-emerald-900">
             {KFZ_LANDING_CONFIRMATION_TITLE}
@@ -327,6 +395,7 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
       className="space-y-5"
       noValidate
       aria-describedby={`${formId}-privacy`}
+      data-kfz-submit-status={submitStatus}
     >
       <div aria-live="polite">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-800">
@@ -543,6 +612,13 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
             </dl>
           </div>
 
+          {documentReselectNotice ? (
+            <Alert variant="warning">
+              <p className="font-medium">Unterlagen erneut auswählen</p>
+              <p className="mt-1 text-sm">{documentReselectNotice}</p>
+            </Alert>
+          ) : null}
+
           <KfzLandingDocumentFields
             documents={documents}
             previews={previews}
@@ -618,6 +694,20 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
         </div>
       )}
 
+      <p
+        className={`text-sm ${
+          submitStatus === 'failed'
+            ? 'font-medium text-red-800'
+            : submitStatus === 'sending'
+              ? 'font-medium text-blue-800'
+              : 'text-zinc-600'
+        }`}
+        aria-live="polite"
+        data-kfz-submit-label={submitStatus}
+      >
+        {submitStatusLabel}
+      </p>
+
       <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
         {step > 1 ? (
           <Button
@@ -649,8 +739,10 @@ export function KfzLandingForm({ attribution }: KfzLandingFormProps) {
             className="min-h-12 flex-1 sm:flex-none"
           >
             {phase === 'submitting' || isPending
-              ? 'Wird gesendet …'
-              : 'Unverbindliche Anfrage senden'}
+              ? submitStatusLabel
+              : phase === 'error'
+                ? 'Erneut senden'
+                : 'Unverbindliche Anfrage senden'}
           </Button>
         )}
       </div>
