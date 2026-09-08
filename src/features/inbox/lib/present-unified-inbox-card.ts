@@ -86,12 +86,13 @@ function joinCustomerContact(name: string | null, contact: string | null): strin
 }
 
 function presentNonKfzCustomerContact(
-  item: Pick<InboxItem, 'origin' | 'sender'>,
+  item: Pick<InboxItem, 'channel' | 'origin' | 'sender'>,
 ): { label: string; hasContact: boolean } {
   const origin = readParty(item.origin)
   const sender = readParty(item.sender)
-  const name = origin.name || sender.name
-  const address = origin.address || sender.address
+  const isManual = item.channel === 'manual'
+  const name = origin.name || (isManual ? null : sender.name)
+  const address = origin.address || (isManual ? null : sender.address)
   const hasContact = Boolean(address)
 
   return {
