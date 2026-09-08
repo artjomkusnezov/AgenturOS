@@ -1,23 +1,21 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-80f0
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-0f60
 
-# AgenturOS — Put the Kfz daily queue into the real inbox
+# AgenturOS — Fast manual intake into the real inbox
 
 ## Goal
-Move the verified daily Kfz queue from the local preview into the existing authenticated employee inbox/dashboard using real normalized inbound records, without deploying or sending anything.
+Let an employee capture a new customer information item in under 10 seconds by pasting or typing text, then review the normalized draft before it enters the real inbox.
 
 ## Required work
-- Reuse the finished counts/filters: New, Missing information, In review and Done.
-- Wire them into the existing employee inbox/dashboard route, not only /dev/kfz-work-queue.
-- Use existing normalized inbound storage and existing manual states; do not add demo records to production paths.
-- Opening an item must lead to the finished one-screen review workspace with facts, missing information, task, notes and editable draft.
-- Preserve manual-only status changes. AI remains a labeled suggestion requiring human review.
-- No sending, customer contact, Meta/WhatsApp or CRM replacement.
+- Add one obvious manual quick-capture action to the authenticated app/inbox.
+- Accept plain text only in this task; no email provider, voice, PDF, Meta or WhatsApp integration.
+- Create a normalized inbound draft using existing provider-neutral fields.
+- Show the source text and proposed structured fields before saving.
+- Require an explicit human confirmation to create the inbox item; no automatic customer contact, task creation, status change or AI decision.
+- After confirmation, open the existing human-review workspace.
+- Keep AI-derived fields clearly labeled as suggestions if existing local logic supplies them; otherwise keep capture fully manual.
 - Add deterministic tests; run inbound tests, TypeScript, lint and build.
-- Browser-check the real app route desktop/mobile and record exact evidence or blockers.
+- Browser-check desktop/mobile on a safe local route and record exact evidence or blockers.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or destructive git.
-
-CONTROLLER_AGENT_ID: bc-d485b5cb-dcc4-43c4-8aae-e0ecb9c68033
-CONTROLLER_STARTED_AT: 2026-09-08T08:51:23Z
+Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp, paid services or CRM replacement.
