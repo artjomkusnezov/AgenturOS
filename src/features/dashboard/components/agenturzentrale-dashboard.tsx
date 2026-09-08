@@ -35,17 +35,12 @@ import { sanitizeDashboardCount } from '@/features/dashboard/lib/dashboard-safe-
 import type { DashboardTaskItem, DashboardTeamTasksResult } from '@/features/dashboard/lib/dashboard-tasks'
 import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
-import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
-import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import {
-  buildInboxHref,
   countKfzWorkQueue,
-  presentInboxStatusChip,
-  presentKfzWorkQueueRow,
   resolveInboxLinkedTaskId,
   type KfzWorkQueueCounts,
 } from '@/features/inbox/lib/kfz-work-queue'
-import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
+import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import type { DashboardDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
 
@@ -183,7 +178,6 @@ function LageStrip({
 
 function InboxPanel({
   items,
-  memberNameMap,
   taskRelationsByItemId,
   kfzQueueCounts,
 }: {
@@ -214,17 +208,14 @@ function InboxPanel({
       ) : (
         <ul className="az-list">
           {preview.map((item) => {
-            const title = getInboxListTitle(item)
             const visual = resolveInboxItemSourceVisual(item)
-            const creator = resolveInboxAttributionLabel(item, memberNameMap)
             const linkedTaskId = resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)
-            const statusChip = presentInboxStatusChip(item, linkedTaskId)
-            const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
+            const card = presentUnifiedInboxCard(item, { linkedTaskId })
 
             return (
               <li key={item.id} className="az-list-item">
                 <Link
-                  href={buildInboxHref({ itemId: item.id })}
+                  href={card.href}
                   className="az-row"
                 >
                   <span
@@ -235,36 +226,24 @@ function InboxPanel({
                     {visual.icon}
                   </span>
                   <span className="az-row-main">
-                    <span className="az-row-title">{title}</span>
+                    <span className="az-row-title">{card.headline}</span>
                     <span className="az-row-meta">
-                      <span>{getInboxItemSourceLabel(item)}</span>
+                      <span>{card.sourceLabel}</span>
                       <span aria-hidden="true">·</span>
-                      <span className="truncate">{creator}</span>
+                      <span className="truncate">{card.customerContact}</span>
                       <span aria-hidden="true">·</span>
-                      <span>{formatDashboardDateOrTime(item.created_at)}</span>
-                      {queueRow ? (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="truncate">{queueRow.requestFacts}</span>
-                          {queueRow.hasFactualUrgency ? (
-                            <>
-                              <span aria-hidden="true">·</span>
-                              <span>Dringlich</span>
-                            </>
-                          ) : null}
-                          <span aria-hidden="true">·</span>
-                          <span>{queueRow.missingCountLabel}</span>
-                        </>
-                      ) : null}
+                      <span>{formatDashboardDateOrTime(card.receivedAt)}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="truncate">{card.requestSummary}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{card.missingInformationLabel}</span>
                     </span>
                   </span>
-                  {statusChip ? (
-                    <InboxStatusChip
-                      label={statusChip.label}
-                      kind={statusChip.kind}
-                      surface="zentrale"
-                    />
-                  ) : null}
+                  <InboxStatusChip
+                    label={card.reviewStatus.label}
+                    kind={card.reviewStatus.kind}
+                    surface="zentrale"
+                  />
                 </Link>
               </li>
             )

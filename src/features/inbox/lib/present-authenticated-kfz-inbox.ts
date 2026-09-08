@@ -14,6 +14,19 @@ import {
   splitInboxWorkingCopy,
 } from '@/features/inbox/lib/kfz-response-draft'
 import {
+  buildInboxSourceFilterHrefs,
+  countInboxSourceFilters,
+  filterInboxItemsBySource,
+  INBOX_SOURCE_FILTER_NAV_LABEL,
+  parseInboxSourceFilter,
+  type InboxSourceFilter,
+  type InboxSourceFilterCounts,
+} from '@/features/inbox/lib/inbox-source-filter'
+import {
+  presentUnifiedInboxCard,
+  type UnifiedInboxCard,
+} from '@/features/inbox/lib/present-unified-inbox-card'
+import {
   buildInboxHref,
   buildKfzWorkQueueFilterHrefs,
   buildTaskHref,
@@ -86,18 +99,24 @@ export type AuthenticatedKfzInboxView = {
   hrefBasePath: typeof AUTHENTICATED_INBOX_PATH
   usesPreviewFixtures: false
   navLabel: typeof KFZ_WORK_QUEUE_NAV_LABEL
+  sourceNavLabel: typeof INBOX_SOURCE_FILTER_NAV_LABEL
   phaseFilter: KfzWorkQueueFilter
+  sourceFilter: InboxSourceFilter
   queueMode: boolean
   queueHeading: string | null
   counts: KfzWorkQueueCounts
+  sourceCounts: InboxSourceFilterCounts
   kfzCount: number
   totalInboxCount: number
   metaLabel: string
   filterHrefs: Record<KfzWorkQueueFilter, string>
+  sourceFilterHrefs: Record<InboxSourceFilter, string>
   unprocessedItems: InboxItem[]
   processedItems: InboxItem[]
   rows: KfzWorkQueueRow[]
+  cards: UnifiedInboxCard[]
   selectedItemId: string | null
+  selectedCard: UnifiedInboxCard | null
   selectedWorkspace: AuthenticatedKfzReviewWorkspace | null
 }
 
@@ -116,6 +135,7 @@ export function presentAuthenticatedKfzReviewWorkspace(
   options?: {
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
+    source?: InboxSourceFilter | null
   },
 ): AuthenticatedKfzReviewWorkspace | null {
   const linkedTaskId = options?.linkedTaskId ?? null
@@ -138,6 +158,7 @@ export function presentAuthenticatedKfzReviewWorkspace(
     href: buildInboxHref({
       itemId: item.id,
       phase: options?.phase ?? 'all',
+      source: options?.source ?? 'all',
       basePath: AUTHENTICATED_INBOX_PATH,
     }),
     customerName: review.customerName,
@@ -182,13 +203,16 @@ export function presentAuthenticatedKfzInbox(input: {
   taskRelationsByItemId?: Record<string, string>
   selectedItemId?: string | null
   phase?: string | null
+  source?: string | null
 }): AuthenticatedKfzInboxView {
   const phaseFilter = parseKfzWorkQueueFilter(input.phase)
+  const sourceFilter = parseInboxSourceFilter(input.source)
   const unprocessedItems = input.unprocessedItems
   const processedItems = input.processedItems
   const taskRelationsByItemId = input.taskRelationsByItemId ?? {}
   const allItems = [...unprocessedItems, ...processedItems]
   const counts = countKfzWorkQueue(allItems, taskRelationsByItemId)
+  const sourceCounts = countInboxSourceFilters(allItems)
   const kfzCount = sumKfzWorkQueueCounts(counts)
   const totalInboxCount = allItems.length
   const elementLabel = totalInboxCount === 1 ? '1 Element' : `${totalInboxCount} Elemente`
@@ -208,46 +232,79 @@ export function presentAuthenticatedKfzInbox(input: {
       )
     : null
   const visibleUnprocessed = filterInboxItemsByKfzPhase(
-    unprocessedItems,
+    filterInboxItemsBySource(unprocessedItems, sourceFilter),
     phaseFilter,
     taskRelationsByItemId,
   )
   const visibleProcessed = filterInboxItemsByKfzPhase(
-    processedItems,
+    filterInboxItemsBySource(processedItems, sourceFilter),
     phaseFilter,
     taskRelationsByItemId,
   )
-  const rows = [...visibleUnprocessed, ...visibleProcessed]
+  const visibleItems = [...visibleUnprocessed, ...visibleProcessed]
+  const rows = visibleItems
     .map((item) =>
       presentKfzWorkQueueRow(item, {
         linkedTaskId: resolveInboxLinkedTaskId(item.id, taskRelationsByItemId),
         phase: phaseFilter,
+        source: sourceFilter,
         basePath: AUTHENTICATED_INBOX_PATH,
       }),
     )
     .filter((row): row is KfzWorkQueueRow => row !== null)
+  const cards = visibleItems.map((item) =>
+    presentUnifiedInboxCard(item, {
+      linkedTaskId: resolveInboxLinkedTaskId(item.id, taskRelationsByItemId),
+      phase: phaseFilter,
+      source: sourceFilter,
+      basePath: AUTHENTICATED_INBOX_PATH,
+    }),
+  )
+  const selectedCard = selectedItem
+    ? presentUnifiedInboxCard(selectedItem, {
+        linkedTaskId: resolveInboxLinkedTaskId(
+          selectedItem.id,
+          taskRelationsByItemId,
+        ),
+        phase: phaseFilter,
+        source: sourceFilter,
+        basePath: AUTHENTICATED_INBOX_PATH,
+      })
+    : null
 
   return {
     hrefBasePath: AUTHENTICATED_INBOX_PATH,
     usesPreviewFixtures: false,
     navLabel: KFZ_WORK_QUEUE_NAV_LABEL,
+    sourceNavLabel: INBOX_SOURCE_FILTER_NAV_LABEL,
     phaseFilter,
+    sourceFilter,
     queueMode: phaseFilter !== 'all',
     queueHeading:
       phaseFilter === 'all' ? null : KFZ_WORK_QUEUE_PHASE_LABELS[phaseFilter],
     counts,
+    sourceCounts,
     kfzCount,
     totalInboxCount,
     metaLabel: queueMeta ? `${queueMeta} · ${elementLabel}` : elementLabel,
     filterHrefs: buildKfzWorkQueueFilterHrefs({
       selectedItemId,
       selectedPhase,
+      source: sourceFilter,
+      basePath: AUTHENTICATED_INBOX_PATH,
+    }),
+    sourceFilterHrefs: buildInboxSourceFilterHrefs({
+      selectedItemId,
+      selectedItem,
+      phase: phaseFilter,
       basePath: AUTHENTICATED_INBOX_PATH,
     }),
     unprocessedItems: visibleUnprocessed,
     processedItems: visibleProcessed,
     rows,
+    cards,
     selectedItemId,
+    selectedCard,
     selectedWorkspace: selectedItem
       ? presentAuthenticatedKfzReviewWorkspace(selectedItem, {
           linkedTaskId: resolveInboxLinkedTaskId(
@@ -255,6 +312,7 @@ export function presentAuthenticatedKfzInbox(input: {
             taskRelationsByItemId,
           ),
           phase: phaseFilter,
+          source: sourceFilter,
         })
       : null,
   }

@@ -9,6 +9,7 @@ import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
+import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import {
   buildInboxHref,
   countKfzWorkQueue,
@@ -27,6 +28,7 @@ type InboxWorkspaceProps = {
   taskRelationsByItemId: Record<string, string>
   selectedItemId: string | null
   phaseFilter?: KfzWorkQueueFilter
+  sourceFilter?: InboxSourceFilter
   hrefBasePath?: string
   queueMeta?: string | null
   attachments?: InboxLinkedFile[]
@@ -44,6 +46,7 @@ export function InboxWorkspace({
   taskRelationsByItemId,
   selectedItemId,
   phaseFilter = 'all',
+  sourceFilter = 'all',
   hrefBasePath = KFZ_INBOX_HREF_BASE,
   queueMeta = null,
   attachments = [],
@@ -71,14 +74,27 @@ export function InboxWorkspace({
 
   const navigateToItem = useCallback(
     (itemId: string) => {
-      router.push(buildInboxHref({ itemId, phase: phaseFilter, basePath: hrefBasePath }))
+      router.push(
+        buildInboxHref({
+          itemId,
+          phase: phaseFilter,
+          source: sourceFilter,
+          basePath: hrefBasePath,
+        }),
+      )
     },
-    [hrefBasePath, phaseFilter, router]
+    [hrefBasePath, phaseFilter, router, sourceFilter]
   )
 
   const navigateToList = useCallback(() => {
-    router.push(buildInboxHref({ phase: phaseFilter, basePath: hrefBasePath }))
-  }, [hrefBasePath, phaseFilter, router])
+    router.push(
+      buildInboxHref({
+        phase: phaseFilter,
+        source: sourceFilter,
+        basePath: hrefBasePath,
+      }),
+    )
+  }, [hrefBasePath, phaseFilter, router, sourceFilter])
 
   const handleSelectItem = useCallback(
     (itemId: string) => {
@@ -156,6 +172,7 @@ export function InboxWorkspace({
               memberNameMap={memberNameMap}
               taskRelationsByItemId={taskRelationsByItemId}
               phaseFilter={phaseFilter}
+              sourceFilter={sourceFilter}
               hrefBasePath={hrefBasePath}
             />
           )
