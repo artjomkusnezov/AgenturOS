@@ -3,8 +3,10 @@
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
   type FormEvent,
 } from 'react'
@@ -16,11 +18,9 @@ import {
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import {
-  clearKfzLandingDraft,
+  createKfzLandingDraftController,
   emptyKfzLandingDraftValues,
   getSessionKfzLandingDraftStorage,
-  readKfzLandingDraft,
-  writeKfzLandingDraft,
   type KfzLandingDraftStorage,
 } from '@/features/inbound/kfz/lib/kfz-landing-draft'
 import {
@@ -102,37 +102,39 @@ export function KfzLandingForm({
   submitTimeoutMs,
 }: KfzLandingFormProps) {
   const formId = useId()
-  const [step, setStep] = useState<KfzLandingStep>(1)
-  const [values, setValues] = useState<KfzLandingFormValues>(INITIAL_VALUES)
+  const [localStep, setStep] = useState<KfzLandingStep | null>(null)
+  const [localValues, setValues] = useState<KfzLandingFormValues | null>(null)
   const [documents, setDocuments] = useState<KfzLandingDocumentCandidate[]>([])
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [rejections, setRejections] = useState<KfzLandingDocumentRejection[]>([])
   const [phase, setPhase] = useState<KfzLandingSubmitPhase>('idle')
   const [clientError, setClientError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
-  const [documentReselectNotice, setDocumentReselectNotice] = useState<string | null>(
-    null,
+  const [localDocumentNotice, setDocumentReselectNotice] = useState<string | null | undefined>(
+    undefined,
   )
-  const [draftReady, setDraftReady] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const submissionIdRef = useRef<string | null>(null)
+  const generatedId = useMemo(() => createKfzLandingSubmissionId(), [])
   const inFlightRef = useRef(false)
   const errorRef = useRef<HTMLDivElement>(null)
   const previewUrlsRef = useRef<Record<string, string>>({})
   const storage = draftStorage ?? getSessionKfzLandingDraftStorage()
-
-  useEffect(() => {
-    const restored = readKfzLandingDraft(storage)
-    if (restored) {
-      submissionIdRef.current = restored.submissionId
-      setStep(restored.step)
-      setValues(restored.values)
-      setDocumentReselectNotice(restored.documentReselectNotice)
-    } else if (!submissionIdRef.current) {
-      submissionIdRef.current = createKfzLandingSubmissionId()
-    }
-    setDraftReady(true)
-  }, [storage])
+  const draftController = useMemo(
+    () => createKfzLandingDraftController(storage),
+    [storage],
+  )
+  const restoredDraft = useSyncExternalStore(
+    draftController.subscribe,
+    draftController.read,
+    () => null,
+  )
+  const step = localStep ?? restoredDraft?.step ?? 1
+  const values = localValues ?? restoredDraft?.values ?? INITIAL_VALUES
+  const documentReselectNotice =
+    localDocumentNotice === undefined
+      ? restoredDraft?.documentReselectNotice ?? null
+      : localDocumentNotice
+  const submissionId = restoredDraft?.submissionId ?? generatedId
 
   useEffect(() => {
     if (clientError || serverError) {
@@ -150,20 +152,19 @@ export function KfzLandingForm({
   }, [])
 
   useEffect(() => {
-    if (!draftReady || phase === 'success') {
+    if (phase === 'success') {
       return
     }
-    const submissionId = submissionIdRef.current
     if (!submissionId) {
       return
     }
-    writeKfzLandingDraft(storage, {
+    draftController.write({
       submissionId,
       step,
       values,
       hadDocuments: documents.length > 0 || Boolean(documentReselectNotice),
     })
-  }, [storage, step, values, documents, documentReselectNotice, phase, draftReady])
+  }, [draftController, submissionId, step, values, documents, documentReselectNotice, phase])
 
   const locked = isKfzLandingSubmitLocked(phase) || isPending
   const submitStatus = kfzLandingSubmitStatus(phase)
@@ -174,7 +175,7 @@ export function KfzLandingForm({
     value: KfzLandingFormValues[K],
   ) {
     setClientError(null)
-    setValues((prev) => ({ ...prev, [key]: value }))
+    setValues({ ...values, [key]: value })
   }
 
   function goNext() {
@@ -284,11 +285,6 @@ export function KfzLandingForm({
       return
     }
 
-    if (!submissionIdRef.current) {
-      submissionIdRef.current = createKfzLandingSubmissionId()
-    }
-
-    const submissionId = submissionIdRef.current
     const prepared = {
       submissionId,
       values,
@@ -322,7 +318,7 @@ export function KfzLandingForm({
         }
 
         if (attempt.phase === 'success') {
-          clearKfzLandingDraft(storage)
+          draftController.clear()
           setPhase('success')
           setServerError(null)
           setValues(emptyKfzLandingDraftValues())

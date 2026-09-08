@@ -260,3 +260,68 @@ export function draftPersistsConsentUnchecked(raw: string | KfzLandingDraftSnaps
   }
   return !('inquiryProcessingConsent' in snapshot.values)
 }
+
+export type KfzLandingDraftController = {
+  subscribe: (onStoreChange: () => void) => () => void
+  read: () => RestoreKfzLandingDraftResult | null
+  write: (input: {
+    submissionId: string
+    step: KfzLandingStep
+    values: KfzLandingFormValues
+    hadDocuments: boolean
+  }) => KfzLandingDraftSnapshot | null
+  clear: () => void
+}
+
+/**
+ * External store for session draft restore. Used with useSyncExternalStore
+ * so the form does not set React state inside an effect.
+ */
+export function createKfzLandingDraftController(
+  storage: KfzLandingDraftStorage | null | undefined,
+): KfzLandingDraftController {
+  const listeners = new Set<() => void>()
+  let cachedRaw: string | null | undefined
+  let cached: RestoreKfzLandingDraftResult | null = null
+
+  function emit() {
+    cachedRaw = undefined
+    for (const listener of listeners) {
+      listener()
+    }
+  }
+
+  return {
+    subscribe(onStoreChange) {
+      listeners.add(onStoreChange)
+      return () => {
+        listeners.delete(onStoreChange)
+      }
+    },
+    read() {
+      if (!storage) {
+        return null
+      }
+      const raw = storage.getItem(KFZ_LANDING_DRAFT_STORAGE_KEY)
+      if (raw === cachedRaw) {
+        return cached
+      }
+      cachedRaw = raw
+      cached = readKfzLandingDraft(storage)
+      return cached
+    },
+    write(input) {
+      const previous = storage?.getItem(KFZ_LANDING_DRAFT_STORAGE_KEY) ?? null
+      const snapshot = writeKfzLandingDraft(storage, input)
+      const next = storage?.getItem(KFZ_LANDING_DRAFT_STORAGE_KEY) ?? null
+      if (previous !== next) {
+        emit()
+      }
+      return snapshot
+    },
+    clear() {
+      clearKfzLandingDraft(storage)
+      emit()
+    },
+  }
+}
