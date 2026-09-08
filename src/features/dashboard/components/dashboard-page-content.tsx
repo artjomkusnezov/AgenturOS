@@ -17,7 +17,7 @@ import {
   selectMyTasksForDashboard,
   selectTeamTasksForDashboard,
 } from '@/features/dashboard/lib/dashboard-tasks'
-import { countKfzWorkQueue } from '@/features/inbox/lib/kfz-work-queue'
+import { presentDashboardKfzQueue } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { createClient } from '@/lib/supabase/server'
@@ -89,17 +89,18 @@ export async function DashboardPageContent() {
     },
   )
 
-  const kfzQueueCounts = countKfzWorkQueue(
-    [...inboxResult.unprocessedItems, ...inboxResult.processedItems],
-    inboxResult.taskRelationsByItemId,
-  )
+  const dashboardQueue = presentDashboardKfzQueue({
+    unprocessedItems: inboxResult.unprocessedItems,
+    processedItems: inboxResult.processedItems,
+    taskRelationsByItemId: inboxResult.taskRelationsByItemId,
+  })
 
   return (
     <DashboardWorkOverview
       user={user}
       unprocessedInboxItems={inboxResult.unprocessedItems}
       taskRelationsByItemId={inboxResult.taskRelationsByItemId}
-      kfzQueueCounts={kfzQueueCounts}
+      kfzQueueCounts={dashboardQueue.counts}
       attentionItems={attentionItems}
       attentionCount={attentionCount}
       myTasks={myTasks}

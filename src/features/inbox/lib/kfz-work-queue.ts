@@ -48,6 +48,18 @@ export const KFZ_WORK_QUEUE_PHASE_CHIP: Record<KfzWorkQueuePhase, KfzWorkQueueCh
 
 export const KFZ_FOLLOW_UP_SOURCE_LABEL = 'Zur Anfrage' as const
 
+export const KFZ_WORK_QUEUE_NAV_LABEL = 'Kfz-Tagesliste' as const
+
+export const KFZ_WORK_QUEUE_FILTERS: readonly KfzWorkQueueFilter[] = [
+  'all',
+  ...KFZ_WORK_QUEUE_PHASES,
+]
+
+export const KFZ_WORK_QUEUE_FILTER_LABELS: Record<KfzWorkQueueFilter, string> = {
+  all: 'Alle',
+  ...KFZ_WORK_QUEUE_PHASE_LABELS,
+}
+
 export type KfzWorkQueueStatusChip = {
   label: string
   kind: KfzWorkQueueChipKind
@@ -114,6 +126,37 @@ export function emptyKfzWorkQueueCounts(): KfzWorkQueueCounts {
 
 export function sumKfzWorkQueueCounts(counts: KfzWorkQueueCounts): number {
   return KFZ_WORK_QUEUE_PHASES.reduce((sum, phase) => sum + counts[phase], 0)
+}
+
+export function formatKfzWorkQueueMeta(counts: KfzWorkQueueCounts): string | null {
+  if (sumKfzWorkQueueCounts(counts) === 0) {
+    return null
+  }
+
+  return KFZ_WORK_QUEUE_PHASES.map(
+    (phase) => `${KFZ_WORK_QUEUE_PHASE_LABELS[phase]} ${counts[phase]}`,
+  ).join(' · ')
+}
+
+export function buildKfzWorkQueueFilterHrefs(options?: {
+  selectedItemId?: string | null
+  selectedPhase?: KfzWorkQueuePhase | null
+  basePath?: string | null
+}): Record<KfzWorkQueueFilter, string> {
+  const hrefs = {} as Record<KfzWorkQueueFilter, string>
+
+  for (const filter of KFZ_WORK_QUEUE_FILTERS) {
+    const keepItem =
+      Boolean(options?.selectedItemId) &&
+      (filter === 'all' || options?.selectedPhase === filter)
+    hrefs[filter] = buildInboxHref({
+      phase: filter,
+      itemId: keepItem ? options?.selectedItemId : null,
+      basePath: options?.basePath,
+    })
+  }
+
+  return hrefs
 }
 
 export function parseKfzWorkQueueFilter(

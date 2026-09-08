@@ -9,7 +9,13 @@ import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
-import { buildInboxHref, type KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
+import {
+  buildInboxHref,
+  countKfzWorkQueue,
+  formatKfzWorkQueueMeta,
+  KFZ_INBOX_HREF_BASE,
+  type KfzWorkQueueFilter,
+} from '@/features/inbox/lib/kfz-work-queue'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 
 type InboxWorkspaceProps = {
@@ -19,6 +25,7 @@ type InboxWorkspaceProps = {
   selectedItemId: string | null
   phaseFilter?: KfzWorkQueueFilter
   hrefBasePath?: string
+  queueMeta?: string | null
   attachments?: InboxLinkedFile[]
   memberNameMap?: Record<string, string>
   aiProposal?: InboxAiProposal | null
@@ -30,7 +37,8 @@ export function InboxWorkspace({
   taskRelationsByItemId,
   selectedItemId,
   phaseFilter = 'all',
-  hrefBasePath = '/app/inbox',
+  hrefBasePath = KFZ_INBOX_HREF_BASE,
+  queueMeta = null,
   attachments = [],
   memberNameMap = {},
   aiProposal = null,
@@ -84,9 +92,14 @@ export function InboxWorkspace({
   const showMobileDetail = selectedItem !== null
   const totalCount = items.length
   const countLabel = totalCount === 1 ? '1 Element' : `${totalCount} Elemente`
+  const derivedKfzMeta = formatKfzWorkQueueMeta(
+    countKfzWorkQueue(items, taskRelationsByItemId),
+  )
+  const chromeMeta =
+    queueMeta ?? (derivedKfzMeta ? `${derivedKfzMeta} · ${countLabel}` : countLabel)
 
   return (
-    <WorkspaceFrame compact meta={countLabel}>
+    <WorkspaceFrame compact meta={chromeMeta}>
       <WorkspaceSplit
         listLabel="Eingangsliste"
         detailLabel="Eingangsdetails"

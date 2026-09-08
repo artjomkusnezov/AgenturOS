@@ -1,9 +1,10 @@
 import Link from 'next/link'
 
 import {
-  buildInboxHref,
-  KFZ_WORK_QUEUE_PHASE_LABELS,
-  KFZ_WORK_QUEUE_PHASES,
+  buildKfzWorkQueueFilterHrefs,
+  KFZ_WORK_QUEUE_FILTER_LABELS,
+  KFZ_WORK_QUEUE_FILTERS,
+  KFZ_WORK_QUEUE_NAV_LABEL,
   sumKfzWorkQueueCounts,
   type KfzWorkQueueCounts,
   type KfzWorkQueueFilter,
@@ -19,14 +20,6 @@ type InboxKfzPhaseFilterProps = {
   hrefBasePath?: string | null
 }
 
-const FILTERS: Array<{ id: KfzWorkQueueFilter; label: string }> = [
-  { id: 'all', label: 'Alle' },
-  ...KFZ_WORK_QUEUE_PHASES.map((phase) => ({
-    id: phase,
-    label: KFZ_WORK_QUEUE_PHASE_LABELS[phase],
-  })),
-]
-
 export function InboxKfzPhaseFilter({
   activePhase,
   counts,
@@ -40,28 +33,32 @@ export function InboxKfzPhaseFilter({
     return null
   }
 
+  const hrefs = buildKfzWorkQueueFilterHrefs({
+    selectedItemId,
+    selectedPhase,
+    basePath: hrefBasePath,
+  })
+
   return (
     <nav
-      aria-label="Kfz-Tagesliste"
+      aria-label={KFZ_WORK_QUEUE_NAV_LABEL}
       className={variant === 'dashboard' ? 'az-kfz-filter' : 'aos-inbox-phase-filter'}
     >
-      {FILTERS.map((filter) => {
-        const keepItem =
-          Boolean(selectedItemId) &&
-          (filter.id === 'all' || selectedPhase === filter.id)
-        const href = buildInboxHref({
-          phase: filter.id,
-          itemId: keepItem ? selectedItemId : null,
-          basePath: hrefBasePath,
-        })
-        const count =
-          filter.id === 'all' ? totalKfz : counts[filter.id as KfzWorkQueuePhase]
-        const isActive = activePhase === filter.id
+      <p
+        className={
+          variant === 'dashboard' ? 'az-kfz-filter-caption' : 'aos-inbox-phase-caption'
+        }
+      >
+        {KFZ_WORK_QUEUE_NAV_LABEL}
+      </p>
+      {KFZ_WORK_QUEUE_FILTERS.map((filter) => {
+        const count = filter === 'all' ? totalKfz : counts[filter]
+        const isActive = activePhase === filter
 
         return (
           <Link
-            key={filter.id}
-            href={href}
+            key={filter}
+            href={hrefs[filter]}
             aria-current={isActive ? 'page' : undefined}
             className={
               variant === 'dashboard'
@@ -69,7 +66,7 @@ export function InboxKfzPhaseFilter({
                 : `aos-inbox-phase-link${isActive ? ' aos-inbox-phase-link--active' : ''}`
             }
           >
-            <span>{filter.label}</span>
+            <span>{KFZ_WORK_QUEUE_FILTER_LABELS[filter]}</span>
             <span aria-hidden="true">{count}</span>
           </Link>
         )
