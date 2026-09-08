@@ -1,26 +1,22 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-2ebd
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-882b
 
-# AgenturOS — One unified inbox for landing and manual intake
+# AgenturOS — Human review history inside each inbound item
 
 ## Goal
-Let an employee see Kfz landing submissions and manually captured phone, email and note items in one daily inbox, with simple human-controlled filters.
+Let an employee understand what happened to an inbound item by showing a simple factual history of manual review actions inside the existing workspace.
 
 ## Required work
-- Build on the finished authenticated inbox, Kfz review card, manual source choice, duplicate warning and manual-to-Kfz flow.
-- Use the existing normalized inbound records; do not create a parallel inbox.
-- Add simple filters for all items, Kfz, other, phone, pasted email and own note.
-- Show source, received time, customer/contact fact, short request summary, missing-information state and manual review status on each card.
-- Opening any item must use the existing human-review workspace.
-- Preserve manual-only status changes, notes, tasks and editable drafts.
-- AI suggestions must remain clearly labeled and require human review.
-- No automatic classification, reply, status change, task creation, customer contact, provider connection, Meta/WhatsApp or CRM replacement.
+- Build on the unified inbox and existing Kfz/manual review workspace.
+- Reuse existing normalized records, status changes, notes, internal tasks and saved drafts.
+- Show a chronological history of factual manual actions: received, review started, note saved, internal task created, draft saved, manually completed.
+- Clearly separate original source facts from later employee actions and AI suggestions.
+- Do not invent actors or timestamps; if current fixtures lack them, use deterministic local fixture facts only and document the limitation.
+- Opening history must stay within the same inbox item, with a clear return to the work area.
+- No automatic status change, reply, task creation, customer contact, provider connection, Meta/WhatsApp or CRM replacement.
 - Keep safe local fixtures for browser verification without production data.
 - Add deterministic tests; run inbound tests, TypeScript, lint and build.
 - Browser-check desktop/mobile and record exact evidence or blockers.
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
-
-CONTROLLER_AGENT_ID: bc-925c4c4c-72f6-48ac-a7d3-d392cec33dfd
-CONTROLLER_STARTED_AT: 2026-09-08T15:46:32Z
