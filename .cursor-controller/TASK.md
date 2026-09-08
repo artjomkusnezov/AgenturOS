@@ -1,36 +1,25 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-c268
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-7f68
 
-# AgenturOS — Mobile-first Kfz landing intake with documents
+# AgenturOS — Reliable Kfz landing submit and retry
 
 ## Goal
-Replace the current long administrative-looking Kfz form with a clear, trustworthy, mobile-first Allianz Kusnezov landing flow that creates the same normalized human-review inbound item and optionally carries customer documents.
+Make the new three-step /kfz landing safe and dependable when submission is slow, retried or temporarily unavailable: keep the customer's work visible, prevent duplicate inbound items, and always leave the final decision with an employee.
 
 ## Required work
-- Build directly on the latest Cursor history/inbox result. Reuse the existing Kfz normalization and human-review inbox; do not create a parallel CRM or inbox.
-- Redesign /kfz as a focused local landing page for Allianz Kusnezov in Lengerich and Umgebung. It should feel like a modern personal agency landing page, not a government form or a raw table.
-- Keep claims factual: personal local review, non-binding inquiry, no online price guarantee, no automatic tariff promise.
-- Turn the long form into three short clear steps with visible progress:
-  1. request type: Versicherung wechseln / neues Fahrzeug / Zweitwagen / bestehendes Angebot prüfen;
-  2. contact details and preferred reply channel;
-  3. optional documents plus final review/consent.
-- Set preferred reply channel default to WhatsApp. Choices in this order: WhatsApp, Telefon, E-Mail. Store only the customer's preference. Do not send any WhatsApp message and do not connect Meta/WhatsApp APIs.
-- For WhatsApp preference require a usable phone number; keep an explicit alternative choice. Do not infer consent for advertising.
-- Add two optional document groups: Fahrzeugschein and Vorversicherung / letzte Beitragsrechnung.
-- Desktop must allow file selection. Mobile must clearly allow taking a new photo or choosing an existing photo/file using native browser input capabilities.
-- Allow multiple images and PDF where supported; show selected filenames/thumbnails, type/size validation, and removal before submit.
-- Do not invent or expose permanent storage. If safe authenticated storage is not already implemented, make the local/dev flow deterministic and carry attachment metadata/previews only, clearly document the storage blocker, and do not inspect or add secrets.
-- After submit show a simple confirmation: Anfrage ist angekommen. Wir prüfen sie persönlich und melden uns auf dem gewünschten Weg.
-- Preserve the manual-first boundary: submission creates an inbound item for employee review; no automatic reply, status decision, quote, task, merge, AI decision, customer communication or provider connection.
-- Keep Datenschutz/consent legally neutral and based on existing repository wording; do not make new legal decisions. Keep the visible consent concise with the existing privacy link and detailed text below.
-- Make desktop and especially phone layout polished enough for realistic browser review: strong first screen, clear CTA, minimal empty space, large tap targets, no horizontal clipping.
-- This is one bounded 2–6 hour product task. Do not redesign the entire AgenturOS application.
-- Add deterministic tests for step navigation, WhatsApp default, alternative contact selection, document selection/removal/validation, submit normalization, and zero automatic communication.
+- Build directly on the latest Cursor Kfz landing result branch. Reuse the existing normalized inbound path and unified human-review inbox; do not create another inbox or CRM.
+- Preserve the accepted three-step mobile-first landing, WhatsApp default preference, Telefon/E-Mail alternatives, optional Fahrzeugschein/Vorversicherung selection, existing consent wording and metadata-only document limitation.
+- Add explicit submit states in simple German: ready, sending, received, and failed/retryable.
+- While sending, prevent double clicks and repeated browser submissions from creating duplicate inbound items.
+- Keep one stable submission identity across a retry of the same prepared inquiry. A retry after timeout, back/forward navigation or repeated response must resolve to the same normalized inbound item.
+- On a network/config/server failure, keep all typed form fields and currently selected local files/previews available on the page so the customer can retry or correct data. Do not claim that files were stored.
+- If a full page reload happens, safely restore ordinary text/select draft fields where the existing client architecture allows it, but clearly require the user to reselect documents because browsers do not restore file bytes. Do not persist consent as pre-checked.
+- After confirmed success, clear the local draft and show the existing personal-review confirmation. Do not automatically navigate away or send a message.
+- Ensure preferred contact, request type and document metadata arrive once in the existing review card, with no automatic reply, merge, task, status decision or AI/customer communication.
+- Keep production behavior honest: missing intake configuration must remain an explicit error, never fake success.
+- Add deterministic tests for double-click, timeout then retry, stable submission identity, no duplicate inbox item, retained fields/files after failure, reload draft restoration with document reselect notice, consent not restored as checked, and clearing after success.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build.
-- Browser-check desktop and mobile: landing → steps → choose/take document input → remove/re-add → submit → normalized inbox card. Record screenshots/video and exact limitations.
+- Browser-check desktop and mobile: fill all three steps → select documents → force a failed submit → verify data remains → retry through the real handler/test seam → verify one inbox item and success confirmation. Record exact environment limitations.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, paid services, Meta/WhatsApp connection, legal determination or destructive git.
-
-CONTROLLER_AGENT_ID: bc-82f7c586-730a-4e4d-a904-7fc705508753
-CONTROLLER_STARTED_AT: 2026-09-08T20:46:18Z
+Cursor-created branch only. No master, merge, deploy, secrets, production data, binary document storage, customer communication, paid services, Meta/WhatsApp connection, legal determination or destructive git.
