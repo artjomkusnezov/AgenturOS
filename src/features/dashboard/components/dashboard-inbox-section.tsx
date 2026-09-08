@@ -54,7 +54,7 @@ function DashboardInboxRow({
       href={buildInboxHref({ itemId: item.id })}
       className="aos-cockpit-row"
     >
-      <DashboardInboxSourceIcon source={item.source} />
+      <DashboardInboxSourceIcon item={item} />
       <span className="min-w-0 flex-1">
         <span className={`aos-cockpit-row-title ${isUnprocessed ? 'aos-cockpit-row-title--strong' : ''}`}>
           {title}

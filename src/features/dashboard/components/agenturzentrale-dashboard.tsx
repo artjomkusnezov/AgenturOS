@@ -26,7 +26,7 @@ import {
   getFirstNameFromUser,
   getTimeOfDayGreeting,
 } from '@/features/dashboard/lib/dashboard-greeting'
-import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import { resolveInboxItemSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import type {
   DashboardCaseTypeCount,
   DashboardMyWorkCaseItem,
@@ -215,7 +215,7 @@ function InboxPanel({
         <ul className="az-list">
           {preview.map((item) => {
             const title = getInboxListTitle(item)
-            const visual = resolveInboxSourceVisual(item.source)
+            const visual = resolveInboxItemSourceVisual(item)
             const creator = resolveInboxAttributionLabel(item, memberNameMap)
             const linkedTaskId = resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)
             const statusChip = presentInboxStatusChip(item, linkedTaskId)

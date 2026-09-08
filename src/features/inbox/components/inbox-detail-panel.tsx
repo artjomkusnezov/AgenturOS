@@ -5,7 +5,7 @@ import { useActionState, useEffect, useId, useRef, useState } from 'react'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconCheckSquare, DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
-import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import { resolveInboxItemSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { deleteInboxItemAction } from '@/features/inbox/actions/delete-inbox-item'
 import { InboxPromotionMenu } from '@/features/inbox/components/inbox-promotion-menu'
@@ -136,7 +136,7 @@ export function InboxDetailPanel({
   const handledDeleteRef = useRef(false)
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
-  const sourceVisual = resolveInboxSourceVisual(item.source)
+  const sourceVisual = resolveInboxItemSourceVisual(item)
   const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
   const draftFormId = `kfz-response-draft-${item.id}`
   const aiSuggestedReply =

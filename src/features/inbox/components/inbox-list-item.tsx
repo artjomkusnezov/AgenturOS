@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import { resolveInboxItemSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
@@ -125,7 +125,7 @@ export function InboxListItem({
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
-  const sourceVisual = resolveInboxSourceVisual(item.source)
+  const sourceVisual = resolveInboxItemSourceVisual(item)
   const queueRow = presentKfzWorkQueueRow(item, { linkedTaskId })
   const statusChip = queueRow?.chip ?? presentInboxStatusChip(item, linkedTaskId)
 

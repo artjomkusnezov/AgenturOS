@@ -6,13 +6,15 @@ import { ingestInboundItem } from '@/features/inbound/services/inbound-intake-se
 import type { InboundIntakeStore } from '@/features/inbound/types/inbound-intake-store'
 import type { InboundSender } from '@/features/inbound/types/inbound-item'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
-import { MANUAL_CAPTURE_EMPTY_ERROR } from '@/features/inbound/manual/lib/manual-capture-copy'
+import { MANUAL_CAPTURE_EMPTY_ERROR, MANUAL_CAPTURE_ORIGIN_KIND_ERROR } from '@/features/inbound/manual/lib/manual-capture-copy'
+import { parseManualCaptureOriginKind } from '@/features/inbound/manual/lib/manual-capture-origin'
 import { toInboundItemFromManualText } from '@/features/inbound/manual/lib/manual-adapter'
 import { sanitizeManualCaptureText, sanitizeManualCaptureTitle } from '@/features/inbound/manual/lib/sanitize-manual-text'
 import type { NormalizedManualCapture } from '@/features/inbound/manual/types/normalized-manual-capture'
 
 export type ConfirmManualCaptureInput = {
   sourceText: string
+  originKind: unknown
   title?: string | null
   origin?: InboundSender | null
   capturer?: InboundSender
@@ -57,6 +59,11 @@ function normalizeOrigin(origin: InboundSender | null | undefined): InboundSende
 export function buildConfirmedManualCapture(
   input: ConfirmManualCaptureInput,
 ): { ok: true; capture: NormalizedManualCapture } | { ok: false; error: string } {
+  const originKind = parseManualCaptureOriginKind(input.originKind)
+  if (!originKind) {
+    return { ok: false, error: MANUAL_CAPTURE_ORIGIN_KIND_ERROR }
+  }
+
   const sourceText = sanitizeManualCaptureText(input.sourceText)
 
   if (!sourceText) {
@@ -74,6 +81,7 @@ export function buildConfirmedManualCapture(
       externalId: input.externalId?.trim() || `manual:${crypto.randomUUID()}`,
       capturedAt: input.capturedAt?.trim() || new Date().toISOString(),
       sourceText,
+      originKind,
       title,
       capturer: {
         displayName:
