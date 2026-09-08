@@ -44,8 +44,8 @@ export const QUICK_ACTION_GROUPS: QuickActionGroup[] = [
     actions: [
       {
         mode: 'inbox',
-        label: 'Neuer Eingang',
-        description: 'Schnellnotiz oder Datei zum Sortieren',
+        label: 'Text erfassen',
+        description: 'Text einfügen und vor dem Eingang prüfen',
         icon: 'inbox',
       },
       {
