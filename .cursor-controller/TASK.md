@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-c268
 
 # AgenturOS — Mobile-first Kfz landing intake with documents
@@ -31,3 +31,6 @@ Replace the current long administrative-looking Kfz form with a clear, trustwort
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, paid services, Meta/WhatsApp connection, legal determination or destructive git.
+
+CONTROLLER_AGENT_ID: bc-82f7c586-730a-4e4d-a904-7fc705508753
+CONTROLLER_STARTED_AT: 2026-09-08T20:46:18Z
