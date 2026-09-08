@@ -1,9 +1,11 @@
+import { buildManualCaptureMetadata } from '@/features/inbound/manual/lib/manual-capture-origin'
 import type { InboundItem } from '@/features/inbound/types/inbound-item'
 import type { NormalizedManualCapture } from '@/features/inbound/manual/types/normalized-manual-capture'
 
 /**
  * Reine Übersetzung: NormalizedManualCapture → InboundItem.
  * Keine Businesslogik, keine Kundensuche, kein KI-Aufruf, keine Promotion.
+ * Ursprungstext bleibt unverändert; die gewählte Quelle liegt nur in Metadaten.
  */
 export function toInboundItemFromManualText(capture: NormalizedManualCapture): InboundItem {
   const sourceText = capture.sourceText.trim()
@@ -28,11 +30,6 @@ export function toInboundItemFromManualText(capture: NormalizedManualCapture): I
     title,
     content: sourceText,
     kind: 'text',
-    metadata: {
-      capture: {
-        family: 'manual',
-        kind: 'plain_text',
-      },
-    },
+    metadata: buildManualCaptureMetadata(capture.originKind),
   }
 }

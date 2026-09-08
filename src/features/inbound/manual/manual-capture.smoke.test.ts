@@ -20,9 +20,18 @@ import {
   MANUAL_CAPTURE_CONFIRM_LABEL,
   MANUAL_CAPTURE_EMPTY_ERROR,
   MANUAL_CAPTURE_NO_AUTO_ACTION,
+  MANUAL_CAPTURE_ORIGIN_KIND_EMAIL_LABEL,
+  MANUAL_CAPTURE_ORIGIN_KIND_ERROR,
+  MANUAL_CAPTURE_ORIGIN_KIND_NOTE_LABEL,
+  MANUAL_CAPTURE_ORIGIN_KIND_PHONE_LABEL,
   MANUAL_CAPTURE_REVIEW_LABEL,
   MANUAL_FIELD_SUGGESTION_LABEL,
 } from '@/features/inbound/manual/lib/manual-capture-copy'
+import {
+  MANUAL_CAPTURE_FAMILY,
+  MANUAL_CAPTURE_KIND,
+  readManualCaptureOriginKind,
+} from '@/features/inbound/manual/lib/manual-capture-origin'
 import { MANUAL_CAPTURE_PREVIEW_PATH } from '@/features/inbound/manual/lib/manual-capture-preview'
 import { presentManualCaptureDraft } from '@/features/inbound/manual/lib/present-manual-capture'
 import { confirmManualCapture } from '@/features/inbound/manual/services/confirm-manual-capture'
@@ -47,6 +56,7 @@ describe('manual capture adapter', () => {
       externalId: 'manual:test-001',
       capturedAt: RECEIVED_AT,
       sourceText: SAMPLE_TEXT,
+      originKind: 'phone_call',
       title: 'Rückruf Kunde Müller',
       capturer: { displayName: 'Anna Agentur', address: null, addressKind: 'other' },
       origin: {
@@ -64,30 +74,61 @@ describe('manual capture adapter', () => {
     assert.equal(item.sender.displayName, 'Anna Agentur')
     assert.equal(item.origin?.address, 'mueller@example.com')
     assert.equal(item.attachments, undefined)
-    assert.deepEqual(item.metadata?.capture, { family: 'manual', kind: 'plain_text' })
+    assert.deepEqual(item.metadata?.capture, {
+      family: MANUAL_CAPTURE_FAMILY,
+      kind: MANUAL_CAPTURE_KIND,
+      originKind: 'phone_call',
+    })
+  })
+
+  it('keeps original text unchanged when the source is a pasted email', () => {
+    const sourceText = 'Von: Vera Beispiel\nBitte Unterlagen prüfen.'
+    const item = toInboundItemFromManualText({
+      externalId: 'manual:email-paste',
+      capturedAt: RECEIVED_AT,
+      sourceText,
+      originKind: 'pasted_email',
+      title: null,
+      capturer: { displayName: 'Mitarbeiter', address: null, addressKind: 'other' },
+      origin: null,
+    })
+
+    assert.equal(item.channel, 'manual')
+    assert.equal(item.content, sourceText)
+    assert.equal(readManualCaptureOriginKind(item.metadata), 'pasted_email')
   })
 })
 
 describe('manual capture draft review', () => {
   it('rejects empty text before a draft exists', () => {
-    const result = buildManualCaptureDraft('   ')
+    const result = buildManualCaptureDraft('   ', { originKind: 'personal_note' })
     assert.equal(result.ok, false)
     if (result.ok) return
     assert.equal(result.error, MANUAL_CAPTURE_EMPTY_ERROR)
   })
 
+  it('rejects a draft without an explicit source choice', () => {
+    const result = buildManualCaptureDraft(SAMPLE_TEXT, { originKind: '' })
+    assert.equal(result.ok, false)
+    if (result.ok) return
+    assert.equal(result.error, MANUAL_CAPTURE_ORIGIN_KIND_ERROR)
+  })
+
   it('shows source text and proposed fields, labeling local suggestions', () => {
     const result = buildManualCaptureDraft(
       'Von: Vera Beispiel <vera@example.com>\nBitte Unterlagen prüfen.',
+      { originKind: 'pasted_email' },
     )
     assert.equal(result.ok, true)
     if (!result.ok) return
 
     assert.equal(result.draft.requiresConfirmation, true)
     assert.equal(result.draft.noAutoAction, MANUAL_CAPTURE_NO_AUTO_ACTION)
+    assert.equal(result.draft.originKind, 'pasted_email')
     assert.match(result.draft.sourceText, /Bitte Unterlagen prüfen/)
     assert.equal(result.draft.proposed.channel, 'manual')
     assert.equal(result.draft.proposed.kind, 'text')
+    assert.equal(result.draft.proposed.originKind, 'pasted_email')
     assert.equal(result.draft.proposed.origin?.address, 'vera@example.com')
     assert.equal(result.draft.proposed.origin?.displayName, 'Vera Beispiel')
 
@@ -95,6 +136,11 @@ describe('manual capture draft review', () => {
     assert.equal(review.sourceText, result.draft.sourceText)
     assert.equal(review.confirmLabel, MANUAL_CAPTURE_CONFIRM_LABEL)
     assert.equal(review.requiresConfirmation, true)
+
+    const originKindField = review.fields.find((field) => field.id === 'originKind')
+    assert.equal(originKindField?.value, MANUAL_CAPTURE_ORIGIN_KIND_EMAIL_LABEL)
+    assert.equal(originKindField?.editable, false)
+    assert.equal(originKindField?.suggestion, false)
 
     const titleField = review.fields.find((field) => field.id === 'title')
     const originAddress = review.fields.find((field) => field.id === 'originAddress')
@@ -105,17 +151,32 @@ describe('manual capture draft review', () => {
   })
 
   it('extracts a phone token as an origin suggestion without customer matching', () => {
-    const result = buildManualCaptureDraft('Bitte Rückruf unter +491701234567')
+    const result = buildManualCaptureDraft('Bitte Rückruf unter +491701234567', {
+      originKind: 'phone_call',
+    })
     assert.equal(result.ok, true)
     if (!result.ok) return
+    assert.equal(result.draft.originKind, 'phone_call')
     assert.equal(result.draft.proposed.origin?.addressKind, 'phone')
     assert.equal(result.draft.proposed.origin?.address, '+491701234567')
     assert.equal(result.draft.proposed.origin?.displayName, null)
   })
 
+  it('does not infer the source choice from contact tokens in the text', () => {
+    const result = buildManualCaptureDraft(
+      'Von: Vera Beispiel <vera@example.com>\nBitte Unterlagen prüfen.',
+      { originKind: 'personal_note' },
+    )
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.equal(result.draft.originKind, 'personal_note')
+    assert.equal(result.draft.proposed.origin?.address, 'vera@example.com')
+  })
+
   it('strips markup from pasted text and keeps readable content', () => {
     const result = buildManualCaptureDraft(
       '<script>alert(1)</script>Kunde will <b>Rückruf</b>',
+      { originKind: 'personal_note' },
     )
     assert.equal(result.ok, true)
     if (!result.ok) return
@@ -128,7 +189,7 @@ describe('manual capture draft review', () => {
 describe('manual capture confirmation → inbox', () => {
   it('creates an unprocessed inbox item only after confirm', async () => {
     const store = createMemoryInboundIntakeStore()
-    const drafted = buildManualCaptureDraft(SAMPLE_TEXT)
+    const drafted = buildManualCaptureDraft(SAMPLE_TEXT, { originKind: 'phone_call' })
     assert.equal(drafted.ok, true)
     if (!drafted.ok) return
     assert.equal(store.items.length, 0)
@@ -139,6 +200,7 @@ describe('manual capture confirmation → inbox', () => {
       actorUserId: ACTOR_ID,
       capture: {
         sourceText: drafted.draft.sourceText,
+        originKind: drafted.draft.originKind,
         title: drafted.draft.proposed.title,
         origin: drafted.draft.proposed.origin,
         capturer: drafted.draft.proposed.sender,
@@ -158,11 +220,48 @@ describe('manual capture confirmation → inbox', () => {
     assert.equal(result.item.processed_at, null)
     assert.equal(result.item.content, drafted.draft.sourceText)
     assert.equal(result.item.title, 'Rückruf Kunde Müller')
-    assert.equal(getInboxItemSourceLabel(result.item), 'Manuell')
+    assert.equal(readManualCaptureOriginKind(result.item.inbound_metadata), 'phone_call')
+    assert.equal(getInboxItemSourceLabel(result.item), MANUAL_CAPTURE_ORIGIN_KIND_PHONE_LABEL)
     assert.equal(
       buildInboxHref({ itemId: result.item.id }),
       `/app/inbox?item=${result.item.id}`,
     )
+  })
+
+  it('labels pasted email and personal note sources in the review workspace', async () => {
+    const store = createMemoryInboundIntakeStore()
+    const email = await confirmManualCapture({
+      store,
+      agencyId: AGENCY_ID,
+      actorUserId: ACTOR_ID,
+      capture: {
+        sourceText: 'Eingefügte E-Mail an die Agentur',
+        originKind: 'pasted_email',
+        capturedAt: RECEIVED_AT,
+        externalId: 'manual:email-label',
+      },
+    })
+    const note = await confirmManualCapture({
+      store,
+      agencyId: AGENCY_ID,
+      actorUserId: ACTOR_ID,
+      capture: {
+        sourceText: 'Eigene Notiz zum Gespräch',
+        originKind: 'personal_note',
+        capturedAt: RECEIVED_AT,
+        externalId: 'manual:note-label',
+      },
+    })
+
+    assert.equal(email.success, true)
+    assert.equal(note.success, true)
+    if (!email.success || !note.success) return
+    assert.equal(email.item.channel, 'manual')
+    assert.equal(note.item.channel, 'manual')
+    assert.equal(getInboxItemSourceLabel(email.item), MANUAL_CAPTURE_ORIGIN_KIND_EMAIL_LABEL)
+    assert.equal(getInboxItemSourceLabel(note.item), MANUAL_CAPTURE_ORIGIN_KIND_NOTE_LABEL)
+    assert.equal(email.item.content, 'Eingefügte E-Mail an die Agentur')
+    assert.equal(note.item.content, 'Eigene Notiz zum Gespräch')
   })
 
   it('does not create tasks, change status, or auto-decide', async () => {
@@ -173,6 +272,7 @@ describe('manual capture confirmation → inbox', () => {
       actorUserId: ACTOR_ID,
       capture: {
         sourceText: 'Kurze Notiz zum Kunden',
+        originKind: 'personal_note',
         capturedAt: RECEIVED_AT,
         externalId: 'manual:no-side-effects',
       },
@@ -194,13 +294,21 @@ describe('manual capture confirmation → inbox', () => {
       store,
       agencyId: AGENCY_ID,
       actorUserId: ACTOR_ID,
-      capture: { sourceText: SAMPLE_TEXT, capturedAt: RECEIVED_AT },
+      capture: {
+        sourceText: SAMPLE_TEXT,
+        originKind: 'personal_note',
+        capturedAt: RECEIVED_AT,
+      },
     })
     const second = await confirmManualCapture({
       store,
       agencyId: AGENCY_ID,
       actorUserId: ACTOR_ID,
-      capture: { sourceText: SAMPLE_TEXT, capturedAt: RECEIVED_AT },
+      capture: {
+        sourceText: SAMPLE_TEXT,
+        originKind: 'personal_note',
+        capturedAt: RECEIVED_AT,
+      },
     })
 
     assert.equal(first.success, true)
@@ -215,6 +323,7 @@ describe('manual capture confirmation → inbox', () => {
     const store = createMemoryInboundIntakeStore()
     const capture = {
       sourceText: SAMPLE_TEXT,
+      originKind: 'phone_call' as const,
       capturedAt: RECEIVED_AT,
       externalId: 'manual:same-id',
     }
@@ -245,9 +354,23 @@ describe('manual capture confirmation → inbox', () => {
       store,
       agencyId: AGENCY_ID,
       actorUserId: ACTOR_ID,
-      capture: { sourceText: '   ' },
+      capture: { sourceText: '   ', originKind: 'personal_note' },
     })
     assert.equal(result.success, false)
+    assert.equal(store.items.length, 0)
+  })
+
+  it('rejects confirmation without a source choice', async () => {
+    const store = createMemoryInboundIntakeStore()
+    const result = await confirmManualCapture({
+      store,
+      agencyId: AGENCY_ID,
+      actorUserId: ACTOR_ID,
+      capture: { sourceText: SAMPLE_TEXT, originKind: '' },
+    })
+    assert.equal(result.success, false)
+    if (result.success) return
+    assert.equal(result.error, MANUAL_CAPTURE_ORIGIN_KIND_ERROR)
     assert.equal(store.items.length, 0)
   })
 
@@ -257,6 +380,7 @@ describe('manual capture confirmation → inbox', () => {
       externalId: 'manual:intake-core',
       capturedAt: RECEIVED_AT,
       sourceText: 'Direkt über Intake',
+      originKind: 'personal_note',
       title: null,
       capturer: { displayName: 'Mitarbeiter', address: null, addressKind: 'other' },
       origin: null,
@@ -270,6 +394,20 @@ describe('manual capture confirmation → inbox', () => {
     if (!result.success) return
     assert.equal(result.item.source, 'manual_text')
     assert.equal(result.item.content, 'Direkt über Intake')
+    assert.equal(getInboxItemSourceLabel(result.item), MANUAL_CAPTURE_ORIGIN_KIND_NOTE_LABEL)
+  })
+
+  it('keeps unlabeled legacy manual items as Manuell', () => {
+    assert.equal(
+      getInboxItemSourceLabel({
+        channel: 'manual',
+        source: 'manual_text',
+        inbound_metadata: { capture: { family: 'manual', kind: 'plain_text' } },
+        title: 'Alt',
+        content: 'Alter Eintrag',
+      }),
+      'Manuell',
+    )
   })
 })
 
@@ -313,14 +451,33 @@ describe('manual capture UI contract', () => {
     assert.match(copy, new RegExp(MANUAL_CAPTURE_REVIEW_LABEL))
     assert.match(copy, new RegExp(MANUAL_CAPTURE_CONFIRM_LABEL))
     assert.match(copy, new RegExp(MANUAL_CAPTURE_NO_AUTO_ACTION))
+    assert.match(copy, new RegExp(MANUAL_CAPTURE_ORIGIN_KIND_PHONE_LABEL))
+    assert.match(copy, new RegExp(MANUAL_CAPTURE_ORIGIN_KIND_EMAIL_LABEL))
+    assert.match(copy, new RegExp(MANUAL_CAPTURE_ORIGIN_KIND_NOTE_LABEL))
     assert.match(dialog, /MANUAL_CAPTURE_REVIEW_LABEL/)
     assert.match(dialog, /MANUAL_CAPTURE_CONFIRM_LABEL/)
     assert.match(dialog, /MANUAL_CAPTURE_NO_AUTO_ACTION/)
+    assert.match(dialog, /OriginKindPicker/)
+    assert.match(dialog, /radiogroup/)
+    assert.match(dialog, /originKind/)
     assert.match(dialog, /buildInboxHref/)
     assert.match(action, /confirmManualCapture/)
+    assert.match(action, /originKind/)
     assert.match(action, /createSupabaseInboundIntakeStore/)
     assert.doesNotMatch(action, /createServiceRoleInboundIntakeStore/)
     assert.doesNotMatch(action, /convertInboxToTask|processInboxItem|resend|whatsapp-outbound/)
+
+    const inboxSource = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/lib/inbox-source.ts'),
+      'utf8',
+    )
+    const detail = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/components/inbox-detail-panel.tsx'),
+      'utf8',
+    )
+    assert.match(inboxSource, /readManualCaptureOriginKind/)
+    assert.match(detail, /getInboxItemSourceLabel/)
+    assert.match(detail, /resolveInboxItemSourceVisual/)
   })
 
   it('keeps the local preview off the production inbox path', () => {
@@ -346,6 +503,7 @@ describe('manual capture side-effect boundary', () => {
     'features/inbound/manual/lib/manual-adapter.ts',
     'features/inbound/manual/lib/build-manual-capture-draft.ts',
     'features/inbound/manual/lib/present-manual-capture.ts',
+    'features/inbound/manual/lib/manual-capture-origin.ts',
     'features/inbound/manual/services/confirm-manual-capture.ts',
   ] as const
 

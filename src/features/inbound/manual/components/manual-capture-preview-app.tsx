@@ -31,7 +31,7 @@ export function ManualCapturePreviewApp() {
         <div className="mx-auto max-w-xl rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
           <h1 className="text-base font-semibold text-zinc-900">{MANUAL_CAPTURE_ACTION_LABEL}</h1>
           <p className="mt-2 text-sm text-zinc-600">
-            Text einfügen, Entwurf prüfen, erst dann im Eingang anlegen.
+            Quelle wählen, Text einfügen, Entwurf prüfen, erst dann im Eingang anlegen.
           </p>
           <button
             type="button"

@@ -8,6 +8,7 @@ import {
   MANUAL_CAPTURE_KIND_VALUE,
   MANUAL_CAPTURE_NO_AUTO_ACTION,
   MANUAL_CAPTURE_ORIGIN_ADDRESS_LABEL,
+  MANUAL_CAPTURE_ORIGIN_KIND_LABEL,
   MANUAL_CAPTURE_ORIGIN_NAME_LABEL,
   MANUAL_CAPTURE_SENDER_LABEL,
   MANUAL_CAPTURE_SENDER_VALUE,
@@ -15,9 +16,11 @@ import {
   MANUAL_CAPTURE_TITLE_LABEL,
   MANUAL_FIELD_SUGGESTION_LABEL,
 } from '@/features/inbound/manual/lib/manual-capture-copy'
+import { getManualCaptureOriginKindLabel } from '@/features/inbound/manual/lib/manual-capture-origin'
 import type { ManualCaptureDraft } from '@/features/inbound/manual/lib/build-manual-capture-draft'
 
 export type ManualCaptureProposedFieldId =
+  | 'originKind'
   | 'channel'
   | 'kind'
   | 'title'
@@ -78,6 +81,14 @@ export function presentManualCaptureDraft(draft: ManualCaptureDraft): ManualCapt
     sourceText: draft.sourceText,
     fieldsHeading: MANUAL_CAPTURE_FIELDS_HEADING,
     fields: [
+      {
+        id: 'originKind',
+        label: MANUAL_CAPTURE_ORIGIN_KIND_LABEL,
+        value: getManualCaptureOriginKindLabel(draft.originKind),
+        editable: false,
+        suggestion: false,
+        suggestionLabel: null,
+      },
       {
         id: 'channel',
         label: MANUAL_CAPTURE_CHANNEL_LABEL,

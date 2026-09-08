@@ -45,7 +45,7 @@ export const QUICK_ACTION_GROUPS: QuickActionGroup[] = [
       {
         mode: 'inbox',
         label: 'Text erfassen',
-        description: 'Text einfügen und vor dem Eingang prüfen',
+        description: 'Quelle wählen, Text einfügen und vor dem Eingang prüfen',
         icon: 'inbox',
       },
       {

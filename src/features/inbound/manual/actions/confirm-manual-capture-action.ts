@@ -7,11 +7,13 @@ import { createSupabaseInboundIntakeStore } from '@/features/inbound/repositorie
 import type { InboundAddressKind } from '@/features/inbound/types/inbound-item'
 import { confirmManualCapture } from '@/features/inbound/manual/services/confirm-manual-capture'
 import { originFromReviewFields } from '@/features/inbound/manual/lib/present-manual-capture'
+import { MANUAL_CAPTURE_EMPTY_ERROR, MANUAL_CAPTURE_ORIGIN_KIND_ERROR } from '@/features/inbound/manual/lib/manual-capture-copy'
+import { parseManualCaptureOriginKind } from '@/features/inbound/manual/lib/manual-capture-origin'
 import { createClient } from '@/lib/supabase/server'
 import { getDisplayName } from '@/lib/user/get-display-name'
 
 export type ManualCaptureMutationState = {
-  fieldErrors?: { sourceText?: string }
+  fieldErrors?: { sourceText?: string; originKind?: string }
   error?: string
   success?: boolean
   itemId?: string
@@ -44,10 +46,15 @@ export async function confirmManualCaptureAction(
   }
 
   const sourceText = String(formData.get('sourceText') ?? '')
+  const originKind = parseManualCaptureOriginKind(formData.get('originKind'))
   const title = String(formData.get('title') ?? '')
   const originDisplayName = String(formData.get('originDisplayName') ?? '')
   const originAddress = String(formData.get('originAddress') ?? '')
   const originAddressKind = parseAddressKind(String(formData.get('originAddressKind') ?? ''))
+
+  if (!originKind) {
+    return { fieldErrors: { originKind: MANUAL_CAPTURE_ORIGIN_KIND_ERROR } }
+  }
 
   const result = await confirmManualCapture({
     store: createSupabaseInboundIntakeStore(),
@@ -55,6 +62,7 @@ export async function confirmManualCaptureAction(
     actorUserId: user.id,
     capture: {
       sourceText,
+      originKind,
       title,
       origin: originFromReviewFields({
         displayName: originDisplayName,
@@ -70,8 +78,12 @@ export async function confirmManualCaptureAction(
   })
 
   if (!result.success) {
-    if (result.error === 'Bitte geben Sie einen Text ein.') {
+    if (result.error === MANUAL_CAPTURE_EMPTY_ERROR) {
       return { fieldErrors: { sourceText: result.error } }
+    }
+
+    if (result.error === MANUAL_CAPTURE_ORIGIN_KIND_ERROR) {
+      return { fieldErrors: { originKind: result.error } }
     }
 
     return { error: result.error }

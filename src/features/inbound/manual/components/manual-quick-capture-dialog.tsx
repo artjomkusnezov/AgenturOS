@@ -19,12 +19,17 @@ import {
   MANUAL_CAPTURE_CONFIRM_LABEL,
   MANUAL_CAPTURE_DIALOG_DESCRIPTION,
   MANUAL_CAPTURE_DIALOG_TITLE,
+  MANUAL_CAPTURE_EMPTY_ERROR,
   MANUAL_CAPTURE_FIELDS_HEADING,
   MANUAL_CAPTURE_KIND_LABEL,
   MANUAL_CAPTURE_KIND_VALUE,
   MANUAL_CAPTURE_NO_AUTO_ACTION,
   MANUAL_CAPTURE_ORIGIN_ADDRESS_LABEL,
+  MANUAL_CAPTURE_ORIGIN_KIND_ERROR,
+  MANUAL_CAPTURE_ORIGIN_KIND_HINT,
+  MANUAL_CAPTURE_ORIGIN_KIND_LABEL,
   MANUAL_CAPTURE_ORIGIN_NAME_LABEL,
+  MANUAL_CAPTURE_ORIGIN_UNCHANGED_HINT,
   MANUAL_CAPTURE_REVIEW_LABEL,
   MANUAL_CAPTURE_SENDER_LABEL,
   MANUAL_CAPTURE_SENDER_VALUE,
@@ -33,6 +38,12 @@ import {
   MANUAL_CAPTURE_TITLE_LABEL,
   MANUAL_FIELD_SUGGESTION_LABEL,
 } from '@/features/inbound/manual/lib/manual-capture-copy'
+import {
+  MANUAL_CAPTURE_ORIGIN_KIND_OPTIONS,
+  getManualCaptureOriginKindLabel,
+  parseManualCaptureOriginKind,
+  type ManualCaptureOriginKind,
+} from '@/features/inbound/manual/lib/manual-capture-origin'
 import { buildManualCapturePreviewInboxItem } from '@/features/inbound/manual/lib/manual-capture-preview'
 import {
   originFromReviewFields,
@@ -74,6 +85,7 @@ export function ManualQuickCaptureDialog({
   const router = useRouter()
   const [step, setStep] = useState<CaptureStep>('compose')
   const [sourceText, setSourceText] = useState('')
+  const [originKind, setOriginKind] = useState<ManualCaptureOriginKind | ''>('')
   const [title, setTitle] = useState('')
   const [originDisplayName, setOriginDisplayName] = useState('')
   const [originAddress, setOriginAddress] = useState('')
@@ -92,6 +104,7 @@ export function ManualQuickCaptureDialog({
   const resetForm = useCallback(() => {
     setStep('compose')
     setSourceText('')
+    setOriginKind('')
     setTitle('')
     setOriginDisplayName('')
     setOriginAddress('')
@@ -125,7 +138,7 @@ export function ManualQuickCaptureDialog({
   }, [onClose, resetForm, reviewHrefBase, router, state.itemId, state.success])
 
   const openReview = useCallback(() => {
-    const result = buildManualCaptureDraft(sourceText)
+    const result = buildManualCaptureDraft(sourceText, { originKind })
     if (!result.ok) {
       setComposeError(result.error)
       return
@@ -133,6 +146,7 @@ export function ManualQuickCaptureDialog({
 
     const review = presentManualCaptureDraft(result.draft)
     setSourceText(result.draft.sourceText)
+    setOriginKind(result.draft.originKind)
     setTitle(result.draft.proposed.title ?? '')
     setOriginDisplayName(result.draft.proposed.origin?.displayName ?? '')
     setOriginAddress(result.draft.proposed.origin?.address ?? '')
@@ -147,7 +161,7 @@ export function ManualQuickCaptureDialog({
     setComposeError(null)
     setLocalError(null)
     setStep('review')
-  }, [sourceText])
+  }, [originKind, sourceText])
 
   const handleLocalConfirm = useCallback(() => {
     if (isLocalPending) {
@@ -159,6 +173,7 @@ export function ManualQuickCaptureDialog({
 
     const preview = buildManualCapturePreviewInboxItem({
       sourceText,
+      originKind,
       title,
       origin: originFromReviewFields({
         displayName: originDisplayName,
@@ -187,6 +202,7 @@ export function ManualQuickCaptureDialog({
     originAddress,
     originAddressKind,
     originDisplayName,
+    originKind,
     resetForm,
     sourceText,
     title,
@@ -211,8 +227,18 @@ export function ManualQuickCaptureDialog({
   )
 
   const busy = isPending || isLocalPending
-  const fieldError = state.fieldErrors?.sourceText ?? composeError
-  const globalError = state.error ?? localError
+  const sourceTextError =
+    state.fieldErrors?.sourceText ??
+    (composeError === MANUAL_CAPTURE_EMPTY_ERROR ? composeError : null)
+  const originKindError =
+    state.fieldErrors?.originKind ??
+    (composeError === MANUAL_CAPTURE_ORIGIN_KIND_ERROR ? composeError : null)
+  const globalError =
+    state.error ??
+    localError ??
+    (composeError && composeError !== MANUAL_CAPTURE_EMPTY_ERROR && composeError !== MANUAL_CAPTURE_ORIGIN_KIND_ERROR
+      ? composeError
+      : null)
 
   const footer =
     step === 'compose' ? (
@@ -228,7 +254,7 @@ export function ManualQuickCaptureDialog({
         <button
           type="submit"
           form="manual-capture-compose-form"
-          disabled={busy || sourceText.trim().length === 0}
+          disabled={busy || sourceText.trim().length === 0 || originKind === ''}
           className={`${aosBtnPrimaryLgClassName} min-h-11`}
         >
           {MANUAL_CAPTURE_REVIEW_LABEL}
@@ -271,7 +297,13 @@ export function ManualQuickCaptureDialog({
           onSubmit={handleComposeSubmit}
           className="min-h-0 flex-1 overflow-y-auto px-5 py-5"
         >
-          <div className="flex flex-col gap-1.5">
+          <OriginKindPicker
+            value={originKind}
+            onChange={setOriginKind}
+            disabled={busy}
+            error={originKindError}
+          />
+          <div className="mt-5 flex flex-col gap-1.5">
             <label htmlFor="manual-capture-source" className={aosTextLabelClassName}>
               {MANUAL_CAPTURE_SOURCE_LABEL}
             </label>
@@ -286,7 +318,7 @@ export function ManualQuickCaptureDialog({
               placeholder={MANUAL_CAPTURE_SOURCE_PLACEHOLDER}
               className={`${aosTextareaClassName} min-h-[10rem] text-base sm:text-sm`}
             />
-            {fieldError ? <p className={aosFieldErrorSmClassName}>{fieldError}</p> : null}
+            {sourceTextError ? <p className={aosFieldErrorSmClassName}>{sourceTextError}</p> : null}
           </div>
           <p className={`mt-3 ${aosWorkspaceMetaClassName}`}>{MANUAL_CAPTURE_NO_AUTO_ACTION}</p>
         </form>
@@ -298,6 +330,7 @@ export function ManualQuickCaptureDialog({
           className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5"
         >
           <input type="hidden" name="sourceText" value={sourceText} />
+          <input type="hidden" name="originKind" value={originKind} />
           <input type="hidden" name="originAddressKind" value={originAddressKind} />
 
           <section>
@@ -305,11 +338,16 @@ export function ManualQuickCaptureDialog({
             <pre className="mt-2 whitespace-pre-wrap rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-3 text-sm text-zinc-800">
               {sourceText}
             </pre>
+            <p className={`mt-2 ${aosTextMetaClassName}`}>{MANUAL_CAPTURE_ORIGIN_UNCHANGED_HINT}</p>
           </section>
 
           <section className="space-y-3">
             <h3 className={aosTextLabelClassName}>{MANUAL_CAPTURE_FIELDS_HEADING}</h3>
 
+            <ReadonlyProposedField
+              label={MANUAL_CAPTURE_ORIGIN_KIND_LABEL}
+              value={originKind ? getManualCaptureOriginKindLabel(originKind) : ''}
+            />
             <ReadonlyProposedField label={MANUAL_CAPTURE_CHANNEL_LABEL} value={MANUAL_CAPTURE_CHANNEL_VALUE} />
             <ReadonlyProposedField label={MANUAL_CAPTURE_KIND_LABEL} value={MANUAL_CAPTURE_KIND_VALUE} />
 
@@ -348,6 +386,57 @@ export function ManualQuickCaptureDialog({
         </form>
       )}
     </CaptureDialogShell>
+  )
+}
+
+function OriginKindPicker({
+  value,
+  onChange,
+  disabled,
+  error,
+}: {
+  value: ManualCaptureOriginKind | ''
+  onChange: (value: ManualCaptureOriginKind) => void
+  disabled: boolean
+  error: string | null
+}) {
+  return (
+    <fieldset>
+      <legend className={aosTextLabelClassName}>{MANUAL_CAPTURE_ORIGIN_KIND_LABEL}</legend>
+      <p className={`mt-1 ${aosTextMetaClassName}`}>{MANUAL_CAPTURE_ORIGIN_KIND_HINT}</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={MANUAL_CAPTURE_ORIGIN_KIND_LABEL}>
+        {MANUAL_CAPTURE_ORIGIN_KIND_OPTIONS.map((option) => {
+          const selected = value === option.value
+          return (
+            <label
+              key={option.value}
+              className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                selected
+                  ? 'border-zinc-800 bg-zinc-50 text-zinc-900'
+                  : 'border-zinc-200/80 bg-white text-zinc-700'
+              } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+            >
+              <input
+                type="radio"
+                name="originKind"
+                value={option.value}
+                checked={selected}
+                disabled={disabled}
+                onChange={(event) => {
+                  const next = parseManualCaptureOriginKind(event.target.value)
+                  if (next) {
+                    onChange(next)
+                  }
+                }}
+                className="h-4 w-4 accent-zinc-800"
+              />
+              <span>{option.label}</span>
+            </label>
+          )
+        })}
+      </div>
+      {error ? <p className={`mt-1.5 ${aosFieldErrorSmClassName}`}>{error}</p> : null}
+    </fieldset>
   )
 }
 
