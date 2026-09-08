@@ -15,6 +15,7 @@ import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-ite
 import { InboxAiProposalSection } from '@/features/ai-inbound/components/inbox-ai-proposal-section'
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
+import { InboxKfzResponseDraftSection } from '@/features/inbox/components/inbox-kfz-response-draft-section'
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
 import { InboxKfzTriageActions } from '@/features/inbox/components/inbox-kfz-triage-actions'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
@@ -137,6 +138,9 @@ export function InboxDetailPanel({
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxSourceVisual(item.source)
   const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  const draftFormId = `kfz-response-draft-${item.id}`
+  const aiSuggestedReply =
+    aiProposal?.status === 'proposal' ? aiProposal.suggestion.suggestedReplyDraft : null
 
   useEffect(() => {
     if (deleteState.success && !handledDeleteRef.current) {
@@ -210,41 +214,68 @@ export function InboxDetailPanel({
           />
         ) : null}
 
-        <form id={updateFormId} action={updateAction} className="flex flex-col">
-          <input type="hidden" name="itemId" value={item.id} />
+        {kfzReview ? (
+          <InboxKfzResponseDraftSection
+            key={`${item.id}:${kfzReview.responseDraft}`}
+            item={item}
+            review={kfzReview}
+            aiSuggestedReply={aiSuggestedReply}
+            formId={draftFormId}
+            onStatusChange={onStatusChange}
+          />
+        ) : null}
 
-          <section
-            aria-label="Inhalt"
-            className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}
-          >
+        {kfzReview ? (
+          <section aria-label="Quelltext" className={aosWorkspaceSectionClassName}>
             <WorkspaceSectionHeading
-              title="Inhalt"
+              title="Quelltext"
               accent="blue"
               icon={<DashboardIconFileText className="h-4 w-4" />}
             />
-            <label htmlFor={`inbox-content-${item.id}`} className="sr-only">
-              Inhalt
-            </label>
-            <textarea
-              id={`inbox-content-${item.id}`}
-              name="content"
-              rows={16}
-              required
-              defaultValue={item.content}
-              disabled={isPending}
-              className={`${aosDocBodyClassName} min-h-[18rem]`}
-            />
-            {updateState.fieldErrors?.content ? (
-              <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.content}</p>
-            ) : null}
-            {updateState.error ? (
-              <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
-            ) : null}
-            {updateState.success ? (
-              <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
-            ) : null}
+            <p className={`mb-2 ${aosWorkspaceMetaClassName}`}>
+              Bestand aus dem Eingang — unverändert, getrennt von Entwurf und Notizen
+            </p>
+            <p className={`${aosDocBodyClassName} whitespace-pre-wrap min-h-[8rem]`}>
+              {kfzReview.sourceContent}
+            </p>
           </section>
-        </form>
+        ) : (
+          <form id={updateFormId} action={updateAction} className="flex flex-col">
+            <input type="hidden" name="itemId" value={item.id} />
+
+            <section
+              aria-label="Inhalt"
+              className={`${aosWorkspaceSectionClassName} flex flex-1 flex-col`}
+            >
+              <WorkspaceSectionHeading
+                title="Inhalt"
+                accent="blue"
+                icon={<DashboardIconFileText className="h-4 w-4" />}
+              />
+              <label htmlFor={`inbox-content-${item.id}`} className="sr-only">
+                Inhalt
+              </label>
+              <textarea
+                id={`inbox-content-${item.id}`}
+                name="content"
+                rows={16}
+                required
+                defaultValue={item.content}
+                disabled={isPending}
+                className={`${aosDocBodyClassName} min-h-[18rem]`}
+              />
+              {updateState.fieldErrors?.content ? (
+                <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.fieldErrors.content}</p>
+              ) : null}
+              {updateState.error ? (
+                <p className={`mt-2 ${aosFieldErrorSmClassName}`}>{updateState.error}</p>
+              ) : null}
+              {updateState.success ? (
+                <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>Gespeichert.</p>
+              ) : null}
+            </section>
+          </form>
+        )}
 
         <InboxAttachmentSection attachments={attachments} />
 
@@ -321,11 +352,11 @@ export function InboxDetailPanel({
 
         <button
           type="submit"
-          form={updateFormId}
+          form={kfzReview ? draftFormId : updateFormId}
           disabled={isPending}
           className={aosWorkspaceActionEmphasisClassName}
         >
-          {isUpdatePending ? '…' : 'Speichern'}
+          {isUpdatePending ? '…' : kfzReview ? 'Entwurf speichern' : 'Speichern'}
         </button>
       </div>
     </div>

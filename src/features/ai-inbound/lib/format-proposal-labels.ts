@@ -10,6 +10,9 @@ import type {
 
 export const AI_PROPOSAL_BADGE_LABEL = 'KI-Vorschlag · Entwurf'
 
+export const AI_PROPOSAL_HUMAN_REVIEW_LABEL =
+  'KI-Text ist ein Vorschlag — menschliche Prüfung erforderlich'
+
 export const INTENT_LABELS: Record<InboundAnalysisIntent, string> = {
   service: 'Service',
   claim: 'Schaden',

@@ -85,6 +85,16 @@ Keine automatische Kundenantwort, keine Case-/Tarifaktion, kein Versand. KI blei
 
 Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-manual-triage.smoke.test.ts`.
 
+## Interner Antwortentwurf (manuelle Vorbereitung)
+
+Im Kfz-Inbox-Detail kann die Mitarbeiterin einen **internen Antwortentwurf** zur Anfrage schreiben und ändern. Der Entwurf liegt auf dem bestehenden Inbox-Working-Copy, getrennt vom Quelltext und von internen Notizen.
+
+- KI-Text bleibt als **Vorschlag — menschliche Prüfung erforderlich** sichtbar und kann nur nach Klick als Ausgangstext übernommen werden.
+- Speichern schreibt nur den internen Entwurf. Es gibt keinen Senden-Button und keine externe Nebenwirkung.
+- Quelle, interne Notizen und Folgeaufgaben bleiben erhalten.
+
+Deterministische Tests: `src/features/inbound/kfz/kfz-response-draft.smoke.test.ts`.
+
 ## Kfz-Arbeitsstand (Inbox / Dashboard / Folgeaufgabe)
 
 Bestehende Inbox- und Dashboard-Listen unterscheiden Kfz-Anfragen nach Arbeitsstand:

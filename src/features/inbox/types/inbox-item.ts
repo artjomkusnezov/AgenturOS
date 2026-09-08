@@ -14,6 +14,7 @@ export type InboxLinkedFile = {
 export type InboxItemFieldErrors = {
   content?: string
   note?: string
+  draft?: string
 }
 
 export type InboxItemMutationState = {
@@ -26,7 +27,7 @@ export type InboxItemMutationState = {
   caseTypeKey?: string
   viewKey?: string
   promotionKind?: 'task' | 'offer' | 'claim'
-  noteKind?: 'start_review' | 'internal_note'
+  noteKind?: 'start_review' | 'internal_note' | 'response_draft'
 }
 
 export type InboxItemInput = {
