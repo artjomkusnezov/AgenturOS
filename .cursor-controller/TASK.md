@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-dd22
 
 # AgenturOS — Manual capture into the Kfz review card
@@ -20,3 +20,6 @@ Let an employee turn a manually entered phone call, pasted email or own note int
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
+
+CONTROLLER_AGENT_ID: bc-6b7cbf65-2311-4b0e-ba17-5dda571953ac
+CONTROLLER_STARTED_AT: 2026-09-08T13:47:52Z
