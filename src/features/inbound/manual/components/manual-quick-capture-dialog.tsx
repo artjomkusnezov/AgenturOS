@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { CaptureDialogShell } from '@/features/capture/components/capture-dialog-shell'
@@ -19,6 +19,8 @@ import {
   MANUAL_CAPTURE_CONFIRM_LABEL,
   MANUAL_CAPTURE_DIALOG_DESCRIPTION,
   MANUAL_CAPTURE_DIALOG_TITLE,
+  MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL,
+  MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL,
   MANUAL_CAPTURE_EMPTY_ERROR,
   MANUAL_CAPTURE_FIELDS_HEADING,
   MANUAL_CAPTURE_KIND_LABEL,
@@ -44,18 +46,22 @@ import {
   parseManualCaptureOriginKind,
   type ManualCaptureOriginKind,
 } from '@/features/inbound/manual/lib/manual-capture-origin'
+import { findLikelyManualCaptureDuplicate } from '@/features/inbound/manual/lib/find-likely-manual-capture-duplicate'
 import { buildManualCapturePreviewInboxItem } from '@/features/inbound/manual/lib/manual-capture-preview'
 import {
   originFromReviewFields,
   presentManualCaptureDraft,
+  presentManualCaptureDuplicateWarning,
 } from '@/features/inbound/manual/lib/present-manual-capture'
 import {
+  aosAlertWarningClassName,
   aosBadgeNeutralSubduedClassName,
   aosBtnGhostLgClassName,
   aosBtnPrimaryLgClassName,
   aosBtnSecondaryLgClassName,
   aosFieldErrorSmClassName,
   aosInputLgClassName,
+  aosLinkInlineClassName,
   aosTextLabelClassName,
   aosTextMetaClassName,
   aosTextareaClassName,
@@ -69,6 +75,8 @@ type ManualQuickCaptureDialogProps = {
   /** Local preview: persist in memory and skip the authenticated action. */
   onLocalConfirmed?: (item: InboxItem) => void
   reviewHrefBase?: string
+  /** Inbox items already on screen — compared locally, never fetched from production. */
+  existingItems?: InboxItem[]
 }
 
 type CaptureStep = 'compose' | 'review'
@@ -81,6 +89,7 @@ export function ManualQuickCaptureDialog({
   triggerRef,
   onLocalConfirmed,
   reviewHrefBase = '/app/inbox',
+  existingItems = [],
 }: ManualQuickCaptureDialogProps) {
   const router = useRouter()
   const [step, setStep] = useState<CaptureStep>('compose')
@@ -163,6 +172,37 @@ export function ManualQuickCaptureDialog({
     setStep('review')
   }, [originKind, sourceText])
 
+  const duplicateWarning = useMemo(() => {
+    if (step !== 'review') {
+      return null
+    }
+
+    const match = findLikelyManualCaptureDuplicate({
+      sourceText,
+      title,
+      originAddress,
+      originAddressKind,
+      existingItems,
+    })
+
+    if (!match) {
+      return null
+    }
+
+    return presentManualCaptureDuplicateWarning(
+      match,
+      buildInboxHref({ itemId: match.itemId, basePath: reviewHrefBase }),
+    )
+  }, [
+    existingItems,
+    originAddress,
+    originAddressKind,
+    reviewHrefBase,
+    sourceText,
+    step,
+    title,
+  ])
+
   const handleLocalConfirm = useCallback(() => {
     if (isLocalPending) {
       return
@@ -195,6 +235,7 @@ export function ManualQuickCaptureDialog({
     resetForm()
     onClose()
     onLocalConfirmed?.(preview)
+    router.push(buildInboxHref({ itemId: preview.id, basePath: reviewHrefBase }))
   }, [
     isLocalPending,
     onClose,
@@ -204,6 +245,8 @@ export function ManualQuickCaptureDialog({
     originDisplayName,
     originKind,
     resetForm,
+    reviewHrefBase,
+    router,
     sourceText,
     title,
   ])
@@ -227,6 +270,18 @@ export function ManualQuickCaptureDialog({
   )
 
   const busy = isPending || isLocalPending
+
+  const handleOpenExisting = useCallback(() => {
+    if (!duplicateWarning || isPending || isLocalPending) {
+      return
+    }
+
+    const href = duplicateWarning.href
+    resetForm()
+    onClose()
+    router.push(href)
+  }, [duplicateWarning, isLocalPending, isPending, onClose, resetForm, router])
+
   const sourceTextError =
     state.fieldErrors?.sourceText ??
     (composeError === MANUAL_CAPTURE_EMPTY_ERROR ? composeError : null)
@@ -261,7 +316,7 @@ export function ManualQuickCaptureDialog({
         </button>
       </div>
     ) : (
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
         <button
           type="button"
           onClick={() => setStep('compose')}
@@ -270,14 +325,35 @@ export function ManualQuickCaptureDialog({
         >
           {MANUAL_CAPTURE_BACK_LABEL}
         </button>
-        <button
-          type="submit"
-          form="manual-capture-review-form"
-          disabled={busy}
-          className={`${aosBtnPrimaryLgClassName} min-h-11`}
-        >
-          {busy ? 'Wird angelegt …' : MANUAL_CAPTURE_CONFIRM_LABEL}
-        </button>
+        {duplicateWarning ? (
+          <>
+            <button
+              type="submit"
+              form="manual-capture-review-form"
+              disabled={busy}
+              className={`${aosBtnSecondaryLgClassName} min-h-11`}
+            >
+              {busy ? 'Wird angelegt …' : MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL}
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenExisting}
+              disabled={busy}
+              className={`${aosBtnPrimaryLgClassName} min-h-11`}
+            >
+              {MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL}
+            </button>
+          </>
+        ) : (
+          <button
+            type="submit"
+            form="manual-capture-review-form"
+            disabled={busy}
+            className={`${aosBtnPrimaryLgClassName} min-h-11`}
+          >
+            {busy ? 'Wird angelegt …' : MANUAL_CAPTURE_CONFIRM_LABEL}
+          </button>
+        )}
       </div>
     )
 
@@ -332,6 +408,26 @@ export function ManualQuickCaptureDialog({
           <input type="hidden" name="sourceText" value={sourceText} />
           <input type="hidden" name="originKind" value={originKind} />
           <input type="hidden" name="originAddressKind" value={originAddressKind} />
+
+          {duplicateWarning ? (
+            <div className={aosAlertWarningClassName} role="status">
+              <p className="font-medium">{duplicateWarning.warning}</p>
+              <p className="mt-1">{duplicateWarning.reasonLabel}</p>
+              <p className="mt-2">
+                <a
+                  href={duplicateWarning.href}
+                  className={aosLinkInlineClassName}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    handleOpenExisting()
+                  }}
+                >
+                  {duplicateWarning.title}
+                </a>
+              </p>
+              <p className={`mt-2 ${aosTextMetaClassName}`}>{duplicateWarning.decisionHint}</p>
+            </div>
+          ) : null}
 
           <section>
             <h3 className={aosTextLabelClassName}>{MANUAL_CAPTURE_SOURCE_LABEL}</h3>
