@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-3d66
 
 # AgenturOS — Daily Kfz inquiry work queue
@@ -18,3 +18,6 @@ Turn the finished single-inquiry review workspace into a simple daily employee q
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or destructive git.
+
+CONTROLLER_AGENT_ID: bc-fcb7f218-4380-481e-8eb8-3109141d0375
+CONTROLLER_STARTED_AT: 2026-09-08T07:43:37Z
