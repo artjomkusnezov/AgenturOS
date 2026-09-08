@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-882b
 
 # AgenturOS — Human review history inside each inbound item
@@ -20,3 +20,6 @@ Let an employee understand what happened to an inbound item by showing a simple 
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
+
+CONTROLLER_AGENT_ID: bc-847dc5f2-39a2-4f7d-9a1d-679e821f7539
+CONTROLLER_STARTED_AT: 2026-09-08T17:44:04Z
