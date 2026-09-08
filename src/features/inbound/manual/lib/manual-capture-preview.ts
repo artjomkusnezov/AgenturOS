@@ -18,6 +18,20 @@ export const MANUAL_CAPTURE_PREVIEW_AGENCY_ID =
 export const MANUAL_CAPTURE_PREVIEW_ACTOR_ID =
   '22222222-2222-4222-8222-222222222222'
 
+export const MANUAL_CAPTURE_PREVIEW_EXISTING_ID =
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa21'
+export const MANUAL_CAPTURE_PREVIEW_NOW = '2026-09-08T12:00:00.000Z'
+export const MANUAL_CAPTURE_PREVIEW_EXISTING_CAPTURED_AT = '2026-09-08T10:00:00.000Z'
+export const MANUAL_CAPTURE_PREVIEW_EXISTING_PHONE = '+491701234567'
+export const MANUAL_CAPTURE_PREVIEW_EXISTING_EMAIL = 'mueller@example.com'
+export const MANUAL_CAPTURE_PREVIEW_EXISTING_TITLE = 'Rückruf Kunde Müller'
+export const MANUAL_CAPTURE_PREVIEW_EXISTING_TEXT = [
+  'Rückruf Kunde Müller',
+  'Bitte wegen Kfz-Versicherung anrufen.',
+  `E-Mail: ${MANUAL_CAPTURE_PREVIEW_EXISTING_EMAIL}`,
+  `Telefon: ${MANUAL_CAPTURE_PREVIEW_EXISTING_PHONE}`,
+].join('\n')
+
 /**
  * Local-only inbox working copy from a confirmed manual draft.
  * Not persisted and not a customer send path.
@@ -59,4 +73,28 @@ export function buildManualCapturePreviewInboxItem(
     transcription_started_at: null,
     transcription_status: 'none',
   }
+}
+
+/**
+ * Local fixtures so duplicate warnings can be reviewed without production data.
+ */
+export function buildManualCapturePreviewSeedItems(): InboxItem[] {
+  const existing = buildManualCapturePreviewInboxItem({
+    sourceText: MANUAL_CAPTURE_PREVIEW_EXISTING_TEXT,
+    originKind: 'phone_call',
+    title: MANUAL_CAPTURE_PREVIEW_EXISTING_TITLE,
+    origin: {
+      displayName: 'Kunde Müller',
+      address: MANUAL_CAPTURE_PREVIEW_EXISTING_PHONE,
+      addressKind: 'phone',
+    },
+    capturedAt: MANUAL_CAPTURE_PREVIEW_EXISTING_CAPTURED_AT,
+    externalId: 'manual:preview-existing',
+  })
+
+  if ('error' in existing) {
+    return []
+  }
+
+  return [{ ...existing, id: MANUAL_CAPTURE_PREVIEW_EXISTING_ID }]
 }

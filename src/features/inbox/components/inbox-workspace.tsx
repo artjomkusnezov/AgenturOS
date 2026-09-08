@@ -34,6 +34,8 @@ type InboxWorkspaceProps = {
   aiProposal?: InboxAiProposal | null
   /** Authenticated inbox: obvious plain-text capture into the real intake path. */
   enableManualCapture?: boolean
+  /** Local preview: persist confirmed items in memory instead of the server action. */
+  onLocalConfirmed?: (item: InboxItem) => void
 }
 
 export function InboxWorkspace({
@@ -48,6 +50,7 @@ export function InboxWorkspace({
   memberNameMap = {},
   aiProposal = null,
   enableManualCapture = false,
+  onLocalConfirmed,
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const captureTriggerRef = useRef<HTMLButtonElement>(null)
@@ -180,6 +183,9 @@ export function InboxWorkspace({
           isOpen={captureOpen}
           onClose={() => setCaptureOpen(false)}
           triggerRef={captureTriggerRef}
+          existingItems={items}
+          onLocalConfirmed={onLocalConfirmed}
+          reviewHrefBase={hrefBasePath}
         />
       ) : null}
     </WorkspaceFrame>

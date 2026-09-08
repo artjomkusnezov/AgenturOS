@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
@@ -19,5 +20,9 @@ export default function ManualCapturePreviewPage() {
     notFound()
   }
 
-  return <ManualCapturePreviewApp />
+  return (
+    <Suspense>
+      <ManualCapturePreviewApp />
+    </Suspense>
+  )
 }

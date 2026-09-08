@@ -68,3 +68,22 @@ export const MANUAL_CAPTURE_EMPTY_ERROR = 'Bitte geben Sie einen Text ein.' as c
 
 export const MANUAL_CAPTURE_ORIGIN_UNCHANGED_HINT =
   'Der ursprüngliche Text bleibt unverändert.' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_WARNING =
+  'Möglicher Doppelgänger im Eingang. Nichts wird automatisch zusammengeführt oder angelegt.' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_DECISION_HINT =
+  'Bitte wählen Sie: bestehenden Eintrag öffnen oder trotzdem neu anlegen.' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL = 'Bestehenden Eintrag öffnen' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL = 'Trotzdem neu anlegen' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_REASON_SOURCE_TEXT =
+  'Gleicher unveränderter Quelltext.' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_REASON_CONTACT =
+  'Gleiche Telefonnummer oder E-Mail.' as const
+
+export const MANUAL_CAPTURE_DUPLICATE_REASON_RECENT_TITLE =
+  'Gleicher Titel wie ein kürzlicher Eingang.' as const

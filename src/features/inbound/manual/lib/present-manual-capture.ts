@@ -3,6 +3,13 @@ import {
   MANUAL_CAPTURE_CHANNEL_LABEL,
   MANUAL_CAPTURE_CHANNEL_VALUE,
   MANUAL_CAPTURE_CONFIRM_LABEL,
+  MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL,
+  MANUAL_CAPTURE_DUPLICATE_DECISION_HINT,
+  MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL,
+  MANUAL_CAPTURE_DUPLICATE_REASON_CONTACT,
+  MANUAL_CAPTURE_DUPLICATE_REASON_RECENT_TITLE,
+  MANUAL_CAPTURE_DUPLICATE_REASON_SOURCE_TEXT,
+  MANUAL_CAPTURE_DUPLICATE_WARNING,
   MANUAL_CAPTURE_FIELDS_HEADING,
   MANUAL_CAPTURE_KIND_LABEL,
   MANUAL_CAPTURE_KIND_VALUE,
@@ -16,6 +23,10 @@ import {
   MANUAL_CAPTURE_TITLE_LABEL,
   MANUAL_FIELD_SUGGESTION_LABEL,
 } from '@/features/inbound/manual/lib/manual-capture-copy'
+import type {
+  ManualCaptureDuplicateMatch,
+  ManualCaptureDuplicateReason,
+} from '@/features/inbound/manual/lib/find-likely-manual-capture-duplicate'
 import { getManualCaptureOriginKindLabel } from '@/features/inbound/manual/lib/manual-capture-origin'
 import type { ManualCaptureDraft } from '@/features/inbound/manual/lib/build-manual-capture-draft'
 
@@ -141,6 +152,51 @@ export function presentManualCaptureDraft(draft: ManualCaptureDraft): ManualCapt
     confirmLabel: MANUAL_CAPTURE_CONFIRM_LABEL,
     noAutoAction: MANUAL_CAPTURE_NO_AUTO_ACTION,
     requiresConfirmation: true,
+  }
+}
+
+export type ManualCaptureDuplicateWarningView = {
+  itemId: string
+  title: string
+  href: string
+  reason: ManualCaptureDuplicateReason
+  reasonLabel: string
+  warning: typeof MANUAL_CAPTURE_DUPLICATE_WARNING
+  decisionHint: typeof MANUAL_CAPTURE_DUPLICATE_DECISION_HINT
+  openLabel: typeof MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL
+  createAnywayLabel: typeof MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL
+  blocksAutomatically: false
+}
+
+const DUPLICATE_REASON_LABELS: Record<
+  ManualCaptureDuplicateReason,
+  | typeof MANUAL_CAPTURE_DUPLICATE_REASON_SOURCE_TEXT
+  | typeof MANUAL_CAPTURE_DUPLICATE_REASON_CONTACT
+  | typeof MANUAL_CAPTURE_DUPLICATE_REASON_RECENT_TITLE
+> = {
+  source_text: MANUAL_CAPTURE_DUPLICATE_REASON_SOURCE_TEXT,
+  contact: MANUAL_CAPTURE_DUPLICATE_REASON_CONTACT,
+  recent_title: MANUAL_CAPTURE_DUPLICATE_REASON_RECENT_TITLE,
+}
+
+/**
+ * Operator-facing duplicate warning. Never a block and never a merge.
+ */
+export function presentManualCaptureDuplicateWarning(
+  match: ManualCaptureDuplicateMatch,
+  href: string,
+): ManualCaptureDuplicateWarningView {
+  return {
+    itemId: match.itemId,
+    title: match.title,
+    href,
+    reason: match.reason,
+    reasonLabel: DUPLICATE_REASON_LABELS[match.reason],
+    warning: MANUAL_CAPTURE_DUPLICATE_WARNING,
+    decisionHint: MANUAL_CAPTURE_DUPLICATE_DECISION_HINT,
+    openLabel: MANUAL_CAPTURE_DUPLICATE_OPEN_LABEL,
+    createAnywayLabel: MANUAL_CAPTURE_DUPLICATE_CREATE_ANYWAY_LABEL,
+    blocksAutomatically: false,
   }
 }
 
