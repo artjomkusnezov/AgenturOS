@@ -45,7 +45,8 @@ export function InboxAiProposalSection({ proposal }: InboxAiProposalSectionProps
       />
 
       <p className={`mb-3 text-xs font-medium tracking-wide text-zinc-500`}>
-        {AI_PROPOSAL_BADGE_LABEL} · nur intern · keine automatische Kundenaktion
+        {AI_PROPOSAL_BADGE_LABEL} · nur intern · keine automatische Kundenaktion ·
+        getrennt von den eingereichten Angaben
       </p>
 
       {proposal.status === 'unavailable' ? (
@@ -80,7 +81,7 @@ export function InboxAiProposalSection({ proposal }: InboxAiProposalSectionProps
               value={labelPurchaseIntent(proposal.suggestion.purchaseIntent)}
             />
             <MetaRow
-              label="Fehlende Infos"
+              label="Fehlende Infos (Vorschlag)"
               value={
                 proposal.suggestion.missingInformation.length > 0
                   ? proposal.suggestion.missingInformation.join(' · ')

@@ -37,6 +37,7 @@ import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   buildInboxHref,
   countKfzWorkQueue,
@@ -216,10 +217,9 @@ function InboxPanel({
             const title = getInboxListTitle(item)
             const visual = resolveInboxSourceVisual(item.source)
             const creator = resolveInboxAttributionLabel(item, memberNameMap)
-            const statusChip = presentInboxStatusChip(
-              item,
-              resolveInboxLinkedTaskId(item.id, taskRelationsByItemId),
-            )
+            const linkedTaskId = resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)
+            const statusChip = presentInboxStatusChip(item, linkedTaskId)
+            const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
 
             return (
               <li key={item.id} className="az-list-item">
@@ -242,6 +242,12 @@ function InboxPanel({
                       <span className="truncate">{creator}</span>
                       <span aria-hidden="true">·</span>
                       <span>{formatDashboardDateOrTime(item.created_at)}</span>
+                      {kfzReview && kfzReview.missingCount > 0 ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span>{kfzReview.missingCountLabel}</span>
+                        </>
+                      ) : null}
                     </span>
                   </span>
                   {statusChip ? (

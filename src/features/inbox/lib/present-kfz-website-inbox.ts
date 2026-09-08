@@ -18,6 +18,29 @@ export { KFZ_REVIEW_NO_AUTO_ACTION } from '@/features/inbox/lib/kfz-inbox-manual
 
 export const KFZ_WEBSITE_SOURCE_LABEL = 'Website · Kfz' as const
 
+export const KFZ_REVIEW_FACT_LABEL = 'Bestand aus dem Eingang' as const
+export const KFZ_REVIEW_AI_SEPARATE_LABEL =
+  'KI bleibt ein getrennter Vorschlag — keine Tatsachenfeststellung.' as const
+
+export type KfzSubmittedFact = {
+  id: string
+  label: string
+  value: string
+}
+
+export type KfzMissingInfoCheckId =
+  | 'contact'
+  | 'preferred_channel_contact'
+  | 'request'
+  | 'vehicle'
+  | 'location'
+
+export type KfzMissingInfoCheck = {
+  id: KfzMissingInfoCheckId
+  label: string
+  present: boolean
+}
+
 export type KfzWebsiteInboxReview = {
   headline: string
   sourceLabel: typeof KFZ_WEBSITE_SOURCE_LABEL
@@ -30,7 +53,14 @@ export type KfzWebsiteInboxReview = {
   preferredChannel: string | null
   request: string
   vehicle: string | null
+  contextNotes: string | null
+  factualSummary: string
+  listSummary: string
+  submittedFacts: KfzSubmittedFact[]
+  missingInformationChecklist: KfzMissingInfoCheck[]
   missingInformation: string[]
+  missingCount: number
+  missingCountLabel: string
   urgencyNote: string
   nextManualAction: string
   phase: KfzTriagePhase
@@ -81,40 +111,176 @@ function detectUrgencyNote(reason: string | null, notes: string | null): string 
   return 'Kein Unfall- oder Schadenhinweis in den Angaben.'
 }
 
-function collectMissing(input: {
+function contactValue(phone: string | null, email: string | null): string | null {
+  const parts = [phone, email].filter((part): part is string => Boolean(part))
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+export function labelKfzMissingCount(count: number): string {
+  if (count <= 0) {
+    return 'Angaben vollständig'
+  }
+  if (count === 1) {
+    return '1 Angabe fehlt'
+  }
+  return `${count} Angaben fehlen`
+}
+
+export function buildKfzMissingInformationChecklist(input: {
   phone: string | null
   email: string | null
   preferredChannel: string | null
   reason: string | null
   vehicle: string | null
   location: string | null
-}): string[] {
-  const missing: string[] = []
+}): KfzMissingInfoCheck[] {
+  const checklist: KfzMissingInfoCheck[] = [
+    {
+      id: 'contact',
+      label: 'Erreichbarkeit (Telefon oder E-Mail)',
+      present: Boolean(input.phone || input.email),
+    },
+  ]
 
-  if (!input.phone && !input.email) {
-    missing.push('Erreichbarkeit (Telefon oder E-Mail)')
-  } else if (
-    (input.preferredChannel === 'phone' || input.preferredChannel === 'whatsapp') &&
-    !input.phone
-  ) {
-    missing.push('Telefonnummer für den bevorzugten Kanal')
-  } else if (input.preferredChannel === 'email' && !input.email) {
-    missing.push('E-Mail-Adresse für den bevorzugten Kanal')
+  if (input.phone || input.email) {
+    if (input.preferredChannel === 'phone' || input.preferredChannel === 'whatsapp') {
+      checklist.push({
+        id: 'preferred_channel_contact',
+        label: 'Telefonnummer für den bevorzugten Kanal',
+        present: Boolean(input.phone),
+      })
+    } else if (input.preferredChannel === 'email') {
+      checklist.push({
+        id: 'preferred_channel_contact',
+        label: 'E-Mail-Adresse für den bevorzugten Kanal',
+        present: Boolean(input.email),
+      })
+    }
   }
 
-  if (!input.reason) {
-    missing.push('Konkretes Anliegen')
+  checklist.push(
+    {
+      id: 'request',
+      label: 'Konkretes Anliegen',
+      present: Boolean(input.reason),
+    },
+    {
+      id: 'vehicle',
+      label: 'Fahrzeugdaten (Marke/Modell/Jahr — falls relevant)',
+      present: Boolean(input.vehicle),
+    },
+    {
+      id: 'location',
+      label: 'Ort / PLZ',
+      present: Boolean(input.location),
+    },
+  )
+
+  return checklist
+}
+
+export function buildKfzFactualSummary(input: {
+  customerName: string
+  location: string | null
+  request: string
+  vehicle: string | null
+  phone: string | null
+  email: string | null
+  preferredChannelLabel: string
+}): string {
+  const who = input.location
+    ? `${input.customerName} aus ${input.location}`
+    : input.customerName
+  const request =
+    input.request && input.request !== 'Nicht angegeben'
+      ? `Anliegen: ${input.request}`
+      : 'Anliegen nicht angegeben'
+  const parts = [who, request]
+
+  if (input.vehicle) {
+    parts.push(`Fahrzeug: ${input.vehicle}`)
   }
 
-  if (!input.vehicle) {
-    missing.push('Fahrzeugdaten (Marke/Modell/Jahr — falls relevant)')
+  const contact = contactValue(input.phone, input.email)
+  if (contact) {
+    const channel =
+      input.preferredChannelLabel !== 'Nicht angegeben'
+        ? ` (${input.preferredChannelLabel})`
+        : ''
+    parts.push(`Kontakt: ${contact}${channel}`)
   }
 
-  if (!input.location) {
-    missing.push('Ort / PLZ')
+  return `${parts.join('. ')}.`
+}
+
+export function buildKfzListSummary(input: {
+  request: string
+  vehicle: string | null
+}): string {
+  const request =
+    input.request && input.request !== 'Nicht angegeben'
+      ? input.request
+      : 'Anliegen nicht angegeben'
+  return input.vehicle ? `${request} · ${input.vehicle}` : request
+}
+
+function buildSubmittedFacts(input: {
+  sourceLabel: string
+  acquisitionSource: string | null
+  customerName: string
+  location: string | null
+  phone: string | null
+  email: string | null
+  preferredChannelLabel: string
+  request: string
+  vehicle: string | null
+  contextNotes: string | null
+}): KfzSubmittedFact[] {
+  const facts: KfzSubmittedFact[] = [
+    {
+      id: 'source',
+      label: 'Quelle',
+      value: input.acquisitionSource
+        ? `${input.sourceLabel} · ${input.acquisitionSource}`
+        : input.sourceLabel,
+    },
+    {
+      id: 'customer',
+      label: 'Kunde',
+      value: input.customerName,
+    },
+  ]
+
+  if (input.location) {
+    facts.push({ id: 'location', label: 'Ort', value: input.location })
   }
 
-  return missing
+  const contact = contactValue(input.phone, input.email)
+  if (contact) {
+    facts.push({ id: 'contact', label: 'Kontakt', value: contact })
+  }
+
+  if (input.preferredChannelLabel !== 'Nicht angegeben') {
+    facts.push({
+      id: 'preferred_channel',
+      label: 'Bevorzugter Kanal',
+      value: input.preferredChannelLabel,
+    })
+  }
+
+  if (input.request && input.request !== 'Nicht angegeben') {
+    facts.push({ id: 'request', label: 'Anliegen', value: input.request })
+  }
+
+  if (input.vehicle) {
+    facts.push({ id: 'vehicle', label: 'Fahrzeug', value: input.vehicle })
+  }
+
+  if (input.contextNotes) {
+    facts.push({ id: 'notes', label: 'Kontext', value: input.contextNotes })
+  }
+
+  return facts
 }
 
 /**
@@ -161,6 +327,19 @@ export function presentKfzWebsiteInboxItem(
     readSenderName(item.sender) ??
     asNullableString(item.title?.replace(/^kfz-anfrage\s*·\s*/i, '')) ??
     'Unbekannt'
+  const request = reason ?? 'Nicht angegeben'
+  const preferredChannelLabel = labelPreferredChannel(preferredChannel)
+  const missingInformationChecklist = buildKfzMissingInformationChecklist({
+    phone,
+    email,
+    preferredChannel,
+    reason,
+    vehicle: vehicleLabel,
+    location: locationLabel,
+  })
+  const missingInformation = missingInformationChecklist
+    .filter((itemCheck) => !itemCheck.present)
+    .map((itemCheck) => itemCheck.label)
 
   return {
     headline: getInboxListTitle(item),
@@ -170,18 +349,40 @@ export function presentKfzWebsiteInboxItem(
     location: locationLabel,
     phone,
     email,
-    preferredChannelLabel: labelPreferredChannel(preferredChannel),
+    preferredChannelLabel,
     preferredChannel,
-    request: reason ?? 'Nicht angegeben',
+    request,
     vehicle: vehicleLabel,
-    missingInformation: collectMissing({
+    contextNotes,
+    factualSummary: buildKfzFactualSummary({
+      customerName,
+      location: locationLabel,
+      request,
+      vehicle: vehicleLabel,
       phone,
       email,
-      preferredChannel,
-      reason,
-      vehicle: vehicleLabel,
-      location: locationLabel,
+      preferredChannelLabel,
     }),
+    listSummary: buildKfzListSummary({
+      request,
+      vehicle: vehicleLabel,
+    }),
+    submittedFacts: buildSubmittedFacts({
+      sourceLabel: KFZ_WEBSITE_SOURCE_LABEL,
+      acquisitionSource: asNullableString(acquisition?.source),
+      customerName,
+      location: locationLabel,
+      phone,
+      email,
+      preferredChannelLabel,
+      request,
+      vehicle: vehicleLabel,
+      contextNotes,
+    }),
+    missingInformationChecklist,
+    missingInformation,
+    missingCount: missingInformation.length,
+    missingCountLabel: labelKfzMissingCount(missingInformation.length),
     urgencyNote: detectUrgencyNote(reason, contextNotes),
     nextManualAction: buildKfzNextManualAction(
       { content: item.content, processed_at: item.processed_at ?? null },

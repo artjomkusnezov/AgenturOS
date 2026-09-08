@@ -1,12 +1,16 @@
 /**
  * Factual operator review for Kfz website inbox items.
- * Not an AI suggestion — derived from the persisted inbound working copy.
+ * Submitted facts and missing-information checklist stay separate from AI.
  */
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconUser } from '@/features/dashboard/components/dashboard-icons'
 import { KFZ_WORK_QUEUE_PHASE_LABELS } from '@/features/inbox/lib/kfz-work-queue'
-import type { KfzWebsiteInboxReview } from '@/features/inbox/lib/present-kfz-website-inbox'
+import {
+  KFZ_REVIEW_AI_SEPARATE_LABEL,
+  KFZ_REVIEW_FACT_LABEL,
+  type KfzWebsiteInboxReview,
+} from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   aosWorkspaceMetaClassName,
   aosWorkspaceSectionClassName,
@@ -26,18 +30,12 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function contactValue(review: KfzWebsiteInboxReview): string {
-  const parts: string[] = []
-  if (review.phone) {
-    parts.push(review.phone)
-  }
-  if (review.email) {
-    parts.push(review.email)
-  }
-  if (parts.length === 0) {
-    return 'Nicht angegeben'
-  }
-  return parts.join(' · ')
+function BlockTitle({ children }: { children: string }) {
+  return (
+    <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+      {children}
+    </h4>
+  )
 }
 
 export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
@@ -51,39 +49,72 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
         title="Kfz-Website-Anfrage"
         accent="orange"
         icon={<DashboardIconUser className="h-4 w-4" />}
+        trailing={
+          <span
+            className={
+              review.missingCount > 0 ? 'aos-inbox-chip-gaps' : 'aos-inbox-chip-handled'
+            }
+          >
+            {review.missingCountLabel}
+          </span>
+        }
       />
 
       <p className="mb-3 text-xs font-medium tracking-wide text-zinc-500">
-        Bestand aus dem Eingang · zur menschlichen Prüfung · keine automatische Aktion
+        {KFZ_REVIEW_FACT_LABEL} · zur menschlichen Prüfung · keine automatische Aktion
       </p>
 
-      <dl className="space-y-3">
-        <MetaRow
-          label="Quelle"
-          value={
-            review.acquisitionSource
-              ? `${review.sourceLabel} · ${review.acquisitionSource}`
-              : review.sourceLabel
-          }
-        />
-        <MetaRow label="Prüfstand" value={KFZ_WORK_QUEUE_PHASE_LABELS[review.phase]} />
-        <MetaRow label="Kunde" value={review.customerName} />
-        <MetaRow label="Ort" value={review.location ?? 'Nicht angegeben'} />
-        <MetaRow label="Kontakt" value={contactValue(review)} />
-        <MetaRow label="Bevorzugter Kanal" value={review.preferredChannelLabel} />
-        <MetaRow label="Anliegen" value={review.request} />
-        <MetaRow label="Fahrzeug" value={review.vehicle ?? 'Nicht angegeben'} />
-        <MetaRow
-          label="Fehlende Angaben"
-          value={
-            review.missingInformation.length > 0
-              ? review.missingInformation.join(' · ')
-              : 'Keine bekannten Lücken in den Angaben'
-          }
-        />
-        <MetaRow label="Hinweis zur Dringlichkeit" value={review.urgencyNote} />
-        <MetaRow label="Nächster manueller Schritt" value={review.nextManualAction} />
-      </dl>
+      <div className="space-y-5">
+        <div>
+          <BlockTitle>Kurzfassung</BlockTitle>
+          <p className={`text-sm leading-relaxed ${aosWsTextPrimaryClassName}`}>
+            {review.factualSummary}
+          </p>
+          <p className={`mt-1.5 ${aosWorkspaceMetaClassName}`}>
+            {KFZ_REVIEW_AI_SEPARATE_LABEL}
+          </p>
+        </div>
+
+        <div>
+          <BlockTitle>Eingereichte Angaben</BlockTitle>
+          <dl className="space-y-3">
+            {review.submittedFacts.map((fact) => (
+              <MetaRow key={fact.id} label={fact.label} value={fact.value} />
+            ))}
+            <MetaRow label="Prüfstand" value={KFZ_WORK_QUEUE_PHASE_LABELS[review.phase]} />
+          </dl>
+        </div>
+
+        <div>
+          <BlockTitle>Fehlende Angaben</BlockTitle>
+          <ul aria-label="Prüfliste fehlender Angaben" className="aos-kfz-checklist">
+            {review.missingInformationChecklist.map((item) => (
+              <li
+                key={item.id}
+                className={
+                  item.present
+                    ? 'aos-kfz-check aos-kfz-check--present'
+                    : 'aos-kfz-check aos-kfz-check--missing'
+                }
+              >
+                <span aria-hidden="true">{item.present ? '✓' : '○'}</span>
+                <span>{item.label}</span>
+                <span className="sr-only">{item.present ? 'vorhanden' : 'fehlt'}</span>
+              </li>
+            ))}
+          </ul>
+          {review.missingCount === 0 ? (
+            <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
+              Keine bekannten Lücken in den Angaben
+            </p>
+          ) : null}
+        </div>
+
+        <dl className="space-y-3">
+          <MetaRow label="Hinweis zur Dringlichkeit" value={review.urgencyNote} />
+          <MetaRow label="Nächster manueller Schritt" value={review.nextManualAction} />
+        </dl>
+      </div>
     </section>
   )
 }

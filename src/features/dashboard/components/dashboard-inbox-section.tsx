@@ -14,6 +14,7 @@ import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
+import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   buildInboxHref,
   countKfzWorkQueue,
@@ -46,6 +47,7 @@ function DashboardInboxRow({
   const isUnprocessed = isInboxItemUnprocessed(item)
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const statusChip = presentInboxStatusChip(item, linkedTaskId)
+  const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
 
   return (
     <Link
@@ -63,6 +65,12 @@ function DashboardInboxRow({
           <span className="truncate">{creatorName}</span>
           <span aria-hidden="true">·</span>
           <span className="tabular-nums">{timeLabel}</span>
+          {kfzReview && kfzReview.missingCount > 0 ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{kfzReview.missingCountLabel}</span>
+            </>
+          ) : null}
         </span>
       </span>
       {statusChip ? (

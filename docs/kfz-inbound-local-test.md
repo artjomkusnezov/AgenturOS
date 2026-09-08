@@ -61,16 +61,17 @@ Der HTTP-Handler ist derselbe Einstieg wie `POST /api/inbound/kfz` und die `/kfz
 
 Nach Intake erscheint das Item in der bestehenden Inbox (`channel/source=website`), nicht in einer zweiten Lead-Datenbank.
 
-Operator-sichtbar ohne KI:
+Operator-sichtbar ohne KI, in getrennten Blöcken:
 
-- Quelle: `Website · Kfz` (plus Acquisition-Source, z. B. `kfz.artkus.de`)
-- Kunde, Ort, Kontakt, bevorzugter Kanal, Anliegen, Fahrzeug
-- Fehlende Angaben und ein Hinweis zur Dringlichkeit aus den gespeicherten Feldern
+- **Kurzfassung** — ein bis zwei Sätze nur aus eingereichten Feldern (kein KI-Text, keine erfundenen Fahrzeug- oder Kontaktdaten)
+- **Eingereichte Angaben** — Quelle (`Website · Kfz` plus Acquisition-Source), Kunde, Ort, Kontakt, bevorzugter Kanal, Anliegen, Fahrzeug, Kontext
+- **Fehlende Angaben** — Prüfliste mit vorhanden/fehlt (Erreichbarkeit, Kanal-Kontakt, Anliegen, Fahrzeug, Ort/PLZ)
+- Hinweis zur Dringlichkeit aus den gespeicherten Feldern
 - Nächster manueller Schritt — ausdrücklich ohne automatisches Senden oder Anlegen
 
-Die Liste und das Dashboard nutzen den persistierten Titel (`Kfz-Anfrage · Name`), nicht nur den Inhaltstext.
+Die Inbox-Liste zeigt die Kurzfassung plus „n Angaben fehlen“. Der optionale **KI-Vorschlag · Entwurf** bleibt ein eigener Block darunter.
 
-Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-presentation.smoke.test.ts` (Landing-Payload → `handleKfzInboundHttpRequest` → Inbox-Review-Modell).
+Deterministische Tests: `src/features/inbound/kfz/kfz-inbox-presentation.smoke.test.ts` und `src/features/inbound/kfz/kfz-review-summary.smoke.test.ts`.
 
 ## Manuelle Inbox-Prüfung (bestehende Aktionen)
 

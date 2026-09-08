@@ -136,6 +136,15 @@ describe('kfz landing → HTTP → inbox presentation', () => {
       assert.equal(review.request, 'Wechsel Kfz-Versicherung')
       assert.equal(review.vehicle, 'VW Golf 2019')
       assert.deepEqual(review.missingInformation, [])
+      assert.equal(review.missingCount, 0)
+      assert.equal(review.missingCountLabel, 'Angaben vollständig')
+      assert.equal(
+        review.factualSummary,
+        'Max Mustermann aus 49525 Lengerich. Anliegen: Wechsel Kfz-Versicherung. Fahrzeug: VW Golf 2019. Kontakt: +491701234567 (Telefon).',
+      )
+      assert.equal(review.listSummary, 'Wechsel Kfz-Versicherung · VW Golf 2019')
+      assert.ok(review.submittedFacts.some((fact) => fact.id === 'vehicle'))
+      assert.ok(review.missingInformationChecklist.every((item) => item.present))
       assert.equal(
         review.urgencyNote,
         'Kein Unfall- oder Schadenhinweis in den Angaben.',
@@ -191,6 +200,22 @@ describe('kfz landing → HTTP → inbox presentation', () => {
           'Fahrzeugdaten (Marke/Modell/Jahr — falls relevant)',
         ),
       )
+      assert.equal(review.missingCount, 2)
+      assert.equal(review.missingCountLabel, '2 Angaben fehlen')
+      assert.match(review.factualSummary, /Max Mustermann aus 49525 Lengerich/)
+      assert.match(review.factualSummary, /Preischeck Kfz-Versicherung/)
+      assert.doesNotMatch(review.factualSummary, /Fahrzeug:/)
+      assert.doesNotMatch(review.factualSummary, /KI-Vorschlag|Entwurf|Vorschlag/)
+      assert.equal(
+        review.missingInformationChecklist.find((item) => item.id === 'vehicle')?.present,
+        false,
+      )
+      assert.equal(
+        review.missingInformationChecklist.find((item) => item.id === 'preferred_channel_contact')
+          ?.present,
+        false,
+      )
+      assert.ok(!review.submittedFacts.some((fact) => fact.id === 'vehicle'))
       assert.match(review.nextManualAction, /Prüfung starten/)
       assert.match(review.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
     })

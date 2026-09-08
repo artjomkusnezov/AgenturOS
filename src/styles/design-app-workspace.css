@@ -415,6 +415,44 @@
     color: #94a3b8;
   }
 
+  .aos-inbox-chip-gaps {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 650;
+    flex-shrink: 0;
+    background: rgb(251 146 60 / 0.16);
+    color: #fdba74;
+  }
+
+  .aos-kfz-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .aos-kfz-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .aos-kfz-check--present {
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+  }
+
+  .aos-kfz-check--missing {
+    color: var(--aos-cockpit-text-primary, #f4f4f5);
+    font-weight: 550;
+  }
+
   .aos-inbox-phase-filter {
     display: flex;
     flex-wrap: wrap;
