@@ -7,8 +7,8 @@ import { CaptureCaseDialog } from '@/features/capture/components/capture-case-di
 import { CaptureInformationDialog } from '@/features/capture/components/capture-information-dialog'
 import { CaptureTaskDialog } from '@/features/capture/components/capture-task-dialog'
 import { QuickActionMenu } from '@/features/capture/components/quick-action-menu'
-import { UniversalCaptureDialog } from '@/features/capture/components/universal-capture-dialog'
 import { VoiceCaptureDialog } from '@/features/capture/components/voice-capture-dialog'
+import { ManualQuickCaptureDialog } from '@/features/inbound/manual/components/manual-quick-capture-dialog'
 import type { AgencyMember } from '@/features/agency/types/agency-member'
 import {
   isDirectCaseCaptureMode,
@@ -111,7 +111,7 @@ export function UniversalCaptureRoot({
         placement={menuPlacement}
       />
 
-      <UniversalCaptureDialog
+      <ManualQuickCaptureDialog
         isOpen={phase === 'inbox'}
         onClose={closeAll}
         triggerRef={captureTriggerRef}

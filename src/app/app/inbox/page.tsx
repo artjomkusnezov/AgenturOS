@@ -73,6 +73,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       attachments={attachments}
       memberNameMap={memberNameMap}
       aiProposal={aiProposal}
+      enableManualCapture
     />
   )
 }
