@@ -216,6 +216,7 @@ export function InboxDetailPanel({
 
         {kfzReview ? (
           <InboxKfzResponseDraftSection
+            key={`${item.id}:${kfzReview.responseDraft}`}
             item={item}
             review={kfzReview}
             aiSuggestedReply={aiSuggestedReply}

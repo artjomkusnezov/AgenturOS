@@ -51,11 +51,6 @@ export function InboxKfzResponseDraftSection({
   const handledSuccessRef = useRef(false)
 
   useEffect(() => {
-    setDraft(review.responseDraft)
-    handledSuccessRef.current = false
-  }, [item.id, review.responseDraft])
-
-  useEffect(() => {
     if (
       wasPendingRef.current &&
       !isPending &&
