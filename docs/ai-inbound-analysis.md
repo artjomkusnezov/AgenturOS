@@ -47,7 +47,8 @@ Kfz website inquiry → Inbox item → getInboxAiProposal → visible internal K
 ```
 
 - Shown only for Kfz website working copies (`channel/source=website` + `acquisition.product=kfz` or clear Kfz title).
-- Labeled **KI-Vorschlag · Entwurf** — internal triage only.
+- Labeled **KI-Vorschlag · Entwurf** and **KI-Text ist ein Vorschlag — menschliche Prüfung erforderlich**.
+- The suggested reply can be copied into an internal inbox draft; nothing is sent.
 - No automatic send, case/task creation, status change, or follow-up scheduling.
 - Supported visible fields reuse the existing analysis contract (category/intent, product, urgency, missing info, purchaseIntent as proposal, next human step via `suggestedTask`, draft reply, human-takeover flag).
 - Advisory-only boundary for `getInboxAiProposal` + resolved providers is locked by a static import/call graph assertion in `tests/ai/kfz-ai-proposal.test.ts` (not a cosmetic return-value probe).

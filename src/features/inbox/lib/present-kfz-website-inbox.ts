@@ -12,6 +12,11 @@ import {
   type KfzManualTriageAction,
   type KfzTriagePhase,
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
+import {
+  hasKfzResponseDraft,
+  readInboxSourceContent,
+  readKfzResponseDraft,
+} from '@/features/inbox/lib/kfz-response-draft'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export { KFZ_REVIEW_NO_AUTO_ACTION } from '@/features/inbox/lib/kfz-inbox-manual-triage'
@@ -65,6 +70,9 @@ export type KfzWebsiteInboxReview = {
   nextManualAction: string
   phase: KfzTriagePhase
   availableActions: KfzManualTriageAction[]
+  sourceContent: string
+  responseDraft: string
+  hasResponseDraft: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -396,5 +404,8 @@ export function presentKfzWebsiteInboxItem(
       { content: item.content, processed_at: item.processed_at ?? null },
       options?.linkedTaskId ?? null,
     ),
+    sourceContent: readInboxSourceContent(item.content),
+    responseDraft: readKfzResponseDraft(item.content),
+    hasResponseDraft: hasKfzResponseDraft(item.content),
   }
 }

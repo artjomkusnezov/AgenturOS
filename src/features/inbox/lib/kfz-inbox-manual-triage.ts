@@ -4,13 +4,18 @@
  */
 
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
+import {
+  applyKfzResponseDraft,
+  composeInboxWorkingCopy,
+  hasKfzResponseDraft,
+  splitInboxWorkingCopy,
+} from '@/features/inbox/lib/kfz-response-draft'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
+
+export { KFZ_INTERNAL_NOTE_HEADING } from '@/features/inbox/lib/kfz-response-draft'
 
 export const KFZ_REVIEW_NO_AUTO_ACTION =
   'Nichts wird automatisch gesendet oder angelegt.'
-
-export const KFZ_INTERNAL_NOTE_HEADING =
-  '--- Interne Notiz (nicht an Kunden gesendet) ---'
 
 export const KFZ_REVIEW_STARTED_NOTE =
   'Prüfung begonnen. Interne Sichtung — kein automatischer Kundenkontakt.'
@@ -20,6 +25,7 @@ export const KFZ_INTERNAL_NOTE_MAX_LENGTH = 2000
 export type KfzManualTriageActionId =
   | 'start_review'
   | 'record_internal_note'
+  | 'save_response_draft'
   | 'create_follow_up_task'
   | 'mark_handled'
 
@@ -43,6 +49,7 @@ export type KfzTriageWorkingCopy = {
 export type KfzManualTriageCommand =
   | { type: 'start_review' }
   | { type: 'record_internal_note'; note: string }
+  | { type: 'save_response_draft'; draft: string }
   | { type: 'create_follow_up_task'; taskId: string }
   | { type: 'mark_handled'; at: string }
 
@@ -55,23 +62,16 @@ export type KfzManualTriageApplyResult =
   | { ok: false; error: string }
 
 export function hasInternalInboxNote(content: string): boolean {
-  return content.includes(KFZ_INTERNAL_NOTE_HEADING)
+  return splitInboxWorkingCopy(content).notes.length > 0
 }
 
 export function hasKfzReviewStartedNote(content: string): boolean {
   return content.includes(KFZ_REVIEW_STARTED_NOTE)
 }
 
-/** Removes operator-only notes so AI / source facts stay on the inquiry text. */
+/** Removes operator-only notes and drafts so AI / source facts stay on the inquiry text. */
 export function stripInternalInboxNotes(content: string): string {
-  const markedIndex = content.indexOf(`\n${KFZ_INTERNAL_NOTE_HEADING}`)
-  if (markedIndex >= 0) {
-    return content.slice(0, markedIndex).trimEnd()
-  }
-  if (content.startsWith(KFZ_INTERNAL_NOTE_HEADING)) {
-    return ''
-  }
-  return content
+  return splitInboxWorkingCopy(content).source
 }
 
 export function appendInternalInboxNote(
@@ -89,12 +89,13 @@ export function appendInternalInboxNote(
     }
   }
 
-  const base = content.trimEnd()
-  const next = hasInternalInboxNote(base)
-    ? `${base}\n${trimmed}`
-    : `${base}\n\n${KFZ_INTERNAL_NOTE_HEADING}\n${trimmed}`
+  const parts = splitInboxWorkingCopy(content)
+  const notes = parts.notes ? `${parts.notes}\n${trimmed}` : trimmed
 
-  return { ok: true, content: next }
+  return {
+    ok: true,
+    content: composeInboxWorkingCopy({ ...parts, notes }),
+  }
 }
 
 export function resolveKfzTriagePhase(
@@ -107,7 +108,8 @@ export function resolveKfzTriagePhase(
   if (
     linkedTaskId ||
     hasInternalInboxNote(item.content) ||
-    hasKfzReviewStartedNote(item.content)
+    hasKfzReviewStartedNote(item.content) ||
+    hasKfzResponseDraft(item.content)
   ) {
     return 'in_review'
   }
@@ -127,6 +129,9 @@ export function buildKfzNextManualAction(
   if (phase === 'in_review') {
     if (linkedTaskId) {
       return `Interne Folgeaufgabe ist angelegt. Prüfung fortsetzen oder manuell als erledigt markieren. ${suffix}`
+    }
+    if (hasKfzResponseDraft(item.content)) {
+      return `Interner Antwortentwurf ist gespeichert. Prüfung fortsetzen, Notiz ergänzen oder manuell als erledigt markieren. ${suffix}`
     }
     return `Prüfung läuft intern. Notiz ergänzen, interne Folgeaufgabe anlegen oder manuell als erledigt markieren. ${suffix}`
   }
@@ -153,6 +158,14 @@ export function listKfzManualTriageActions(
       id: 'record_internal_note',
       label: 'Interne Notiz',
       description: 'Nur intern am Eingang vermerken — nicht an den Kunden.',
+      available: true,
+      boundary: 'note',
+      requiresExplicitHumanAction: true,
+    },
+    {
+      id: 'save_response_draft',
+      label: 'Interner Antwortentwurf',
+      description: 'Antwort intern vorbereiten. Es wird keine Nachricht gesendet.',
       available: true,
       boundary: 'note',
       requiresExplicitHumanAction: true,
@@ -220,6 +233,18 @@ export function applyKfzManualTriageCommand(
       ok: true,
       next: { ...current, content: appended.content },
       mutated: { content: true, processed: false, task: false },
+    }
+  }
+
+  if (command.type === 'save_response_draft') {
+    const applied = applyKfzResponseDraft(current.content, command.draft)
+    if (!applied.ok) {
+      return applied
+    }
+    return {
+      ok: true,
+      next: { ...current, content: applied.content },
+      mutated: { content: applied.mutated, processed: false, task: false },
     }
   }
 

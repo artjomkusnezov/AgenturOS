@@ -1,6 +1,6 @@
 /**
- * Normalized Kfz intake → inbox review → explicit manual triage.
- * Prevents automatic status / task / outbound side effects.
+ * Internal Kfz response draft on the existing inbox working copy.
+ * No send integration, no automatic external side effect.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -8,6 +8,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, it } from 'node:test'
 
+import { AI_PROPOSAL_HUMAN_REVIEW_LABEL } from '@/features/ai-inbound/lib/format-proposal-labels'
 import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'
 import { mapInboxItemToAnalysisInput } from '@/features/ai-inbound/lib/map-inbox-item-to-analysis-input'
 import {
@@ -15,8 +16,19 @@ import {
   KFZ_INTERNAL_NOTE_HEADING,
   KFZ_REVIEW_NO_AUTO_ACTION,
   KFZ_REVIEW_STARTED_NOTE,
-  listKfzManualTriageActions,
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
+import {
+  applyKfzResponseDraft,
+  composeInboxWorkingCopy,
+  hasKfzResponseDraft,
+  KFZ_AI_DRAFT_REVIEW_LABEL,
+  KFZ_RESPONSE_DRAFT_HEADING,
+  KFZ_RESPONSE_DRAFT_MAX_LENGTH,
+  KFZ_RESPONSE_DRAFT_NO_SEND,
+  readInboxSourceContent,
+  readKfzResponseDraft,
+  splitInboxWorkingCopy,
+} from '@/features/inbox/lib/kfz-response-draft'
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import {
@@ -29,7 +41,7 @@ import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/
 
 const AGENCY_ID = '11111111-1111-4111-8111-111111111111'
 const ACTOR_ID = '22222222-2222-4222-8222-222222222222'
-const SECRET = 'test-kfz-inbox-triage-secret'
+const SECRET = 'test-kfz-response-draft-secret'
 
 function baseValues(
   overrides: Partial<KfzLandingFormValues> = {},
@@ -118,166 +130,133 @@ async function submitLandingToInbox(
   return store.items[0]
 }
 
-describe('kfz intake → inbox review → explicit manual action', () => {
+describe('kfz manual response draft workspace', () => {
   beforeEach(() => {
     resetRateLimitBucketsForTests()
   })
 
-  it('intake leaves the item unprocessed and offers only explicit internal actions', async () => {
+  it('intake leaves source-only content and no draft', async () => {
     await withKfzEnv(async () => {
-      const item = await submitLandingToInbox(baseValues(), 'lp-triage-intake')
+      const item = await submitLandingToInbox(baseValues(), 'lp-draft-empty')
       const review = presentKfzWebsiteInboxItem(item)
 
       assert.ok(review)
+      assert.equal(review.hasResponseDraft, false)
+      assert.equal(review.responseDraft, '')
+      assert.match(review.sourceContent, /Kfz-Anfrage von Max Mustermann/)
+      assert.equal(hasKfzResponseDraft(item.content), false)
       assert.equal(item.processed_at, null)
-      assert.equal(review.phase, 'needs_review')
-      assert.match(review.nextManualAction, /Prüfung starten/)
+      assert.doesNotMatch(item.content, new RegExp(KFZ_RESPONSE_DRAFT_HEADING))
+    })
+  })
+
+  it('saves an editable draft without sending, processing, or creating a task', async () => {
+    await withKfzEnv(async () => {
+      const item = await submitLandingToInbox(baseValues(), 'lp-draft-save')
+      const sourceBefore = item.content
+
+      const saved = applyKfzManualTriageCommand(
+        { content: item.content, processed_at: item.processed_at, linkedTaskId: null },
+        {
+          type: 'save_response_draft',
+          draft: 'Guten Tag, wir prüfen Ihre Kfz-Anfrage intern.',
+        },
+      )
+
+      assert.equal(saved.ok, true)
+      if (!saved.ok) {
+        return
+      }
+      assert.equal(saved.mutated.content, true)
+      assert.equal(saved.mutated.processed, false)
+      assert.equal(saved.mutated.task, false)
+      assert.equal(saved.next.processed_at, null)
+      assert.equal(saved.next.linkedTaskId, null)
       assert.equal(
-        review.nextManualAction.includes(KFZ_REVIEW_NO_AUTO_ACTION),
-        true,
+        readKfzResponseDraft(saved.next.content),
+        'Guten Tag, wir prüfen Ihre Kfz-Anfrage intern.',
       )
-      assert.equal(review.customerName, 'Max Mustermann')
-      assert.equal(review.request, 'Wechsel Kfz-Versicherung')
-      assert.ok(review.availableActions.every((action) => action.requiresExplicitHumanAction))
+      assert.equal(readInboxSourceContent(saved.next.content), sourceBefore)
+      assert.doesNotMatch(saved.next.content, /wurde gesendet|automatisch versendet|Senden/)
 
-      const availableIds = review.availableActions
-        .filter((action) => action.available)
-        .map((action) => action.id)
-      assert.deepEqual(availableIds, [
-        'start_review',
-        'record_internal_note',
-        'save_response_draft',
-        'create_follow_up_task',
-        'mark_handled',
-      ])
+      const reviewed = presentKfzWebsiteInboxItem({
+        ...item,
+        content: saved.next.content,
+      })
+      assert.ok(reviewed)
+      assert.equal(reviewed.hasResponseDraft, true)
+      assert.equal(reviewed.phase, 'in_review')
+      assert.equal(reviewed.customerName, 'Max Mustermann')
+      assert.equal(reviewed.request, 'Wechsel Kfz-Versicherung')
+      assert.match(reviewed.nextManualAction, /Antwortentwurf ist gespeichert/)
+      assert.match(reviewed.nextManualAction, new RegExp(KFZ_REVIEW_NO_AUTO_ACTION))
+      assert.equal(reviewed.sourceContent, sourceBefore)
     })
   })
 
-  it('presenting the review or generating AI does not process, create a task, or send', async () => {
+  it('preserves source, internal notes and a follow-up task when the draft changes', async () => {
     await withKfzEnv(async () => {
-      const item = await submitLandingToInbox(baseValues(), 'lp-triage-no-auto')
-      const before = {
-        processed_at: item.processed_at,
-        content: item.content,
-      }
+      const item = await submitLandingToInbox(baseValues(), 'lp-draft-preserve')
+      const source = item.content
+      const taskId = '33333333-3333-4333-8333-333333333333'
 
-      const review = presentKfzWebsiteInboxItem(item)
-      const ai = await getInboxAiProposal(item)
-      const untouched = applyKfzManualTriageCommand(
+      const noted = applyKfzManualTriageCommand(
         { content: item.content, processed_at: item.processed_at, linkedTaskId: null },
-        null,
+        { type: 'record_internal_note', note: 'Rückruf intern vormerken.' },
       )
-
-      assert.ok(review)
-      assert.equal(ai.proposal.status, 'proposal')
-      assert.equal(item.processed_at, before.processed_at)
-      assert.equal(item.content, before.content)
-      assert.equal(untouched.ok, true)
-      if (!untouched.ok) {
-        return
-      }
-      assert.deepEqual(untouched.mutated, {
-        content: false,
-        processed: false,
-        task: false,
-      })
-      assert.equal(untouched.next.processed_at, null)
-      assert.equal(untouched.next.linkedTaskId, null)
-    })
-  })
-
-  it('start review and internal note stay on the note boundary and do not mark handled', async () => {
-    await withKfzEnv(async () => {
-      const item = await submitLandingToInbox(baseValues(), 'lp-triage-note')
-      const started = applyKfzManualTriageCommand(
-        { content: item.content, processed_at: item.processed_at, linkedTaskId: null },
-        { type: 'start_review' },
-      )
-      assert.equal(started.ok, true)
-      if (!started.ok) {
-        return
-      }
-      assert.equal(started.mutated.content, true)
-      assert.equal(started.mutated.processed, false)
-      assert.equal(started.mutated.task, false)
-      assert.equal(started.next.content.includes(KFZ_INTERNAL_NOTE_HEADING), true)
-      assert.equal(started.next.content.includes(KFZ_REVIEW_STARTED_NOTE), true)
-      assert.equal(started.next.processed_at, null)
-
-      const noted = applyKfzManualTriageCommand(started.next, {
-        type: 'record_internal_note',
-        note: 'Rückruf intern vormerken — nicht senden.',
-      })
       assert.equal(noted.ok, true)
       if (!noted.ok) {
         return
       }
-      assert.equal(noted.mutated.processed, false)
-      assert.equal(noted.next.processed_at, null)
-      assert.match(noted.next.content, /Rückruf intern vormerken/)
 
-      const reviewed = presentKfzWebsiteInboxItem({
-        ...item,
-        content: noted.next.content,
-        processed_at: noted.next.processed_at,
+      const tasked = applyKfzManualTriageCommand(noted.next, {
+        type: 'create_follow_up_task',
+        taskId,
       })
-      assert.ok(reviewed)
-      assert.equal(reviewed.phase, 'in_review')
-      assert.equal(reviewed.customerName, 'Max Mustermann')
-      assert.equal(reviewed.request, 'Wechsel Kfz-Versicherung')
-      assert.match(reviewed.nextManualAction, /Prüfung läuft intern/)
-    })
-  })
-
-  it('follow-up task and mark handled require an explicit command', async () => {
-    await withKfzEnv(async () => {
-      const item = await submitLandingToInbox(baseValues(), 'lp-triage-task')
-      const taskId = '33333333-3333-4333-8333-333333333333'
-
-      const tasked = applyKfzManualTriageCommand(
-        { content: item.content, processed_at: item.processed_at, linkedTaskId: null },
-        { type: 'create_follow_up_task', taskId },
-      )
       assert.equal(tasked.ok, true)
       if (!tasked.ok) {
         return
       }
-      assert.equal(tasked.mutated.task, true)
-      assert.equal(tasked.mutated.processed, false)
-      assert.equal(tasked.next.processed_at, null)
-      assert.equal(tasked.next.linkedTaskId, taskId)
 
-      const handledAt = '2026-09-07T15:00:00.000Z'
-      const handled = applyKfzManualTriageCommand(tasked.next, {
-        type: 'mark_handled',
-        at: handledAt,
+      const drafted = applyKfzManualTriageCommand(tasked.next, {
+        type: 'save_response_draft',
+        draft: 'Erster interner Entwurf.',
       })
-      assert.equal(handled.ok, true)
-      if (!handled.ok) {
+      assert.equal(drafted.ok, true)
+      if (!drafted.ok) {
         return
       }
-      assert.equal(handled.mutated.processed, true)
-      assert.equal(handled.next.processed_at, handledAt)
-      assert.equal(handled.next.linkedTaskId, taskId)
 
-      const closed = presentKfzWebsiteInboxItem(
-        { ...item, processed_at: handled.next.processed_at },
-        { linkedTaskId: handled.next.linkedTaskId },
+      assert.equal(readInboxSourceContent(drafted.next.content), source)
+      assert.match(drafted.next.content, /Rückruf intern vormerken/)
+      assert.match(drafted.next.content, new RegExp(KFZ_INTERNAL_NOTE_HEADING))
+      assert.equal(drafted.next.linkedTaskId, taskId)
+      assert.equal(drafted.next.processed_at, null)
+      assert.equal(drafted.mutated.task, false)
+      assert.equal(drafted.mutated.processed, false)
+
+      const updated = applyKfzManualTriageCommand(drafted.next, {
+        type: 'save_response_draft',
+        draft: 'Zweiter interner Entwurf nach Prüfung.',
+      })
+      assert.equal(updated.ok, true)
+      if (!updated.ok) {
+        return
+      }
+      assert.equal(
+        readKfzResponseDraft(updated.next.content),
+        'Zweiter interner Entwurf nach Prüfung.',
       )
-      assert.ok(closed)
-      assert.equal(closed.phase, 'handled')
-      assert.match(closed.nextManualAction, /manuell als bearbeitet/)
-      const markHandled = listKfzManualTriageActions(
-        { content: item.content, processed_at: handled.next.processed_at },
-        handled.next.linkedTaskId,
-      ).find((action) => action.id === 'mark_handled')
-      assert.equal(markHandled?.available, false)
+      assert.equal(readInboxSourceContent(updated.next.content), source)
+      assert.match(updated.next.content, /Rückruf intern vormerken/)
+      assert.equal(updated.next.linkedTaskId, taskId)
+      assert.doesNotMatch(updated.next.content, /Erster interner Entwurf/)
     })
   })
 
-  it('internal notes stay out of the AI suggestion input', async () => {
+  it('keeps draft and notes out of the AI suggestion input', async () => {
     await withKfzEnv(async () => {
-      const item = await submitLandingToInbox(baseValues(), 'lp-triage-ai-strip')
+      const item = await submitLandingToInbox(baseValues(), 'lp-draft-ai-strip')
       const noted = applyKfzManualTriageCommand(
         { content: item.content, processed_at: item.processed_at, linkedTaskId: null },
         { type: 'record_internal_note', note: 'Geheime interne Bewertung 42.' },
@@ -287,42 +266,98 @@ describe('kfz intake → inbox review → explicit manual action', () => {
         return
       }
 
+      const drafted = applyKfzManualTriageCommand(noted.next, {
+        type: 'save_response_draft',
+        draft: 'Geheimnisvoller Kundenentwurf bitte nicht an KI.',
+      })
+      assert.equal(drafted.ok, true)
+      if (!drafted.ok) {
+        return
+      }
+
       const analysisInput = mapInboxItemToAnalysisInput({
         ...item,
-        content: noted.next.content,
+        content: drafted.next.content,
       })
+      assert.doesNotMatch(analysisInput.content ?? '', /Geheimnisvoller Kundenentwurf/)
       assert.doesNotMatch(analysisInput.content ?? '', /Geheime interne Bewertung/)
+      assert.doesNotMatch(analysisInput.content ?? '', new RegExp(KFZ_RESPONSE_DRAFT_HEADING))
       assert.doesNotMatch(analysisInput.content ?? '', new RegExp(KFZ_INTERNAL_NOTE_HEADING))
       assert.match(analysisInput.content ?? '', /Kfz-Anfrage von Max Mustermann/)
 
       const ai = await getInboxAiProposal({
         ...item,
-        content: noted.next.content,
+        content: drafted.next.content,
       })
       assert.equal(ai.proposal.status, 'proposal')
+      if (ai.proposal.status !== 'proposal') {
+        return
+      }
+      assert.equal(ai.proposal.suggestion.suggestedCaseAction, 'none')
+      assert.match(ai.proposal.suggestion.suggestedReplyDraft ?? '', /Entwurf|keine verbindliche/i)
     })
   })
 
-  it('rejects empty notes and does not invent a handled status', () => {
-    const empty = applyKfzManualTriageCommand(
-      { content: 'Kfz-Anfrage', processed_at: null, linkedTaskId: null },
-      { type: 'record_internal_note', note: '   ' },
-    )
-    assert.equal(empty.ok, false)
+  it('labels AI reply text as a suggestion that needs human review', async () => {
+    await withKfzEnv(async () => {
+      const item = await submitLandingToInbox(baseValues(), 'lp-draft-ai-label')
+      const ai = await getInboxAiProposal(item)
+      assert.equal(ai.proposal.status, 'proposal')
+      if (ai.proposal.status !== 'proposal') {
+        return
+      }
 
-    const alreadyHandled = applyKfzManualTriageCommand(
-      {
-        content: 'Kfz-Anfrage',
-        processed_at: '2026-09-07T12:00:00.000Z',
-        linkedTaskId: null,
-      },
-      { type: 'mark_handled', at: '2026-09-07T13:00:00.000Z' },
+      assert.equal(
+        AI_PROPOSAL_HUMAN_REVIEW_LABEL,
+        'KI-Text ist ein Vorschlag — menschliche Prüfung erforderlich',
+      )
+      assert.equal(KFZ_AI_DRAFT_REVIEW_LABEL, AI_PROPOSAL_HUMAN_REVIEW_LABEL)
+      assert.match(KFZ_RESPONSE_DRAFT_NO_SEND, /Nichts wird automatisch gesendet/)
+      assert.doesNotMatch(ai.proposal.suggestion.suggestedReplyDraft ?? '', /wurde gesendet/)
+    })
+  })
+
+  it('rejects oversized drafts and does not invent a send or handled status', () => {
+    const tooLong = applyKfzResponseDraft(
+      'Kfz-Anfrage von Max',
+      'x'.repeat(KFZ_RESPONSE_DRAFT_MAX_LENGTH + 1),
     )
-    assert.equal(alreadyHandled.ok, false)
+    assert.equal(tooLong.ok, false)
+
+    const empty = applyKfzManualTriageCommand(
+      { content: 'Kfz-Anfrage von Max', processed_at: null, linkedTaskId: null },
+      { type: 'save_response_draft', draft: '   ' },
+    )
+    assert.equal(empty.ok, true)
+    if (!empty.ok) {
+      return
+    }
+    assert.equal(hasKfzResponseDraft(empty.next.content), false)
+    assert.equal(empty.next.processed_at, null)
+    assert.equal(empty.next.linkedTaskId, null)
+
+    const started = applyKfzManualTriageCommand(empty.next, { type: 'start_review' })
+    assert.equal(started.ok, true)
+    if (!started.ok) {
+      return
+    }
+    const drafted = applyKfzResponseDraft(started.next.content, 'Kurzer Entwurf')
+    assert.equal(drafted.ok, true)
+    if (!drafted.ok) {
+      return
+    }
+    const parts = splitInboxWorkingCopy(drafted.content)
+    assert.equal(parts.source, 'Kfz-Anfrage von Max')
+    assert.equal(parts.draft, 'Kurzer Entwurf')
+    assert.match(parts.notes, new RegExp(KFZ_REVIEW_STARTED_NOTE))
+    assert.equal(
+      composeInboxWorkingCopy(parts).includes(KFZ_RESPONSE_DRAFT_HEADING),
+      true,
+    )
   })
 })
 
-describe('kfz intake/review side-effect boundary', () => {
+describe('kfz response draft side-effect boundary', () => {
   const srcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
   const repoRoot = path.resolve(srcRoot, '..')
 
@@ -330,7 +365,7 @@ describe('kfz intake/review side-effect boundary', () => {
     'features/inbound/kfz/services/handle-kfz-inbound-http.ts',
     'features/inbound/kfz/services/process-kfz-inquiry.ts',
     'features/inbox/lib/present-kfz-website-inbox.ts',
-    'features/inbox/lib/kfz-inbox-manual-triage.ts',
+    'features/inbox/lib/kfz-response-draft.ts',
     'features/ai-inbound/services/get-inbox-ai-proposal.ts',
   ] as const
 
@@ -357,6 +392,8 @@ describe('kfz intake/review side-effect boundary', () => {
     'createTaskAction',
     'appendInboxInternalNoteAction',
     'saveInboxResponseDraftAction',
+    'sendEmail',
+    'sendWhatsApp',
   ] as const
 
   const IMPORT_SPEC_RE =
@@ -421,7 +458,7 @@ describe('kfz intake/review side-effect boundary', () => {
     return [...visited]
   }
 
-  it('intake, presentation and proposal generation never import write actions', () => {
+  it('draft helpers and intake never import send or write actions', () => {
     const entries = ENTRY_RELATIVE_PATHS.map((relative) => path.join(srcRoot, relative))
     for (const entry of entries) {
       assert.ok(fs.existsSync(entry), `missing entry: ${entry}`)
@@ -439,9 +476,7 @@ describe('kfz intake/review side-effect boundary', () => {
       const source = fs.readFileSync(file, 'utf8')
       for (const identifier of FORBIDDEN_IDENTIFIERS) {
         if (new RegExp(`\\b${identifier}\\b`).test(source)) {
-          violations.push(
-            `${path.relative(repoRoot, file)} references ${identifier}`,
-          )
+          violations.push(`${path.relative(repoRoot, file)} references ${identifier}`)
         }
       }
     }
@@ -451,5 +486,28 @@ describe('kfz intake/review side-effect boundary', () => {
       0,
       `Automatic path must not reach writers:\n${violations.join('\n')}`,
     )
+  })
+
+  it('draft workspace UI has no send control', () => {
+    const draftUi = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/components/inbox-kfz-response-draft-section.tsx'),
+      'utf8',
+    )
+    const detailUi = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/components/inbox-detail-panel.tsx'),
+      'utf8',
+    )
+    const action = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/actions/save-inbox-response-draft.ts'),
+      'utf8',
+    )
+
+    assert.match(draftUi, /Internen Entwurf speichern/)
+    assert.match(draftUi, /menschliche Prüfung erforderlich/)
+    assert.doesNotMatch(draftUi, /type="submit"[^>]*>[\s\S]*Senden/)
+    assert.doesNotMatch(draftUi, /WhatsApp|Resend|sendEmail|sendWhatsApp/)
+    assert.doesNotMatch(detailUi, /Kundenantwort senden|Nachricht senden/)
+    assert.doesNotMatch(action, /features\/email|features\/whatsapp|resend/)
+    assert.match(action, /no send, status, case or task side effect/)
   })
 })

@@ -7,6 +7,7 @@ import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
 import {
   AI_PROPOSAL_BADGE_LABEL,
+  AI_PROPOSAL_HUMAN_REVIEW_LABEL,
   labelIntent,
   labelPurchaseIntent,
   labelUrgency,
@@ -45,8 +46,8 @@ export function InboxAiProposalSection({ proposal }: InboxAiProposalSectionProps
       />
 
       <p className={`mb-3 text-xs font-medium tracking-wide text-zinc-500`}>
-        {AI_PROPOSAL_BADGE_LABEL} · nur intern · keine automatische Kundenaktion ·
-        getrennt von den eingereichten Angaben
+        {AI_PROPOSAL_BADGE_LABEL} · {AI_PROPOSAL_HUMAN_REVIEW_LABEL} · nur intern ·
+        keine automatische Kundenaktion · getrennt von den eingereichten Angaben
       </p>
 
       {proposal.status === 'unavailable' ? (
@@ -108,14 +109,16 @@ export function InboxAiProposalSection({ proposal }: InboxAiProposalSectionProps
 
           {proposal.suggestion.suggestedReplyDraft ? (
             <div className="space-y-1.5">
-              <p className={aosWorkspaceMetaClassName}>Antwortentwurf (nicht gesendet)</p>
+              <p className={aosWorkspaceMetaClassName}>
+                KI-Antworttext ({AI_PROPOSAL_HUMAN_REVIEW_LABEL})
+              </p>
               <p
                 className={`whitespace-pre-wrap rounded-md border border-dashed border-zinc-200 bg-zinc-50/80 px-3 py-2 text-sm leading-relaxed ${aosWsTextPrimaryClassName}`}
               >
                 {proposal.suggestion.suggestedReplyDraft}
               </p>
               <p className={aosWorkspaceMetaClassName}>
-                Entwurf / Vorschlag — nicht automatisch an den Kunden gesendet.
+                Vorschlag zur Prüfung — nicht gesendet, kein Versand.
               </p>
             </div>
           ) : (
