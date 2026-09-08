@@ -1,5 +1,5 @@
 # Cursor Cloud Controller Trigger
 
 STATE: MONITOR_REQUESTED
-REQUESTED_AT: 2026-09-08T05:10:08.614Z
-REASON: Validate queued controller v2. Monitor active agent; launch no duplicate.
+REQUESTED_AT: 2026-09-08T05:42:42.056Z
+REASON: Cursor API agents shown FINISHED; consume exactly one next READY queue item. Duplicate guard authoritative.
