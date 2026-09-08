@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-d280
 
 # AgenturOS — Human-reviewed duplicate warning for manual capture
@@ -19,3 +19,6 @@ Help an employee avoid creating the same manually captured inquiry twice, while 
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp or paid services.
+
+CONTROLLER_AGENT_ID: bc-cf99e310-2917-4cd0-8ed8-f8720dad88e1
+CONTROLLER_STARTED_AT: 2026-09-08T12:45:21Z
