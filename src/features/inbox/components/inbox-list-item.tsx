@@ -167,9 +167,6 @@ export function InboxListItem({
           {statusChip ? (
             <InboxStatusChip label={statusChip.label} kind={statusChip.kind} />
           ) : null}
-          {kfzReview && kfzReview.missingCount > 0 ? (
-            <span className="aos-inbox-chip-gaps">{kfzReview.missingCountLabel}</span>
-          ) : null}
         </div>
 
         <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
@@ -184,8 +181,13 @@ export function InboxListItem({
           <span>{formatInboxListDate(item.created_at)}</span>
         </p>
         {kfzReview ? (
-          <p className={`mt-1 truncate text-[11px] leading-snug ${aosWsTextMetaClassName}`}>
-            {kfzReview.listSummary}
+          <p className="mt-1 flex min-w-0 items-center gap-1.5">
+            <span className={`min-w-0 truncate text-[11px] leading-snug ${aosWsTextMetaClassName}`}>
+              {kfzReview.listSummary}
+            </span>
+            {kfzReview.missingCount > 0 ? (
+              <span className="aos-inbox-chip-gaps">{kfzReview.missingCountLabel}</span>
+            ) : null}
           </p>
         ) : null}
       </button>
