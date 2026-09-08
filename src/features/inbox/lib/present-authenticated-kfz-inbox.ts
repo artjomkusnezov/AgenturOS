@@ -4,6 +4,11 @@
  */
 
 import { AI_PROPOSAL_HUMAN_REVIEW_LABEL } from '@/features/ai-inbound/lib/format-proposal-labels'
+import { parseInboxItemView, type InboxItemView } from '@/features/inbox/lib/inbox-item-view'
+import {
+  presentInboxManualReviewHistory,
+  type InboxManualReviewHistory,
+} from '@/features/inbox/lib/inbox-manual-review-history'
 import {
   KFZ_INTERNAL_NOTE_HEADING,
   type KfzTriagePhase,
@@ -83,12 +88,17 @@ export type AuthenticatedKfzReviewWorkspace = {
     noSendLabel: typeof KFZ_RESPONSE_DRAFT_NO_SEND
     aiSuggestionRequiresHumanReview: typeof KFZ_AI_DRAFT_REVIEW_LABEL
   }
+  history: InboxManualReviewHistory
+  activeView: InboxItemView
+  historyHref: string
+  workHref: string
   sections: {
     facts: true
     missingInformation: true
     task: true
     notes: true
     editableDraft: true
+    history: true
   }
   aiSuggestionRequiresHumanReview: typeof AI_PROPOSAL_HUMAN_REVIEW_LABEL
   manualStatusOnly: true
@@ -136,6 +146,8 @@ export function presentAuthenticatedKfzReviewWorkspace(
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
     source?: InboxSourceFilter | null
+    view?: string | null
+    allowLocalFixtureFacts?: boolean
   },
 ): AuthenticatedKfzReviewWorkspace | null {
   const linkedTaskId = options?.linkedTaskId ?? null
@@ -152,15 +164,24 @@ export function presentAuthenticatedKfzReviewWorkspace(
   const followUp = review.availableActions.find(
     (action) => action.id === 'create_follow_up_task',
   )
+  const hrefOptions = {
+    itemId: item.id,
+    phase: options?.phase ?? 'all',
+    source: options?.source ?? 'all',
+    basePath: AUTHENTICATED_INBOX_PATH,
+  }
+  const history = presentInboxManualReviewHistory(item, {
+    linkedTaskId,
+    phase: hrefOptions.phase,
+    source: hrefOptions.source,
+    view: options?.view,
+    basePath: AUTHENTICATED_INBOX_PATH,
+    allowLocalFixtureFacts: options?.allowLocalFixtureFacts === true,
+  })
 
   return {
     itemId: item.id,
-    href: buildInboxHref({
-      itemId: item.id,
-      phase: options?.phase ?? 'all',
-      source: options?.source ?? 'all',
-      basePath: AUTHENTICATED_INBOX_PATH,
-    }),
+    href: buildInboxHref(hrefOptions),
     customerName: review.customerName,
     queuePhase,
     queuePhaseLabel: KFZ_WORK_QUEUE_PHASE_LABELS[queuePhase],
@@ -184,12 +205,17 @@ export function presentAuthenticatedKfzReviewWorkspace(
       noSendLabel: KFZ_RESPONSE_DRAFT_NO_SEND,
       aiSuggestionRequiresHumanReview: KFZ_AI_DRAFT_REVIEW_LABEL,
     },
+    history,
+    activeView: parseInboxItemView(options?.view),
+    historyHref: history.historyHref,
+    workHref: history.workHref,
     sections: {
       facts: true,
       missingInformation: true,
       task: true,
       notes: true,
       editableDraft: true,
+      history: true,
     },
     aiSuggestionRequiresHumanReview: AI_PROPOSAL_HUMAN_REVIEW_LABEL,
     manualStatusOnly: true,
@@ -204,6 +230,8 @@ export function presentAuthenticatedKfzInbox(input: {
   selectedItemId?: string | null
   phase?: string | null
   source?: string | null
+  view?: string | null
+  allowLocalFixtureFacts?: boolean
 }): AuthenticatedKfzInboxView {
   const phaseFilter = parseKfzWorkQueueFilter(input.phase)
   const sourceFilter = parseInboxSourceFilter(input.source)
@@ -313,6 +341,8 @@ export function presentAuthenticatedKfzInbox(input: {
           ),
           phase: phaseFilter,
           source: sourceFilter,
+          view: input.view,
+          allowLocalFixtureFacts: input.allowLocalFixtureFacts === true,
         })
       : null,
   }

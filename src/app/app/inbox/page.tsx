@@ -3,6 +3,7 @@ import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
 import { enrichInboxAttachmentsWithMediaUrls } from '@/features/inbox/lib/enrich-inbox-attachments'
+import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import { presentAuthenticatedKfzInbox } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import {
   listFilesForInboxItem,
@@ -13,11 +14,11 @@ import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-nam
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
-  searchParams: Promise<{ item?: string; phase?: string; source?: string }>
+  searchParams: Promise<{ item?: string; phase?: string; source?: string; view?: string }>
 }
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const { item, phase, source } = await searchParams
+  const { item, phase, source, view } = await searchParams
   const [result, membersResult] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
@@ -42,6 +43,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     selectedItemId: item,
     phase,
     source,
+    view,
   })
   const allItems = [...result.unprocessedItems, ...result.processedItems]
   const selectedItemId = inboxView.selectedItemId
@@ -71,6 +73,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       selectedItemId={selectedItemId}
       phaseFilter={inboxView.phaseFilter}
       sourceFilter={inboxView.sourceFilter}
+      itemView={parseInboxItemView(view)}
       queueMeta={inboxView.metaLabel}
       attachments={attachments}
       memberNameMap={memberNameMap}

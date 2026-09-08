@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
+import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import { parseInboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 type UnifiedInboxPreviewPageProps = {
-  searchParams: Promise<{ item?: string; phase?: string; source?: string }>
+  searchParams: Promise<{ item?: string; phase?: string; source?: string; view?: string }>
 }
 
 /**
@@ -34,11 +35,12 @@ export default async function UnifiedInboxPreviewPage({
     notFound()
   }
 
-  const { item, phase, source } = await searchParams
+  const { item, phase, source, view } = await searchParams
   const preview = buildUnifiedInboxPreviewItems()
   const allItems = [...preview.unprocessedItems, ...preview.processedItems]
   const phaseFilter = parseKfzWorkQueueFilter(phase)
   const sourceFilter = parseInboxSourceFilter(source)
+  const itemView = parseInboxItemView(view)
   const selectedItemId =
     item && isValidInboxItemId(item) && allItems.some((entry) => entry.id === item)
       ? item
@@ -66,8 +68,10 @@ export default async function UnifiedInboxPreviewPage({
           selectedItemId={selectedItemId}
           phaseFilter={phaseFilter}
           sourceFilter={sourceFilter}
+          itemView={itemView}
           hrefBasePath={UNIFIED_INBOX_PREVIEW_PATH}
           enableManualCapture
+          allowLocalHistoryFixtureFacts
           aiProposal={aiProposal}
         />
       </div>

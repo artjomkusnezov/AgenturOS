@@ -4,6 +4,10 @@
  */
 
 import { getInboxListTitle } from '@/features/inbox/lib/format-inbox-content'
+import {
+  parseInboxItemView,
+  type InboxItemView,
+} from '@/features/inbox/lib/inbox-item-view'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import {
   KFZ_REVIEW_NO_AUTO_ACTION,
@@ -181,11 +185,13 @@ export function buildInboxHref(options?: {
   itemId?: string | null
   phase?: KfzWorkQueueFilter | null
   source?: string | null
+  view?: InboxItemView | null
   basePath?: string | null
 }): string {
   const params = new URLSearchParams()
   const source = options?.source?.trim() ?? ''
   const phase = options?.phase ?? 'all'
+  const view = parseInboxItemView(options?.view)
 
   if (source && source !== 'all') {
     params.set('source', source)
@@ -198,6 +204,10 @@ export function buildInboxHref(options?: {
   const itemId = options?.itemId?.trim() ?? ''
   if (itemId && isValidInboxItemId(itemId)) {
     params.set('item', itemId)
+  }
+
+  if (view === 'history' && itemId && isValidInboxItemId(itemId)) {
+    params.set('view', 'history')
   }
 
   const basePath = options?.basePath?.trim() || KFZ_INBOX_HREF_BASE

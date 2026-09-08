@@ -9,6 +9,7 @@ import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
+import type { InboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import {
   buildInboxHref,
@@ -29,6 +30,7 @@ type InboxWorkspaceProps = {
   selectedItemId: string | null
   phaseFilter?: KfzWorkQueueFilter
   sourceFilter?: InboxSourceFilter
+  itemView?: InboxItemView
   hrefBasePath?: string
   queueMeta?: string | null
   attachments?: InboxLinkedFile[]
@@ -38,6 +40,8 @@ type InboxWorkspaceProps = {
   enableManualCapture?: boolean
   /** Local preview: persist confirmed items in memory instead of the server action. */
   onLocalConfirmed?: (item: InboxItem) => void
+  /** Local fixtures may carry documented review times; live records never do. */
+  allowLocalHistoryFixtureFacts?: boolean
 }
 
 export function InboxWorkspace({
@@ -47,6 +51,7 @@ export function InboxWorkspace({
   selectedItemId,
   phaseFilter = 'all',
   sourceFilter = 'all',
+  itemView = 'work',
   hrefBasePath = KFZ_INBOX_HREF_BASE,
   queueMeta = null,
   attachments = [],
@@ -54,6 +59,7 @@ export function InboxWorkspace({
   aiProposal = null,
   enableManualCapture = false,
   onLocalConfirmed,
+  allowLocalHistoryFixtureFacts = false,
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const captureTriggerRef = useRef<HTMLButtonElement>(null)
@@ -180,12 +186,17 @@ export function InboxWorkspace({
         detail={
           selectedItem ? (
             <InboxDetailPanel
-              key={selectedItem.id}
+              key={`${selectedItem.id}:${itemView}`}
               item={selectedItem}
               linkedTaskId={taskRelationsByItemId[selectedItem.id] ?? null}
               attachments={attachments}
               memberNameMap={memberNameMap}
               aiProposal={aiProposal}
+              phaseFilter={phaseFilter}
+              sourceFilter={sourceFilter}
+              itemView={itemView}
+              hrefBasePath={hrefBasePath}
+              allowLocalHistoryFixtureFacts={allowLocalHistoryFixtureFacts}
               onBack={handleBackToList}
               onDeleted={handleDeleted}
               onStatusChange={handleStatusChange}
