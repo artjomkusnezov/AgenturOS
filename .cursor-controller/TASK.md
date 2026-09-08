@@ -1,24 +1,21 @@
-STATUS: STARTED
+STATUS: READY
 STARTING_REF: cursor/agenturos-controller-task-0f60
 
-# AgenturOS — Fast manual intake into the real inbox
+# AgenturOS — Manual phone, email and note capture
 
 ## Goal
-Let an employee capture a new customer information item in under 10 seconds by pasting or typing text, then review the normalized draft before it enters the real inbox.
+Extend the finished fast text capture so an employee can label where information came from — phone call, pasted email or personal note — while keeping one unified inbox and human confirmation.
 
 ## Required work
-- Add one obvious manual quick-capture action to the authenticated app/inbox.
-- Accept plain text only in this task; no email provider, voice, PDF, Meta or WhatsApp integration.
-- Create a normalized inbound draft using existing provider-neutral fields.
-- Show the source text and proposed structured fields before saving.
-- Require an explicit human confirmation to create the inbox item; no automatic customer contact, task creation, status change or AI decision.
-- After confirmation, open the existing human-review workspace.
-- Keep AI-derived fields clearly labeled as suggestions if existing local logic supplies them; otherwise keep capture fully manual.
+- Reuse the finished paste/type → review → confirm → inbox flow.
+- Add a simple source choice: Telefonat, E-Mail eingefügt, Eigene Notiz.
+- Keep the original text unchanged and store the selected source in existing provider-neutral metadata.
+- Show only safe local suggestions for title/contact facts and label them as suggestions.
+- Require explicit human confirmation before creating the inbox item.
+- After confirmation, open the existing review workspace and show the source clearly.
+- No provider connection, automatic reply, customer contact, task/status automation, Meta/WhatsApp or CRM replacement.
 - Add deterministic tests; run inbound tests, TypeScript, lint and build.
 - Browser-check desktop/mobile on a safe local route and record exact evidence or blockers.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp, paid services or CRM replacement.
-
-CONTROLLER_AGENT_ID: bc-16e5a58a-6924-4a55-875c-c73c2e0e25d6
-CONTROLLER_STARTED_AT: 2026-09-08T10:43:04Z
+Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or paid services.
