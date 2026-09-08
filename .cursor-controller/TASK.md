@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-7f68
 
 # AgenturOS — Reliable Kfz landing submit and retry
@@ -23,3 +23,6 @@ Make the new three-step /kfz landing safe and dependable when submission is slow
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, binary document storage, customer communication, paid services, Meta/WhatsApp connection, legal determination or destructive git.
+
+CONTROLLER_AGENT_ID: bc-0281c4b0-3f1a-42ad-a00c-626b6803dbdf
+CONTROLLER_STARTED_AT: 2026-09-08T22:44:47Z
