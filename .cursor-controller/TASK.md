@@ -1,18 +1,20 @@
 STATUS: READY
 STARTING_REF: cursor/agenturos-controller-task-3d66
 
-# AgenturOS — One-screen manual Kfz review workspace
+# AgenturOS — Daily Kfz inquiry work queue
 
 ## Goal
-Combine the finished Kfz inquiry facts, missing-information checklist, internal follow-up task and editable response draft into one clear employee review workspace, without sending anything.
+Turn the finished single-inquiry review workspace into a simple daily employee queue: what is new, what needs information, what is being reviewed and what is done.
 
 ## Required work
-- Reuse existing normalized inbound item, state, notes, tasks and internal draft.
-- Show source facts, missing information, current manual state, internal task and editable draft together or through an obvious short route.
-- Keep AI text clearly labeled as a suggestion requiring human review.
-- No send integration, automatic status change or customer contact.
-- Add deterministic tests and run inbound tests, TypeScript, lint and build.
-- Browser-check desktop/mobile and record exact evidence/blockers.
+- Reuse the existing normalized Kfz inquiry, manual states, missing-information checklist, internal task, notes and editable draft.
+- Add clear counts/filters for New, Missing information, In review and Done.
+- Each row must show the customer/request facts, urgency if factual, missing-information status and the next manual action.
+- Opening a row must lead to the existing one-screen review workspace.
+- AI remains a labeled suggestion requiring human review.
+- No sending, automatic status changes, customer contact, Meta/WhatsApp or CRM replacement.
+- Add deterministic tests; run inbound tests, TypeScript, lint and build.
+- Browser-check desktop/mobile and record exact evidence or blockers.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp, paid services or CRM replacement.
+Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication or destructive git.
