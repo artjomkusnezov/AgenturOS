@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-c467
 
 ## Title
@@ -32,3 +32,6 @@ Add a separate step-by-step Kfz intake branch for customers who cannot upload do
 
 ## Safety
 Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid services, new persistent file storage, invented Allianz/legal/business rules, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-09eafdd7-860e-4f80-9560-2f35b576cf93
+CONTROLLER_STARTED_AT: 2026-09-09T11:08:50Z
