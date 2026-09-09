@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState, useEffect, useRef } from 'react'
+import { useActionState, useEffect, useRef, type FormEvent } from 'react'
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconCheckSquare } from '@/features/dashboard/components/dashboard-icons'
 import { appendInboxInternalNoteAction } from '@/features/inbox/actions/append-inbox-internal-note'
 import { convertInboxToTaskAction } from '@/features/inbox/actions/convert-inbox-to-task'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
+import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import type { KfzWebsiteInboxReview } from '@/features/inbox/lib/present-kfz-website-inbox'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 import {
@@ -25,6 +26,8 @@ type InboxKfzTriageActionsProps = {
   linkedTaskId: string | null
   review: KfzWebsiteInboxReview
   onStatusChange: () => void
+  onLocalApply?: (command: KfzManualTriageCommand) => void
+  hideHandledAction?: boolean
 }
 
 const initialState: InboxItemMutationState = {}
@@ -67,6 +70,8 @@ export function InboxKfzTriageActions({
   linkedTaskId,
   review,
   onStatusChange,
+  onLocalApply,
+  hideHandledAction = false,
 }: InboxKfzTriageActionsProps) {
   const [startState, startAction, isStartPending] = useActionState(
     appendInboxInternalNoteAction,
@@ -90,6 +95,16 @@ export function InboxKfzTriageActions({
   const followUp = actionById(review, 'create_follow_up_task')
   const markHandled = actionById(review, 'mark_handled')
   const isBusy = isStartPending || isNotePending || isTaskPending || isHandledPending
+
+  function localSubmit(command: KfzManualTriageCommand) {
+    return (event: FormEvent<HTMLFormElement>) => {
+      if (!onLocalApply) {
+        return
+      }
+      event.preventDefault()
+      onLocalApply(command)
+    }
+  }
 
   return (
     <section aria-label="Manuelle Prüfung" className={aosWorkspaceSectionClassName}>
@@ -130,7 +145,11 @@ export function InboxKfzTriageActions({
 
       <div className="space-y-4">
         {startReview?.available ? (
-          <form action={startAction} className="space-y-2">
+          <form
+            action={startAction}
+            onSubmit={localSubmit({ type: 'start_review' })}
+            className="space-y-2"
+          >
             <input type="hidden" name="itemId" value={item.id} />
             <input type="hidden" name="currentContent" value={item.content} />
             <input type="hidden" name="kind" value="start_review" />
@@ -154,7 +173,19 @@ export function InboxKfzTriageActions({
         ) : null}
 
         {recordNote ? (
-          <form action={noteAction} className="space-y-2">
+          <form
+            action={noteAction}
+            onSubmit={(event) => {
+              if (!onLocalApply) {
+                return
+              }
+              event.preventDefault()
+              const form = event.currentTarget
+              const note = String(new FormData(form).get('note') ?? '')
+              onLocalApply({ type: 'record_internal_note', note })
+            }}
+            className="space-y-2"
+          >
             <input type="hidden" name="itemId" value={item.id} />
             <input type="hidden" name="currentContent" value={item.content} />
             <input type="hidden" name="kind" value="internal_note" />
@@ -216,8 +247,15 @@ export function InboxKfzTriageActions({
           </form>
         ) : null}
 
-        {markHandled?.available ? (
-          <form action={handledAction} className="space-y-2">
+        {hideHandledAction ? null : markHandled?.available ? (
+          <form
+            action={handledAction}
+            onSubmit={localSubmit({
+              type: 'mark_handled',
+              at: new Date().toISOString(),
+            })}
+            className="space-y-2"
+          >
             <input type="hidden" name="itemId" value={item.id} />
             <button
               type="submit"

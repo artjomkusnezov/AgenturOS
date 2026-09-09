@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache'
 
 import {
   appendInternalInboxNote,
+  KFZ_CONTACTED_NOTE,
+  KFZ_FOLLOW_UP_NOTE,
+  KFZ_REPLY_PREPARED_NOTE,
   KFZ_REVIEW_STARTED_NOTE,
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import {
@@ -24,11 +27,26 @@ export async function appendInboxInternalNoteAction(
   const itemId = String(formData.get('itemId') ?? '')
   const currentContent = String(formData.get('currentContent') ?? '')
   const kindRaw = String(formData.get('kind') ?? 'internal_note')
-  const kind = kindRaw === 'start_review' ? 'start_review' : 'internal_note'
+  const kind =
+    kindRaw === 'start_review'
+      ? 'start_review'
+      : kindRaw === 'prepare_reply'
+        ? 'prepare_reply'
+        : kindRaw === 'mark_contacted'
+          ? 'mark_contacted'
+          : kindRaw === 'mark_follow_up'
+            ? 'mark_follow_up'
+            : 'internal_note'
   const note =
     kind === 'start_review'
       ? KFZ_REVIEW_STARTED_NOTE
-      : String(formData.get('note') ?? '')
+      : kind === 'prepare_reply'
+        ? KFZ_REPLY_PREPARED_NOTE
+        : kind === 'mark_contacted'
+          ? KFZ_CONTACTED_NOTE
+          : kind === 'mark_follow_up'
+            ? KFZ_FOLLOW_UP_NOTE
+            : String(formData.get('note') ?? '')
 
   if (!isValidInboxItemId(itemId)) {
     return { error: 'Das Eingangselement ist ungültig.' }
