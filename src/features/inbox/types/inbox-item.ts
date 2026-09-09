@@ -27,7 +27,13 @@ export type InboxItemMutationState = {
   caseTypeKey?: string
   viewKey?: string
   promotionKind?: 'task' | 'offer' | 'claim'
-  noteKind?: 'start_review' | 'internal_note' | 'response_draft'
+  noteKind?:
+    | 'start_review'
+    | 'internal_note'
+    | 'response_draft'
+    | 'prepare_reply'
+    | 'mark_contacted'
+    | 'mark_follow_up'
 }
 
 export type InboxItemInput = {

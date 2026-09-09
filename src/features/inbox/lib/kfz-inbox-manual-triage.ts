@@ -10,9 +10,22 @@ import {
   hasKfzResponseDraft,
   splitInboxWorkingCopy,
 } from '@/features/inbox/lib/kfz-response-draft'
+import {
+  hasKfzContactedNote,
+  hasKfzFollowUpNote,
+  hasKfzReplyPreparedNote,
+  KFZ_CONTACTED_NOTE,
+  KFZ_FOLLOW_UP_NOTE,
+  KFZ_REPLY_PREPARED_NOTE,
+} from '@/features/inbox/lib/kfz-reply-handoff'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export { KFZ_INTERNAL_NOTE_HEADING } from '@/features/inbox/lib/kfz-response-draft'
+export {
+  KFZ_CONTACTED_NOTE,
+  KFZ_FOLLOW_UP_NOTE,
+  KFZ_REPLY_PREPARED_NOTE,
+} from '@/features/inbox/lib/kfz-reply-handoff'
 
 export const KFZ_REVIEW_NO_AUTO_ACTION =
   'Nichts wird automatisch gesendet oder angelegt.'
@@ -27,6 +40,9 @@ export type KfzManualTriageActionId =
   | 'record_internal_note'
   | 'save_response_draft'
   | 'create_follow_up_task'
+  | 'prepare_reply'
+  | 'mark_contacted'
+  | 'mark_follow_up'
   | 'mark_handled'
 
 export type KfzTriagePhase = 'needs_review' | 'in_review' | 'handled'
@@ -51,6 +67,9 @@ export type KfzManualTriageCommand =
   | { type: 'record_internal_note'; note: string }
   | { type: 'save_response_draft'; draft: string }
   | { type: 'create_follow_up_task'; taskId: string }
+  | { type: 'prepare_reply' }
+  | { type: 'mark_contacted' }
+  | { type: 'mark_follow_up' }
   | { type: 'mark_handled'; at: string }
 
 export type KfzManualTriageApplyResult =
@@ -188,6 +207,30 @@ export function listKfzManualTriageActions(
       requiresExplicitHumanAction: true,
     },
     {
+      id: 'prepare_reply',
+      label: 'Antwort vorbereiten',
+      description: 'Internen Entwurf prüfen. Es wird keine Nachricht gesendet.',
+      available: unprocessed && !hasKfzReplyPreparedNote(item.content),
+      boundary: 'note',
+      requiresExplicitHumanAction: true,
+    },
+    {
+      id: 'mark_contacted',
+      label: 'Als kontaktiert markieren',
+      description: 'Nur nach expliziter Bestätigung. Kopieren zählt nicht.',
+      available: unprocessed && !hasKfzContactedNote(item.content),
+      boundary: 'note',
+      requiresExplicitHumanAction: true,
+    },
+    {
+      id: 'mark_follow_up',
+      label: 'Rückfrage nötig',
+      description: 'Weitere interne Klärung vermerken. Nichts wird gesendet.',
+      available: unprocessed && !hasKfzFollowUpNote(item.content),
+      boundary: 'note',
+      requiresExplicitHumanAction: true,
+    },
+    {
       id: 'mark_handled',
       label: 'Als erledigt markieren',
       description: 'Nur durch diese explizite Aktion. Nichts wird gesendet.',
@@ -270,6 +313,67 @@ export function applyKfzManualTriageCommand(
       next: { ...current, linkedTaskId: taskId },
       mutated: { content: false, processed: false, task: true },
     }
+  }
+
+  if (command.type === 'prepare_reply') {
+    if (hasKfzReplyPreparedNote(current.content)) {
+      return {
+        ok: true,
+        next: { ...current },
+        mutated: { content: false, processed: false, task: false },
+      }
+    }
+    const appended = appendInternalInboxNote(current.content, KFZ_REPLY_PREPARED_NOTE)
+    if (!appended.ok) {
+      return appended
+    }
+    return {
+      ok: true,
+      next: { ...current, content: appended.content },
+      mutated: { content: true, processed: false, task: false },
+    }
+  }
+
+  if (command.type === 'mark_contacted') {
+    if (hasKfzContactedNote(current.content)) {
+      return {
+        ok: true,
+        next: { ...current },
+        mutated: { content: false, processed: false, task: false },
+      }
+    }
+    const appended = appendInternalInboxNote(current.content, KFZ_CONTACTED_NOTE)
+    if (!appended.ok) {
+      return appended
+    }
+    return {
+      ok: true,
+      next: { ...current, content: appended.content },
+      mutated: { content: true, processed: false, task: false },
+    }
+  }
+
+  if (command.type === 'mark_follow_up') {
+    if (hasKfzFollowUpNote(current.content)) {
+      return {
+        ok: true,
+        next: { ...current },
+        mutated: { content: false, processed: false, task: false },
+      }
+    }
+    const appended = appendInternalInboxNote(current.content, KFZ_FOLLOW_UP_NOTE)
+    if (!appended.ok) {
+      return appended
+    }
+    return {
+      ok: true,
+      next: { ...current, content: appended.content },
+      mutated: { content: true, processed: false, task: false },
+    }
+  }
+
+  if (command.type !== 'mark_handled') {
+    return { ok: false, error: 'Unbekannte manuelle Aktion.' }
   }
 
   if (current.processed_at) {

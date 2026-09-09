@@ -95,6 +95,8 @@ export type AuthenticatedKfzReviewWorkspace = {
   sections: {
     facts: true
     missingInformation: true
+    preferredChannel: true
+    replyHandoff: true
     task: true
     notes: true
     editableDraft: true
@@ -212,6 +214,8 @@ export function presentAuthenticatedKfzReviewWorkspace(
     sections: {
       facts: true,
       missingInformation: true,
+      preferredChannel: true,
+      replyHandoff: true,
       task: true,
       notes: true,
       editableDraft: true,

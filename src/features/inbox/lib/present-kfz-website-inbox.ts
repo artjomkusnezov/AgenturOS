@@ -22,6 +22,17 @@ import {
   readInboxSourceContent,
   readKfzResponseDraft,
 } from '@/features/inbox/lib/kfz-response-draft'
+import {
+  buildKfzCallPreparation,
+  buildKfzReplyHandoffView,
+  labelKfzPreferredChannel,
+  readKfzCopyTargets,
+  resolvePreferredChannelContact,
+  type KfzCallPreparation,
+  type KfzCopyTargets,
+  type KfzPreferredChannelContact,
+  type KfzReplyHandoffView,
+} from '@/features/inbox/lib/kfz-reply-handoff'
 import { labelKfzUploadGroup } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
   KFZ_UPLOAD_GROUPS,
@@ -99,6 +110,10 @@ export type KfzWebsiteInboxReview = {
   sourceContent: string
   responseDraft: string
   hasResponseDraft: boolean
+  preferredChannelContact: KfzPreferredChannelContact
+  copyTargets: KfzCopyTargets
+  callPreparation: KfzCallPreparation
+  replyHandoff: KfzReplyHandoffView
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -122,19 +137,6 @@ function readSenderName(sender: InboxItem['sender']): string | null {
     return null
   }
   return asNullableString(sender.displayName)
-}
-
-function labelPreferredChannel(channel: string | null): string {
-  if (channel === 'phone') {
-    return 'Telefon'
-  }
-  if (channel === 'email') {
-    return 'E-Mail'
-  }
-  if (channel === 'whatsapp') {
-    return 'WhatsApp'
-  }
-  return 'Nicht angegeben'
 }
 
 function detectUrgencyNote(reason: string | null, notes: string | null): string {
@@ -469,7 +471,12 @@ export function presentKfzWebsiteInboxItem(
     asNullableString(item.title?.replace(/^kfz-anfrage\s*·\s*/i, '')) ??
     'Unbekannt'
   const request = reason ?? 'Nicht angegeben'
-  const preferredChannelLabel = labelPreferredChannel(preferredChannel)
+  const preferredChannelLabel = labelKfzPreferredChannel(preferredChannel)
+  const preferredChannelContact = resolvePreferredChannelContact({
+    preferredChannel,
+    phone,
+    email,
+  })
   const missingInformationChecklist = buildKfzMissingInformationChecklist({
     phone,
     email,
@@ -549,5 +556,25 @@ export function presentKfzWebsiteInboxItem(
     sourceContent: readInboxSourceContent(item.content),
     responseDraft: readKfzResponseDraft(item.content),
     hasResponseDraft: hasKfzResponseDraft(item.content),
+    preferredChannelContact,
+    copyTargets: readKfzCopyTargets({
+      phone,
+      email,
+      preferredContact: preferredChannelContact.contactValue,
+      content: item.content,
+    }),
+    callPreparation: buildKfzCallPreparation({
+      preferredChannel,
+      customerName,
+      phone,
+      location: locationLabel,
+      request,
+      vehicle: vehicleLabel,
+      missingInformation,
+    }),
+    replyHandoff: buildKfzReplyHandoffView(
+      { content: item.content, processed_at: item.processed_at ?? null },
+      preferredChannel,
+    ),
   }
 }

@@ -9,6 +9,15 @@ import {
   hasKfzReviewStartedNote,
   KFZ_REVIEW_STARTED_NOTE,
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
+import {
+  hasKfzContactedNote,
+  hasKfzFollowUpNote,
+  hasKfzReplyPreparedNote,
+  isKfzReplyHandoffNote,
+  KFZ_CONTACTED_NOTE,
+  KFZ_FOLLOW_UP_NOTE,
+  KFZ_REPLY_PREPARED_NOTE,
+} from '@/features/inbox/lib/kfz-reply-handoff'
 import { parseInboxItemView, type InboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import {
   buildInboxHref,
@@ -42,14 +51,17 @@ export const INBOX_HISTORY_AI_EXCLUSION_LABEL =
   'KI-Vorschläge bleiben getrennt und gehören nicht in diese Chronik.' as const
 
 export const INBOX_HISTORY_LIMITATION =
-  'Die Arbeitskopie speichert keine eigenen Zeitpunkte oder Akteure für Prüfungsstart, Notiz, Entwurf oder Folgeaufgabe. Zeitangaben erscheinen nur bei Eingang (received_at/created_at), manuellem Abschluss (processed_at) oder dokumentierten lokalen Fixture-Tatsachen.' as const
+  'Die Arbeitskopie speichert keine eigenen Zeitpunkte oder Akteure für Prüfungsstart, Antwortvorbereitung, Kontaktbestätigung, Rückfrage, Notiz, Entwurf oder Folgeaufgabe. Zeitangaben erscheinen nur bei Eingang (received_at/created_at), manuellem Abschluss (processed_at) oder dokumentierten lokalen Fixture-Tatsachen.' as const
 
 export const INBOX_HISTORY_KIND_LABELS = {
   received: 'Eingegangen',
   review_started: 'Prüfung begonnen',
+  reply_prepared: 'Antwort vorbereitet',
   note_saved: 'Notiz gespeichert',
   internal_task_created: 'Interne Aufgabe angelegt',
   draft_saved: 'Entwurf gespeichert',
+  contact_confirmed: 'Als kontaktiert markiert',
+  follow_up_needed: 'Rückfrage nötig',
   manually_completed: 'Manuell erledigt',
 } as const
 
@@ -97,8 +109,11 @@ export type InboxManualReviewHistory = {
 const WORKFLOW_ORDER: readonly InboxHistoryEventKind[] = [
   'received',
   'review_started',
+  'reply_prepared',
   'note_saved',
   'draft_saved',
+  'contact_confirmed',
+  'follow_up_needed',
   'internal_task_created',
   'manually_completed',
 ]
@@ -282,7 +297,7 @@ export function presentInboxManualReviewHistory(
       : null
   const receivedAtValue = receivedAt(item)
   const extraNotes = listOperatorNoteLines(item.content).filter(
-    (line) => !isReviewStartedNote(line),
+    (line) => !isReviewStartedNote(line) && !isKfzReplyHandoffNote(line),
   )
   const draft = readKfzResponseDraft(item.content)
   const events: InboxHistoryEvent[] = [
@@ -307,6 +322,18 @@ export function presentInboxManualReviewHistory(
     )
   }
 
+  if (hasKfzReplyPreparedNote(item.content)) {
+    events.push(
+      createEvent({
+        id: 'reply_prepared',
+        kind: 'reply_prepared',
+        layer: 'employee',
+        detail: KFZ_REPLY_PREPARED_NOTE,
+        occurredAt: null,
+      }),
+    )
+  }
+
   extraNotes.forEach((note, index) => {
     events.push(
       createEvent({
@@ -327,6 +354,30 @@ export function presentInboxManualReviewHistory(
         layer: 'employee',
         detail: 'Interner Antwortentwurf gespeichert. Nichts wurde gesendet.',
         occurredAt: fixtureFacts?.draftSavedAt ?? null,
+      }),
+    )
+  }
+
+  if (hasKfzContactedNote(item.content)) {
+    events.push(
+      createEvent({
+        id: 'contact_confirmed',
+        kind: 'contact_confirmed',
+        layer: 'employee',
+        detail: KFZ_CONTACTED_NOTE,
+        occurredAt: null,
+      }),
+    )
+  }
+
+  if (hasKfzFollowUpNote(item.content)) {
+    events.push(
+      createEvent({
+        id: 'follow_up_needed',
+        kind: 'follow_up_needed',
+        layer: 'employee',
+        detail: KFZ_FOLLOW_UP_NOTE,
+        occurredAt: null,
       }),
     )
   }
