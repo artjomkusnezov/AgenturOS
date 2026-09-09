@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-f287
 
 # AgenturOS — Manual preferred-channel reply handoff
@@ -23,3 +23,6 @@ Turn a reviewed inbound Kfz inquiry into a clear manual reply handoff: the emplo
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp connection, paid services, legal/tariff decisions or destructive git.
+
+CONTROLLER_AGENT_ID: bc-d0965239-ea88-403c-91b8-e57aaac4d427
+CONTROLLER_STARTED_AT: 2026-09-09T00:47:14Z
