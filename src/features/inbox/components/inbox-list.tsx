@@ -119,7 +119,6 @@ export function InboxList({
           queueFilter,
           { taskRelationsByItemId },
         ),
-        { taskRelationsByItemId },
       ),
     [allItems, phaseFilter, queueFilter, sourceFilter, taskRelationsByItemId],
   )

@@ -26,10 +26,9 @@ import {
   INBOX_WORK_QUEUE_FILTER_PARAM,
   type KfzWorkQueueFilter,
 } from '@/features/inbox/lib/kfz-work-queue'
+import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export { INBOX_WORK_QUEUE_FILTER_PARAM }
-import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
-import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export const INBOX_WORK_QUEUE_TIMEZONE = 'Europe/Berlin' as const
 
@@ -448,12 +447,7 @@ export function countInboxWorkQueue(
 export function compareInboxWorkQueueItems(
   left: InboxItem,
   right: InboxItem,
-  options?: {
-    taskRelationsByItemId?: Record<string, string>
-    now?: Date
-  },
 ): number {
-  const taskRelationsByItemId = options?.taskRelationsByItemId ?? {}
   const leftHandled = isInboxItemUnprocessed(left) ? 0 : 1
   const rightHandled = isInboxItemUnprocessed(right) ? 0 : 1
   if (leftHandled !== rightHandled) {
@@ -477,12 +471,8 @@ export function compareInboxWorkQueueItems(
 
 export function sortInboxWorkQueueItems<T extends InboxItem>(
   items: T[],
-  options?: {
-    taskRelationsByItemId?: Record<string, string>
-    now?: Date
-  },
 ): T[] {
-  return [...items].sort((left, right) => compareInboxWorkQueueItems(left, right, options))
+  return [...items].sort((left, right) => compareInboxWorkQueueItems(left, right))
 }
 
 export function groupInboxWorkQueueItems<T extends InboxItem>(

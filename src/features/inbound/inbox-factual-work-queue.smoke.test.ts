@@ -247,7 +247,7 @@ describe('never-contacted, copy and explicit contact', () => {
       assert.equal(matchesInboxWorkQueueFilter(landing, 'never_contacted'), true)
 
       const copied = readKfzCopyValue(
-        { phone: '+491701234567', email: null, preferredContact: '+491701234567', content: landing.content },
+        { phone: '+491701234567', email: null, preferredContact: '+491701234567', draft: '' },
         'phone',
       )
       assert.equal(copied, '+491701234567')
