@@ -10,7 +10,7 @@ import {
 
 export const metadata: Metadata = {
   title: `Kfz-Versicherung ${KFZ_LANDING_REGION_LABEL} | ${KFZ_LANDING_AGENCY_NAME}`,
-  description: `Unverbindliche Kfz-Anfrage bei ${KFZ_LANDING_AGENCY_NAME} in ${KFZ_LANDING_REGION_LABEL}. Persönliche Beratung — ohne Online-Preisgarantie.`,
+  description: `Kostenloser und unverbindlicher Kfz-Check bei ${KFZ_LANDING_AGENCY_NAME} in ${KFZ_LANDING_REGION_LABEL}. Persönlich geprüft von Artjom und Vera Kusnezov.`,
   robots: {
     index: true,
     follow: true,

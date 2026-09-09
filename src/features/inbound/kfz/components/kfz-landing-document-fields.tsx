@@ -44,8 +44,8 @@ export function KfzLandingDocumentFields({
       <div>
         <h3 className="text-base font-semibold text-zinc-900">Unterlagen (optional)</h3>
         <p className="mt-1 text-sm leading-relaxed text-zinc-600">
-          Fotos oder PDF helfen bei der persönlichen Prüfung. Sie können mehrere Dateien
-          hinzufügen und vor dem Senden wieder entfernen.
+          Sie können die Anfrage ohne Upload absenden. Fahrzeugschein oder Beitragsrechnung
+          helfen uns nur dabei, genauer zu prüfen.
         </p>
       </div>
 
