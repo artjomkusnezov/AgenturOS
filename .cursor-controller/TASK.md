@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-cc15
 
 # AgenturOS — Fast factual search across unified inbound
@@ -23,3 +23,6 @@ Let an employee find an existing inbound item in seconds across landing inquirie
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, external enrichment, AI identity decision, automatic merge/status/task/customer communication, paid services or destructive git.
+
+CONTROLLER_AGENT_ID: bc-ef8929df-6a26-4267-8c01-b2c588f20a07
+CONTROLLER_STARTED_AT: 2026-09-09T04:44:03Z
