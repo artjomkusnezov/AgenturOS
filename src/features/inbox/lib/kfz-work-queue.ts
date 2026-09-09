@@ -148,6 +148,7 @@ export function buildKfzWorkQueueFilterHrefs(options?: {
   selectedPhase?: KfzWorkQueuePhase | null
   source?: string | null
   queue?: string | null
+  q?: string | null
   basePath?: string | null
 }): Record<KfzWorkQueueFilter, string> {
   const hrefs = {} as Record<KfzWorkQueueFilter, string>
@@ -160,6 +161,7 @@ export function buildKfzWorkQueueFilterHrefs(options?: {
       phase: filter,
       queue: options?.queue,
       source: options?.source,
+      q: options?.q,
       itemId: keepItem ? options?.selectedItemId : null,
       basePath: options?.basePath,
     })
@@ -184,12 +186,22 @@ export function parseKfzWorkQueueFilter(
 }
 
 export const INBOX_WORK_QUEUE_FILTER_PARAM = 'queue' as const
+export const INBOX_SEARCH_PARAM = 'q' as const
+
+function parseInboxHrefSearch(value: string | null | undefined): string {
+  if (!value) {
+    return ''
+  }
+
+  return value.trim().replace(/\s+/g, ' ')
+}
 
 export function buildInboxHref(options?: {
   itemId?: string | null
   phase?: KfzWorkQueueFilter | null
   queue?: string | null
   source?: string | null
+  q?: string | null
   view?: InboxItemView | null
   basePath?: string | null
 }): string {
@@ -197,6 +209,7 @@ export function buildInboxHref(options?: {
   const source = options?.source?.trim() ?? ''
   const phase = options?.phase ?? 'all'
   const queue = options?.queue?.trim() ?? ''
+  const search = parseInboxHrefSearch(options?.q)
   const view = parseInboxItemView(options?.view)
 
   if (source && source !== 'all') {
@@ -209,6 +222,10 @@ export function buildInboxHref(options?: {
 
   if (queue && queue !== 'all') {
     params.set(INBOX_WORK_QUEUE_FILTER_PARAM, queue)
+  }
+
+  if (search) {
+    params.set(INBOX_SEARCH_PARAM, search)
   }
 
   const itemId = options?.itemId?.trim() ?? ''
@@ -321,6 +338,8 @@ export function presentKfzWorkQueueRow(
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
     source?: string | null
+    queue?: string | null
+    q?: string | null
     basePath?: string | null
   },
 ): KfzWorkQueueRow | null {
@@ -345,7 +364,9 @@ export function presentKfzWorkQueueRow(
     href: buildInboxHref({
       itemId: item.id,
       phase: options?.phase ?? 'all',
+      queue: options?.queue ?? 'all',
       source: options?.source ?? 'all',
+      q: options?.q,
       basePath: options?.basePath,
     }),
     linkedTaskId,

@@ -10,6 +10,7 @@ import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
 import type { InboxItemView } from '@/features/inbox/lib/inbox-item-view'
+import { parseInboxSearchQuery } from '@/features/inbox/lib/inbox-factual-search'
 import {
   countInboxWorkQueue,
   formatInboxWorkQueueMeta,
@@ -37,6 +38,7 @@ type InboxWorkspaceProps = {
   phaseFilter?: KfzWorkQueueFilter
   queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
+  searchQuery?: string
   itemView?: InboxItemView
   hrefBasePath?: string
   queueMeta?: string | null
@@ -60,6 +62,7 @@ export function InboxWorkspace({
   phaseFilter = 'all',
   queueFilter = 'all',
   sourceFilter = 'all',
+  searchQuery = '',
   itemView = 'work',
   hrefBasePath = KFZ_INBOX_HREF_BASE,
   queueMeta = null,
@@ -74,6 +77,16 @@ export function InboxWorkspace({
   const router = useRouter()
   const captureTriggerRef = useRef<HTMLButtonElement>(null)
   const [captureOpen, setCaptureOpen] = useState(false)
+  const committedSearch = parseInboxSearchQuery(searchQuery)
+  const [searchDraft, setSearchDraft] = useState(searchQuery)
+  const [prevCommittedSearch, setPrevCommittedSearch] = useState(committedSearch)
+  if (committedSearch !== prevCommittedSearch) {
+    setPrevCommittedSearch(committedSearch)
+    if (parseInboxSearchQuery(searchDraft) !== committedSearch) {
+      setSearchDraft(searchQuery)
+    }
+  }
+  const searchWriteTimerRef = useRef<number | null>(null)
   const items = useMemo(
     () => [...unprocessedItems, ...processedItems],
     [unprocessedItems, processedItems]
@@ -88,19 +101,65 @@ export function InboxWorkspace({
     router.refresh()
   }, [router])
 
+  const writeSearchToUrl = useCallback(
+    (nextQuery: string, itemId: string | null = selectedItemId) => {
+      const parsed = parseInboxSearchQuery(nextQuery)
+      router.replace(
+        buildInboxHref({
+          itemId,
+          phase: phaseFilter,
+          queue: queueFilter,
+          source: sourceFilter,
+          q: parsed,
+          view: itemView,
+          basePath: hrefBasePath,
+        }),
+      )
+    },
+    [hrefBasePath, itemView, phaseFilter, queueFilter, router, selectedItemId, sourceFilter],
+  )
+
+  const handleSearchQueryChange = useCallback(
+    (nextQuery: string) => {
+      setSearchDraft(nextQuery)
+      if (searchWriteTimerRef.current !== null) {
+        window.clearTimeout(searchWriteTimerRef.current)
+      }
+      searchWriteTimerRef.current = window.setTimeout(() => {
+        writeSearchToUrl(nextQuery)
+      }, 250)
+    },
+    [writeSearchToUrl],
+  )
+
+  const handleClearSearch = useCallback(() => {
+    if (searchWriteTimerRef.current !== null) {
+      window.clearTimeout(searchWriteTimerRef.current)
+      searchWriteTimerRef.current = null
+    }
+    setSearchDraft('')
+    writeSearchToUrl('')
+  }, [writeSearchToUrl])
+
   const navigateToItem = useCallback(
     (itemId: string) => {
+      if (searchWriteTimerRef.current !== null) {
+        window.clearTimeout(searchWriteTimerRef.current)
+        searchWriteTimerRef.current = null
+      }
       router.push(
         buildInboxHref({
           itemId,
           phase: phaseFilter,
           queue: queueFilter,
           source: sourceFilter,
+          q: parseInboxSearchQuery(searchDraft),
+          view: itemView,
           basePath: hrefBasePath,
         }),
       )
     },
-    [hrefBasePath, phaseFilter, queueFilter, router, sourceFilter]
+    [hrefBasePath, itemView, phaseFilter, queueFilter, router, searchDraft, sourceFilter]
   )
 
   const navigateToList = useCallback(() => {
@@ -109,10 +168,11 @@ export function InboxWorkspace({
         phase: phaseFilter,
         queue: queueFilter,
         source: sourceFilter,
+        q: parseInboxSearchQuery(searchDraft),
         basePath: hrefBasePath,
       }),
     )
-  }, [hrefBasePath, phaseFilter, queueFilter, router, sourceFilter])
+  }, [hrefBasePath, phaseFilter, queueFilter, router, searchDraft, sourceFilter])
 
   const handleSelectItem = useCallback(
     (itemId: string) => {
@@ -199,6 +259,11 @@ export function InboxWorkspace({
               phaseFilter={phaseFilter}
               queueFilter={queueFilter}
               sourceFilter={sourceFilter}
+              searchQuery={searchDraft}
+              onSearchQueryChange={handleSearchQueryChange}
+              onClearSearch={handleClearSearch}
+              enableManualCapture={enableManualCapture}
+              onOpenManualCapture={() => setCaptureOpen(true)}
               hrefBasePath={hrefBasePath}
               allowLocalFixtureFacts={allowLocalHistoryFixtureFacts}
             />
@@ -216,6 +281,7 @@ export function InboxWorkspace({
               phaseFilter={phaseFilter}
               queueFilter={queueFilter}
               sourceFilter={sourceFilter}
+              searchQuery={parseInboxSearchQuery(searchDraft)}
               itemView={itemView}
               hrefBasePath={hrefBasePath}
               allowLocalHistoryFixtureFacts={allowLocalHistoryFixtureFacts}

@@ -39,6 +39,10 @@ import {
   type InboxWorkQueueFilter,
 } from '@/features/inbox/lib/inbox-factual-work-queue'
 import {
+  filterInboxItemsBySearch,
+  parseInboxSearchQuery,
+} from '@/features/inbox/lib/inbox-factual-search'
+import {
   presentUnifiedInboxCard,
   type UnifiedInboxCard,
 } from '@/features/inbox/lib/present-unified-inbox-card'
@@ -127,6 +131,7 @@ export type AuthenticatedKfzInboxView = {
   phaseFilter: KfzWorkQueueFilter
   queueFilter: InboxWorkQueueFilter
   sourceFilter: InboxSourceFilter
+  searchQuery: string
   queueMode: boolean
   queueHeading: string | null
   counts: KfzWorkQueueCounts
@@ -164,6 +169,7 @@ export function presentAuthenticatedKfzReviewWorkspace(
     phase?: KfzWorkQueueFilter | null
     queue?: string | null
     source?: InboxSourceFilter | null
+    q?: string | null
     view?: string | null
     allowLocalFixtureFacts?: boolean
   },
@@ -187,6 +193,7 @@ export function presentAuthenticatedKfzReviewWorkspace(
     phase: options?.phase ?? 'all',
     queue: options?.queue ?? 'all',
     source: options?.source ?? 'all',
+    q: options?.q,
     basePath: AUTHENTICATED_INBOX_PATH,
   }
   const history = presentInboxManualReviewHistory(item, {
@@ -194,6 +201,7 @@ export function presentAuthenticatedKfzReviewWorkspace(
     phase: hrefOptions.phase,
     queue: hrefOptions.queue,
     source: hrefOptions.source,
+    q: hrefOptions.q,
     view: options?.view,
     basePath: AUTHENTICATED_INBOX_PATH,
     allowLocalFixtureFacts: options?.allowLocalFixtureFacts === true,
@@ -253,6 +261,7 @@ export function presentAuthenticatedKfzInbox(input: {
   phase?: string | null
   queue?: string | null
   source?: string | null
+  q?: string | null
   view?: string | null
   allowLocalFixtureFacts?: boolean
   now?: Date
@@ -260,6 +269,7 @@ export function presentAuthenticatedKfzInbox(input: {
   const phaseFilter = parseKfzWorkQueueFilter(input.phase)
   const queueFilter = parseInboxWorkQueueFilter(input.queue)
   const sourceFilter = parseInboxSourceFilter(input.source)
+  const searchQuery = parseInboxSearchQuery(input.q)
   const unprocessedItems = input.unprocessedItems
   const processedItems = input.processedItems
   const taskRelationsByItemId = input.taskRelationsByItemId ?? {}
@@ -290,7 +300,7 @@ export function presentAuthenticatedKfzInbox(input: {
         resolveInboxLinkedTaskId(selectedItem.id, taskRelationsByItemId),
       )
     : null
-  const visibleUnprocessed = filterInboxItemsByWorkQueue(
+  const queuedUnprocessed = filterInboxItemsByWorkQueue(
     filterInboxItemsByKfzPhase(
       filterInboxItemsBySource(unprocessedItems, sourceFilter),
       phaseFilter,
@@ -299,7 +309,7 @@ export function presentAuthenticatedKfzInbox(input: {
     queueFilter,
     { taskRelationsByItemId, now: input.now },
   )
-  const visibleProcessed = filterInboxItemsByWorkQueue(
+  const queuedProcessed = filterInboxItemsByWorkQueue(
     filterInboxItemsByKfzPhase(
       filterInboxItemsBySource(processedItems, sourceFilter),
       phaseFilter,
@@ -308,13 +318,24 @@ export function presentAuthenticatedKfzInbox(input: {
     queueFilter,
     { taskRelationsByItemId, now: input.now },
   )
+  const visibleUnprocessed = filterInboxItemsBySearch(queuedUnprocessed, searchQuery)
+  const visibleProcessed = filterInboxItemsBySearch(queuedProcessed, searchQuery)
   const visibleItems = [...visibleUnprocessed, ...visibleProcessed]
+  const hrefState = {
+    phase: phaseFilter,
+    queue: queueFilter,
+    source: sourceFilter,
+    q: searchQuery,
+    basePath: AUTHENTICATED_INBOX_PATH,
+  }
   const rows = visibleItems
     .map((item) =>
       presentKfzWorkQueueRow(item, {
         linkedTaskId: resolveInboxLinkedTaskId(item.id, taskRelationsByItemId),
         phase: phaseFilter,
+        queue: queueFilter,
         source: sourceFilter,
+        q: searchQuery,
         basePath: AUTHENTICATED_INBOX_PATH,
       }),
     )
@@ -322,10 +343,7 @@ export function presentAuthenticatedKfzInbox(input: {
   const cards = visibleItems.map((item) =>
     presentUnifiedInboxCard(item, {
       linkedTaskId: resolveInboxLinkedTaskId(item.id, taskRelationsByItemId),
-      phase: phaseFilter,
-      queue: queueFilter,
-      source: sourceFilter,
-      basePath: AUTHENTICATED_INBOX_PATH,
+      ...hrefState,
       now: input.now,
       allowLocalFixtureFacts: input.allowLocalFixtureFacts === true,
     }),
@@ -336,10 +354,7 @@ export function presentAuthenticatedKfzInbox(input: {
           selectedItem.id,
           taskRelationsByItemId,
         ),
-        phase: phaseFilter,
-        queue: queueFilter,
-        source: sourceFilter,
-        basePath: AUTHENTICATED_INBOX_PATH,
+        ...hrefState,
         now: input.now,
         allowLocalFixtureFacts: input.allowLocalFixtureFacts === true,
       })
@@ -354,6 +369,7 @@ export function presentAuthenticatedKfzInbox(input: {
     phaseFilter,
     queueFilter,
     sourceFilter,
+    searchQuery,
     queueMode: phaseFilter !== 'all' || queueFilter !== 'all',
     queueHeading:
       queueFilter !== 'all'
@@ -372,6 +388,7 @@ export function presentAuthenticatedKfzInbox(input: {
       selectedPhase,
       source: sourceFilter,
       queue: queueFilter,
+      q: searchQuery,
       basePath: AUTHENTICATED_INBOX_PATH,
     }),
     workQueueFilterHrefs: buildInboxWorkQueueFilterHrefs({
@@ -382,6 +399,7 @@ export function presentAuthenticatedKfzInbox(input: {
         : null,
       phase: phaseFilter,
       source: sourceFilter,
+      q: searchQuery,
       basePath: AUTHENTICATED_INBOX_PATH,
       now: input.now,
     }),
@@ -390,6 +408,7 @@ export function presentAuthenticatedKfzInbox(input: {
       selectedItem,
       phase: phaseFilter,
       queue: queueFilter,
+      q: searchQuery,
       basePath: AUTHENTICATED_INBOX_PATH,
     }),
     unprocessedItems: visibleUnprocessed,
@@ -407,6 +426,7 @@ export function presentAuthenticatedKfzInbox(input: {
           phase: phaseFilter,
           queue: queueFilter,
           source: sourceFilter,
+          q: searchQuery,
           view: input.view,
           allowLocalFixtureFacts: input.allowLocalFixtureFacts === true,
         })

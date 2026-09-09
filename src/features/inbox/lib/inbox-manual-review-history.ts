@@ -286,6 +286,7 @@ export function presentInboxManualReviewHistory(
     phase?: KfzWorkQueueFilter | null
     queue?: string | null
     source?: InboxSourceFilter | null
+    q?: string | null
     view?: string | null
     basePath?: string | null
     allowLocalFixtureFacts?: boolean
@@ -413,6 +414,7 @@ export function presentInboxManualReviewHistory(
     phase: options?.phase ?? 'all',
     queue: options?.queue ?? 'all',
     source: options?.source ?? 'all',
+    q: options?.q,
     basePath: options?.basePath,
   }
 

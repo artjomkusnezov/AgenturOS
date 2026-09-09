@@ -19,12 +19,13 @@ type InboxPageProps = {
     phase?: string
     queue?: string
     source?: string
+    q?: string
     view?: string
   }>
 }
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const { item, phase, queue, source, view } = await searchParams
+  const { item, phase, queue, source, q, view } = await searchParams
   const [result, membersResult] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
@@ -50,6 +51,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     phase,
     queue,
     source,
+    q,
     view,
   })
   const allItems = [...result.unprocessedItems, ...result.processedItems]
@@ -81,6 +83,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       phaseFilter={inboxView.phaseFilter}
       queueFilter={inboxView.queueFilter}
       sourceFilter={inboxView.sourceFilter}
+      searchQuery={inboxView.searchQuery}
       itemView={parseInboxItemView(view)}
       queueMeta={inboxView.metaLabel}
       attachments={attachments}

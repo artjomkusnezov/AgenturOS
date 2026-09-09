@@ -2,11 +2,19 @@
 
 import { useMemo } from 'react'
 
+import { InboxFactualSearchField } from '@/features/inbox/components/inbox-factual-search-field'
 import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
 import { InboxListItem } from '@/features/inbox/components/inbox-list-item'
 import { InboxSourceFilterNav } from '@/features/inbox/components/inbox-source-filter'
 import { InboxWorkQueueFilterNav } from '@/features/inbox/components/inbox-work-queue-filter'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
+import {
+  filterInboxItemsBySearch,
+  INBOX_SEARCH_CLEAR_LABEL,
+  INBOX_SEARCH_NO_RESULTS_HINT,
+  INBOX_SEARCH_NO_RESULTS_TITLE,
+  parseInboxSearchQuery,
+} from '@/features/inbox/lib/inbox-factual-search'
 import {
   buildInboxSourceFilterHrefs,
   countInboxSourceFilters,
@@ -32,8 +40,13 @@ import {
   resolveKfzWorkQueuePhase,
   type KfzWorkQueueFilter,
 } from '@/features/inbox/lib/kfz-work-queue'
+import { MANUAL_CAPTURE_ACTION_LABEL } from '@/features/inbound/manual/lib/manual-capture-copy'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
-import { aosListGroupLabelClassName } from '@/lib/design-system'
+import {
+  aosBtnPrimaryClassName,
+  aosBtnSecondaryClassName,
+  aosListGroupLabelClassName,
+} from '@/lib/design-system'
 
 type InboxListProps = {
   unprocessedItems: InboxItem[]
@@ -45,6 +58,11 @@ type InboxListProps = {
   phaseFilter?: KfzWorkQueueFilter
   queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
+  searchQuery?: string
+  onSearchQueryChange?: (value: string) => void
+  onClearSearch?: () => void
+  enableManualCapture?: boolean
+  onOpenManualCapture?: () => void
   hrefBasePath?: string | null
   allowLocalFixtureFacts?: boolean
 }
@@ -59,6 +77,11 @@ export function InboxList({
   phaseFilter = 'all',
   queueFilter = 'all',
   sourceFilter = 'all',
+  searchQuery = '',
+  onSearchQueryChange,
+  onClearSearch,
+  enableManualCapture = false,
+  onOpenManualCapture,
   hrefBasePath = null,
   allowLocalFixtureFacts = false,
 }: InboxListProps) {
@@ -66,6 +89,7 @@ export function InboxList({
     () => [...unprocessedItems, ...processedItems],
     [unprocessedItems, processedItems],
   )
+  const activeSearch = parseInboxSearchQuery(searchQuery)
   const kfzCounts = useMemo(
     () => countKfzWorkQueue(allItems, taskRelationsByItemId),
     [allItems, taskRelationsByItemId],
@@ -82,9 +106,10 @@ export function InboxList({
         selectedItem: allItems.find((item) => item.id === selectedItemId) ?? null,
         phase: phaseFilter,
         queue: queueFilter,
+        q: activeSearch,
         basePath: hrefBasePath,
       }),
-    [allItems, hrefBasePath, phaseFilter, queueFilter, selectedItemId],
+    [activeSearch, allItems, hrefBasePath, phaseFilter, queueFilter, selectedItemId],
   )
   const workQueueFilterHrefs = useMemo(
     () =>
@@ -96,9 +121,10 @@ export function InboxList({
           : null,
         phase: phaseFilter,
         source: sourceFilter,
+        q: activeSearch,
         basePath: hrefBasePath,
       }),
-    [allItems, hrefBasePath, phaseFilter, selectedItemId, sourceFilter, taskRelationsByItemId],
+    [activeSearch, allItems, hrefBasePath, phaseFilter, selectedItemId, sourceFilter, taskRelationsByItemId],
   )
   const selectedItem = allItems.find((item) => item.id === selectedItemId) ?? null
   const selectedPhase = selectedItem
@@ -110,29 +136,39 @@ export function InboxList({
   const visibleItems = useMemo(
     () =>
       sortInboxWorkQueueItems(
-        filterInboxItemsByWorkQueue(
-          filterInboxItemsByKfzPhase(
-            filterInboxItemsBySource(allItems, sourceFilter),
-            phaseFilter,
-            taskRelationsByItemId,
+        filterInboxItemsBySearch(
+          filterInboxItemsByWorkQueue(
+            filterInboxItemsByKfzPhase(
+              filterInboxItemsBySource(allItems, sourceFilter),
+              phaseFilter,
+              taskRelationsByItemId,
+            ),
+            queueFilter,
+            { taskRelationsByItemId },
           ),
-          queueFilter,
-          { taskRelationsByItemId },
+          searchQuery,
         ),
       ),
-    [allItems, phaseFilter, queueFilter, sourceFilter, taskRelationsByItemId],
+    [allItems, phaseFilter, queueFilter, searchQuery, sourceFilter, taskRelationsByItemId],
   )
   const timeGroups = useMemo(() => groupInboxWorkQueueItems(visibleItems), [visibleItems])
   const filterEmpty = visibleItems.length === 0
+  const searchActive = Boolean(activeSearch)
   const queueMode = phaseFilter !== 'all' || queueFilter !== 'all'
   const headingParts = [
     sourceFilter !== 'all' ? INBOX_SOURCE_FILTER_LABELS[sourceFilter] : null,
     queueFilter !== 'all' ? INBOX_WORK_QUEUE_FILTER_LABELS[queueFilter] : null,
     phaseFilter !== 'all' ? KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter] : null,
+    searchActive ? `Suche „${activeSearch}“` : null,
   ].filter(Boolean)
 
   return (
     <div className="space-y-3">
+      <InboxFactualSearchField
+        value={searchQuery}
+        onChange={(value) => onSearchQueryChange?.(value)}
+        onClear={() => onClearSearch?.()}
+      />
       <InboxSourceFilterNav
         activeSource={sourceFilter}
         counts={sourceCounts}
@@ -151,15 +187,43 @@ export function InboxList({
         selectedPhase={selectedPhase}
         sourceFilter={sourceFilter}
         queueFilter={queueFilter}
+        searchQuery={activeSearch}
         hrefBasePath={hrefBasePath}
       />
 
       {filterEmpty ? (
-        <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">
-          {sourceFilter !== 'all' || queueMode
-            ? 'Keine Einträge für diesen Filter.'
-            : 'Keine Eingänge in dieser Arbeitsschlange.'}
-        </p>
+        searchActive ? (
+          <div className="aos-inbox-search-empty">
+            <h3 className="aos-inbox-search-empty-title">{INBOX_SEARCH_NO_RESULTS_TITLE}</h3>
+            <p className="aos-inbox-search-empty-copy">
+              {INBOX_SEARCH_NO_RESULTS_HINT} Kein Treffer für „{activeSearch}“.
+            </p>
+            <div className="aos-inbox-search-empty-actions">
+              <button
+                type="button"
+                onClick={() => onClearSearch?.()}
+                className={`${aosBtnSecondaryClassName} min-h-11`}
+              >
+                {INBOX_SEARCH_CLEAR_LABEL}
+              </button>
+              {enableManualCapture ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenManualCapture?.()}
+                  className={`${aosBtnPrimaryClassName} min-h-11`}
+                >
+                  {MANUAL_CAPTURE_ACTION_LABEL}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">
+            {sourceFilter !== 'all' || queueMode
+              ? 'Keine Einträge für diesen Filter.'
+              : 'Keine Eingänge in dieser Arbeitsschlange.'}
+          </p>
+        )
       ) : (
         <div>
           {headingParts.length > 0 ? (
@@ -185,6 +249,7 @@ export function InboxList({
                       phaseFilter={phaseFilter}
                       queueFilter={queueFilter}
                       sourceFilter={sourceFilter}
+                      searchQuery={activeSearch}
                       hrefBasePath={hrefBasePath}
                       allowLocalFixtureFacts={allowLocalFixtureFacts}
                     />

@@ -502,6 +502,7 @@ export function buildInboxWorkQueueFilterHrefs(options?: {
   linkedTaskId?: string | null
   phase?: KfzWorkQueueFilter | null
   source?: string | null
+  q?: string | null
   basePath?: string | null
   now?: Date
 }): Record<InboxWorkQueueFilter, string> {
@@ -521,6 +522,7 @@ export function buildInboxWorkQueueFilterHrefs(options?: {
       queue: filter,
       phase: options?.phase,
       source: options?.source,
+      q: options?.q,
       itemId: keepItem ? options?.selectedItemId : null,
       basePath: options?.basePath,
     })
