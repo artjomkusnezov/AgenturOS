@@ -1,6 +1,6 @@
 /**
  * Session store for the local reply-handoff preview.
- * Used with useSyncExternalStore so reload restore does not setState in an effect.
+ * getSnapshot returns a cached reference until session data actually changes.
  */
 
 import {
@@ -11,14 +11,30 @@ import {
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 const listeners = new Set<() => void>()
+const serverSnapshot = listKfzReplyHandoffPreviewItems(buildKfzReplyHandoffPreviewItems())
 
-function seedItems(): InboxItem[] {
-  return listKfzReplyHandoffPreviewItems(buildKfzReplyHandoffPreviewItems())
-}
+let cachedRaw: string | null | undefined
+let cachedItems: InboxItem[] = serverSnapshot
 
 function emit() {
   for (const listener of listeners) {
     listener()
+  }
+}
+
+function parseItems(raw: string | null): InboxItem[] {
+  if (!raw) {
+    return serverSnapshot
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as InboxItem[]
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return serverSnapshot
+    }
+    return parsed
+  } catch {
+    return serverSnapshot
   }
 }
 
@@ -31,35 +47,30 @@ export function subscribeKfzReplyHandoffPreview(onStoreChange: () => void): () =
 
 export function readKfzReplyHandoffPreviewItems(): InboxItem[] {
   if (typeof window === 'undefined') {
-    return seedItems()
+    return cachedItems
   }
 
-  try {
-    const raw = window.sessionStorage.getItem(KFZ_REPLY_HANDOFF_PREVIEW_STORAGE_KEY)
-    if (!raw) {
-      return seedItems()
-    }
-    const parsed = JSON.parse(raw) as InboxItem[]
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return seedItems()
-    }
-    return parsed
-  } catch {
-    return seedItems()
+  const raw = window.sessionStorage.getItem(KFZ_REPLY_HANDOFF_PREVIEW_STORAGE_KEY)
+  if (raw === cachedRaw) {
+    return cachedItems
   }
+
+  cachedRaw = raw
+  cachedItems = parseItems(raw)
+  return cachedItems
 }
 
 export function readKfzReplyHandoffPreviewServerSnapshot(): InboxItem[] {
-  return seedItems()
+  return serverSnapshot
 }
 
 export function writeKfzReplyHandoffPreviewItems(items: InboxItem[]): InboxItem[] {
+  const raw = JSON.stringify(items)
   if (typeof window !== 'undefined') {
-    window.sessionStorage.setItem(
-      KFZ_REPLY_HANDOFF_PREVIEW_STORAGE_KEY,
-      JSON.stringify(items),
-    )
+    window.sessionStorage.setItem(KFZ_REPLY_HANDOFF_PREVIEW_STORAGE_KEY, raw)
   }
+  cachedRaw = raw
+  cachedItems = items
   emit()
   return items
 }

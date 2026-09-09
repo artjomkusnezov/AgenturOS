@@ -14,6 +14,11 @@ import {
 } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import { presentInboxManualReviewHistory } from '@/features/inbox/lib/inbox-manual-review-history'
 import {
+  readKfzReplyHandoffPreviewItems,
+  readKfzReplyHandoffPreviewServerSnapshot,
+  writeKfzReplyHandoffPreviewItems,
+} from '@/features/inbox/lib/kfz-reply-handoff-preview-store'
+import {
   buildKfzReplyHandoffPreviewItems,
   KFZ_REPLY_HANDOFF_PREVIEW_EMAIL_ID,
   KFZ_REPLY_HANDOFF_PREVIEW_MISSING_ID,
@@ -468,6 +473,24 @@ describe('kfz preferred-channel reply handoff', () => {
     assert.equal(KFZ_COPY_NO_STATUS_CHANGE.includes('expliziter Bestätigung'), true)
     assert.equal(KFZ_HANDOFF_NO_SEND.includes('Nichts wird automatisch gesendet'), true)
     assert.match(KFZ_REVIEW_NO_AUTO_ACTION, /Nichts wird automatisch/)
+  })
+
+  it('keeps a stable preview snapshot until an explicit local write', () => {
+    const first = readKfzReplyHandoffPreviewItems()
+    const second = readKfzReplyHandoffPreviewItems()
+    assert.equal(first, second)
+    assert.equal(readKfzReplyHandoffPreviewServerSnapshot(), first)
+
+    const updated = first.map((item, index) =>
+      index === 0
+        ? { ...item, content: `${item.content}\nLokal persistiert.` }
+        : item,
+    )
+    const written = writeKfzReplyHandoffPreviewItems(updated)
+    assert.equal(written, updated)
+    assert.equal(readKfzReplyHandoffPreviewItems(), written)
+    assert.match(written[0]?.content ?? '', /Lokal persistiert/)
+    writeKfzReplyHandoffPreviewItems(first)
   })
 })
 
