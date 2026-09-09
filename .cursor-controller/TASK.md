@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-ff2e
 
 ## Title
@@ -45,3 +45,6 @@ Add a useful first-party analytics layer for the Kfz landing and questionnaire s
 
 ## Safety
 Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, external analytics/Meta/WhatsApp API, paid services, fingerprinting, tracking before consent, new storage vendor, legal claims, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-ecf7ab38-ff12-4964-a5dd-21cd5cabd852
+CONTROLLER_STARTED_AT: 2026-09-09T14:27:08Z
