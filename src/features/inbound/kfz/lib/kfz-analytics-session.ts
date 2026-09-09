@@ -277,7 +277,7 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
       const record = emit('submit_succeeded', { activeMs: timing.totalActiveMs })
       return record ? [record] : []
     },
-    recordAbandoned(_reason: 'timeout' | 'pagehide' = 'pagehide'): KfzAnalyticsRecord[] {
+    recordAbandoned(): KfzAnalyticsRecord[] {
       if (submitted || abandoned) {
         return []
       }

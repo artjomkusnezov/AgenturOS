@@ -19,14 +19,15 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
   const [periodId, setPeriodId] = useState<KfzAnalyticsPeriodId>('all')
   const [events, setEvents] = useState(initialEvents)
   const [isPending, startTransition] = useTransition()
+  const [nowMs] = useState(() => Date.now())
 
   const dashboard = useMemo(
     () =>
       aggregateKfzAnalyticsDashboard(events, {
         periodId,
-        nowMs: Date.now(),
+        nowMs,
       }),
-    [events, periodId],
+    [events, periodId, nowMs],
   )
 
   function seedFixtures() {

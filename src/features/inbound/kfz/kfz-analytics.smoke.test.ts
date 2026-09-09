@@ -261,7 +261,7 @@ describe('kfz analytics abandonment and exact-once submit', () => {
       ...controller.recordFunnelStart('switch_car'),
       ...controller.recordStepCompleted('branch'),
       ...controller.recordStepView('usage'),
-      ...controller.recordAbandoned('pagehide'),
+      ...controller.recordAbandoned(),
     ]
     await ingestKfzAnalyticsEvents({ consent: 'granted', events, store })
     const stored = await store.listEvents()

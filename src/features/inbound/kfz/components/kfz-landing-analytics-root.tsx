@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { recordKfzAnalyticsPreviewAction } from '@/features/inbound/kfz/actions/kfz-analytics-preview'
 import { KfzAnalyticsConsentBanner } from '@/features/inbound/kfz/components/kfz-analytics-consent-banner'
@@ -122,7 +122,7 @@ export function bindKfzAnalyticsPort(
       push(controller.recordSubmitSucceeded())
     },
     onAbandon() {
-      push(controller.recordAbandoned('pagehide'))
+      push(controller.recordAbandoned())
     },
   }
 }
@@ -144,17 +144,15 @@ export function KfzLandingAnalyticsRoot({
     () => storage ?? getSessionKfzAnalyticsStorage() ?? createMemoryKfzAnalyticsConsentStorage(),
     [storage],
   )
-  const hiddenRef = useRef(
-    typeof document !== 'undefined' ? document.visibilityState !== 'visible' : false,
-  )
+  const visibility = useMemo(() => ({ hidden: false }), [])
   const controller = useMemo(
     () =>
       createKfzAnalyticsController({
         storage: resolvedStorage,
         attribution,
-        hidden: () => hiddenRef.current,
+        hidden: () => visibility.hidden,
       }),
-    [attribution, resolvedStorage],
+    [attribution, resolvedStorage, visibility],
   )
   const flush = useCallback(
     (records: KfzAnalyticsRecord[]) => {
@@ -176,14 +174,14 @@ export function KfzLandingAnalyticsRoot({
 
   useEffect(() => {
     function onVisibility() {
-      hiddenRef.current = document.visibilityState !== 'visible'
-      controller.onVisibilityChange(hiddenRef.current)
-      if (hiddenRef.current) {
+      visibility.hidden = document.visibilityState !== 'visible'
+      controller.onVisibilityChange(visibility.hidden)
+      if (visibility.hidden) {
         flush(controller.flushActiveTime())
       }
     }
     function onPageHide() {
-      hiddenRef.current = true
+      visibility.hidden = true
       analytics.onAbandon()
       flush(controller.flushActiveTime())
     }
@@ -193,7 +191,7 @@ export function KfzLandingAnalyticsRoot({
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('pagehide', onPageHide)
     }
-  }, [analytics, controller, flush])
+  }, [analytics, controller, flush, visibility])
 
   return (
     <div className="space-y-4">
