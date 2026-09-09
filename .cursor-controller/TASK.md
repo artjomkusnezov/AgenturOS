@@ -1,37 +1,47 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-c467
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-ff2e
 
 ## Title
-AGENTUROS — FULL ALLIANZ KFZ QUESTION FLOW WITHOUT DOCUMENTS
+AGENTUROS — PRIVACY-SAFE KFZ FUNNEL ANALYTICS
 
 ## Goal
-Add a separate step-by-step Kfz intake branch for customers who cannot upload documents, insure a first or additional car, switch an existing car, or need an eVB. Reproduce the factual Allianz quotation question order, logic, questions and answer options as accurately as the repository's approved sources allow, while keeping the approved AgenturOS Kfz landing visual style. Never show an invented instant price; submit one normalized request for manual review by Artjom or Vera.
+Add a useful first-party analytics layer for the Kfz landing and questionnaire so Artjom can see visits, traffic sources, funnel starts, chosen branches, reached steps, drop-off points, time on page/step and successful submissions without storing customer answers or personal data in analytics and without adding a paid/external analytics service.
 
 ## Required work
-- Create and work only on one new Cursor-created result branch starting from cursor/agenturos-controller-task-c467 (PR #38). Do not merge PR #38 or write to main/master.
-- Preserve the approved Kfz landing, Lengerich/Römer visual, Allianz branding, Artjom/Vera, 05481 9039041, 4.9 stars/48 reviews, existing optional upload path, privacy, retry/idempotency, unified inbox, search and manual duplicate review.
-- Add the initial choice exactly:
-  - Unterlagen hochladen
-  - Keine Unterlagen vorhanden
-  - Erstes Auto versichern
-  - Weiteres Auto versichern
-  - Bestehendes Auto wechseln
-  - eVB für Zulassung
-- Keep Unterlagen hochladen on the existing optional-document path.
-- For all no-document/manual branches, implement a clear multi-step flow collecting every fact needed for manual Allianz Angebotsberechnung: vehicle identification/details, registration situation, ownership/financing when relevant, usage and annual mileage, parking, drivers and dates of birth/licence details, policyholder relationship, SF class and source/transfer logic, previous insurer and policy facts, claims/loss history, desired liability/partial/full coverage and deductibles, optional protection choices only when supported by approved repository sources, start date/eVB purpose, contact and consent.
-- Branch questions conditionally so irrelevant questions are not shown. Preserve entered answers when moving back and forward and after reload.
-- Do not invent Allianz rules, discounts, eligibility, tariff names, legal wording, premiums or default answers. When an exact Allianz question/order/option is not present in approved repository material, mark the implementation boundary clearly in the PR instead of guessing.
-- No instant price, recommendation presented as final, automatic acceptance or policy creation. The final screen must state that Artjom or Vera checks the request manually.
-- Submit exactly one normalized inbound item with branch, answers, missing facts and preferred response method. WhatsApp is only a preference; no Meta/WhatsApp API or automatic message.
-- Files remain document metadata only. Add no storage service.
-- Add deterministic tests for every initial branch, conditional logic, required validation, back/forward and reload persistence, exact-once retry/idempotency, normalized inbox payload, privacy/consent and absence of invented price/automatic communication.
-- Run npm run test:inbound (or the complete relevant test suite), npx tsc --noEmit, npm run lint and npm run build.
-- Browser-check the preview on desktop and mobile for every initial branch, at least one complete no-document submission, back/forward, reload restore, failed submit/retry producing exactly one inbox item, and the final manual-review message. Put screenshots/video and exact checks in the PR.
+- Create and work only on one new Cursor-created result branch starting from cursor/agenturos-controller-task-ff2e (PR #39). Do not merge or write to main/master.
+- Preserve the approved Kfz landing, six questionnaire branches, normalized exact-once submission, unified inbox, retry/idempotency, search, duplicate review and manual handling by Artjom/Vera.
+- Build a first-party analytics event model using the repository's existing storage/adapter patterns only. Do not add Google Analytics, Meta Pixel, Matomo cloud, tracking cookies, fingerprinting, advertising IDs or a new paid service.
+- Analytics must never record form answers, names, phone numbers, email, licence plate, vehicle data, uploaded-file metadata, free text, IP address, user agent or full URLs that can contain personal/query data.
+- Use an anonymous random session identifier only after the repository's privacy/consent boundary permits analytics. If consent is absent or declined, do not persist or send analytics events. Do not invent legal claims; document this technical boundary for later legal review.
+- Record only allow-listed events and coarse factual properties:
+  - landing_view
+  - traffic_source category and allow-listed UTM campaign/source values with unsafe/free-form values discarded
+  - funnel_start
+  - initial_branch_selected
+  - step_view with stable non-personal step id
+  - step_completed
+  - back_navigation
+  - validation_blocked with stable field/category id only, never entered value
+  - submit_started
+  - submit_failed with coarse error category
+  - submit_succeeded
+  - funnel_abandoned derived from last safe step/session timeout or page lifecycle without storing form content
+  - total active time and per-step active time, excluding hidden/background time
+- Make event writes idempotent where appropriate and resilient to reload/back-forward. Repeated rendering must not inflate visits or completed steps.
+- Add an internal AgenturOS Kfz analytics dashboard, clearly separated from the customer landing, showing for selectable periods:
+  - visits and funnel starts
+  - submissions and conversion rate
+  - counts by traffic source/campaign and questionnaire branch
+  - users reaching each step
+  - drop-off count/rate by step
+  - median/average active time on landing and steps
+  - validation and submit-failure counts
+- Use clear cards/funnel bars, not an Excel-like table as the primary view. Empty/partial data must be honest. No AI interpretation or automatic business action.
+- Add deterministic fixtures and tests for consent allowed/declined, event allow-list and redaction, no PII leakage, source sanitization, visit/step deduplication, active-time calculation, reload/back-forward, abandonment, successful exact-once submission and dashboard aggregation.
+- Run npm run test:inbound (or full relevant suite), npx tsc --noEmit, npm run lint and npm run build.
+- Browser-check desktop and mobile customer flow with consent accepted and declined; one complete submission; one abandonment at a middle step; reload/back-forward; internal dashboard totals, funnel, source, branch, drop-off and timing. Inspect recorded event payloads to prove no form answers or personal data are stored. Record screenshots/video and exact evidence in the PR.
 
 ## Safety
-Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid services, new persistent file storage, invented Allianz/legal/business rules, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-09eafdd7-860e-4f80-9560-2f35b576cf93
-CONTROLLER_STARTED_AT: 2026-09-09T11:08:50Z
+Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, external analytics/Meta/WhatsApp API, paid services, fingerprinting, tracking before consent, new storage vendor, legal claims, force push or destructive git.
