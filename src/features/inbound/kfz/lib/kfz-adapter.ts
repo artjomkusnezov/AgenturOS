@@ -37,6 +37,16 @@ function buildContent(inquiry: NormalizedKfzInquiry): string {
     lines.push(`Kontext: ${inquiry.contextNotes}`)
   }
 
+  if (inquiry.questionnaire) {
+    lines.push(`Zweig: ${inquiry.questionnaire.branchLabel}`)
+    for (const answer of inquiry.questionnaire.answers) {
+      lines.push(`${answer.label}: ${answer.value}`)
+    }
+    if (inquiry.questionnaire.missingFacts.length > 0) {
+      lines.push(`Offene Angaben: ${inquiry.questionnaire.missingFacts.join('; ')}`)
+    }
+  }
+
   if (inquiry.uploadMeta.length > 0) {
     const names = inquiry.uploadMeta.map((u) => u.filename).join(', ')
     lines.push(`Upload-Metadaten: ${names}`)
@@ -93,6 +103,7 @@ export function toInboundItemFromKfzInquiry(inquiry: NormalizedKfzInquiry): Inbo
       contextNotes: inquiry.contextNotes,
       phone: inquiry.phone,
       email: inquiry.email,
+      questionnaire: inquiry.questionnaire,
     }),
     /**
      * Nachweis nur für Anfragebearbeitung — getrennt von künftigem Marketing-Consent.

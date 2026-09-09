@@ -53,7 +53,7 @@ function baseValues(
     phone: '+491701234567',
     email: '',
     preferredChannel: KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
-    inquiryReason: 'Versicherung wechseln',
+    inquiryReason: 'Unterlagen hochladen',
     inquiryProcessingConsent: true,
     vehicleMake: '',
     vehicleModel: '',
@@ -231,7 +231,7 @@ describe('kfz landing timeout then retry', () => {
       const review = presentKfzWebsiteInboxItem(store.items[0])
       assert.ok(review)
       assert.equal(review.preferredChannel, 'whatsapp')
-      assert.equal(review.request, 'Versicherung wechseln')
+      assert.equal(review.request, 'Unterlagen hochladen')
       assert.equal(review.documents.length, 1)
       assert.equal(review.documents[0]?.filename, 'schein.jpg')
     })
@@ -303,7 +303,7 @@ describe('kfz landing retain after failure', () => {
     const retained = applyKfzLandingSubmitFailure(failed)
     assert.equal(retained.values.fullName, 'Max Mustermann')
     assert.equal(retained.values.phone, '+491701234567')
-    assert.equal(retained.values.inquiryReason, 'Versicherung wechseln')
+    assert.equal(retained.values.inquiryReason, 'Unterlagen hochladen')
     assert.equal(retained.values.inquiryProcessingConsent, true)
     assert.equal(retained.documents.length, 1)
     assert.equal(retained.documents[0]?.filename, 'schein.jpg')
@@ -365,8 +365,9 @@ describe('kfz landing draft restore', () => {
     assert.ok(restored)
     assert.equal(restored.values.fullName, 'Max Mustermann')
     assert.equal(restored.values.preferredChannel, 'whatsapp')
-    assert.equal(restored.values.inquiryReason, 'Versicherung wechseln')
+    assert.equal(restored.values.inquiryReason, 'Unterlagen hochladen')
     assert.equal(restored.values.inquiryProcessingConsent, false)
+    assert.equal(restored.screenId, 'documents')
     assert.equal(restored.step, 3)
     assert.equal(restored.submissionId, 'lp-reload-001')
     assert.equal(restored.documentReselectRequired, true)

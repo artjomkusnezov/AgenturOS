@@ -6,6 +6,7 @@
 import type {
   KfzLanguage,
   KfzPreferredChannel,
+  PublicKfzQuestionnaire,
   PublicKfzUploadMeta,
 } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
@@ -50,6 +51,7 @@ export type NormalizedKfzInquiry = {
   attribution: NormalizedKfzAttribution
   /** Nur Metadaten — Binärspeicherung ist Follow-up. */
   uploadMeta: PublicKfzUploadMeta[]
+  questionnaire: PublicKfzQuestionnaire | null
   receivedAt: string
 }
 

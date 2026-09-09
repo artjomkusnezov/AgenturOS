@@ -111,7 +111,7 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
                   <ArrowRight className="h-5 w-5" aria-hidden="true" />
                 </a>
                 <p className="text-sm font-medium text-white/85">
-                  Kostenlos · unverbindlich · ca. 2 Minuten
+                  Kostenlos · unverbindlich · persönliche Prüfung
                 </p>
               </div>
             </div>
@@ -153,11 +153,11 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
                 id="kfz-form-heading"
                 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.025em] sm:text-4xl"
               >
-                In drei kurzen Schritten zur persönlichen Prüfung
+                Zur persönlichen Prüfung durch Artjom oder Vera
               </h2>
               <p className="mt-5 text-lg leading-relaxed text-[#4a5565]">
-                Wählen Sie zuerst Ihr Anliegen. Danach brauchen wir nur die Angaben, unter
-                denen wir Sie erreichen können.
+                Wählen Sie zuerst, womit wir starten. Mit Unterlagen bleibt der kurze Weg.
+                Ohne Unterlagen fragen wir die Angaben für die manuelle Allianz-Prüfung.
               </p>
               <ul className="mt-8 space-y-4 text-base text-[#263445]">
                 <CheckItem>Keine Online-Preisgarantie</CheckItem>
@@ -255,8 +255,9 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
                 oder E-Mail.
               </Faq>
               <Faq question="Brauche ich sofort Unterlagen?">
-                Nein. Der Upload ist optional. Wir fragen gezielt nach, falls Fahrzeugschein
-                oder Beitragsrechnung für die Prüfung helfen.
+                Nein. Der Upload ist optional. Sie können auch ohne Dokumente die Angaben
+                für die manuelle Prüfung machen. Wir fragen gezielt nach, falls Fahrzeugschein
+                oder Beitragsrechnung später helfen.
               </Faq>
               <Faq question="Wie werden meine Daten verwendet?">
                 Ausschließlich zur Bearbeitung Ihrer Kfz-Anfrage und zur Kontaktaufnahme dazu.

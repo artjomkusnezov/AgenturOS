@@ -37,4 +37,4 @@ export const KFZ_LANDING_DEFAULT_POSTAL_CODE = '49525' as const
 export const KFZ_LANDING_CONFIRMATION_TITLE = 'Anfrage ist angekommen.' as const
 
 export const KFZ_LANDING_CONFIRMATION_BODY =
-  'Wir prüfen sie persönlich und melden uns auf dem gewünschten Weg.' as const
+  'Artjom oder Vera prüft Ihre Anfrage manuell und meldet sich auf dem gewünschten Weg. Es gibt keinen Sofortpreis und keinen automatischen Abschluss.' as const

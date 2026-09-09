@@ -36,15 +36,18 @@ import {
   KFZ_LANDING_SOURCE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
-  canAdvanceKfzLandingStep,
+  canAdvanceKfzLandingScreen,
   KFZ_LANDING_CHANNEL_CHOICES,
   KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
   KFZ_LANDING_REQUEST_TYPES,
-  nextKfzLandingStep,
-  previousKfzLandingStep,
   validateKfzLandingStep1,
   validateKfzLandingStep2,
 } from '@/features/inbound/kfz/lib/kfz-landing-steps'
+import {
+  buildKfzLandingScreens,
+  nextKfzLandingScreenId,
+  previousKfzLandingScreenId,
+} from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
@@ -85,7 +88,7 @@ function baseValues(
     phone: '+491701234567',
     email: '',
     preferredChannel: KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
-    inquiryReason: 'Versicherung wechseln',
+    inquiryReason: 'Unterlagen hochladen',
     inquiryProcessingConsent: true,
     vehicleMake: '',
     vehicleModel: '',
@@ -125,32 +128,39 @@ function withKfzEnv(run: () => Promise<void>): Promise<void> {
 }
 
 describe('kfz landing step navigation', () => {
-  it('advances 1 → 2 → 3 and back, and blocks an empty first step', () => {
-    assert.equal(nextKfzLandingStep(1), 2)
-    assert.equal(nextKfzLandingStep(2), 3)
-    assert.equal(nextKfzLandingStep(3), null)
-    assert.equal(previousKfzLandingStep(3), 2)
-    assert.equal(previousKfzLandingStep(2), 1)
-    assert.equal(previousKfzLandingStep(1), null)
+  it('advances the upload path branch → contact → documents and back', () => {
+    const screens = buildKfzLandingScreens('upload_documents', {})
+    assert.deepEqual(
+      screens.map((screen) => screen.id),
+      ['branch', 'contact', 'documents'],
+    )
+    assert.equal(nextKfzLandingScreenId(screens, 'branch'), 'contact')
+    assert.equal(nextKfzLandingScreenId(screens, 'contact'), 'documents')
+    assert.equal(nextKfzLandingScreenId(screens, 'documents'), null)
+    assert.equal(previousKfzLandingScreenId(screens, 'documents'), 'contact')
+    assert.equal(previousKfzLandingScreenId(screens, 'contact'), 'branch')
+    assert.equal(previousKfzLandingScreenId(screens, 'branch'), null)
 
     assert.equal(validateKfzLandingStep1({ inquiryReason: '' }).ok, false)
     assert.equal(
-      validateKfzLandingStep1({ inquiryReason: 'Versicherung wechseln' }).ok,
+      validateKfzLandingStep1({ inquiryReason: 'Unterlagen hochladen' }).ok,
       true,
     )
     assert.deepEqual(
       KFZ_LANDING_REQUEST_TYPES.map((entry) => entry.label),
       [
-        'Versicherung wechseln',
-        'Neues Fahrzeug',
-        'Zweitwagen',
-        'Bestehendes Angebot prüfen',
+        'Unterlagen hochladen',
+        'Keine Unterlagen vorhanden',
+        'Erstes Auto versichern',
+        'Weiteres Auto versichern',
+        'Bestehendes Auto wechseln',
+        'eVB für Zulassung',
       ],
     )
 
-    const blocked = canAdvanceKfzLandingStep(1, baseValues({ inquiryReason: '' }))
+    const blocked = canAdvanceKfzLandingScreen(screens[0]!, baseValues({ inquiryReason: '' }))
     assert.equal(blocked.ok, false)
-    const open = canAdvanceKfzLandingStep(1, baseValues())
+    const open = canAdvanceKfzLandingScreen(screens[0]!, baseValues())
     assert.equal(open.ok, true)
   })
 })
@@ -361,7 +371,7 @@ describe('kfz landing submit normalization', () => {
         return
       }
 
-      assert.equal(built.payload.inquiryReason, 'Versicherung wechseln')
+      assert.equal(built.payload.inquiryReason, 'Unterlagen hochladen')
       assert.equal(built.payload.preferredChannel, 'whatsapp')
       assert.equal(built.payload.phone, '+491701234567')
       assert.equal(built.payload.source, KFZ_LANDING_SOURCE)
@@ -409,7 +419,7 @@ describe('kfz landing submit normalization', () => {
 
       const review = presentKfzWebsiteInboxItem(store.items[0])
       assert.ok(review)
-      assert.equal(review.request, 'Versicherung wechseln')
+      assert.equal(review.request, 'Unterlagen hochladen')
       assert.equal(review.preferredChannel, 'whatsapp')
       assert.equal(review.preferredChannelLabel, 'WhatsApp')
       assert.equal(review.documents.length, 2)
@@ -528,7 +538,7 @@ describe('kfz landing approved redesign content', () => {
 
   it('keeps switching as a clear funnel option and privacy in the form', () => {
     const form = readLandingSource('features/inbound/kfz/components/kfz-landing-form.tsx')
-    assert.match(form, /requestType\.id === 'switch'/)
+    assert.match(form, /branch\.highlighted/)
     assert.match(form, /Am häufigsten/)
     assert.match(form, /Wechseln ist unser häufigster Check/)
     assert.match(form, /Wie dürfen wir uns melden\?/)
@@ -565,6 +575,7 @@ describe('kfz landing zero automatic communication', () => {
       'features/inbound/kfz/lib/kfz-landing-draft.ts',
       'features/inbound/kfz/lib/kfz-landing-submit-session.ts',
       'features/inbound/kfz/lib/kfz-landing-submit-guard.ts',
+      'features/inbound/kfz/lib/kfz-questionnaire.ts',
       'features/inbound/kfz/actions/submit-kfz-landing-inquiry.ts',
     ]
     const source = files.map((relative) => readLandingSource(relative)).join('\n')
@@ -585,7 +596,7 @@ describe('kfz landing zero automatic communication', () => {
     assert.equal(KFZ_LANDING_CONFIRMATION_TITLE, 'Anfrage ist angekommen.')
     assert.equal(
       KFZ_LANDING_CONFIRMATION_BODY,
-      'Wir prüfen sie persönlich und melden uns auf dem gewünschten Weg.',
+      'Artjom oder Vera prüft Ihre Anfrage manuell und meldet sich auf dem gewünschten Weg. Es gibt keinen Sofortpreis und keinen automatischen Abschluss.',
     )
     assert.doesNotMatch(formSource, /router\.push|window\.location|sendWhatsApp|sendEmail/)
   })

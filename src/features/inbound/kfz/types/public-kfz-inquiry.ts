@@ -20,6 +20,23 @@ export type PublicKfzUploadMeta = {
   group?: KfzUploadGroup | null
 }
 
+/** Manueller Fragebogen ohne Unterlagen — Fakten, keine Tarifentscheidung. */
+export type PublicKfzQuestionnaireAnswer = {
+  id: string
+  label: string
+  value: string
+  unknown?: boolean
+}
+
+export type PublicKfzQuestionnaire = {
+  branchId: string
+  branchLabel: string
+  path: 'upload' | 'questionnaire'
+  answers: PublicKfzQuestionnaireAnswer[]
+  missingFacts: string[]
+  boundaries: string[]
+}
+
 /**
  * Roh-Payload von kfz.artkus.de (oder Fixture).
  * Felder bewusst flach und landingspezifisch.
@@ -54,6 +71,8 @@ export type PublicKfzInquiryPayload = {
   /** Client-seitige Idempotenz / Replay-Schutz. */
   submissionId?: string | null
   uploads?: PublicKfzUploadMeta[] | null
+  /** Optionaler manueller Fragebogen (ohne Unterlagen). */
+  questionnaire?: PublicKfzQuestionnaire | null
 }
 
 /** Größenlimits für öffentliche Validierung. */
@@ -77,4 +96,13 @@ export const KFZ_PUBLIC_LIMITS = {
   uploadMimeType: 120,
   uploadGroup: 32,
   maxUploads: 6,
+  questionnaireAnswers: 40,
+  questionnaireId: 64,
+  questionnaireLabel: 180,
+  questionnaireValue: 500,
+  questionnaireMissingFacts: 24,
+  questionnaireMissingFact: 220,
+  questionnaireBoundaries: 12,
+  questionnaireBoundary: 280,
+  questionnairePath: 24,
 } as const

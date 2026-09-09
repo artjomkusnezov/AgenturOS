@@ -68,12 +68,7 @@ export type KfzSubmittedDocument = {
   sizeBytes: number | null
 }
 
-export type KfzMissingInfoCheckId =
-  | 'contact'
-  | 'preferred_channel_contact'
-  | 'request'
-  | 'vehicle'
-  | 'location'
+export type KfzMissingInfoCheckId = string
 
 export type KfzMissingInfoCheck = {
   id: KfzMissingInfoCheckId
@@ -114,6 +109,10 @@ export type KfzWebsiteInboxReview = {
   copyTargets: KfzCopyTargets
   callPreparation: KfzCallPreparation
   replyHandoff: KfzReplyHandoffView
+  questionnaireBranch: string | null
+  questionnaireAnswers: KfzSubmittedFact[]
+  questionnaireMissingFacts: string[]
+  questionnaireBoundaries: string[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -340,6 +339,64 @@ function buildSubmittedFacts(input: {
   return facts
 }
 
+type ReadKfzQuestionnaire = {
+  branchLabel: string | null
+  path: string | null
+  answers: KfzSubmittedFact[]
+  missingFacts: string[]
+  boundaries: string[]
+}
+
+function readQuestionnaire(inquiry: Record<string, unknown> | null): ReadKfzQuestionnaire {
+  const empty: ReadKfzQuestionnaire = {
+    branchLabel: null,
+    path: null,
+    answers: [],
+    missingFacts: [],
+    boundaries: [],
+  }
+  if (!inquiry || !isRecord(inquiry.questionnaire)) {
+    return empty
+  }
+  const raw = inquiry.questionnaire
+  const branchLabel = asNullableString(raw.branchLabel)
+  const path = asNullableString(raw.path)
+  const answers: KfzSubmittedFact[] = []
+  if (Array.isArray(raw.answers)) {
+    for (const entry of raw.answers) {
+      if (!isRecord(entry)) {
+        continue
+      }
+      const id = asNullableString(entry.id)
+      const label = asNullableString(entry.label)
+      const value = asNullableString(entry.value)
+      if (!id || !label || !value) {
+        continue
+      }
+      answers.push({ id: `q:${id}`, label, value })
+    }
+  }
+  const missingFacts: string[] = []
+  if (Array.isArray(raw.missingFacts)) {
+    for (const fact of raw.missingFacts) {
+      const text = asNullableString(fact)
+      if (text) {
+        missingFacts.push(text)
+      }
+    }
+  }
+  const boundaries: string[] = []
+  if (Array.isArray(raw.boundaries)) {
+    for (const boundary of raw.boundaries) {
+      const text = asNullableString(boundary)
+      if (text) {
+        boundaries.push(text)
+      }
+    }
+  }
+  return { branchLabel, path, answers, missingFacts, boundaries }
+}
+
 function readSubmittedDocuments(meta: Record<string, unknown> | null): KfzSubmittedDocument[] {
   if (!meta || !Array.isArray(meta.uploadMeta)) {
     return []
@@ -477,21 +534,63 @@ export function presentKfzWebsiteInboxItem(
     phone,
     email,
   })
-  const missingInformationChecklist = buildKfzMissingInformationChecklist({
+  const urgencyNote = detectUrgencyNote(reason, contextNotes)
+  const acquisitionSource = websiteItem ? asNullableString(acquisition?.source) : null
+  const documents = readSubmittedDocuments(meta)
+  const questionnaire = readQuestionnaire(inquiry)
+  const submittedFacts = buildSubmittedFacts({
+    sourceLabel,
+    acquisitionSource,
+    classification,
+    customerName,
+    location: locationLabel,
     phone,
     email,
-    preferredChannel,
-    reason,
+    preferredChannelLabel,
+    request,
     vehicle: vehicleLabel,
-    location: locationLabel,
+    contextNotes,
+    documents,
   })
+
+  if (questionnaire.branchLabel) {
+    submittedFacts.push({
+      id: 'branch',
+      label: 'Zweig',
+      value: questionnaire.branchLabel,
+    })
+  }
+  submittedFacts.push(...questionnaire.answers)
+  if (questionnaire.boundaries.length > 0) {
+    submittedFacts.push({
+      id: 'questionnaire_boundary',
+      label: 'Umsetzungsgrenze',
+      value: questionnaire.boundaries.join(' '),
+    })
+  }
+
+  const questionnaireMissingChecks: KfzMissingInfoCheck[] = questionnaire.missingFacts.map(
+    (label, index) => ({
+      id: `q-missing:${index}`,
+      label,
+      present: false,
+    }),
+  )
+  const missingInformationChecklist = [
+    ...buildKfzMissingInformationChecklist({
+      phone,
+      email,
+      preferredChannel,
+      reason,
+      vehicle: vehicleLabel,
+      location: locationLabel,
+    }),
+    ...questionnaireMissingChecks,
+  ]
   const missingInformation = missingInformationChecklist
     .filter((itemCheck) => !itemCheck.present)
     .map((itemCheck) => itemCheck.label)
   const missingCount = missingInformation.length
-  const urgencyNote = detectUrgencyNote(reason, contextNotes)
-  const acquisitionSource = websiteItem ? asNullableString(acquisition?.source) : null
-  const documents = readSubmittedDocuments(meta)
 
   return {
     headline: getInboxListTitle(item),
@@ -519,20 +618,7 @@ export function presentKfzWebsiteInboxItem(
       request,
       vehicle: vehicleLabel,
     }),
-    submittedFacts: buildSubmittedFacts({
-      sourceLabel,
-      acquisitionSource,
-      classification,
-      customerName,
-      location: locationLabel,
-      phone,
-      email,
-      preferredChannelLabel,
-      request,
-      vehicle: vehicleLabel,
-      contextNotes,
-      documents,
-    }),
+    submittedFacts,
     documents,
     missingInformationChecklist,
     missingInformation,
@@ -576,5 +662,9 @@ export function presentKfzWebsiteInboxItem(
       { content: item.content, processed_at: item.processed_at ?? null },
       preferredChannel,
     ),
+    questionnaireBranch: questionnaire.branchLabel,
+    questionnaireAnswers: questionnaire.answers,
+    questionnaireMissingFacts: questionnaire.missingFacts,
+    questionnaireBoundaries: questionnaire.boundaries,
   }
 }

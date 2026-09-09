@@ -176,6 +176,11 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
               Keine bekannten Lücken in den Angaben
             </p>
           ) : null}
+          {review.questionnaireBoundaries.length > 0 ? (
+            <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
+              {review.questionnaireBoundaries[0]}
+            </p>
+          ) : null}
         </div>
 
         <dl className="space-y-3">

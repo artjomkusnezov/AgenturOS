@@ -7,6 +7,8 @@ import {
   type KfzPreferredChannel,
   type KfzUploadGroup,
   type PublicKfzInquiryPayload,
+  type PublicKfzQuestionnaire,
+  type PublicKfzQuestionnaireAnswer,
   type PublicKfzUploadMeta,
 } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
@@ -163,6 +165,126 @@ function parseUploads(
   }
 
   return { ok: true, value: uploads }
+}
+
+function parseQuestionnaire(
+  raw: unknown,
+): { ok: true; value: PublicKfzQuestionnaire | null | undefined } | PublicKfzValidationFailure {
+  if (raw === undefined) {
+    return { ok: true, value: undefined }
+  }
+  if (raw === null) {
+    return { ok: true, value: null }
+  }
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: 'questionnaire ist ungültig.', code: 'invalid_field' }
+  }
+
+  if (typeof raw.branchId !== 'string' || raw.branchId.trim().length === 0) {
+    return { ok: false, error: 'questionnaire.branchId fehlt.', code: 'invalid_field' }
+  }
+  if (raw.branchId.length > KFZ_PUBLIC_LIMITS.questionnaireId) {
+    return { ok: false, error: 'questionnaire.branchId ist zu lang.', code: 'oversized_field' }
+  }
+  if (typeof raw.branchLabel !== 'string' || raw.branchLabel.trim().length === 0) {
+    return { ok: false, error: 'questionnaire.branchLabel fehlt.', code: 'invalid_field' }
+  }
+  if (raw.branchLabel.length > KFZ_PUBLIC_LIMITS.questionnaireLabel) {
+    return { ok: false, error: 'questionnaire.branchLabel ist zu lang.', code: 'oversized_field' }
+  }
+  if (raw.path !== 'upload' && raw.path !== 'questionnaire') {
+    return { ok: false, error: 'questionnaire.path ist ungültig.', code: 'invalid_field' }
+  }
+
+  if (!Array.isArray(raw.answers)) {
+    return { ok: false, error: 'questionnaire.answers ist ungültig.', code: 'invalid_field' }
+  }
+  if (raw.answers.length > KFZ_PUBLIC_LIMITS.questionnaireAnswers) {
+    return { ok: false, error: 'Zu viele Fragebogen-Antworten.', code: 'oversized_field' }
+  }
+
+  const answers: PublicKfzQuestionnaireAnswer[] = []
+  for (const entry of raw.answers) {
+    if (!isPlainObject(entry)) {
+      return { ok: false, error: 'Fragebogen-Antwort ist ungültig.', code: 'invalid_field' }
+    }
+    if (typeof entry.id !== 'string' || entry.id.trim().length === 0) {
+      return { ok: false, error: 'Fragebogen-Antwort-ID fehlt.', code: 'invalid_field' }
+    }
+    if (entry.id.length > KFZ_PUBLIC_LIMITS.questionnaireId) {
+      return { ok: false, error: 'Fragebogen-Antwort-ID ist zu lang.', code: 'oversized_field' }
+    }
+    if (typeof entry.label !== 'string' || entry.label.trim().length === 0) {
+      return { ok: false, error: 'Fragebogen-Antwort-Label fehlt.', code: 'invalid_field' }
+    }
+    if (entry.label.length > KFZ_PUBLIC_LIMITS.questionnaireLabel) {
+      return { ok: false, error: 'Fragebogen-Antwort-Label ist zu lang.', code: 'oversized_field' }
+    }
+    if (typeof entry.value !== 'string' || entry.value.trim().length === 0) {
+      return { ok: false, error: 'Fragebogen-Antwortwert fehlt.', code: 'invalid_field' }
+    }
+    if (entry.value.length > KFZ_PUBLIC_LIMITS.questionnaireValue) {
+      return { ok: false, error: 'Fragebogen-Antwortwert ist zu lang.', code: 'oversized_field' }
+    }
+    if (entry.unknown !== undefined && typeof entry.unknown !== 'boolean') {
+      return { ok: false, error: 'questionnaire.unknown ist ungültig.', code: 'invalid_field' }
+    }
+    const answer: PublicKfzQuestionnaireAnswer = {
+      id: entry.id,
+      label: entry.label,
+      value: entry.value,
+    }
+    if (entry.unknown === true) {
+      answer.unknown = true
+    }
+    answers.push(answer)
+  }
+
+  if (!Array.isArray(raw.missingFacts)) {
+    return { ok: false, error: 'questionnaire.missingFacts ist ungültig.', code: 'invalid_field' }
+  }
+  if (raw.missingFacts.length > KFZ_PUBLIC_LIMITS.questionnaireMissingFacts) {
+    return { ok: false, error: 'Zu viele offene Angaben.', code: 'oversized_field' }
+  }
+  const missingFacts: string[] = []
+  for (const fact of raw.missingFacts) {
+    if (typeof fact !== 'string' || fact.trim().length === 0) {
+      return { ok: false, error: 'Offene Angabe ist ungültig.', code: 'invalid_field' }
+    }
+    if (fact.length > KFZ_PUBLIC_LIMITS.questionnaireMissingFact) {
+      return { ok: false, error: 'Offene Angabe ist zu lang.', code: 'oversized_field' }
+    }
+    missingFacts.push(fact)
+  }
+
+  if (!Array.isArray(raw.boundaries)) {
+    return { ok: false, error: 'questionnaire.boundaries ist ungültig.', code: 'invalid_field' }
+  }
+  if (raw.boundaries.length > KFZ_PUBLIC_LIMITS.questionnaireBoundaries) {
+    return { ok: false, error: 'Zu viele Umsetzungsgrenzen.', code: 'oversized_field' }
+  }
+  const boundaries: string[] = []
+  for (const boundary of raw.boundaries) {
+    if (typeof boundary !== 'string' || boundary.trim().length === 0) {
+      return { ok: false, error: 'Umsetzungsgrenze ist ungültig.', code: 'invalid_field' }
+    }
+    if (boundary.length > KFZ_PUBLIC_LIMITS.questionnaireBoundary) {
+      return { ok: false, error: 'Umsetzungsgrenze ist zu lang.', code: 'oversized_field' }
+    }
+    boundaries.push(boundary)
+  }
+
+  return {
+    ok: true,
+    value: {
+      branchId: raw.branchId,
+      branchLabel: raw.branchLabel,
+      path: raw.path,
+      answers,
+      missingFacts,
+      boundaries,
+    },
+  }
 }
 
 /**
@@ -390,6 +512,11 @@ export function validatePublicKfzInquiry(
     return uploads
   }
 
+  const questionnaire = parseQuestionnaire(parsed.questionnaire)
+  if (!questionnaire.ok) {
+    return questionnaire
+  }
+
   const payload: PublicKfzInquiryPayload = {
     fullName: fullName.value,
     postalCode: postalCode.value,
@@ -415,6 +542,7 @@ export function validatePublicKfzInquiry(
     utmContent: attribution.utmContent,
     submissionId: submissionId.value,
     uploads: uploads.value,
+    questionnaire: questionnaire.value,
   }
 
   return { ok: true, payload }

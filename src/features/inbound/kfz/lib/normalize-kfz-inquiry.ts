@@ -10,6 +10,8 @@ import {
 import {
   KFZ_PUBLIC_LIMITS,
   type PublicKfzInquiryPayload,
+  type PublicKfzQuestionnaire,
+  type PublicKfzQuestionnaireAnswer,
   type PublicKfzUploadMeta,
 } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
@@ -51,6 +53,7 @@ function buildExternalId(input: {
   consentVersion: string
   /** Nur Client-Consent-Timestamp — nie server-receivedAt (Replay-instabil). */
   consentTimestamp: string | null
+  questionnaireFingerprint: string
 }): string {
   const clientId = input.submissionId?.trim()
   if (clientId && clientId.length > 0 && clientId.length <= KFZ_PUBLIC_LIMITS.submissionId) {
@@ -72,6 +75,7 @@ function buildExternalId(input: {
     input.contextNotes?.toLowerCase() ?? '',
     input.consentVersion,
     input.consentTimestamp ?? '',
+    input.questionnaireFingerprint,
   ].join('|')
 
   const hash = createHash('sha256').update(fingerprint, 'utf8').digest('hex').slice(0, 32)
@@ -100,6 +104,62 @@ function normalizeUploadMeta(
     }
     return meta
   })
+}
+
+function normalizeQuestionnaire(
+  questionnaire: PublicKfzInquiryPayload['questionnaire'],
+): PublicKfzQuestionnaire | null {
+  if (!questionnaire) {
+    return null
+  }
+
+  const answers: PublicKfzQuestionnaireAnswer[] = questionnaire.answers.map((entry) => {
+    const answer: PublicKfzQuestionnaireAnswer = {
+      id: sanitizePlainTextField(entry.id, KFZ_PUBLIC_LIMITS.questionnaireId),
+      label: sanitizePlainTextField(entry.label, KFZ_PUBLIC_LIMITS.questionnaireLabel),
+      value: sanitizePlainTextField(entry.value, KFZ_PUBLIC_LIMITS.questionnaireValue),
+    }
+    if (entry.unknown === true) {
+      answer.unknown = true
+    }
+    return answer
+  })
+
+  return {
+    branchId: sanitizePlainTextField(
+      questionnaire.branchId,
+      KFZ_PUBLIC_LIMITS.questionnaireId,
+    ),
+    branchLabel: sanitizePlainTextField(
+      questionnaire.branchLabel,
+      KFZ_PUBLIC_LIMITS.questionnaireLabel,
+    ),
+    path: questionnaire.path,
+    answers,
+    missingFacts: questionnaire.missingFacts.map((fact) =>
+      sanitizePlainTextField(fact, KFZ_PUBLIC_LIMITS.questionnaireMissingFact),
+    ),
+    boundaries: questionnaire.boundaries.map((boundary) =>
+      sanitizePlainTextField(boundary, KFZ_PUBLIC_LIMITS.questionnaireBoundary),
+    ),
+  }
+}
+
+function questionnaireFingerprint(questionnaire: PublicKfzQuestionnaire | null): string {
+  if (!questionnaire) {
+    return ''
+  }
+  const answerPart = questionnaire.answers
+    .map((entry) => `${entry.id}=${entry.value.toLowerCase()}`)
+    .join(';')
+  return [
+    questionnaire.branchId,
+    questionnaire.path,
+    answerPart,
+    questionnaire.missingFacts.join(';'),
+  ]
+    .join('|')
+    .toLowerCase()
 }
 
 /**
@@ -183,6 +243,7 @@ export function normalizeKfzInquiry(
     payload.consentVersion,
     KFZ_PUBLIC_LIMITS.consentVersion,
   )
+  const questionnaire = normalizeQuestionnaire(payload.questionnaire)
 
   const inquiry: NormalizedKfzInquiry = {
     externalId: buildExternalId({
@@ -201,6 +262,7 @@ export function normalizeKfzInquiry(
       contextNotes,
       consentVersion,
       consentTimestamp: clientConsentTimestamp,
+      questionnaireFingerprint: questionnaireFingerprint(questionnaire),
     }),
     fullName,
     postalCode,
@@ -237,6 +299,7 @@ export function normalizeKfzInquiry(
       ),
     },
     uploadMeta: normalizeUploadMeta(payload.uploads),
+    questionnaire,
     receivedAt,
   }
 
