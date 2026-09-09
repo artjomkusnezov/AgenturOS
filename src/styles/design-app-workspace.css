@@ -518,6 +518,50 @@
     gap: 0.5rem;
   }
 
+  .aos-inbox-duplicate {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(251 146 60 / 0.35);
+    background: rgb(251 146 60 / 0.08);
+  }
+
+  .aos-inbox-duplicate--related {
+    border-color: rgb(52 211 153 / 0.28);
+    background: rgb(52 211 153 / 0.08);
+  }
+
+  .aos-inbox-duplicate-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .aos-inbox-duplicate-matches {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 550;
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+  }
+
+  .aos-inbox-duplicate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .aos-inbox-duplicate-actions > * {
+    min-height: 2.75rem;
+  }
+
   .aos-kfz-call-prep {
     display: flex;
     flex-direction: column;

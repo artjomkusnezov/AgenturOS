@@ -34,6 +34,9 @@ export type InboxItemMutationState = {
     | 'prepare_reply'
     | 'mark_contacted'
     | 'mark_follow_up'
+    | 'duplicate_dismissed'
+    | 'related_marked'
+    | 'related_removed'
 }
 
 export type InboxItemInput = {

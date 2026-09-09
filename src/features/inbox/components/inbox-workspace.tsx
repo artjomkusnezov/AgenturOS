@@ -25,6 +25,7 @@ import {
   type KfzWorkQueueFilter,
 } from '@/features/inbox/lib/kfz-work-queue'
 import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
+import type { InboxDuplicateDecisionCommand } from '@/features/inbox/lib/inbox-exact-duplicate-review'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { ManualQuickCaptureDialog } from '@/features/inbound/manual/components/manual-quick-capture-dialog'
 import { MANUAL_CAPTURE_ACTION_LABEL } from '@/features/inbound/manual/lib/manual-capture-copy'
@@ -52,6 +53,7 @@ type InboxWorkspaceProps = {
   /** Local fixtures may carry documented review times; live records never do. */
   allowLocalHistoryFixtureFacts?: boolean
   onLocalApply?: (itemId: string, command: KfzManualTriageCommand) => void
+  onLocalDuplicateApply?: (itemId: string, command: InboxDuplicateDecisionCommand) => void
 }
 
 export function InboxWorkspace({
@@ -73,6 +75,7 @@ export function InboxWorkspace({
   onLocalConfirmed,
   allowLocalHistoryFixtureFacts = false,
   onLocalApply,
+  onLocalDuplicateApply,
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const captureTriggerRef = useRef<HTMLButtonElement>(null)
@@ -293,6 +296,13 @@ export function InboxWorkspace({
                   ? (command) => onLocalApply(selectedItem.id, command)
                   : undefined
               }
+              onLocalDuplicateApply={
+                onLocalDuplicateApply
+                  ? (command) => onLocalDuplicateApply(selectedItem.id, command)
+                  : undefined
+              }
+              queueItems={items}
+              taskRelationsByItemId={taskRelationsByItemId}
             />
           ) : (
             <InboxEmptyDetail />
