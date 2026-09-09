@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-83d4
 
 ## Title
@@ -22,3 +22,6 @@ Bring the owner-approved Kfz landing redesign from GitHub commit 80684551915024c
 
 ## Safety
 Cursor-created branch only. No master/main, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid services, legal/privacy/business decisions, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-639fd0a5-a248-43b2-88b7-363b0c412c02
+CONTROLLER_STARTED_AT: 2026-09-09T08:55:53Z
