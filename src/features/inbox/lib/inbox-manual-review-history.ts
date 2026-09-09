@@ -18,6 +18,13 @@ import {
   KFZ_FOLLOW_UP_NOTE,
   KFZ_REPLY_PREPARED_NOTE,
 } from '@/features/inbox/lib/kfz-reply-handoff'
+import {
+  INBOX_DUPLICATE_FIELD_LABELS,
+  INBOX_DUPLICATE_HISTORY_KIND_LABELS,
+  readInboxDuplicateReviewRecord,
+  type InboxDuplicateFieldId,
+  type InboxDuplicateHistoryKind,
+} from '@/features/inbox/lib/inbox-exact-duplicate-review'
 import { parseInboxItemView, type InboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import {
   buildInboxHref,
@@ -62,6 +69,9 @@ export const INBOX_HISTORY_KIND_LABELS = {
   draft_saved: 'Entwurf gespeichert',
   contact_confirmed: 'Als kontaktiert markiert',
   follow_up_needed: 'Rückfrage nötig',
+  duplicate_dismissed: INBOX_DUPLICATE_HISTORY_KIND_LABELS.duplicate_dismissed,
+  related_marked: INBOX_DUPLICATE_HISTORY_KIND_LABELS.related_marked,
+  related_removed: INBOX_DUPLICATE_HISTORY_KIND_LABELS.related_removed,
   manually_completed: 'Manuell erledigt',
 } as const
 
@@ -114,6 +124,9 @@ const WORKFLOW_ORDER: readonly InboxHistoryEventKind[] = [
   'draft_saved',
   'contact_confirmed',
   'follow_up_needed',
+  'duplicate_dismissed',
+  'related_marked',
+  'related_removed',
   'internal_task_created',
   'manually_completed',
 ]
@@ -203,6 +216,29 @@ function listOperatorNoteLines(content: string): string[] {
     .notes.split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
+}
+
+function describeDuplicateHistoryEntry(
+  kind: InboxDuplicateHistoryKind,
+  fieldIds: InboxDuplicateFieldId[],
+  otherItemId: string,
+): string {
+  const fields =
+    fieldIds.length > 0
+      ? fieldIds.map((fieldId) => INBOX_DUPLICATE_FIELD_LABELS[fieldId]).join(', ')
+      : null
+  const target = `Bestehende Anfrage ${otherItemId}`
+  if (kind === 'related_marked') {
+    return fields
+      ? `Manuell als zusammengehörig markiert (${fields}). ${target}. Keine Zusammenführung, kein Statuswechsel.`
+      : `Manuell als zusammengehörig markiert. ${target}. Keine Zusammenführung, kein Statuswechsel.`
+  }
+  if (kind === 'duplicate_dismissed') {
+    return fields
+      ? `Manuell als kein Duplikat markiert (${fields}). ${target}. Status unverändert.`
+      : `Manuell als kein Duplikat markiert. ${target}. Status unverändert.`
+  }
+  return `Zusammengehörigkeit entfernt. ${target}. Beide Arbeitskopien bleiben erhalten.`
 }
 
 function isReviewStartedNote(line: string): boolean {
@@ -380,6 +416,19 @@ export function presentInboxManualReviewHistory(
         layer: 'employee',
         detail: KFZ_FOLLOW_UP_NOTE,
         occurredAt: null,
+      }),
+    )
+  }
+
+  const duplicateReview = readInboxDuplicateReviewRecord(item.inbound_metadata)
+  for (const entry of duplicateReview.events) {
+    events.push(
+      createEvent({
+        id: entry.id,
+        kind: entry.kind,
+        layer: 'employee',
+        detail: describeDuplicateHistoryEntry(entry.kind, entry.fieldIds, entry.otherItemId),
+        occurredAt: entry.at,
       }),
     )
   }

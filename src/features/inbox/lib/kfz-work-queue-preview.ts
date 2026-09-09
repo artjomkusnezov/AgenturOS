@@ -55,7 +55,7 @@ type PreviewInquiry = {
     sizeBytes?: number | null
     group?: 'fahrzeugschein' | 'vorversicherung' | null
   }>
-  vehicle: { make: string | null; model: string | null; year: string | null }
+  vehicle: { make: string | null; model: string | null; year: string | null; registration?: string | null }
   notes: string
   draft: string
   processedAt: string | null
@@ -76,6 +76,7 @@ function buildPreviewItem(input: PreviewInquiry): InboxItem {
     input.phone ? `Telefon: ${input.phone}` : null,
     input.email ? `E-Mail: ${input.email}` : null,
     vehicleLabel ? `Fahrzeug: ${vehicleLabel}` : null,
+    input.vehicle.registration ? `Kennzeichen: ${input.vehicle.registration}` : null,
   ]
     .filter(Boolean)
     .join('\n')
@@ -121,7 +122,14 @@ function buildPreviewItem(input: PreviewInquiry): InboxItem {
         email: input.email,
         contextNotes: input.contextNotes ?? null,
         location: { postalCode: '49525', city: 'Lengerich' },
-        vehicle: input.vehicle,
+        vehicle: {
+          make: input.vehicle.make,
+          model: input.vehicle.model,
+          year: input.vehicle.year,
+          ...(input.vehicle.registration
+            ? { registration: input.vehicle.registration }
+            : {}),
+        },
       },
       ...(input.uploadMeta && input.uploadMeta.length > 0
         ? { uploadMeta: input.uploadMeta }
@@ -145,11 +153,12 @@ export function buildKfzWorkQueuePreviewItems(): {
     phone: '+491701234567',
     email: null,
     preferredChannel: 'whatsapp',
-    vehicle: { make: 'VW', model: 'Golf', year: '2019' },
+    vehicle: { make: 'VW', model: 'Golf', year: '2019', registration: 'OS-AB 1234' },
     notes: '',
     draft: '',
     processedAt: null,
     createdAt: '2026-09-08T07:10:00.000Z',
+    contextNotes: 'Kennzeichen OS-AB 1234 liegt vor.',
     uploadMeta: [
       {
         filename: 'fahrzeugschein.jpg',
@@ -203,11 +212,12 @@ export function buildKfzWorkQueuePreviewItems(): {
     phone: '+491709998877',
     email: null,
     preferredChannel: 'phone',
-    vehicle: { make: 'Opel', model: 'Corsa', year: '2018' },
+    vehicle: { make: 'Opel', model: 'Corsa', year: '2018', registration: 'OS-AB 1234' },
     notes: KFZ_REVIEW_STARTED_NOTE,
     draft: '',
     processedAt: '2026-09-08T08:00:00.000Z',
     createdAt: '2026-09-08T06:50:00.000Z',
+    contextNotes: 'Kennzeichen OS-AB 1234.',
     localReviewHistory: KFZ_WORK_QUEUE_PREVIEW_DONE_HISTORY_FACTS,
   })
 

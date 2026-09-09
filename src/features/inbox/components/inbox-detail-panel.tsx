@@ -15,6 +15,7 @@ import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-ite
 import { InboxAiProposalSection } from '@/features/ai-inbound/components/inbox-ai-proposal-section'
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
+import { InboxExactDuplicateSection } from '@/features/inbox/components/inbox-exact-duplicate-section'
 import { InboxKfzReplyHandoffActions } from '@/features/inbox/components/inbox-kfz-reply-handoff-actions'
 import { InboxKfzResponseDraftSection } from '@/features/inbox/components/inbox-kfz-response-draft-section'
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
@@ -23,6 +24,8 @@ import { InboxManualStatusActions } from '@/features/inbox/components/inbox-manu
 import type { InboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
 import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import { InboxManualReviewHistorySection } from '@/features/inbox/components/inbox-manual-review-history'
+import type { InboxDuplicateDecisionCommand } from '@/features/inbox/lib/inbox-exact-duplicate-review'
+import { presentInboxDuplicateReview } from '@/features/inbox/lib/inbox-exact-duplicate-review'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import type { InboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
@@ -74,6 +77,9 @@ type InboxDetailPanelProps = {
   onDeleted: () => void
   onStatusChange: () => void
   onLocalApply?: (command: KfzManualTriageCommand) => void
+  onLocalDuplicateApply?: (command: InboxDuplicateDecisionCommand) => void
+  queueItems?: InboxItem[]
+  taskRelationsByItemId?: Record<string, string>
 }
 
 const initialState: InboxItemMutationState = {}
@@ -160,6 +166,9 @@ export function InboxDetailPanel({
   onDeleted,
   onStatusChange,
   onLocalApply,
+  onLocalDuplicateApply,
+  queueItems = [],
+  taskRelationsByItemId = {},
 }: InboxDetailPanelProps) {
   const updateFormId = useId()
   const deleteFormId = useId()
@@ -177,6 +186,15 @@ export function InboxDetailPanel({
   const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
   const sourceVisual = resolveInboxItemSourceVisual(item)
   const kfzReview = presentKfzWebsiteInboxItem(item, { linkedTaskId })
+  const duplicateReview = presentInboxDuplicateReview(item, queueItems.length > 0 ? queueItems : [item], {
+    phase: phaseFilter,
+    queue: queueFilter,
+    source: sourceFilter,
+    q: searchQuery,
+    basePath: hrefBasePath,
+    taskRelationsByItemId,
+    allowLocalFixtureFacts: allowLocalHistoryFixtureFacts,
+  })
   const history = presentInboxManualReviewHistory(item, {
     linkedTaskId,
     phase: phaseFilter,
@@ -279,6 +297,12 @@ export function InboxDetailPanel({
         ) : (
           <>
             <InboxKfzReviewSection review={kfzReview} />
+            <InboxExactDuplicateSection
+              itemId={item.id}
+              review={duplicateReview}
+              onApplied={onStatusChange}
+              onLocalApply={onLocalDuplicateApply}
+            />
             {kfzReview ? (
               <InboxKfzResponseDraftSection
                 key={`${item.id}:${kfzReview.responseDraft}`}

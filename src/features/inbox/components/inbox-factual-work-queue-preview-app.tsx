@@ -7,6 +7,7 @@ import { parseInboxSearchQuery } from '@/features/inbox/lib/inbox-factual-search
 import { parseInboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
 import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import { parseInboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
+import { applyInboxDuplicateDecisionToItems } from '@/features/inbox/lib/inbox-exact-duplicate-review'
 import { applyKfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import { parseKfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import { buildKfzWorkQueuePreviewItems } from '@/features/inbox/lib/kfz-work-queue-preview'
@@ -100,6 +101,13 @@ export function InboxFactualWorkQueuePreviewApp({
               : item,
           ),
         )
+      }}
+      onLocalDuplicateApply={(itemId, command) => {
+        const applied = applyInboxDuplicateDecisionToItems(items, itemId, command)
+        if (!applied.ok) {
+          return
+        }
+        writeUnifiedInboxPreviewItems(applied.items)
       }}
     />
   )

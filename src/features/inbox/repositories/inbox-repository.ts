@@ -265,6 +265,80 @@ export async function updateInboxItemContentForCurrentUser(
   }
 }
 
+export async function getInboxItemsByIdsForCurrentUser(
+  itemIds: string[],
+): Promise<{ success: true; items: InboxItem[] } | RepositoryError> {
+  const uniqueIds = [...new Set(itemIds.filter((itemId) => isValidInboxItemId(itemId)))]
+  if (uniqueIds.length === 0) {
+    return { success: true, items: [] }
+  }
+
+  const agencyResult = await getCurrentUserAgency()
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('inbox_items')
+    .select('*')
+    .eq('agency_id', agencyResult.agency.id)
+    .in('id', uniqueIds)
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Eingangselemente konnten nicht geladen werden.',
+    }
+  }
+
+  return {
+    success: true,
+    items: data ?? [],
+  }
+}
+
+export async function updateInboxItemInboundMetadataForCurrentUser(
+  itemId: string,
+  inboundMetadata: InboxItem['inbound_metadata'],
+): Promise<InboxItemResult> {
+  const agencyResult = await getCurrentUserAgency()
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('inbox_items')
+    .update({
+      inbound_metadata: inboundMetadata,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', itemId)
+    .eq('agency_id', agencyResult.agency.id)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die Duplikat-Entscheidung konnte nicht gespeichert werden.',
+    }
+  }
+
+  if (!data) {
+    return {
+      success: false,
+      error: 'Das Eingangselement wurde nicht gefunden.',
+    }
+  }
+
+  return {
+    success: true,
+    item: data,
+  }
+}
+
 export async function processInboxItemForCurrentUser(itemId: string): Promise<InboxItemResult> {
   const agencyResult = await getCurrentUserAgency()
 
