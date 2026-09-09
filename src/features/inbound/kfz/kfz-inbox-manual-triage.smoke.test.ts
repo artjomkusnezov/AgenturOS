@@ -148,6 +148,9 @@ describe('kfz intake → inbox review → explicit manual action', () => {
         'record_internal_note',
         'save_response_draft',
         'create_follow_up_task',
+        'prepare_reply',
+        'mark_contacted',
+        'mark_follow_up',
         'mark_handled',
       ])
     })
