@@ -51,11 +51,11 @@ prüft, dass die eingecheckten Migrationen `channel='website'` und `source='webs
 ## Öffentliche Landingpage (Gate 3 Slice)
 
 **Browser:** `http://localhost:3000/kfz`  
-Regionale Landingpage für Allianz Kusnezov / Lengerich. Drei kurze Schritte (Anliegen, Kontakt, optionale Unterlagen + Consent). Formular baut den Gate-2-`PublicKfzInquiryPayload`, setzt `submissionId` client-seitig und sendet über Server Action in denselben Handler wie `POST /api/inbound/kfz` (Bearer-Secret nur auf dem Server).
+Regionale Landingpage für Allianz Kusnezov / Lengerich (Römer-Hero, Allianz-Logo, Artjom und Vera, Telefon/WhatsApp 05481 9039041, 4,9/48 Google-Bewertungen, FAQ, Impressum/Datenschutz der Agentur). Drei kurze Schritte (Anliegen, Kontakt, optionale Unterlagen + Consent). Formular baut den Gate-2-`PublicKfzInquiryPayload`, setzt `submissionId` client-seitig und sendet über Server Action in denselben Handler wie `POST /api/inbound/kfz` (Bearer-Secret nur auf dem Server).
 
 Standard-Rückkanal ist WhatsApp; Alternativen in dieser Reihenfolge: WhatsApp, Telefon, E-Mail. Gespeichert wird nur die Kundenwahl — keine WhatsApp-/Meta-API, keine Nachricht.
 
-Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts`, `src/features/inbound/kfz/kfz-landing-flow.smoke.test.ts` und `src/features/inbound/kfz/kfz-landing-submit.smoke.test.ts` (Schritte, WhatsApp-Default, Alternativkanal, Dokumentwahl/-validierung, Submit→Inbox, Submit-Status, stabile Submission-ID, Timeout/Retry ohne Duplikat, Draft-Restore ohne Consent/Dateien, kein automatischer Versand).
+Deterministische Landing-Tests: `src/features/inbound/kfz/kfz-landing.smoke.test.ts`, `src/features/inbound/kfz/kfz-landing-flow.smoke.test.ts` und `src/features/inbound/kfz/kfz-landing-submit.smoke.test.ts` (freigegebenes Landing-Content, Schritte, WhatsApp-Default, Alternativkanal, optionale Dokumentwahl/-validierung, Privacy, Submit→Inbox, Retry/Idempotenz, Draft-Restore ohne Consent/Dateien, kein automatischer Versand).
 
 Der HTTP-Handler ist derselbe Einstieg wie `POST /api/inbound/kfz` und die `/kfz` Server Action. Tests dürfen einen Memory-Store injizieren; Production bleibt beim Service-Role-Store. Fehlt die Intake-Konfiguration, antwortet der Handler ehrlich mit `config_missing` (kein Erfolg).
 

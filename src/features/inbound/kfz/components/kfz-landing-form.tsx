@@ -34,6 +34,9 @@ import {
   KFZ_LANDING_CONFIRMATION_TITLE,
   KFZ_LANDING_CONSENT_VERSION,
   KFZ_LANDING_CONTACT_EMAIL,
+  KFZ_LANDING_CONTACT_PHONE,
+  KFZ_LANDING_CONTACT_PHONE_E164,
+  KFZ_LANDING_PRIVACY_URL,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
   createKfzLandingSubmissionId,
@@ -72,7 +75,7 @@ type KfzLandingFormProps = {
 }
 
 const fieldClassName =
-  'mt-1.5 w-full min-h-12 rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:bg-zinc-100'
+  'mt-1.5 w-full min-h-12 rounded-xl border border-[#cbd6e2] bg-white px-3.5 py-3 text-base text-zinc-900 outline-none transition focus:border-[#0050aa] focus:ring-2 focus:ring-[#0050aa]/20 disabled:cursor-not-allowed disabled:bg-zinc-100'
 
 const labelClassName = 'block text-sm font-medium text-zinc-800'
 
@@ -425,7 +428,7 @@ export function KfzLandingForm({
             <RequiredMark />
           </legend>
           <p className="text-sm text-zinc-600">
-            Eine Auswahl reicht. Wir prüfen persönlich und unverbindlich.
+            Eine Auswahl reicht. Wechseln ist unser häufigster Check.
           </p>
           <div className="grid gap-2">
             {KFZ_LANDING_REQUEST_TYPES.map((requestType) => {
@@ -433,10 +436,12 @@ export function KfzLandingForm({
               return (
                 <label
                   key={requestType.id}
-                  className={`flex min-h-14 cursor-pointer items-center rounded-2xl border px-4 py-3 text-base font-medium ${
+                  className={`relative flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-base font-medium transition ${
                     selected
-                      ? 'border-blue-800 bg-blue-50 text-blue-950'
-                      : 'border-zinc-200 bg-white text-zinc-900'
+                      ? 'border-[#0050aa] bg-[#eaf3ff] text-[#003781] ring-1 ring-[#0050aa]'
+                      : requestType.id === 'switch'
+                        ? 'border-[#8eb6e5] bg-[#f5f9ff] text-[#003781] hover:border-[#0050aa]'
+                        : 'border-zinc-200 bg-white text-zinc-900 hover:border-[#8eb6e5] hover:bg-[#f8fbff]'
                   }`}
                 >
                   <input
@@ -447,7 +452,12 @@ export function KfzLandingForm({
                     disabled={locked}
                     onChange={() => updateField('inquiryReason', requestType.label)}
                   />
-                  {requestType.label}
+                  <span>{requestType.label}</span>
+                  {requestType.id === 'switch' ? (
+                    <span className="rounded-full bg-[#d7eaff] px-2.5 py-1 text-xs font-semibold text-[#0050aa]">
+                      Am häufigsten
+                    </span>
+                  ) : null}
                 </label>
               )
             })}
@@ -551,7 +561,7 @@ export function KfzLandingForm({
 
           <fieldset>
             <legend className="text-sm font-medium text-zinc-800">
-              Bevorzugter Rückruf
+              Wie dürfen wir uns melden?
             </legend>
             <p id={`${formId}-contact-hint`} className="mt-1 text-xs leading-relaxed text-zinc-500">
               Wir speichern nur Ihre Wahl. Es wird keine WhatsApp-Nachricht gesendet und
@@ -583,6 +593,19 @@ export function KfzLandingForm({
               })}
             </div>
           </fieldset>
+
+          <p className="rounded-xl bg-[#f3f7fb] px-3.5 py-3 text-xs leading-relaxed text-[#4a5565]">
+            Ihre Angaben verwenden wir ausschließlich zur Bearbeitung Ihrer Anfrage.
+            Unterlagen fragen wir nur an, wenn sie für die Prüfung benötigt werden.{' '}
+            <a
+              href={KFZ_LANDING_PRIVACY_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-[#0050aa] underline-offset-2 hover:underline"
+            >
+              Datenschutz
+            </a>
+          </p>
         </div>
       ) : null}
 
@@ -649,7 +672,7 @@ export function KfzLandingForm({
                 Kfz-Anfrage speichert und mich dazu kontaktiert. Es handelt sich nicht um
                 eine Einwilligung für Werbung. Details:{' '}
                 <a
-                  href="/datenschutz"
+                  href={KFZ_LANDING_PRIVACY_URL}
                   className="font-medium text-blue-800 underline-offset-2 hover:underline"
                   target="_blank"
                   rel="noreferrer"
@@ -661,11 +684,9 @@ export function KfzLandingForm({
               </label>
             </div>
             <p id={`${formId}-privacy`} className="mt-3 text-xs leading-relaxed text-zinc-500">
-              Pflichtfelder sind Name, PLZ, Ort, Anliegen, Consent sowie ein Kontaktweg.
-              Für WhatsApp ist eine nutzbare Telefonnummer nötig. Consent-Stand:{' '}
-              {KFZ_LANDING_CONSENT_VERSION}. Es werden keine Preisversprechen oder KI-Tarife
-              angezeigt. Unterlagen bleiben optional; dauerhaft gespeichert werden nur
-              Dateiname, Typ, Größe und Gruppe.
+              Ihre Angaben verwenden wir ausschließlich zur Bearbeitung Ihrer Anfrage.
+              Unterlagen bleiben optional und werden nur benötigt, wenn sie die persönliche
+              Prüfung erleichtern. Consent-Stand: {KFZ_LANDING_CONSENT_VERSION}.
             </p>
           </div>
         </div>
@@ -687,7 +708,14 @@ export function KfzLandingForm({
                 >
                   {KFZ_LANDING_CONTACT_EMAIL}
                 </a>{' '}
-                erreichen.
+                erreichen. Alternativ telefonisch unter{' '}
+                <a
+                  className="font-medium underline-offset-2 hover:underline"
+                  href={`tel:${KFZ_LANDING_CONTACT_PHONE_E164}`}
+                >
+                  {KFZ_LANDING_CONTACT_PHONE}
+                </a>
+                .
               </p>
             ) : null}
           </Alert>

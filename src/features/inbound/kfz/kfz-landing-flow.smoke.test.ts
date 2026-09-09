@@ -1,5 +1,6 @@
 /**
- * Mobile-first Kfz landing: steps, WhatsApp default, documents, submit, no auto-send.
+ * Mobile-first Kfz landing: approved local redesign, steps, WhatsApp preference,
+ * optional documents, submit, retry/idempotency, no auto-send.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -21,9 +22,17 @@ import {
   toPublicKfzUploadMeta,
 } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
+  KFZ_LANDING_ADDRESS,
+  KFZ_LANDING_AGENCY_NAME,
+  KFZ_LANDING_AGENCY_URL,
   KFZ_LANDING_CONFIRMATION_BODY,
   KFZ_LANDING_CONFIRMATION_TITLE,
   KFZ_LANDING_CONSENT_VERSION,
+  KFZ_LANDING_CONTACT_EMAIL,
+  KFZ_LANDING_CONTACT_PHONE,
+  KFZ_LANDING_CONTACT_PHONE_E164,
+  KFZ_LANDING_IMPRINT_URL,
+  KFZ_LANDING_PRIVACY_URL,
   KFZ_LANDING_SOURCE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
@@ -53,7 +62,18 @@ const FORBIDDEN_COMMUNICATION = [
   'resend',
   'convert-inbox-to-task',
   'convert-inbox-to-case',
+  'graph.facebook.com',
+  'api.whatsapp.com',
+  'gtag(',
+  'googletagmanager',
+  'document.cookie',
 ] as const
+
+const publicRoot = path.resolve(srcRoot, '../public')
+
+function readLandingSource(relativeFromSrc: string): string {
+  return fs.readFileSync(path.join(srcRoot, relativeFromSrc), 'utf8')
+}
 
 function baseValues(
   overrides: Partial<KfzLandingFormValues> = {},
@@ -399,12 +419,145 @@ describe('kfz landing submit normalization', () => {
       assert.equal(review.phase, 'needs_review')
     })
   })
+
+  it('accepts a complete three-step inquiry without uploads as one inbox item', async () => {
+    await withKfzEnv(async () => {
+      const built = buildKfzLandingPayload({
+        values: baseValues(),
+        submissionId: 'lp-flow-no-upload',
+        consentTimestamp: '2026-09-09T08:00:00.000Z',
+      })
+      assert.equal(built.ok, true)
+      if (!built.ok) {
+        return
+      }
+
+      assert.equal(built.payload.uploads, null)
+      assert.equal(built.payload.preferredChannel, 'whatsapp')
+      assert.equal(built.payload.inquiryProcessingConsent, true)
+
+      const store = createMemoryInboundIntakeStore()
+      const first = await handleKfzInboundHttpRequest(
+        new Request('http://localhost/api/inbound/kfz', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SECRET}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(built.payload),
+        }),
+        { store },
+      )
+      const retry = await handleKfzInboundHttpRequest(
+        new Request('http://localhost/api/inbound/kfz', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SECRET}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(built.payload),
+        }),
+        { store },
+      )
+
+      assert.equal(first.ok, true)
+      assert.equal(retry.ok, true)
+      if (!first.ok || !retry.ok) {
+        return
+      }
+      assert.equal(first.body.deduplicated, false)
+      assert.equal(retry.body.deduplicated, true)
+      assert.equal(store.items.length, 1)
+      assert.equal(store.items[0].channel, 'website')
+      assert.equal(store.items[0].processed_at, null)
+    })
+  })
+})
+
+describe('kfz landing approved redesign content', () => {
+  it('keeps official contact, imprint, privacy and local hero facts', () => {
+    assert.equal(KFZ_LANDING_AGENCY_NAME, 'Allianz Kusnezov')
+    assert.equal(KFZ_LANDING_CONTACT_PHONE, '05481 9039041')
+    assert.equal(KFZ_LANDING_CONTACT_PHONE_E164, '+4954819039041')
+    assert.equal(KFZ_LANDING_CONTACT_EMAIL, 'allianz.kusnezov@allianz.de')
+    assert.equal(KFZ_LANDING_ADDRESS, 'Alwin-Klein-Straße 13, 49525 Lengerich')
+    assert.equal(
+      KFZ_LANDING_AGENCY_URL,
+      'https://vertretung.allianz.de/allianz.kusnezov/',
+    )
+    assert.equal(
+      KFZ_LANDING_IMPRINT_URL,
+      'https://vertretung.allianz.de/allianz.kusnezov/impressum/',
+    )
+    assert.equal(
+      KFZ_LANDING_PRIVACY_URL,
+      'https://vertretung.allianz.de/allianz.kusnezov/datenschutz/',
+    )
+
+    const assets = [
+      'kfz/allianz-logo.svg',
+      'kfz/lengerich-roemer-hero.webp',
+      'kfz/artjom-kusnezov.png',
+      'kfz/vera-kusnezov.png',
+    ]
+    for (const relative of assets) {
+      assert.equal(fs.existsSync(path.join(publicRoot, relative)), true, relative)
+    }
+
+    const shell = readLandingSource('features/inbound/kfz/components/kfz-landing-shell.tsx')
+    assert.match(shell, /lengerich-roemer-hero\.webp/)
+    assert.match(shell, /Der Römer in Lengerich/)
+    assert.match(shell, /allianz-logo\.svg/)
+    assert.match(shell, /Artjom Kusnezov/)
+    assert.match(shell, /Vera Kusnezov/)
+    assert.match(shell, /KFZ_LANDING_CONTACT_PHONE/)
+    assert.match(shell, /KFZ_LANDING_CONTACT_PHONE_E164/)
+    assert.match(shell, /KFZ_LANDING_CONTACT_EMAIL/)
+    assert.match(shell, /KFZ_LANDING_ADDRESS/)
+    assert.match(shell, /KFZ_LANDING_IMPRINT_URL/)
+    assert.match(shell, /KFZ_LANDING_PRIVACY_URL/)
+    assert.match(shell, /wa\.me/)
+    assert.match(shell, /4,9/)
+    assert.match(shell, /48 Bewertungen/)
+    assert.match(shell, /Kfz-Check starten/)
+    assert.match(shell, /Häufige Fragen/)
+    assert.match(shell, /Der Upload ist optional/)
+    assert.match(shell, /Lieber direkt sprechen\?/)
+    assert.match(shell, /Impressum/)
+  })
+
+  it('keeps switching as a clear funnel option and privacy in the form', () => {
+    const form = readLandingSource('features/inbound/kfz/components/kfz-landing-form.tsx')
+    assert.match(form, /requestType\.id === 'switch'/)
+    assert.match(form, /Am häufigsten/)
+    assert.match(form, /Wechseln ist unser häufigster Check/)
+    assert.match(form, /Wie dürfen wir uns melden\?/)
+    assert.match(form, /Es wird keine WhatsApp-Nachricht gesendet/)
+    assert.match(form, /KFZ_LANDING_PRIVACY_URL/)
+    assert.match(form, /Unterlagen bleiben optional/)
+    assert.match(form, /executeKfzLandingSubmitAttempt/)
+    assert.match(form, /createKfzLandingSubmissionId/)
+    assert.match(form, /draftController/)
+    assert.doesNotMatch(form, /href="\/datenschutz"/)
+  })
+
+  it('keeps the camera picker and says upload is optional', () => {
+    const fields = readLandingSource(
+      'features/inbound/kfz/components/kfz-landing-document-fields.tsx',
+    )
+    assert.match(fields, /Unterlagen \(optional\)/)
+    assert.match(fields, /ohne Upload absenden/)
+    assert.match(fields, /Foto aufnehmen/)
+    assert.match(fields, /capture="environment"/)
+    assert.match(fields, /KFZ_LANDING_STORAGE_BLOCKER/)
+  })
 })
 
 describe('kfz landing zero automatic communication', () => {
   it('keeps landing modules free of outbound or status writers', () => {
     const files = [
       'features/inbound/kfz/components/kfz-landing-form.tsx',
+      'features/inbound/kfz/components/kfz-landing-shell.tsx',
       'features/inbound/kfz/components/kfz-landing-document-fields.tsx',
       'features/inbound/kfz/lib/kfz-landing-steps.ts',
       'features/inbound/kfz/lib/kfz-landing-documents.ts',
@@ -414,21 +567,18 @@ describe('kfz landing zero automatic communication', () => {
       'features/inbound/kfz/lib/kfz-landing-submit-guard.ts',
       'features/inbound/kfz/actions/submit-kfz-landing-inquiry.ts',
     ]
-    const source = files
-      .map((relative) => fs.readFileSync(path.join(srcRoot, relative), 'utf8'))
-      .join('\n')
+    const source = files.map((relative) => readLandingSource(relative)).join('\n')
 
     for (const fragment of FORBIDDEN_COMMUNICATION) {
       assert.doesNotMatch(
         source,
-        new RegExp(fragment),
+        new RegExp(fragment.replace(/[()]/g, '\\$&')),
         `landing must not import ${fragment}`,
       )
     }
 
-    const formSource = fs.readFileSync(
-      path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
-      'utf8',
+    const formSource = readLandingSource(
+      'features/inbound/kfz/components/kfz-landing-form.tsx',
     )
     assert.match(formSource, /KFZ_LANDING_CONFIRMATION_TITLE/)
     assert.match(formSource, /KFZ_LANDING_CONFIRMATION_BODY/)
@@ -437,5 +587,6 @@ describe('kfz landing zero automatic communication', () => {
       KFZ_LANDING_CONFIRMATION_BODY,
       'Wir prüfen sie persönlich und melden uns auf dem gewünschten Weg.',
     )
+    assert.doesNotMatch(formSource, /router\.push|window\.location|sendWhatsApp|sendEmail/)
   })
 })
