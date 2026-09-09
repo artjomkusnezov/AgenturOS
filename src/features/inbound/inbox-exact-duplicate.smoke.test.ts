@@ -545,7 +545,6 @@ describe('manual duplicate relation, unlink, history and reload', () => {
       queue: 'never_contacted',
       q: '0170',
       now: NOW,
-      basePath: UNIFIED_INBOX_PREVIEW_PATH,
     })
     const fresh = [...preview.unprocessedItems, ...preview.processedItems].find(
       (item) => item.id === KFZ_WORK_QUEUE_PREVIEW_NEW_ID,
