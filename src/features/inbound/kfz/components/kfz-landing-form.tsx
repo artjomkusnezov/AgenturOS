@@ -52,6 +52,7 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-landing-submit-session'
 import {
   canAdvanceKfzLandingScreen,
+  isKfzLandingSubmitScreen,
   KFZ_LANDING_CHANNEL_CHOICES,
 } from '@/features/inbound/kfz/lib/kfz-landing-steps'
 import {
@@ -152,7 +153,7 @@ export function KfzLandingForm({
     0,
     screens.findIndex((entry) => entry.id === screenId),
   )
-  const isLastScreen = screenIndex === screens.length - 1
+  const isLastScreen = isKfzLandingSubmitScreen(screen, screens, branchId)
   const documentReselectNotice =
     localDocumentNotice === undefined
       ? restoredDraft?.documentReselectNotice ?? null
@@ -480,7 +481,9 @@ export function KfzLandingForm({
     >
       <div aria-live="polite">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-800">
-          Schritt {screenIndex + 1} von {screens.length} · {screen?.title ?? 'Start'}
+          {branchId
+            ? `Schritt ${screenIndex + 1} von ${screens.length} · ${screen?.title ?? 'Start'}`
+            : `Schritt 1 · ${screen?.title ?? 'Start'}`}
         </p>
         <div
           className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200"

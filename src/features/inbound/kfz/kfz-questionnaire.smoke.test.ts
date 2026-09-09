@@ -19,7 +19,10 @@ import {
   writeKfzLandingDraft,
 } from '@/features/inbound/kfz/lib/kfz-landing-draft'
 import { KFZ_LANDING_CONFIRMATION_BODY } from '@/features/inbound/kfz/lib/kfz-landing-constants'
-import { KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL } from '@/features/inbound/kfz/lib/kfz-landing-steps'
+import {
+  isKfzLandingSubmitScreen,
+  KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
+} from '@/features/inbound/kfz/lib/kfz-landing-steps'
 import {
   buildKfzLandingScreens,
   getKfzQuestion,
@@ -179,6 +182,10 @@ describe('kfz landing initial branches', () => {
       screens.some((screen) => screen.kind === 'questions'),
       false,
     )
+    assert.equal(isKfzLandingSubmitScreen(screens[0], screens, 'upload_documents'), false)
+    assert.equal(isKfzLandingSubmitScreen(screens[2], screens, 'upload_documents'), true)
+    const startOnly = buildKfzLandingScreens('', {})
+    assert.equal(isKfzLandingSubmitScreen(startOnly[0], startOnly, ''), false)
   })
 })
 

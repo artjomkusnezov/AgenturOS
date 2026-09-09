@@ -177,6 +177,17 @@ export function canAdvanceKfzLandingScreen(
   return { ok: true }
 }
 
+export function isKfzLandingSubmitScreen(
+  screen: KfzLandingScreen | undefined,
+  screens: readonly KfzLandingScreen[],
+  branchId: string,
+): boolean {
+  if (!branchId || !screen || screen.kind === 'branch') {
+    return false
+  }
+  return screens[screens.length - 1]?.id === screen.id
+}
+
 export function isKfzLandingRequestTypeLabel(value: string): boolean {
   return isKfzLandingBranchLabel(value)
 }
