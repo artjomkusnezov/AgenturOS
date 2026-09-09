@@ -12,6 +12,10 @@ import {
 } from 'react'
 
 import { submitKfzLandingInquiryAction } from '@/features/inbound/kfz/actions/submit-kfz-landing-inquiry'
+import {
+  getNoopKfzLandingAnalytics,
+  type KfzLandingAnalyticsPort,
+} from '@/features/inbound/kfz/components/kfz-landing-analytics-root'
 import { KfzLandingDocumentFields } from '@/features/inbound/kfz/components/kfz-landing-document-fields'
 import { KfzQuestionnaireFields } from '@/features/inbound/kfz/components/kfz-questionnaire-fields'
 import {
@@ -81,6 +85,7 @@ type KfzLandingFormProps = {
   submitInquiry?: KfzLandingSubmitFn
   draftStorage?: KfzLandingDraftStorage | null
   submitTimeoutMs?: number
+  analytics?: KfzLandingAnalyticsPort
 }
 
 const fieldClassName =
@@ -112,6 +117,7 @@ export function KfzLandingForm({
   submitInquiry = submitKfzLandingInquiryAction,
   draftStorage,
   submitTimeoutMs,
+  analytics = getNoopKfzLandingAnalytics(),
 }: KfzLandingFormProps) {
   const formId = useId()
   const [localScreenId, setScreenId] = useState<string | null>(null)
@@ -166,6 +172,12 @@ export function KfzLandingForm({
       errorRef.current?.focus()
     }
   }, [clientError, serverError])
+
+  useEffect(() => {
+    if (screen?.id) {
+      analytics.onStepView(screen.id)
+    }
+  }, [analytics, screen?.id])
 
   useEffect(() => {
     const urls = previewUrlsRef.current
@@ -224,6 +236,7 @@ export function KfzLandingForm({
     setClientError(null)
     setValues(nextValues)
     persistDraft({ values: nextValues, screenId: KFZ_SCREEN_BRANCH })
+    analytics.onBranchSelected(branch.id)
   }
 
   function updateAnswer(questionId: string, value: string) {
@@ -253,8 +266,10 @@ export function KfzLandingForm({
     })
     if (!check.ok) {
       setClientError(check.error)
+      analytics.onValidationBlocked(screen.id, check.fieldId ?? check.code)
       return
     }
+    analytics.onStepCompleted(screen.id)
     const next = nextKfzLandingScreenId(screens, screen.id)
     if (next) {
       setScreenId(next)
@@ -269,6 +284,7 @@ export function KfzLandingForm({
     setClientError(null)
     const previous = previousKfzLandingScreenId(screens, screen.id)
     if (previous) {
+      analytics.onBack(screen.id, previous)
       setScreenId(previous)
       persistDraft({ screenId: previous })
     }
@@ -367,6 +383,7 @@ export function KfzLandingForm({
     })
     if (!check.ok) {
       setClientError(check.error)
+      analytics.onValidationBlocked(screen.id, check.fieldId ?? check.code)
       return
     }
 
@@ -384,6 +401,7 @@ export function KfzLandingForm({
     persistDraft()
     inFlightRef.current = true
     setPhase('submitting')
+    analytics.onSubmitStarted()
 
     startTransition(async () => {
       try {
@@ -415,10 +433,14 @@ export function KfzLandingForm({
           setDocuments([])
           setPreviews({})
           setDocumentReselectNotice(null)
+          analytics.onSubmitSucceeded()
           return
         }
 
         setPhase('error')
+        analytics.onSubmitFailed(
+          attempt.result && !attempt.result.ok ? attempt.result.code : 'unknown',
+        )
         setServerError(
           attempt.result && !attempt.result.ok
             ? attempt.result.error
@@ -426,6 +448,7 @@ export function KfzLandingForm({
         )
       } catch {
         setPhase('error')
+        analytics.onSubmitFailed('network')
         setServerError(
           'Technischer Fehler bei der Übermittlung. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.',
         )

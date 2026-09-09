@@ -6,6 +6,7 @@ export type AppNavIcon =
   | 'contacts'
   | 'files'
   | 'activity'
+  | 'analytics'
   | 'settings'
 
 export type AppNavItem = {
@@ -43,6 +44,12 @@ export const appNavigationGroups: AppNavGroup[] = [
         href: '/app/inbox',
         icon: 'inbox',
         description: 'Zentraler Eingang für erfasste Inhalte.',
+      },
+      {
+        title: 'Kfz-Messung',
+        href: '/app/kfz-analytics',
+        icon: 'analytics',
+        description: 'Anonyme Nutzung der öffentlichen Kfz-Strecke.',
       },
       {
         title: 'Vorgänge',

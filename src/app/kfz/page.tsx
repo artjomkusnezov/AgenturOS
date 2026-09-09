@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { KfzLandingForm } from '@/features/inbound/kfz/components/kfz-landing-form'
+import { KfzLandingWithAnalytics } from '@/features/inbound/kfz/components/kfz-landing-with-analytics'
 import { KfzLandingShell } from '@/features/inbound/kfz/components/kfz-landing-shell'
 import { readKfzLandingAttributionFromSearchParams } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import {
@@ -37,7 +37,7 @@ export default async function KfzLandingPage({ searchParams }: KfzPageProps) {
 
   return (
     <KfzLandingShell>
-      <KfzLandingForm attribution={attribution} />
+      <KfzLandingWithAnalytics attribution={attribution} />
     </KfzLandingShell>
   )
 }

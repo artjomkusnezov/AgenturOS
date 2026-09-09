@@ -164,7 +164,39 @@ export default function DatenschutzPage() {
         </OwnerInputNote>
       </LegalSection>
 
-      <LegalSection title="8. Betroffenenrechte">
+      <LegalSection title="8. First-party Nutzungsmessung der Kfz-Strecke">
+        <p>
+          Die öffentliche Kfz-Seite kann nach einer ausdrücklichen Auswahl in der Oberfläche
+          anonyme Nutzungsereignisse in AgenturOS speichern (first-party, ohne Tracking-Cookie,
+          ohne Fingerprinting, ohne Google Analytics, Meta Pixel oder andere bezahlte Dienste).
+        </p>
+        <p>Technisch vorgesehen sind nur grobe, allow-listed Ereignisse, insbesondere:</p>
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>Seitenaufruf, Funnel-Start, gewählter Zweig, erreichte Schritte</li>
+          <li>Zurück-Navigation, Validierungsblockaden (Feld-/Kategorie-ID, kein eingegebener Wert)</li>
+          <li>Start, Fehlerkategorie und Erfolg eines Versands</li>
+          <li>Abbruch anhand letzter sicherer Schritt-ID oder Timeout</li>
+          <li>aktive Zeit, ohne Zeit im Hintergrund</li>
+        </ul>
+        <p>
+          Nicht in diesen Messereignissen gespeichert werden Formularantworten, Name, Telefon,
+          E-Mail, Kennzeichen, Fahrzeugdaten, Dateimetadaten, Freitext, IP-Adresse, User-Agent
+          oder volle URLs. Eine anonyme Zufalls-Sitzungs-ID entsteht erst nach Zustimmung.
+          Ohne Zustimmung oder nach Ablehnung werden keine Messereignisse gesendet oder
+          gespeichert. Die Einwilligung zur Bearbeitung einer Kfz-Anfrage bleibt ein getrennter
+          Zweck.
+        </p>
+        <OwnerInputNote>
+          <p>
+            Dies ist eine technische Implementierungsgrenze, keine Rechtsaussage. Bitte prüfen
+            und ergänzen: Rechtsgrundlage, Aufbewahrungsfrist, Formulierung in der
+            Datenschutzerklärung und ob die tabbezogene sessionStorage-Zustimmung für diese
+            Messung ausreicht.
+          </p>
+        </OwnerInputNote>
+      </LegalSection>
+
+      <LegalSection title="9. Betroffenenrechte">
         <p>
           Betroffene Personen können unbeschadet anderer Rechte insbesondere Auskunft,
           Berichtigung, Löschung, Einschränkung der Verarbeitung sowie Widerspruch geltend machen,
@@ -186,7 +218,7 @@ export default function DatenschutzPage() {
         </OwnerInputNote>
       </LegalSection>
 
-      <LegalSection title="9. Kontakt">
+      <LegalSection title="10. Kontakt">
         <p>
           Datenschutz und Datenlöschung:{' '}
           <a
