@@ -11,6 +11,10 @@ import {
   sanitizeKfzAnalyticsUtmSource,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
 import { KFZ_ANALYTICS_ACTIVE_MS_CAP } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
+import {
+  isKfzDeductibleQuestionId,
+  isKfzSfQuestionId,
+} from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import type {
   KfzAnalyticsEventName,
   KfzAnalyticsProperties,
@@ -49,6 +53,11 @@ const FORBIDDEN_KEY_FRAGMENTS = [
   'secret',
   'cookie',
   'fingerprint',
+  'sf_class',
+  'sfclass',
+  'deductible',
+  'selbstbeteiligung',
+  'schadenfrei',
 ] as const
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -153,6 +162,10 @@ export function redactKfzAnalyticsProperties(
       continue
     }
     if (key === 'fieldId') {
+      if (isKfzSfQuestionId(value) || isKfzDeductibleQuestionId(value)) {
+        properties.fieldId = 'missing_field'
+        continue
+      }
       if (isKfzAnalyticsFieldId(value)) {
         properties.fieldId = value
       }
@@ -243,6 +256,10 @@ export function assertNoKfzAnalyticsPii(record: KfzAnalyticsRecord): string[] {
     /"answers"/i,
     /"fullName"/i,
     /"filename"/i,
+    /selbstbeteiligung/i,
+    /schadenfreiheitsklasse/i,
+    /"sf_class"/i,
+    /"deductible"/i,
   ]
   for (const probe of probes) {
     if (probe.test(serialized)) {

@@ -53,6 +53,6 @@ export const KFZ_ANALYTICS_ACTIVE_MS_CAP = 24 * 60 * 60 * 1000
 export const KFZ_ANALYTICS_PRIVACY_NOTES = [
   'Technische Grenze: Messung nur nach ausdrücklicher Zustimmung in der UI.',
   'Kein Tracking-Cookie, kein Fingerprinting, keine Werbe-ID, kein externes Analytics.',
-  'Kein Speichern von Formularantworten oder Kontaktdaten in Analytics-Events.',
+  'Kein Speichern von Formularantworten, SF-Klassen oder Selbstbeteiligungen in Analytics-Events.',
   'Kein Rechtsanspruch und keine Datenschutzerklärung — nur Implementierungsgrenze.',
 ] as const

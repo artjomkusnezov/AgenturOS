@@ -25,18 +25,32 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-landing-steps'
 import {
   buildKfzLandingScreens,
+  formatKfzDeductibleCombination,
   getKfzQuestion,
+  hasKfzTeilkaskoSfQuestion,
   isKfzQuestionVisible,
   KFZ_ANSWER_UNKNOWN,
+  KFZ_DEDUCTIBLE_COMBINATION_ID,
+  KFZ_DEDUCTIBLE_FULL_ID,
+  KFZ_DEDUCTIBLE_PARTIAL_ID,
   KFZ_LANDING_BRANCHES,
   KFZ_QUESTIONNAIRE_BOUNDARIES,
+  KFZ_QUESTIONS,
+  KFZ_SF_CLASS_HAFTPFLICHT_ID,
+  KFZ_SF_CLASS_OPTIONS,
+  KFZ_SF_CLASS_VOLLKASKO_ID,
+  KFZ_TEILKASKO_DEDUCTIBLE_OPTIONS,
+  KFZ_VOLLKASKO_DEDUCTIBLE_OPTIONS,
+  listAnsweredKfzQuestions,
   listKfzQuestionnaireMissingFacts,
   listVisibleKfzQuestions,
   nextKfzLandingScreenId,
   previousKfzLandingScreenId,
   readQuestionnaireAnswer,
+  setKfzQuestionnaireAnswer,
   type KfzQuestionDefinition,
   type KfzQuestionnaireAnswers,
+  validateKfzQuestionAnswer,
   validateKfzQuestionScreen,
   validateKfzQuestionnaireComplete,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
@@ -73,9 +87,6 @@ function defaultAnswer(question: KfzQuestionDefinition): string {
   }
   if (question.id === 'vehicle_model') {
     return 'Golf'
-  }
-  if (question.id === 'sf_class') {
-    return 'SF 8'
   }
   if (question.id === 'previous_insurer') {
     return 'Beispielversicherung'
@@ -264,10 +275,30 @@ describe('kfz questionnaire conditional logic', () => {
   it('asks claims details and deductibles only when they apply', () => {
     assert.equal(isKfzQuestionVisible('claims_details', 'switch_car', { has_claims: 'yes' }), true)
     assert.equal(isKfzQuestionVisible('claims_details', 'switch_car', { has_claims: 'no' }), false)
-    assert.equal(isKfzQuestionVisible('deductible_partial', 'first_car', { coverage: 'liability' }), false)
-    assert.equal(isKfzQuestionVisible('deductible_partial', 'first_car', { coverage: 'partial' }), true)
-    assert.equal(isKfzQuestionVisible('deductible_full', 'first_car', { coverage: 'full' }), true)
-    assert.equal(isKfzQuestionVisible('deductible_full', 'first_car', { coverage: 'partial' }), false)
+    assert.equal(
+      isKfzQuestionVisible(KFZ_DEDUCTIBLE_PARTIAL_ID, 'first_car', { coverage: 'liability' }),
+      false,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_DEDUCTIBLE_PARTIAL_ID, 'first_car', { coverage: 'partial' }),
+      true,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_DEDUCTIBLE_FULL_ID, 'first_car', { coverage: 'full' }),
+      true,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_DEDUCTIBLE_FULL_ID, 'first_car', { coverage: 'partial' }),
+      false,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_DEDUCTIBLE_PARTIAL_ID, 'first_car', { coverage: 'full' }),
+      true,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_DEDUCTIBLE_FULL_ID, 'first_car', { coverage: 'liability' }),
+      false,
+    )
   })
 
   it('does not invent Allianz optional riders in the question catalog', () => {
@@ -298,11 +329,13 @@ describe('kfz questionnaire required validation', () => {
   })
 
   it('records unknown answers as missing facts without inventing values', () => {
-    const answers = fillVisibleRequired('switch_car', { sf_class: KFZ_ANSWER_UNKNOWN })
+    const answers = fillVisibleRequired('switch_car', {
+      [KFZ_SF_CLASS_HAFTPFLICHT_ID]: KFZ_ANSWER_UNKNOWN,
+    })
     const complete = validateKfzQuestionnaireComplete('switch_car', answers)
     assert.equal(complete.ok, true)
     const missing = listKfzQuestionnaireMissingFacts('switch_car', answers)
-    assert.ok(missing.some((fact) => /Schadenfreiheitsklasse/.test(fact)))
+    assert.ok(missing.some((fact) => /SF-Klasse Haftpflicht/.test(fact)))
   })
 })
 
@@ -485,6 +518,333 @@ describe('kfz questionnaire submit and inbox payload', () => {
   })
 })
 
+describe('kfz separate SF classes and selectable deductibles', () => {
+  it('exposes factual SF chips including M, 0, S, 1/2, 1-50 and unknown', () => {
+    const ids = KFZ_SF_CLASS_OPTIONS.map((option) => option.id)
+    assert.deepEqual(ids.slice(0, 4), ['M', '0', 'S', '1/2'])
+    assert.equal(ids[4], '1')
+    assert.equal(ids.at(-1), '50')
+    assert.equal(ids.length, 54)
+    assert.equal(ids.includes('51'), false)
+
+    const haftpflicht = getKfzQuestion(KFZ_SF_CLASS_HAFTPFLICHT_ID)
+    const vollkasko = getKfzQuestion(KFZ_SF_CLASS_VOLLKASKO_ID)
+    assert.equal(haftpflicht?.kind, 'choice')
+    assert.equal(haftpflicht?.presentation, 'chips')
+    assert.equal(vollkasko?.presentation, 'chips')
+    assert.ok(haftpflicht?.options?.some((option) => option.id === KFZ_ANSWER_UNKNOWN))
+    assert.ok(haftpflicht?.options?.some((option) => option.label === 'Weiß ich nicht'))
+    assert.equal(hasKfzTeilkaskoSfQuestion(), false)
+    assert.equal(
+      KFZ_QUESTIONS.some((question) => /teilkasko/i.test(question.id) && /sf/i.test(question.id)),
+      false,
+    )
+    assert.equal(
+      KFZ_QUESTIONS.some((question) => /SF-Klasse Teilkasko/.test(question.prompt)),
+      false,
+    )
+  })
+
+  it('keeps Haftpflicht and Vollkasko SF independent and never copies values', () => {
+    const start: KfzQuestionnaireAnswers = {
+      [KFZ_SF_CLASS_HAFTPFLICHT_ID]: '8',
+    }
+    const withVk = setKfzQuestionnaireAnswer(start, KFZ_SF_CLASS_VOLLKASKO_ID, '20')
+    assert.equal(withVk[KFZ_SF_CLASS_HAFTPFLICHT_ID], '8')
+    assert.equal(withVk[KFZ_SF_CLASS_VOLLKASKO_ID], '20')
+
+    const changedHp = setKfzQuestionnaireAnswer(withVk, KFZ_SF_CLASS_HAFTPFLICHT_ID, '3')
+    assert.equal(changedHp[KFZ_SF_CLASS_HAFTPFLICHT_ID], '3')
+    assert.equal(changedHp[KFZ_SF_CLASS_VOLLKASKO_ID], '20')
+
+    const source = fs.readFileSync(
+      path.join(srcRoot, 'features/inbound/kfz/lib/kfz-questionnaire.ts'),
+      'utf8',
+    )
+    const formSource = fs.readFileSync(
+      path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
+      'utf8',
+    )
+    assert.doesNotMatch(source, /sf_class_vollkasko.*=.*sf_class_haftpflicht/)
+    assert.doesNotMatch(source, /sf_class_haftpflicht.*=.*sf_class_vollkasko/)
+    assert.match(formSource, /setKfzQuestionnaireAnswer/)
+  })
+
+  it('asks Vollkasko SF only when a previous policy may carry that class', () => {
+    assert.equal(
+      isKfzQuestionVisible(KFZ_SF_CLASS_HAFTPFLICHT_ID, 'first_car', {}),
+      true,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'first_car', {
+        has_previous_kfz: 'no',
+      }),
+      false,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'first_car', {
+        has_previous_kfz: 'yes',
+      }),
+      true,
+    )
+    assert.equal(isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'switch_car', {}), true)
+    assert.equal(
+      isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'additional_car', {
+        has_previous_kfz: 'no',
+      }),
+      false,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'evb', { has_previous_kfz: 'yes' }),
+      true,
+    )
+    assert.equal(
+      isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'no_documents', {
+        intent: 'first_car',
+        has_previous_kfz: 'no',
+      }),
+      false,
+    )
+  })
+
+  it('accepts every selectable Teilkasko and Vollkasko deductible', () => {
+    const tk = getKfzQuestion(KFZ_DEDUCTIBLE_PARTIAL_ID)
+    const vk = getKfzQuestion(KFZ_DEDUCTIBLE_FULL_ID)
+    assert.equal(tk?.kind, 'choice')
+    assert.equal(vk?.kind, 'choice')
+    assert.deepEqual(
+      KFZ_TEILKASKO_DEDUCTIBLE_OPTIONS.map((option) => option.label),
+      ['0 €', '150 €', '300 €', '500 €', '1.000 €'],
+    )
+    assert.deepEqual(
+      KFZ_VOLLKASKO_DEDUCTIBLE_OPTIONS.map((option) => option.label),
+      ['0 €', '300 €', '500 €', '1.000 €', '2.500 €'],
+    )
+
+    assert.ok(tk)
+    assert.ok(vk)
+    for (const option of [...KFZ_TEILKASKO_DEDUCTIBLE_OPTIONS, { id: KFZ_ANSWER_UNKNOWN, label: 'Weiß ich nicht' }]) {
+      const result = validateKfzQuestionAnswer(tk, option.id)
+      assert.equal(result.ok, true, option.id)
+    }
+    for (const option of [...KFZ_VOLLKASKO_DEDUCTIBLE_OPTIONS, { id: KFZ_ANSWER_UNKNOWN, label: 'Weiß ich nicht' }]) {
+      const result = validateKfzQuestionAnswer(vk, option.id)
+      assert.equal(result.ok, true, option.id)
+    }
+    assert.equal(validateKfzQuestionAnswer(tk, '200').ok, false)
+    assert.equal(validateKfzQuestionAnswer(vk, '150').ok, false)
+  })
+
+  it('summarizes the selected deductible combination without inventing a missing side', () => {
+    assert.equal(formatKfzDeductibleCombination({ coverage: 'liability' }), null)
+    assert.equal(
+      formatKfzDeductibleCombination({
+        coverage: 'partial',
+        [KFZ_DEDUCTIBLE_PARTIAL_ID]: '150',
+      }),
+      'Teilkasko 150 €',
+    )
+    assert.equal(
+      formatKfzDeductibleCombination({
+        coverage: 'full',
+        [KFZ_DEDUCTIBLE_FULL_ID]: '500',
+        [KFZ_DEDUCTIBLE_PARTIAL_ID]: '150',
+      }),
+      'Vollkasko 500 € / Teilkasko 150 €',
+    )
+    assert.equal(
+      formatKfzDeductibleCombination({
+        coverage: 'full',
+        [KFZ_DEDUCTIBLE_FULL_ID]: KFZ_ANSWER_UNKNOWN,
+        [KFZ_DEDUCTIBLE_PARTIAL_ID]: '0',
+      }),
+      'Vollkasko Weiß ich nicht / Teilkasko 0 €',
+    )
+  })
+
+  it('puts separate SF values, structured deductibles and the combination into the inbox payload', async () => {
+    await withKfzEnv(async () => {
+      const answers = fillVisibleRequired('switch_car', {
+        [KFZ_SF_CLASS_HAFTPFLICHT_ID]: '8',
+        [KFZ_SF_CLASS_VOLLKASKO_ID]: '20',
+        coverage: 'full',
+        [KFZ_DEDUCTIBLE_FULL_ID]: '500',
+        [KFZ_DEDUCTIBLE_PARTIAL_ID]: '150',
+      })
+      assert.equal(answers[KFZ_SF_CLASS_HAFTPFLICHT_ID], '8')
+      assert.equal(answers[KFZ_SF_CLASS_VOLLKASKO_ID], '20')
+
+      const records = listAnsweredKfzQuestions('switch_car', answers)
+      const hp = records.find((entry) => entry.id === KFZ_SF_CLASS_HAFTPFLICHT_ID)
+      const vk = records.find((entry) => entry.id === KFZ_SF_CLASS_VOLLKASKO_ID)
+      const combination = records.find((entry) => entry.id === KFZ_DEDUCTIBLE_COMBINATION_ID)
+      assert.equal(hp?.value, '8')
+      assert.equal(vk?.value, '20')
+      assert.equal(combination?.value, 'Vollkasko 500 € / Teilkasko 150 €')
+      assert.equal(
+        records.some((entry) => /teilkasko/i.test(entry.id) && /sf/i.test(entry.id)),
+        false,
+      )
+
+      const built = buildKfzLandingPayload({
+        values: formValues('switch_car', answers),
+        submissionId: 'q-sf-split-1',
+        consentTimestamp: '2026-09-09T12:00:00.000Z',
+      })
+      assert.equal(built.ok, true)
+      if (!built.ok) {
+        return
+      }
+
+      const payloadAnswers = built.payload.questionnaire?.answers ?? []
+      assert.equal(
+        payloadAnswers.find((entry) => entry.id === KFZ_SF_CLASS_HAFTPFLICHT_ID)?.value,
+        '8',
+      )
+      assert.equal(
+        payloadAnswers.find((entry) => entry.id === KFZ_SF_CLASS_VOLLKASKO_ID)?.value,
+        '20',
+      )
+      assert.equal(
+        payloadAnswers.find((entry) => entry.id === KFZ_DEDUCTIBLE_PARTIAL_ID)?.value,
+        '150 €',
+      )
+      assert.equal(
+        payloadAnswers.find((entry) => entry.id === KFZ_DEDUCTIBLE_FULL_ID)?.value,
+        '500 €',
+      )
+      assert.equal(
+        payloadAnswers.find((entry) => entry.id === KFZ_DEDUCTIBLE_COMBINATION_ID)?.value,
+        'Vollkasko 500 € / Teilkasko 150 €',
+      )
+      assert.equal(
+        payloadAnswers.some((entry) => entry.id === 'sf_class'),
+        false,
+      )
+
+      const unknownHp = fillVisibleRequired('first_car', {
+        has_previous_kfz: 'no',
+        coverage: 'liability',
+        [KFZ_SF_CLASS_HAFTPFLICHT_ID]: KFZ_ANSWER_UNKNOWN,
+      })
+      assert.equal(isKfzQuestionVisible(KFZ_SF_CLASS_VOLLKASKO_ID, 'first_car', unknownHp), false)
+      const unknownBuilt = buildKfzLandingPayload({
+        values: formValues('first_car', unknownHp),
+        submissionId: 'q-sf-unknown-hp',
+        consentTimestamp: '2026-09-09T12:00:00.000Z',
+      })
+      assert.equal(unknownBuilt.ok, true)
+      if (!unknownBuilt.ok) {
+        return
+      }
+      const unknownAnswers = unknownBuilt.payload.questionnaire?.answers ?? []
+      assert.equal(
+        unknownAnswers.find((entry) => entry.id === KFZ_SF_CLASS_HAFTPFLICHT_ID)?.unknown,
+        true,
+      )
+      assert.equal(
+        unknownAnswers.some((entry) => entry.id === KFZ_SF_CLASS_VOLLKASKO_ID),
+        false,
+      )
+      assert.equal(
+        unknownAnswers.some((entry) => entry.id === KFZ_DEDUCTIBLE_PARTIAL_ID),
+        false,
+      )
+      assert.ok(
+        (unknownBuilt.payload.questionnaire?.missingFacts ?? []).some((fact) =>
+          /SF-Klasse Haftpflicht/.test(fact),
+        ),
+      )
+
+      const store = createMemoryInboundIntakeStore()
+      const first = await handleKfzInboundHttpRequest(
+        new Request('http://localhost/api/inbound/kfz', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SECRET}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(built.payload),
+        }),
+        { store },
+      )
+      const retry = await handleKfzInboundHttpRequest(
+        new Request('http://localhost/api/inbound/kfz', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SECRET}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(built.payload),
+        }),
+        { store },
+      )
+      assert.equal(first.ok, true)
+      assert.equal(retry.ok, true)
+      if (!first.ok || !retry.ok) {
+        return
+      }
+      assert.equal(first.body.deduplicated, false)
+      assert.equal(retry.body.deduplicated, true)
+      assert.equal(store.items.length, 1)
+
+      const review = presentKfzWebsiteInboxItem(store.items[0])
+      assert.ok(review)
+      assert.equal(
+        review.questionnaireAnswers.find((fact) => fact.id === `q:${KFZ_SF_CLASS_HAFTPFLICHT_ID}`)
+          ?.value,
+        '8',
+      )
+      assert.equal(
+        review.questionnaireAnswers.find((fact) => fact.id === `q:${KFZ_SF_CLASS_VOLLKASKO_ID}`)
+          ?.value,
+        '20',
+      )
+      assert.equal(
+        review.questionnaireAnswers.find((fact) => fact.id === `q:${KFZ_DEDUCTIBLE_COMBINATION_ID}`)
+          ?.value,
+        'Vollkasko 500 € / Teilkasko 150 €',
+      )
+    })
+  })
+
+  it('restores different SF and deductible choices after reload without checking consent', () => {
+    const storage = createMemoryKfzLandingDraftStorage()
+    const answers = fillVisibleRequired('switch_car', {
+      [KFZ_SF_CLASS_HAFTPFLICHT_ID]: '12',
+      [KFZ_SF_CLASS_VOLLKASKO_ID]: '5',
+      coverage: 'full',
+      [KFZ_DEDUCTIBLE_FULL_ID]: '1000',
+      [KFZ_DEDUCTIBLE_PARTIAL_ID]: '300',
+    })
+    writeKfzLandingDraft(storage, {
+      submissionId: 'q-sf-reload',
+      screenId: 'coverage',
+      values: formValues('switch_car', answers, { inquiryProcessingConsent: true }),
+      hadDocuments: false,
+    })
+    const restored = readKfzLandingDraft(storage)
+    assert.ok(restored)
+    assert.equal(restored.values.inquiryProcessingConsent, false)
+    assert.equal(restored.values.questionnaireAnswers?.[KFZ_SF_CLASS_HAFTPFLICHT_ID], '12')
+    assert.equal(restored.values.questionnaireAnswers?.[KFZ_SF_CLASS_VOLLKASKO_ID], '5')
+    assert.equal(restored.values.questionnaireAnswers?.[KFZ_DEDUCTIBLE_FULL_ID], '1000')
+    assert.equal(restored.values.questionnaireAnswers?.[KFZ_DEDUCTIBLE_PARTIAL_ID], '300')
+    assert.equal(
+      formatKfzDeductibleCombination(restored.values.questionnaireAnswers ?? {}),
+      'Vollkasko 1.000 € / Teilkasko 300 €',
+    )
+
+    const screens = buildKfzLandingScreens('switch_car', answers)
+    const back = previousKfzLandingScreenId(screens, 'coverage')
+    assert.ok(back)
+    const forward = nextKfzLandingScreenId(screens, back)
+    assert.equal(forward, 'coverage')
+    assert.equal(answers[KFZ_SF_CLASS_HAFTPFLICHT_ID], '12')
+    assert.equal(answers[KFZ_SF_CLASS_VOLLKASKO_ID], '5')
+  })
+})
+
 describe('kfz questionnaire source files stay price-free and offline', () => {
   it('does not invent a price or automatic customer message', () => {
     const files = [
@@ -505,5 +865,22 @@ describe('kfz questionnaire source files stay price-free and offline', () => {
       KFZ_LANDING_CONFIRMATION_BODY.includes('Artjom oder Vera prüft Ihre Anfrage manuell'),
       true,
     )
+  })
+
+  it('keeps customer-facing copy free of internal repository notes', () => {
+    const customerCopy = [
+      ...KFZ_QUESTIONS.map((question) => `${question.prompt}\n${question.hint ?? ''}`),
+      fs.readFileSync(
+        path.join(srcRoot, 'features/inbound/kfz/components/kfz-questionnaire-fields.tsx'),
+        'utf8',
+      ),
+      fs.readFileSync(
+        path.join(srcRoot, 'features/inbound/kfz/components/kfz-landing-form.tsx'),
+        'utf8',
+      ),
+    ].join('\n')
+    assert.doesNotMatch(customerCopy, /Allianz-SB-Stufen/)
+    assert.doesNotMatch(customerCopy, /im Repository nicht dokumentiert/)
+    assert.doesNotMatch(customerCopy, /Freitext/)
   })
 })

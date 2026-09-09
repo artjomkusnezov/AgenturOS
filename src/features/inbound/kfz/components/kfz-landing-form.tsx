@@ -70,6 +70,7 @@ import {
   previousKfzLandingScreenId,
   resolveKfzLandingBranchId,
   resolveKfzLandingScreenId,
+  setKfzQuestionnaireAnswer,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import type {
   KfzPreferredChannel,
@@ -240,7 +241,11 @@ export function KfzLandingForm({
   }
 
   function updateAnswer(questionId: string, value: string) {
-    const nextAnswers = { ...(values.questionnaireAnswers ?? {}), [questionId]: value }
+    const nextAnswers = setKfzQuestionnaireAnswer(
+      values.questionnaireAnswers ?? {},
+      questionId,
+      value,
+    )
     const vehicle = extractVehicleFactsFromAnswers(nextAnswers)
     const nextValues: KfzLandingFormValues = {
       ...values,
