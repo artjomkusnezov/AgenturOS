@@ -510,7 +510,12 @@ describe('kfz landing approved redesign content', () => {
     assert.match(shell, /allianz-logo\.svg/)
     assert.match(shell, /Artjom Kusnezov/)
     assert.match(shell, /Vera Kusnezov/)
-    assert.match(shell, /05481 9039041/)
+    assert.match(shell, /KFZ_LANDING_CONTACT_PHONE/)
+    assert.match(shell, /KFZ_LANDING_CONTACT_PHONE_E164/)
+    assert.match(shell, /KFZ_LANDING_CONTACT_EMAIL/)
+    assert.match(shell, /KFZ_LANDING_ADDRESS/)
+    assert.match(shell, /KFZ_LANDING_IMPRINT_URL/)
+    assert.match(shell, /KFZ_LANDING_PRIVACY_URL/)
     assert.match(shell, /wa\.me/)
     assert.match(shell, /4,9/)
     assert.match(shell, /48 Bewertungen/)
@@ -519,8 +524,6 @@ describe('kfz landing approved redesign content', () => {
     assert.match(shell, /Der Upload ist optional/)
     assert.match(shell, /Lieber direkt sprechen\?/)
     assert.match(shell, /Impressum/)
-    assert.match(shell, /Alwin-Klein-Straße 13, 49525 Lengerich/)
-    assert.match(shell, /allianz\.kusnezov@allianz\.de/)
   })
 
   it('keeps switching as a clear funnel option and privacy in the form', () => {
