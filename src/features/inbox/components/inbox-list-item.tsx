@@ -9,6 +9,7 @@ import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-i
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
 import type { InboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
+import { matchInboxItemSearch } from '@/features/inbox/lib/inbox-factual-search'
 import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
 import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import type { KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
@@ -35,11 +36,32 @@ type InboxListItemProps = {
   phaseFilter?: KfzWorkQueueFilter
   queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
+  searchQuery?: string
   hrefBasePath?: string | null
   allowLocalFixtureFacts?: boolean
 }
 
 const initialState: InboxItemMutationState = {}
+
+function InboxSearchExcerpt({ excerpt, query }: { excerpt: string; query: string }) {
+  const needle = query.trim()
+  if (!needle) {
+    return excerpt
+  }
+
+  const at = excerpt.toLocaleLowerCase('de-DE').indexOf(needle.toLocaleLowerCase('de-DE'))
+  if (at < 0) {
+    return excerpt
+  }
+
+  return (
+    <>
+      {excerpt.slice(0, at)}
+      <mark>{excerpt.slice(at, at + needle.length)}</mark>
+      {excerpt.slice(at + needle.length)}
+    </>
+  )
+}
 
 const CHANNEL_ACCENT_CLASS: Record<DashboardAccent, string> = {
   blue: 'aos-inbox-channel--blue',
@@ -129,6 +151,7 @@ export function InboxListItem({
   phaseFilter = 'all',
   queueFilter = 'all',
   sourceFilter = 'all',
+  searchQuery = '',
   hrefBasePath = null,
   allowLocalFixtureFacts = false,
 }: InboxListItemProps) {
@@ -139,9 +162,11 @@ export function InboxListItem({
     phase: phaseFilter,
     queue: queueFilter,
     source: sourceFilter,
+    q: searchQuery,
     basePath: hrefBasePath,
     allowLocalFixtureFacts,
   })
+  const searchHit = searchQuery ? matchInboxItemSearch(item, searchQuery) : null
 
   return (
     <div
@@ -224,6 +249,15 @@ export function InboxListItem({
               </span>
             ) : null}
           </p>
+          {searchHit ? (
+            <p className="aos-inbox-queue-line aos-inbox-search-match">
+              {searchHit.primaryMatch.fieldLabel}:{' '}
+              <InboxSearchExcerpt
+                excerpt={searchHit.primaryMatch.excerpt}
+                query={searchQuery}
+              />
+            </p>
+          ) : null}
           <p className="aos-inbox-queue-line">
             Letzte Aktion: {card.workQueue.lastHumanActionLabel}
           </p>

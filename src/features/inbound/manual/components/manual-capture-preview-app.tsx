@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
+import { parseInboxSearchQuery } from '@/features/inbox/lib/inbox-factual-search'
 import { parseInboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import { parseKfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
@@ -24,6 +25,7 @@ export function ManualCapturePreviewApp() {
 
   const phaseFilter = parseKfzWorkQueueFilter(searchParams.get('phase'))
   const sourceFilter = parseInboxSourceFilter(searchParams.get('source'))
+  const searchQuery = parseInboxSearchQuery(searchParams.get('q'))
   const selectedItemId = useMemo(() => {
     const requested = searchParams.get('item')
     if (requested && isValidInboxItemId(requested) && items.some((item) => item.id === requested)) {
@@ -53,6 +55,7 @@ export function ManualCapturePreviewApp() {
           selectedItemId={selectedItemId}
           phaseFilter={phaseFilter}
           sourceFilter={sourceFilter}
+          searchQuery={searchQuery}
           hrefBasePath={MANUAL_CAPTURE_PREVIEW_PATH}
           enableManualCapture
           onLocalConfirmed={handleLocalConfirmed}

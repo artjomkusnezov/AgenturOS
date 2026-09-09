@@ -21,6 +21,7 @@ type UnifiedInboxPreviewPageProps = {
     phase?: string
     queue?: string
     source?: string
+    q?: string
     view?: string
   }>
 }
@@ -36,7 +37,7 @@ export default async function UnifiedInboxPreviewPage({
     notFound()
   }
 
-  const { item, phase, queue, source, view } = await searchParams
+  const { item, phase, queue, source, q, view } = await searchParams
   buildUnifiedInboxPreviewItems()
   const selectedItemId = item && isValidInboxItemId(item) ? item : null
 
@@ -52,6 +53,7 @@ export default async function UnifiedInboxPreviewPage({
           phase={phase}
           queue={queue}
           source={source}
+          q={q}
           view={view}
         />
       </div>

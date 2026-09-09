@@ -126,6 +126,7 @@ export function presentUnifiedInboxCard(
     phase?: KfzWorkQueueFilter | null
     queue?: InboxWorkQueueFilter | null
     source?: InboxSourceFilter | null
+    q?: string | null
     basePath?: string | null
     now?: Date
     allowLocalFixtureFacts?: boolean
@@ -138,6 +139,7 @@ export function presentUnifiedInboxCard(
     phase: options?.phase ?? 'all',
     queue: options?.queue ?? 'all',
     source: options?.source ?? 'all',
+    q: options?.q,
     basePath: options?.basePath,
   })
   const workQueue = presentInboxWorkQueueFacts(item, {

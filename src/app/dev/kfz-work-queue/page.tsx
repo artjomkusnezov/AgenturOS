@@ -9,8 +9,10 @@ import {
   buildKfzWorkQueuePreviewItems,
   KFZ_WORK_QUEUE_PREVIEW_PATH,
 } from '@/features/inbox/lib/kfz-work-queue-preview'
+import { parseInboxSearchQuery } from '@/features/inbox/lib/inbox-factual-search'
 import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import { parseInboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
+import { parseInboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
 import { parseKfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 
 export const metadata: Metadata = {
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 type KfzWorkQueuePreviewPageProps = {
-  searchParams: Promise<{ item?: string; phase?: string; source?: string; view?: string }>
+  searchParams: Promise<{ item?: string; phase?: string; queue?: string; source?: string; q?: string; view?: string }>
 }
 
 /**
@@ -35,11 +37,13 @@ export default async function KfzWorkQueuePreviewPage({
     notFound()
   }
 
-  const { item, phase, source, view } = await searchParams
+  const { item, phase, queue, source, q, view } = await searchParams
   const preview = buildKfzWorkQueuePreviewItems()
   const allItems = [...preview.unprocessedItems, ...preview.processedItems]
   const phaseFilter = parseKfzWorkQueueFilter(phase)
+  const queueFilter = parseInboxWorkQueueFilter(queue)
   const sourceFilter = parseInboxSourceFilter(source)
+  const searchQuery = parseInboxSearchQuery(q)
   const itemView = parseInboxItemView(view)
   const selectedItemId =
     item && isValidInboxItemId(item) && allItems.some((entry) => entry.id === item)
@@ -67,7 +71,9 @@ export default async function KfzWorkQueuePreviewPage({
           taskRelationsByItemId={preview.taskRelationsByItemId}
           selectedItemId={selectedItemId}
           phaseFilter={phaseFilter}
+          queueFilter={queueFilter}
           sourceFilter={sourceFilter}
+          searchQuery={searchQuery}
           itemView={itemView}
           hrefBasePath={KFZ_WORK_QUEUE_PREVIEW_PATH}
           allowLocalHistoryFixtureFacts

@@ -3,6 +3,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
 
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
+import { parseInboxSearchQuery } from '@/features/inbox/lib/inbox-factual-search'
 import { parseInboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
 import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
 import { parseInboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
@@ -26,6 +27,7 @@ type InboxFactualWorkQueuePreviewAppProps = {
   phase?: string | null
   queue?: string | null
   source?: string | null
+  q?: string | null
   view?: string | null
 }
 
@@ -34,6 +36,7 @@ export function InboxFactualWorkQueuePreviewApp({
   phase,
   queue,
   source,
+  q,
   view,
 }: InboxFactualWorkQueuePreviewAppProps) {
   const items = useSyncExternalStore(
@@ -45,6 +48,7 @@ export function InboxFactualWorkQueuePreviewApp({
   const phaseFilter = parseKfzWorkQueueFilter(phase)
   const queueFilter = parseInboxWorkQueueFilter(queue)
   const sourceFilter = parseInboxSourceFilter(source)
+  const searchQuery = parseInboxSearchQuery(q)
   const itemView = parseInboxItemView(view)
   const taskRelationsByItemId = useMemo(
     () => buildKfzWorkQueuePreviewItems().taskRelationsByItemId,
@@ -60,6 +64,7 @@ export function InboxFactualWorkQueuePreviewApp({
       phaseFilter={phaseFilter}
       queueFilter={queueFilter}
       sourceFilter={sourceFilter}
+      searchQuery={searchQuery}
       itemView={itemView}
       hrefBasePath={UNIFIED_INBOX_PREVIEW_PATH}
       enableManualCapture

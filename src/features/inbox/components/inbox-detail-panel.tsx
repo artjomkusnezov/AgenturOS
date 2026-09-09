@@ -66,6 +66,7 @@ type InboxDetailPanelProps = {
   phaseFilter?: KfzWorkQueueFilter
   queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
+  searchQuery?: string
   itemView?: InboxItemView
   hrefBasePath?: string
   allowLocalHistoryFixtureFacts?: boolean
@@ -151,6 +152,7 @@ export function InboxDetailPanel({
   phaseFilter = 'all',
   queueFilter = 'all',
   sourceFilter = 'all',
+  searchQuery = '',
   itemView = 'work',
   hrefBasePath = KFZ_INBOX_HREF_BASE,
   allowLocalHistoryFixtureFacts = false,
@@ -180,6 +182,7 @@ export function InboxDetailPanel({
     phase: phaseFilter,
     queue: queueFilter,
     source: sourceFilter,
+    q: searchQuery,
     view: itemView,
     basePath: hrefBasePath,
     allowLocalFixtureFacts: allowLocalHistoryFixtureFacts,
