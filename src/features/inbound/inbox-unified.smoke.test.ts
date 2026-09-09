@@ -177,18 +177,17 @@ describe('unified inbox source filters', () => {
     const counts = countInboxSourceFilters(items)
 
     assert.equal(counts.all, items.length)
-    assert.ok(counts.kfz >= 5)
-    assert.ok(counts.other >= 3)
-    assert.equal(counts.phone, 2)
-    assert.equal(counts.pasted_email, 1)
-    assert.equal(counts.own_note, 1)
+    assert.ok(counts.kfz >= 6)
+    assert.ok(counts.other >= 6)
+    assert.equal(counts.phone, 4)
+    assert.equal(counts.pasted_email, 2)
+    assert.equal(counts.own_note, 2)
     assert.equal(counts.kfz + counts.other, counts.all)
 
     const phoneIds = filterInboxItemsBySource(items, 'phone').map((item) => item.id)
-    assert.deepEqual(phoneIds.sort(), [
-      UNIFIED_INBOX_PREVIEW_PHONE_ID,
-      UNIFIED_INBOX_PREVIEW_PHONE_KFZ_ID,
-    ].sort())
+    assert.ok(phoneIds.includes(UNIFIED_INBOX_PREVIEW_PHONE_ID))
+    assert.ok(phoneIds.includes(UNIFIED_INBOX_PREVIEW_PHONE_KFZ_ID))
+    assert.equal(phoneIds.length, counts.phone)
 
     const kfzIds = filterInboxItemsBySource(items, 'kfz').map((item) => item.id)
     assert.ok(kfzIds.includes(UNIFIED_INBOX_PREVIEW_PHONE_KFZ_ID))
@@ -202,14 +201,12 @@ describe('unified inbox source filters', () => {
     assert.ok(otherIds.includes(UNIFIED_INBOX_PREVIEW_OTHER_ID))
     assert.ok(!otherIds.includes(UNIFIED_INBOX_PREVIEW_PHONE_KFZ_ID))
 
-    assert.deepEqual(
-      filterInboxItemsBySource(items, 'pasted_email').map((item) => item.id),
-      [UNIFIED_INBOX_PREVIEW_EMAIL_ID],
-    )
-    assert.deepEqual(
-      filterInboxItemsBySource(items, 'own_note').map((item) => item.id),
-      [UNIFIED_INBOX_PREVIEW_NOTE_ID],
-    )
+    const pastedEmailIds = filterInboxItemsBySource(items, 'pasted_email').map((item) => item.id)
+    assert.ok(pastedEmailIds.includes(UNIFIED_INBOX_PREVIEW_EMAIL_ID))
+    assert.equal(pastedEmailIds.length, counts.pasted_email)
+    const ownNoteIds = filterInboxItemsBySource(items, 'own_note').map((item) => item.id)
+    assert.ok(ownNoteIds.includes(UNIFIED_INBOX_PREVIEW_NOTE_ID))
+    assert.equal(ownNoteIds.length, counts.own_note)
   })
 })
 

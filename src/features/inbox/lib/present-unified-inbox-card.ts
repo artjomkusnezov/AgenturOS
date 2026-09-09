@@ -15,6 +15,11 @@ import {
 } from '@/features/inbox/lib/inbox-status'
 import { readInboxSourceContent } from '@/features/inbox/lib/kfz-response-draft'
 import {
+  presentInboxWorkQueueFacts,
+  type InboxWorkQueueFacts,
+  type InboxWorkQueueFilter,
+} from '@/features/inbox/lib/inbox-factual-work-queue'
+import {
   buildInboxHref,
   presentInboxStatusChip,
   presentKfzWorkQueueRow,
@@ -44,6 +49,7 @@ export type UnifiedInboxCard = {
   isKfz: boolean
   urgencyNote: string | null
   nextActionLabel: string | null
+  workQueue: InboxWorkQueueFacts
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -118,8 +124,11 @@ export function presentUnifiedInboxCard(
   options?: {
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
+    queue?: InboxWorkQueueFilter | null
     source?: InboxSourceFilter | null
     basePath?: string | null
+    now?: Date
+    allowLocalFixtureFacts?: boolean
   },
 ): UnifiedInboxCard {
   const linkedTaskId = options?.linkedTaskId ?? null
@@ -127,13 +136,24 @@ export function presentUnifiedInboxCard(
   const href = buildInboxHref({
     itemId: item.id,
     phase: options?.phase ?? 'all',
+    queue: options?.queue ?? 'all',
     source: options?.source ?? 'all',
     basePath: options?.basePath,
   })
+  const workQueue = presentInboxWorkQueueFacts(item, {
+    linkedTaskId,
+    now: options?.now,
+    allowLocalFixtureFacts: options?.allowLocalFixtureFacts === true,
+  })
   const reviewStatus =
     presentInboxStatusChip(item, linkedTaskId) ?? {
-      label: 'Neu',
-      kind: 'new',
+      label: workQueue.explicitStatusLabel,
+      kind:
+        workQueue.explicitStatus === 'handled'
+          ? 'handled'
+          : workQueue.explicitStatus === 'in_review' || workQueue.explicitStatus === 'follow_up'
+            ? 'review'
+            : 'new',
     }
 
   const kfzRow = presentKfzWorkQueueRow(item, {
@@ -163,7 +183,8 @@ export function presentUnifiedInboxCard(
       href,
       isKfz: true,
       urgencyNote: kfzRow.urgencyNote,
-      nextActionLabel: kfzRow.nextActionLabel,
+      nextActionLabel: workQueue.primaryNextActionLabel,
+      workQueue,
     }
   }
 
@@ -185,6 +206,7 @@ export function presentUnifiedInboxCard(
     href,
     isKfz: isKfzInboxItem(item),
     urgencyNote: null,
-    nextActionLabel: null,
+    nextActionLabel: workQueue.primaryNextActionLabel,
+    workQueue,
   }
 }
