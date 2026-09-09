@@ -1,28 +1,24 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-cc15
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-c3f6
 
-# AgenturOS — Fast factual search across unified inbound
+# AgenturOS — Manual review of exact duplicate candidates
 
 ## Goal
-Let an employee find an existing inbound item in seconds across landing inquiries, phone captures, pasted emails and notes using factual customer/contact/content fields, while preserving the existing work queue and human-review flow.
+Help an employee notice when a new inbound item may belong to an already existing inquiry, using only exact normalized factual matches and requiring an explicit human decision. Never merge, close or contact automatically.
 
 ## Required work
-- Build directly on the latest factual work-queue Cursor branch. Reuse the unified inbound list, filters, review card, manual statuses/history and existing normalized fields; do not create a CRM or parallel search store.
-- Add one clear search field to the existing inbound queue.
-- Search only already-visible/authorized normalized data available to the current app path: customer name, phone, email, postal code/city, request type/product, vehicle registration/vehicle facts where present, source, short summary and original text where the existing review model already exposes it.
-- Make matching forgiving for case, spaces and common phone formatting, but deterministic. Do not use external enrichment, fuzzy identity merging or AI guesses.
-- Show why each result matched with a short factual excerpt/highlight, without exposing new hidden fields.
-- Combine search with the existing factual filters and time groups. Clearing search must restore the exact prior queue/filter state.
-- No-result state must offer clear manual options: clear search or create a new manual capture. Do not create automatically.
-- Opening a result must preserve search/filter state on return and after reload where the existing local state convention allows it.
-- Search must never change status, mark contact, merge duplicates, send a message or create a task.
-- Keep phone and desktop usable with fast keyboard focus and large touch controls; avoid dense tables.
-- Add deterministic tests for all inbound sources, name/contact/phone-format/original-text matches, combined filters, match explanations, no results, clear, state preservation, reload and zero mutations.
+- Build directly on PR #36 and reuse the unified inbound queue, factual search, review card, statuses and history.
+- On an inbound review card, show a small “Möglicherweise bereits vorhanden” section only for deterministic exact normalized matches on phone, email, vehicle registration or an existing explicit external/reference ID.
+- Explain every candidate with the exact matching field and show received time, source, status and short existing summary.
+- Never use name-only matching, fuzzy matching, AI guesses, external enrichment or hidden fields.
+- Let the employee open the candidate and return without losing queue/search/filter state.
+- Provide explicit manual actions: “Kein Duplikat” and “Als zusammengehörig markieren”. The latter may create a reversible factual relation between the two items, but must not merge/delete either record, copy data, change status, contact the customer or complete work.
+- Record each manual decision in factual history and preserve it after reload. Allow the employee to remove the relation.
+- If data is missing or ambiguous, show no automatic decision.
+- Keep desktop/mobile clear and avoid dense tables.
+- Add deterministic tests for exact phone/email/plate/reference matches, phone formatting, no name-only/fuzzy match, multiple candidates, manual relation/unlink, history, reload, state preservation and zero automatic mutations.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build.
-- Browser-check desktop and mobile: search one landing inquiry by name, phone and vehicle fact; one phone/email/note item by content; combine with “Noch nicht kontaktiert”; open/return/reload; verify no statuses/history changed. Fixtures only.
+- Browser-check desktop/mobile fixtures: review new Kfz landing inquiry, inspect exact phone and plate candidates, open/return, mark related, undo, reload; verify no status/customer communication changes.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, external enrichment, AI identity decision, automatic merge/status/task/customer communication, paid services or destructive git.
-
-CONTROLLER_AGENT_ID: bc-ef8929df-6a26-4267-8c01-b2c588f20a07
-CONTROLLER_STARTED_AT: 2026-09-09T04:44:03Z
+Cursor-created branch only. No master, merge, deploy, secrets, production data, automatic merge/delete/status/contact/task, AI identity decision, external enrichment, paid services or destructive git.
