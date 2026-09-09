@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-e134
 
 # AgenturOS — Factual unattended-inbound work queue
@@ -23,3 +23,6 @@ Help the agency see which inbound items still need human attention using only fa
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, customer communication, Meta/WhatsApp connection, paid services, invented SLA/priority/scoring, legal/business decision or destructive git.
+
+CONTROLLER_AGENT_ID: bc-dfd1b93f-9eb4-4f6d-a100-b30f3fc6dcb3
+CONTROLLER_STARTED_AT: 2026-09-09T02:43:53Z
