@@ -1,5 +1,5 @@
 # Cursor Cloud Controller Trigger
 
 STATE: START_REQUESTED
-REQUESTED_AT: 2026-09-09T08:55:00Z
-REASON: Manual exact-duplicate review is a reviewed completion candidate with 258 green tests and desktop/mobile evidence. The owner-approved Kfz redesign is now available on GitHub at feature/kfz-landing-redesign commit 80684551915024cd151fc31c54d5549759e85605. Launch exactly one bounded port/integration task from cursor/agenturos-controller-task-83d4; duplicate guard remains authoritative.
+REQUESTED_AT: 2026-09-09T12:00:00+02:00
+REASON: PR #38 is a reviewed completion candidate. It reports 262 passing tests, clean TypeScript/lint/build, successful Vercel status, and desktop/mobile browser evidence. Launch exactly one bounded full Allianz Kfz question-flow task from cursor/agenturos-controller-task-c467; duplicate guard remains authoritative.
