@@ -8,6 +8,7 @@ import type { DashboardAccent } from '@/features/dashboard/components/dashboard-
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
+import type { InboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
 import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
 import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import type { KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
@@ -32,8 +33,10 @@ type InboxListItemProps = {
   onSelect: (itemId: string) => void
   memberNameMap?: Record<string, string>
   phaseFilter?: KfzWorkQueueFilter
+  queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
   hrefBasePath?: string | null
+  allowLocalFixtureFacts?: boolean
 }
 
 const initialState: InboxItemMutationState = {}
@@ -124,16 +127,20 @@ export function InboxListItem({
   linkedTaskId = null,
   onSelect,
   phaseFilter = 'all',
+  queueFilter = 'all',
   sourceFilter = 'all',
   hrefBasePath = null,
+  allowLocalFixtureFacts = false,
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
   const sourceVisual = resolveInboxItemSourceVisual(item)
   const card = presentUnifiedInboxCard(item, {
     linkedTaskId,
     phase: phaseFilter,
+    queue: queueFilter,
     source: sourceFilter,
     basePath: hrefBasePath,
+    allowLocalFixtureFacts,
   })
 
   return (
@@ -170,11 +177,26 @@ export function InboxListItem({
           >
             {card.headline}
           </p>
-          <InboxStatusChip label={card.reviewStatus.label} kind={card.reviewStatus.kind} />
+          <InboxStatusChip
+            label={card.workQueue.explicitStatusLabel}
+            kind={
+              card.workQueue.explicitStatus === 'handled'
+                ? 'handled'
+                : card.workQueue.explicitStatus === 'follow_up'
+                  ? 'gaps'
+                  : card.workQueue.explicitStatus === 'in_review'
+                    ? 'review'
+                    : 'new'
+            }
+          />
         </div>
 
         <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
           <span>{card.sourceLabel}</span>
+          <span className="mx-1" aria-hidden="true">
+            ·
+          </span>
+          <span>{card.workQueue.timeGroupLabel}</span>
           <span className="mx-1" aria-hidden="true">
             ·
           </span>
@@ -183,17 +205,27 @@ export function InboxListItem({
         <div className="aos-inbox-queue-copy">
           <p className="aos-inbox-queue-line">{card.customerContact}</p>
           <p className="aos-inbox-queue-line">{card.requestSummary}</p>
-          {card.urgencyNote ? (
-            <p className="aos-inbox-queue-urgency">{card.urgencyNote}</p>
-          ) : null}
-          <p className="mt-1 flex min-w-0 items-center gap-1.5">
+          <p className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
             <span
               className={
-                card.missingCount > 0 ? 'aos-inbox-chip-gaps' : 'aos-inbox-chip-handled'
+                card.workQueue.hasContactedHistoryEvent
+                  ? 'aos-inbox-chip-handled'
+                  : 'aos-inbox-chip-new'
               }
             >
-              {card.missingInformationLabel}
+              {card.workQueue.contactedLabel}
             </span>
+            {card.workQueue.missingInformation || card.missingCount > 0 ? (
+              <span className="aos-inbox-chip-gaps">{card.missingInformationLabel}</span>
+            ) : null}
+            {card.workQueue.preferredReplyChannelLabel ? (
+              <span className="aos-inbox-chip-review">
+                {card.workQueue.preferredReplyChannelLabel}
+              </span>
+            ) : null}
+          </p>
+          <p className="aos-inbox-queue-line">
+            Letzte Aktion: {card.workQueue.lastHumanActionLabel}
           </p>
           {card.nextActionLabel ? (
             <p className="aos-inbox-queue-next">{card.nextActionLabel}</p>

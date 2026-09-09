@@ -147,6 +147,7 @@ export function buildKfzWorkQueueFilterHrefs(options?: {
   selectedItemId?: string | null
   selectedPhase?: KfzWorkQueuePhase | null
   source?: string | null
+  queue?: string | null
   basePath?: string | null
 }): Record<KfzWorkQueueFilter, string> {
   const hrefs = {} as Record<KfzWorkQueueFilter, string>
@@ -157,6 +158,7 @@ export function buildKfzWorkQueueFilterHrefs(options?: {
       (filter === 'all' || options?.selectedPhase === filter)
     hrefs[filter] = buildInboxHref({
       phase: filter,
+      queue: options?.queue,
       source: options?.source,
       itemId: keepItem ? options?.selectedItemId : null,
       basePath: options?.basePath,
@@ -181,9 +183,12 @@ export function parseKfzWorkQueueFilter(
   return 'all'
 }
 
+export const INBOX_WORK_QUEUE_FILTER_PARAM = 'queue' as const
+
 export function buildInboxHref(options?: {
   itemId?: string | null
   phase?: KfzWorkQueueFilter | null
+  queue?: string | null
   source?: string | null
   view?: InboxItemView | null
   basePath?: string | null
@@ -191,6 +196,7 @@ export function buildInboxHref(options?: {
   const params = new URLSearchParams()
   const source = options?.source?.trim() ?? ''
   const phase = options?.phase ?? 'all'
+  const queue = options?.queue?.trim() ?? ''
   const view = parseInboxItemView(options?.view)
 
   if (source && source !== 'all') {
@@ -199,6 +205,10 @@ export function buildInboxHref(options?: {
 
   if (phase !== 'all') {
     params.set(KFZ_WORK_QUEUE_FILTER_PARAM, phase)
+  }
+
+  if (queue && queue !== 'all') {
+    params.set(INBOX_WORK_QUEUE_FILTER_PARAM, queue)
   }
 
   const itemId = options?.itemId?.trim() ?? ''

@@ -480,7 +480,12 @@ describe('review history stays off production send paths', () => {
     assert.match(historyLib, /Does not invent actors or timestamps/)
 
     const previewPage = fs.readFileSync(path.join(srcRoot, 'app/dev/inbox/page.tsx'), 'utf8')
-    assert.match(previewPage, /allowLocalHistoryFixtureFacts/)
-    assert.match(previewPage, /parseInboxItemView/)
+    const previewApp = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/components/inbox-factual-work-queue-preview-app.tsx'),
+      'utf8',
+    )
+    assert.match(previewPage, /InboxFactualWorkQueuePreviewApp/)
+    assert.match(previewApp, /allowLocalHistoryFixtureFacts/)
+    assert.match(previewApp, /parseInboxItemView/)
   })
 })

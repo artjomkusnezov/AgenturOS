@@ -10,6 +10,11 @@ import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
 import type { InboxItemView } from '@/features/inbox/lib/inbox-item-view'
+import {
+  countInboxWorkQueue,
+  formatInboxWorkQueueMeta,
+  type InboxWorkQueueFilter,
+} from '@/features/inbox/lib/inbox-factual-work-queue'
 import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
 import {
   buildInboxHref,
@@ -30,6 +35,7 @@ type InboxWorkspaceProps = {
   taskRelationsByItemId: Record<string, string>
   selectedItemId: string | null
   phaseFilter?: KfzWorkQueueFilter
+  queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
   itemView?: InboxItemView
   hrefBasePath?: string
@@ -52,6 +58,7 @@ export function InboxWorkspace({
   taskRelationsByItemId,
   selectedItemId,
   phaseFilter = 'all',
+  queueFilter = 'all',
   sourceFilter = 'all',
   itemView = 'work',
   hrefBasePath = KFZ_INBOX_HREF_BASE,
@@ -87,23 +94,25 @@ export function InboxWorkspace({
         buildInboxHref({
           itemId,
           phase: phaseFilter,
+          queue: queueFilter,
           source: sourceFilter,
           basePath: hrefBasePath,
         }),
       )
     },
-    [hrefBasePath, phaseFilter, router, sourceFilter]
+    [hrefBasePath, phaseFilter, queueFilter, router, sourceFilter]
   )
 
   const navigateToList = useCallback(() => {
     router.push(
       buildInboxHref({
         phase: phaseFilter,
+        queue: queueFilter,
         source: sourceFilter,
         basePath: hrefBasePath,
       }),
     )
-  }, [hrefBasePath, phaseFilter, router, sourceFilter])
+  }, [hrefBasePath, phaseFilter, queueFilter, router, sourceFilter])
 
   const handleSelectItem = useCallback(
     (itemId: string) => {
@@ -131,11 +140,15 @@ export function InboxWorkspace({
   const showMobileDetail = selectedItem !== null
   const totalCount = items.length
   const countLabel = totalCount === 1 ? '1 Element' : `${totalCount} Elemente`
+  const derivedWorkQueueMeta = formatInboxWorkQueueMeta(
+    countInboxWorkQueue(items, { taskRelationsByItemId }),
+  )
   const derivedKfzMeta = formatKfzWorkQueueMeta(
     countKfzWorkQueue(items, taskRelationsByItemId),
   )
+  const derivedMeta = [derivedWorkQueueMeta, derivedKfzMeta].filter(Boolean).join(' · ')
   const chromeMeta =
-    queueMeta ?? (derivedKfzMeta ? `${derivedKfzMeta} · ${countLabel}` : countLabel)
+    queueMeta ?? (derivedMeta ? `${derivedMeta} · ${countLabel}` : countLabel)
 
   return (
     <WorkspaceFrame
@@ -184,8 +197,10 @@ export function InboxWorkspace({
               memberNameMap={memberNameMap}
               taskRelationsByItemId={taskRelationsByItemId}
               phaseFilter={phaseFilter}
+              queueFilter={queueFilter}
               sourceFilter={sourceFilter}
               hrefBasePath={hrefBasePath}
+              allowLocalFixtureFacts={allowLocalHistoryFixtureFacts}
             />
           )
         }
@@ -199,6 +214,7 @@ export function InboxWorkspace({
               memberNameMap={memberNameMap}
               aiProposal={aiProposal}
               phaseFilter={phaseFilter}
+              queueFilter={queueFilter}
               sourceFilter={sourceFilter}
               itemView={itemView}
               hrefBasePath={hrefBasePath}

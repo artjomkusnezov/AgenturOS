@@ -14,11 +14,17 @@ import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-nam
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
-  searchParams: Promise<{ item?: string; phase?: string; source?: string; view?: string }>
+  searchParams: Promise<{
+    item?: string
+    phase?: string
+    queue?: string
+    source?: string
+    view?: string
+  }>
 }
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const { item, phase, source, view } = await searchParams
+  const { item, phase, queue, source, view } = await searchParams
   const [result, membersResult] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
@@ -42,6 +48,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     taskRelationsByItemId: result.taskRelationsByItemId,
     selectedItemId: item,
     phase,
+    queue,
     source,
     view,
   })
@@ -72,6 +79,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       taskRelationsByItemId={result.taskRelationsByItemId}
       selectedItemId={selectedItemId}
       phaseFilter={inboxView.phaseFilter}
+      queueFilter={inboxView.queueFilter}
       sourceFilter={inboxView.sourceFilter}
       itemView={parseInboxItemView(view)}
       queueMeta={inboxView.metaLabel}

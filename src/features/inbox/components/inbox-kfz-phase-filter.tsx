@@ -17,6 +17,7 @@ type InboxKfzPhaseFilterProps = {
   selectedItemId?: string | null
   selectedPhase?: KfzWorkQueuePhase | null
   sourceFilter?: string | null
+  queueFilter?: string | null
   variant?: 'inbox' | 'dashboard'
   hrefBasePath?: string | null
 }
@@ -27,6 +28,7 @@ export function InboxKfzPhaseFilter({
   selectedItemId = null,
   selectedPhase = null,
   sourceFilter = null,
+  queueFilter = null,
   variant = 'inbox',
   hrefBasePath = null,
 }: InboxKfzPhaseFilterProps) {
@@ -39,6 +41,7 @@ export function InboxKfzPhaseFilter({
     selectedItemId,
     selectedPhase,
     source: sourceFilter,
+    queue: queueFilter,
     basePath: hrefBasePath,
   })
 

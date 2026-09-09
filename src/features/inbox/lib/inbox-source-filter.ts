@@ -117,6 +117,7 @@ export function buildInboxSourceFilterHrefs(options?: {
     'channel' | 'source' | 'inbound_metadata' | 'title' | 'content'
   > | null
   phase?: KfzWorkQueueFilter | null
+  queue?: string | null
   basePath?: string | null
 }): Record<InboxSourceFilter, string> {
   const hrefs = {} as Record<InboxSourceFilter, string>
@@ -131,6 +132,7 @@ export function buildInboxSourceFilterHrefs(options?: {
     hrefs[filter] = buildInboxHref({
       source: filter,
       phase: options?.phase ?? 'all',
+      queue: options?.queue,
       itemId: keepItem ? options?.selectedItemId : null,
       basePath: options?.basePath,
     })

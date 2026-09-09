@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { InboxKfzPhaseFilter } from '@/features/inbox/components/inbox-kfz-phase-filter'
 import { InboxListItem } from '@/features/inbox/components/inbox-list-item'
 import { InboxSourceFilterNav } from '@/features/inbox/components/inbox-source-filter'
+import { InboxWorkQueueFilterNav } from '@/features/inbox/components/inbox-work-queue-filter'
 import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import {
   buildInboxSourceFilterHrefs,
@@ -13,6 +14,16 @@ import {
   INBOX_SOURCE_FILTER_LABELS,
   type InboxSourceFilter,
 } from '@/features/inbox/lib/inbox-source-filter'
+import {
+  buildInboxWorkQueueFilterHrefs,
+  countInboxWorkQueue,
+  filterInboxItemsByWorkQueue,
+  groupInboxWorkQueueItems,
+  INBOX_WORK_QUEUE_FILTER_LABELS,
+  INBOX_WORK_QUEUE_SORT_NOTE,
+  sortInboxWorkQueueItems,
+  type InboxWorkQueueFilter,
+} from '@/features/inbox/lib/inbox-factual-work-queue'
 import {
   countKfzWorkQueue,
   filterInboxItemsByKfzPhase,
@@ -24,8 +35,6 @@ import {
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import { aosListGroupLabelClassName } from '@/lib/design-system'
 
-const ARCHIVED_PREVIEW_LIMIT = 5
-
 type InboxListProps = {
   unprocessedItems: InboxItem[]
   processedItems: InboxItem[]
@@ -34,8 +43,10 @@ type InboxListProps = {
   memberNameMap?: Record<string, string>
   taskRelationsByItemId?: Record<string, string>
   phaseFilter?: KfzWorkQueueFilter
+  queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
   hrefBasePath?: string | null
+  allowLocalFixtureFacts?: boolean
 }
 
 export function InboxList({
@@ -46,16 +57,21 @@ export function InboxList({
   memberNameMap = {},
   taskRelationsByItemId = {},
   phaseFilter = 'all',
+  queueFilter = 'all',
   sourceFilter = 'all',
   hrefBasePath = null,
+  allowLocalFixtureFacts = false,
 }: InboxListProps) {
-  const [archiveExpanded, setArchiveExpanded] = useState(false)
   const allItems = useMemo(
     () => [...unprocessedItems, ...processedItems],
     [unprocessedItems, processedItems],
   )
   const kfzCounts = useMemo(
     () => countKfzWorkQueue(allItems, taskRelationsByItemId),
+    [allItems, taskRelationsByItemId],
+  )
+  const workQueueCounts = useMemo(
+    () => countInboxWorkQueue(allItems, { taskRelationsByItemId }),
     [allItems, taskRelationsByItemId],
   )
   const sourceCounts = useMemo(() => countInboxSourceFilters(allItems), [allItems])
@@ -65,9 +81,24 @@ export function InboxList({
         selectedItemId,
         selectedItem: allItems.find((item) => item.id === selectedItemId) ?? null,
         phase: phaseFilter,
+        queue: queueFilter,
         basePath: hrefBasePath,
       }),
-    [allItems, hrefBasePath, phaseFilter, selectedItemId],
+    [allItems, hrefBasePath, phaseFilter, queueFilter, selectedItemId],
+  )
+  const workQueueFilterHrefs = useMemo(
+    () =>
+      buildInboxWorkQueueFilterHrefs({
+        selectedItemId,
+        selectedItem: allItems.find((item) => item.id === selectedItemId) ?? null,
+        linkedTaskId: selectedItemId
+          ? resolveInboxLinkedTaskId(selectedItemId, taskRelationsByItemId)
+          : null,
+        phase: phaseFilter,
+        source: sourceFilter,
+        basePath: hrefBasePath,
+      }),
+    [allItems, hrefBasePath, phaseFilter, selectedItemId, sourceFilter, taskRelationsByItemId],
   )
   const selectedItem = allItems.find((item) => item.id === selectedItemId) ?? null
   const selectedPhase = selectedItem
@@ -76,37 +107,30 @@ export function InboxList({
         resolveInboxLinkedTaskId(selectedItem.id, taskRelationsByItemId),
       )
     : null
-  const visibleUnprocessedItems = useMemo(
+  const visibleItems = useMemo(
     () =>
-      filterInboxItemsByKfzPhase(
-        filterInboxItemsBySource(unprocessedItems, sourceFilter),
-        phaseFilter,
-        taskRelationsByItemId,
+      sortInboxWorkQueueItems(
+        filterInboxItemsByWorkQueue(
+          filterInboxItemsByKfzPhase(
+            filterInboxItemsBySource(allItems, sourceFilter),
+            phaseFilter,
+            taskRelationsByItemId,
+          ),
+          queueFilter,
+          { taskRelationsByItemId },
+        ),
+        { taskRelationsByItemId },
       ),
-    [phaseFilter, sourceFilter, taskRelationsByItemId, unprocessedItems],
+    [allItems, phaseFilter, queueFilter, sourceFilter, taskRelationsByItemId],
   )
-  const filteredProcessedItems = useMemo(
-    () =>
-      filterInboxItemsByKfzPhase(
-        filterInboxItemsBySource(processedItems, sourceFilter),
-        phaseFilter,
-        taskRelationsByItemId,
-      ),
-    [phaseFilter, processedItems, sourceFilter, taskRelationsByItemId],
-  )
-
-  const visibleProcessedItems = useMemo(() => {
-    if (archiveExpanded || filteredProcessedItems.length <= ARCHIVED_PREVIEW_LIMIT) {
-      return filteredProcessedItems
-    }
-
-    return filteredProcessedItems.slice(0, ARCHIVED_PREVIEW_LIMIT)
-  }, [archiveExpanded, filteredProcessedItems])
-
-  const canToggleArchive = filteredProcessedItems.length > ARCHIVED_PREVIEW_LIMIT
-  const queueMode = phaseFilter !== 'all'
-  const queueItems = [...visibleUnprocessedItems, ...filteredProcessedItems]
-  const filterEmpty = queueItems.length === 0
+  const timeGroups = useMemo(() => groupInboxWorkQueueItems(visibleItems), [visibleItems])
+  const filterEmpty = visibleItems.length === 0
+  const queueMode = phaseFilter !== 'all' || queueFilter !== 'all'
+  const headingParts = [
+    sourceFilter !== 'all' ? INBOX_SOURCE_FILTER_LABELS[sourceFilter] : null,
+    queueFilter !== 'all' ? INBOX_WORK_QUEUE_FILTER_LABELS[queueFilter] : null,
+    phaseFilter !== 'all' ? KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter] : null,
+  ].filter(Boolean)
 
   return (
     <div className="space-y-3">
@@ -115,12 +139,19 @@ export function InboxList({
         counts={sourceCounts}
         hrefs={sourceFilterHrefs}
       />
+      <InboxWorkQueueFilterNav
+        activeQueue={queueFilter}
+        counts={workQueueCounts}
+        totalCount={allItems.length}
+        hrefs={workQueueFilterHrefs}
+      />
       <InboxKfzPhaseFilter
         activePhase={phaseFilter}
         counts={kfzCounts}
         selectedItemId={selectedItemId}
         selectedPhase={selectedPhase}
         sourceFilter={sourceFilter}
+        queueFilter={queueFilter}
         hrefBasePath={hrefBasePath}
       />
 
@@ -128,92 +159,42 @@ export function InboxList({
         <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">
           {sourceFilter !== 'all' || queueMode
             ? 'Keine Einträge für diesen Filter.'
-            : 'Keine Kfz-Anfragen in dieser Tagesliste.'}
+            : 'Keine Eingänge in dieser Arbeitsschlange.'}
         </p>
-      ) : queueMode ? (
-        <div>
-          <h3 className={aosListGroupLabelClassName}>
-            {sourceFilter !== 'all'
-              ? `${INBOX_SOURCE_FILTER_LABELS[sourceFilter]} · ${KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter]}`
-              : KFZ_WORK_QUEUE_FILTER_LABELS[phaseFilter]}
-          </h3>
-          <ul className="flex flex-col">
-            {queueItems.map((item) => (
-              <li key={item.id}>
-                <InboxListItem
-                  item={item}
-                  isSelected={item.id === selectedItemId}
-                  subdued={!isInboxItemUnprocessed(item)}
-                  linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
-                  onSelect={onSelectItem}
-                  memberNameMap={memberNameMap}
-                  phaseFilter={phaseFilter}
-                  sourceFilter={sourceFilter}
-                  hrefBasePath={hrefBasePath}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
       ) : (
-        <>
-          <div>
-            <h3 className={aosListGroupLabelClassName}>Unbearbeitet</h3>
-            {visibleUnprocessedItems.length === 0 ? (
-              <p className="aos-ws-text-muted px-2 py-1.5 text-[11px]">Keine unbearbeiteten Elemente.</p>
-            ) : (
+        <div>
+          {headingParts.length > 0 ? (
+            <h3 className={aosListGroupLabelClassName}>{headingParts.join(' · ')}</h3>
+          ) : (
+            <p className="aos-ws-text-muted px-2 py-1 text-[10px] leading-snug">
+              {INBOX_WORK_QUEUE_SORT_NOTE}
+            </p>
+          )}
+          {timeGroups.map((group) => (
+            <div key={group.group}>
+              <h3 className={aosListGroupLabelClassName}>{group.label}</h3>
               <ul className="flex flex-col">
-                {visibleUnprocessedItems.map((item) => (
+                {group.items.map((item) => (
                   <li key={item.id}>
                     <InboxListItem
                       item={item}
                       isSelected={item.id === selectedItemId}
+                      subdued={!isInboxItemUnprocessed(item)}
                       linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
                       onSelect={onSelectItem}
                       memberNameMap={memberNameMap}
                       phaseFilter={phaseFilter}
+                      queueFilter={queueFilter}
                       sourceFilter={sourceFilter}
                       hrefBasePath={hrefBasePath}
+                      allowLocalFixtureFacts={allowLocalFixtureFacts}
                     />
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
-
-          {filteredProcessedItems.length > 0 ? (
-            <div className="border-t border-zinc-200/40 pt-2.5">
-              <h3 className={aosListGroupLabelClassName}>Bearbeitet</h3>
-              <ul className="flex flex-col">
-                {visibleProcessedItems.map((item) => (
-                  <li key={item.id}>
-                    <InboxListItem
-                      item={item}
-                      isSelected={item.id === selectedItemId}
-                      subdued
-                      linkedTaskId={resolveInboxLinkedTaskId(item.id, taskRelationsByItemId)}
-                      onSelect={onSelectItem}
-                      memberNameMap={memberNameMap}
-                      phaseFilter={phaseFilter}
-                      sourceFilter={sourceFilter}
-                      hrefBasePath={hrefBasePath}
-                    />
-                  </li>
-                ))}
-              </ul>
-              {canToggleArchive ? (
-                <button
-                  type="button"
-                  className="aos-ws-archive-toggle"
-                  onClick={() => setArchiveExpanded((open) => !open)}
-                  aria-expanded={archiveExpanded}
-                >
-                  {archiveExpanded ? 'Archiv einklappen' : 'Alle bearbeiteten anzeigen'}
-                </button>
-              ) : null}
             </div>
-          ) : null}
-        </>
+          ))}
+        </div>
       )}
     </div>
   )

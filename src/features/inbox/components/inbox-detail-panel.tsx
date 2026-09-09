@@ -19,6 +19,8 @@ import { InboxKfzReplyHandoffActions } from '@/features/inbox/components/inbox-k
 import { InboxKfzResponseDraftSection } from '@/features/inbox/components/inbox-kfz-response-draft-section'
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
 import { InboxKfzTriageActions } from '@/features/inbox/components/inbox-kfz-triage-actions'
+import { InboxManualStatusActions } from '@/features/inbox/components/inbox-manual-status-actions'
+import type { InboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
 import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import { InboxManualReviewHistorySection } from '@/features/inbox/components/inbox-manual-review-history'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
@@ -62,6 +64,7 @@ type InboxDetailPanelProps = {
   /** Internal AI proposal for Kfz website leads — advisory only. */
   aiProposal?: InboxAiProposal | null
   phaseFilter?: KfzWorkQueueFilter
+  queueFilter?: InboxWorkQueueFilter
   sourceFilter?: InboxSourceFilter
   itemView?: InboxItemView
   hrefBasePath?: string
@@ -146,6 +149,7 @@ export function InboxDetailPanel({
   memberNameMap = {},
   aiProposal = null,
   phaseFilter = 'all',
+  queueFilter = 'all',
   sourceFilter = 'all',
   itemView = 'work',
   hrefBasePath = KFZ_INBOX_HREF_BASE,
@@ -174,6 +178,7 @@ export function InboxDetailPanel({
   const history = presentInboxManualReviewHistory(item, {
     linkedTaskId,
     phase: phaseFilter,
+    queue: queueFilter,
     source: sourceFilter,
     view: itemView,
     basePath: hrefBasePath,
@@ -301,7 +306,14 @@ export function InboxDetailPanel({
                 onLocalApply={onLocalApply}
                 hideHandledAction
               />
-            ) : null}
+            ) : (
+              <InboxManualStatusActions
+                item={item}
+                linkedTaskId={linkedTaskId}
+                onStatusChange={onStatusChange}
+                onLocalApply={onLocalApply}
+              />
+            )}
 
             {kfzReview ? (
               <section aria-label="Quelltext" className={aosWorkspaceSectionClassName}>

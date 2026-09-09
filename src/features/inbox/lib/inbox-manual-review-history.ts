@@ -284,6 +284,7 @@ export function presentInboxManualReviewHistory(
   options?: {
     linkedTaskId?: string | null
     phase?: KfzWorkQueueFilter | null
+    queue?: string | null
     source?: InboxSourceFilter | null
     view?: string | null
     basePath?: string | null
@@ -410,6 +411,7 @@ export function presentInboxManualReviewHistory(
   const hrefOptions = {
     itemId: item.id,
     phase: options?.phase ?? 'all',
+    queue: options?.queue ?? 'all',
     source: options?.source ?? 'all',
     basePath: options?.basePath,
   }
