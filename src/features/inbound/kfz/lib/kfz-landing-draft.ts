@@ -1,6 +1,6 @@
 /**
  * Client draft for the public Kfz landing.
- * Restores ordinary text/select fields and a stable submissionId.
+ * Restores ordinary text/select fields, questionnaire answers and a stable submissionId.
  * Never persists consent as checked and never stores file bytes.
  */
 
@@ -10,7 +10,14 @@ import {
   KFZ_LANDING_DEFAULT_POSTAL_CODE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import { KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL } from '@/features/inbound/kfz/lib/kfz-landing-steps'
-import type { KfzLandingStep } from '@/features/inbound/kfz/lib/kfz-landing-steps'
+import {
+  KFZ_SCREEN_BRANCH,
+  KFZ_SCREEN_CONTACT,
+  KFZ_SCREEN_DOCUMENTS,
+  mapLegacyKfzLandingReason,
+  resolveKfzLandingBranchId,
+  type KfzQuestionnaireAnswers,
+} from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import { KFZ_PREFERRED_CHANNELS } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
 export const KFZ_LANDING_DRAFT_STORAGE_KEY = 'agenturos.kfz-landing.draft.v1' as const
@@ -24,24 +31,35 @@ export type KfzLandingDraftStorage = {
   removeItem(key: string): void
 }
 
+export type KfzLandingDraftValues = Omit<
+  KfzLandingFormValues,
+  'inquiryProcessingConsent'
+> & {
+  branchId: string
+  questionnaireAnswers: KfzQuestionnaireAnswers
+}
+
 export type KfzLandingDraftSnapshot = {
-  version: 1
+  version: 1 | 2
   submissionId: string
-  step: KfzLandingStep
-  values: Omit<KfzLandingFormValues, 'inquiryProcessingConsent'>
+  screenId: string
+  /** Legacy numeric step from draft v1. */
+  step?: 1 | 2 | 3
+  values: KfzLandingDraftValues
   hadDocuments: boolean
 }
 
 export type RestoreKfzLandingDraftResult = {
   snapshot: KfzLandingDraftSnapshot
   values: KfzLandingFormValues
-  step: KfzLandingStep
+  screenId: string
+  step: 1 | 2 | 3
   submissionId: string
   documentReselectRequired: boolean
   documentReselectNotice: string | null
 }
 
-const DRAFT_STEPS = new Set<KfzLandingStep>([1, 2, 3])
+const LEGACY_STEPS = new Set([1, 2, 3])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -51,8 +69,40 @@ function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
 }
 
-function isKfzLandingStep(value: unknown): value is KfzLandingStep {
-  return value === 1 || value === 2 || value === 3 || DRAFT_STEPS.has(value as KfzLandingStep)
+function legacyStepToScreenId(step: unknown): string {
+  if (step === 2) {
+    return KFZ_SCREEN_CONTACT
+  }
+  if (step === 3) {
+    return KFZ_SCREEN_DOCUMENTS
+  }
+  return KFZ_SCREEN_BRANCH
+}
+
+function screenIdToLegacyStep(screenId: string): 1 | 2 | 3 {
+  if (screenId === KFZ_SCREEN_CONTACT) {
+    return 2
+  }
+  if (screenId === KFZ_SCREEN_DOCUMENTS) {
+    return 3
+  }
+  if (screenId === KFZ_SCREEN_BRANCH) {
+    return 1
+  }
+  return 2
+}
+
+function readQuestionnaireAnswers(raw: unknown): KfzQuestionnaireAnswers {
+  if (!isRecord(raw)) {
+    return {}
+  }
+  const answers: KfzQuestionnaireAnswers = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof key === 'string' && typeof value === 'string' && key.length <= 64) {
+      answers[key] = value
+    }
+  }
+  return answers
 }
 
 export function createMemoryKfzLandingDraftStorage(
@@ -94,17 +144,23 @@ export function emptyKfzLandingDraftValues(): KfzLandingFormValues {
     vehicleModel: '',
     vehicleYear: '',
     contextNotes: '',
+    branchId: '',
+    questionnaireAnswers: {},
   }
 }
 
 export function buildKfzLandingDraftSnapshot(input: {
   submissionId: string
-  step: KfzLandingStep
+  screenId?: string
+  step?: 1 | 2 | 3
   values: KfzLandingFormValues
   hadDocuments: boolean
 }): KfzLandingDraftSnapshot | null {
   const submissionId = input.submissionId.trim()
-  if (!submissionId || !isKfzLandingStep(input.step)) {
+  const screenId =
+    input.screenId?.trim() ||
+    (input.step ? legacyStepToScreenId(input.step) : '')
+  if (!submissionId || !screenId) {
     return null
   }
 
@@ -113,11 +169,15 @@ export function buildKfzLandingDraftSnapshot(input: {
       ? input.values.preferredChannel
       : KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL
 
+  const branchId = resolveKfzLandingBranchId(
+    input.values.branchId,
+    input.values.inquiryReason,
+  )
+
   return {
-    version: 1,
+    version: 2,
     submissionId,
-    step: input.step,
-    hadDocuments: input.hadDocuments === true,
+    screenId,
     values: {
       fullName: input.values.fullName,
       postalCode: input.values.postalCode,
@@ -130,7 +190,10 @@ export function buildKfzLandingDraftSnapshot(input: {
       vehicleModel: input.values.vehicleModel,
       vehicleYear: input.values.vehicleYear,
       contextNotes: input.values.contextNotes,
+      branchId,
+      questionnaireAnswers: { ...(input.values.questionnaireAnswers ?? {}) },
     },
+    hadDocuments: input.hadDocuments === true,
   }
 }
 
@@ -148,12 +211,18 @@ export function parseKfzLandingDraftSnapshot(
         })()
       : raw
 
-  if (!isRecord(source) || source.version !== 1) {
+  if (!isRecord(source) || (source.version !== 1 && source.version !== 2)) {
     return null
   }
 
   const submissionId = readString(source.submissionId).trim()
-  if (!submissionId || !isKfzLandingStep(source.step) || !isRecord(source.values)) {
+  if (!submissionId || !isRecord(source.values)) {
+    return null
+  }
+
+  const screenId =
+    readString(source.screenId).trim() || legacyStepToScreenId(source.step)
+  if (!screenId) {
     return null
   }
 
@@ -163,10 +232,21 @@ export function parseKfzLandingDraftSnapshot(
       ? (preferredRaw as KfzLandingFormValues['preferredChannel'])
       : KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL
 
+  const inquiryReason = readString(source.values.inquiryReason)
+  const branchId =
+    resolveKfzLandingBranchId(readString(source.values.branchId), inquiryReason) ||
+    mapLegacyKfzLandingReason(inquiryReason)
+
+  const step =
+    source.version === 1 && LEGACY_STEPS.has(source.step as number)
+      ? (source.step as 1 | 2 | 3)
+      : undefined
+
   return {
-    version: 1,
+    version: source.version,
     submissionId,
-    step: source.step,
+    screenId,
+    step,
     hadDocuments: source.hadDocuments === true,
     values: {
       fullName: readString(source.values.fullName),
@@ -175,11 +255,13 @@ export function parseKfzLandingDraftSnapshot(
       phone: readString(source.values.phone),
       email: readString(source.values.email),
       preferredChannel,
-      inquiryReason: readString(source.values.inquiryReason),
+      inquiryReason,
       vehicleMake: readString(source.values.vehicleMake),
       vehicleModel: readString(source.values.vehicleModel),
       vehicleYear: readString(source.values.vehicleYear),
       contextNotes: readString(source.values.contextNotes),
+      branchId,
+      questionnaireAnswers: readQuestionnaireAnswers(source.values.questionnaireAnswers),
     },
   }
 }
@@ -194,10 +276,13 @@ export function restoreKfzLandingDraft(
   return {
     snapshot,
     submissionId: snapshot.submissionId,
-    step: snapshot.step,
+    screenId: snapshot.screenId,
+    step: snapshot.step ?? screenIdToLegacyStep(snapshot.screenId),
     values: {
       ...snapshot.values,
       inquiryProcessingConsent: false,
+      branchId: snapshot.values.branchId,
+      questionnaireAnswers: { ...snapshot.values.questionnaireAnswers },
     },
     documentReselectRequired: snapshot.hadDocuments,
     documentReselectNotice: snapshot.hadDocuments
@@ -223,7 +308,8 @@ export function writeKfzLandingDraft(
   storage: KfzLandingDraftStorage | null | undefined,
   input: {
     submissionId: string
-    step: KfzLandingStep
+    screenId?: string
+    step?: 1 | 2 | 3
     values: KfzLandingFormValues
     hadDocuments: boolean
   },
@@ -266,7 +352,8 @@ export type KfzLandingDraftController = {
   read: () => RestoreKfzLandingDraftResult | null
   write: (input: {
     submissionId: string
-    step: KfzLandingStep
+    screenId?: string
+    step?: 1 | 2 | 3
     values: KfzLandingFormValues
     hadDocuments: boolean
   }) => KfzLandingDraftSnapshot | null

@@ -3,6 +3,8 @@
  * Adapter translation only — no consent, no inbox writes, no AI.
  */
 
+import type { PublicKfzQuestionnaire } from '@/features/inbound/kfz/types/public-kfz-inquiry'
+
 export const KFZ_ACQUISITION_PRODUCT = 'kfz' as const
 
 export type KfzInquiryMetadata = {
@@ -22,6 +24,7 @@ export type KfzInquiryMetadata = {
   phone: string | null
   email: string | null
   fullName?: string | null
+  questionnaire?: PublicKfzQuestionnaire | null
 }
 
 export type BuildKfzInquiryMetadataInput = {
@@ -37,6 +40,7 @@ export type BuildKfzInquiryMetadataInput = {
   phone: string | null
   email: string | null
   fullName?: string | null
+  questionnaire?: PublicKfzQuestionnaire | null
 }
 
 /**
@@ -61,6 +65,10 @@ export function buildKfzInquiryMetadata(
     contextNotes: input.contextNotes,
     phone: input.phone,
     email: input.email,
+  }
+
+  if (input.questionnaire) {
+    inquiry.questionnaire = input.questionnaire
   }
 
   const fullName = input.fullName?.trim() || null

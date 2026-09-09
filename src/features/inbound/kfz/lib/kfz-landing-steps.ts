@@ -1,35 +1,14 @@
+import {
+  getKfzLandingBranch,
+  isKfzLandingBranchLabel,
+  isQuestionnaireBranch,
+  resolveKfzLandingBranchId,
+  validateKfzQuestionScreen,
+  validateKfzQuestionnaireComplete,
+  type KfzLandingScreen,
+  type KfzQuestionnaireAnswers,
+} from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import type { KfzPreferredChannel } from '@/features/inbound/kfz/types/public-kfz-inquiry'
-
-export const KFZ_LANDING_STEPS = [1, 2, 3] as const
-export type KfzLandingStep = (typeof KFZ_LANDING_STEPS)[number]
-
-export const KFZ_LANDING_STEP_LABELS = {
-  1: 'Anliegen',
-  2: 'Kontakt',
-  3: 'Unterlagen',
-} as const
-
-export const KFZ_LANDING_REQUEST_TYPES = [
-  {
-    id: 'switch',
-    label: 'Versicherung wechseln',
-  },
-  {
-    id: 'new_vehicle',
-    label: 'Neues Fahrzeug',
-  },
-  {
-    id: 'second_car',
-    label: 'Zweitwagen',
-  },
-  {
-    id: 'review_offer',
-    label: 'Bestehendes Angebot prüfen',
-  },
-] as const
-
-export type KfzLandingRequestTypeId =
-  (typeof KFZ_LANDING_REQUEST_TYPES)[number]['id']
 
 export const KFZ_LANDING_CHANNEL_CHOICES = [
   { value: 'whatsapp', label: 'WhatsApp' },
@@ -43,11 +22,11 @@ export const KFZ_LANDING_CHANNEL_CHOICES = [
 export const KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL: KfzPreferredChannel =
   'whatsapp'
 
-export type KfzLandingStep1Input = {
-  inquiryReason: string
-}
+export type KfzLandingStepValidation =
+  | { ok: true }
+  | { ok: false; error: string; code: string }
 
-export type KfzLandingStep2Input = {
+export type KfzLandingContactInput = {
   fullName: string
   postalCode: string
   city: string
@@ -56,23 +35,11 @@ export type KfzLandingStep2Input = {
   preferredChannel: KfzPreferredChannel
 }
 
-export type KfzLandingStepValidation =
-  | { ok: true }
-  | { ok: false; error: string; code: string }
-
-const REQUEST_TYPE_LABELS = new Set<string>(
-  KFZ_LANDING_REQUEST_TYPES.map((entry) => entry.label),
-)
-
-export function isKfzLandingRequestTypeLabel(value: string): boolean {
-  return REQUEST_TYPE_LABELS.has(value.trim())
-}
-
-export function labelKfzLandingRequestType(
-  id: KfzLandingRequestTypeId,
-): string {
-  const match = KFZ_LANDING_REQUEST_TYPES.find((entry) => entry.id === id)
-  return match?.label ?? id
+export type KfzLandingAdvanceInput = KfzLandingContactInput & {
+  inquiryReason: string
+  branchId?: string
+  questionnaireAnswers?: KfzQuestionnaireAnswers
+  inquiryProcessingConsent?: boolean
 }
 
 export function isUsableKfzLandingPhone(raw: string): boolean {
@@ -88,43 +55,29 @@ export function isUsableKfzLandingPhone(raw: string): boolean {
   )
 }
 
-export function nextKfzLandingStep(step: KfzLandingStep): KfzLandingStep | null {
-  if (step === 1) {
-    return 2
-  }
-  if (step === 2) {
-    return 3
-  }
-  return null
-}
-
-export function previousKfzLandingStep(
-  step: KfzLandingStep,
-): KfzLandingStep | null {
-  if (step === 3) {
-    return 2
-  }
-  if (step === 2) {
-    return 1
-  }
-  return null
-}
-
-export function validateKfzLandingStep1(
-  input: KfzLandingStep1Input,
+export function validateKfzLandingBranch(
+  input: { branchId?: string; inquiryReason: string },
 ): KfzLandingStepValidation {
-  if (!isKfzLandingRequestTypeLabel(input.inquiryReason)) {
+  const branchId = resolveKfzLandingBranchId(input.branchId, input.inquiryReason)
+  if (!branchId) {
     return {
       ok: false,
-      error: 'Bitte wählen Sie Ihr Anliegen.',
+      error: 'Bitte wählen Sie, womit wir starten sollen.',
+      code: 'missing_request_type',
+    }
+  }
+  if (!isKfzLandingBranchLabel(getKfzLandingBranch(branchId)?.label ?? '')) {
+    return {
+      ok: false,
+      error: 'Bitte wählen Sie, womit wir starten sollen.',
       code: 'missing_request_type',
     }
   }
   return { ok: true }
 }
 
-export function validateKfzLandingStep2(
-  input: KfzLandingStep2Input,
+export function validateKfzLandingContact(
+  input: KfzLandingContactInput,
 ): KfzLandingStepValidation {
   if (!input.fullName.trim()) {
     return { ok: false, error: 'Bitte geben Sie Ihren Namen an.', code: 'missing_field' }
@@ -170,15 +123,79 @@ export function validateKfzLandingStep2(
   return { ok: true }
 }
 
-export function canAdvanceKfzLandingStep(
-  step: KfzLandingStep,
-  input: KfzLandingStep1Input & KfzLandingStep2Input,
+export function validateKfzLandingConsent(
+  granted: boolean | undefined,
 ): KfzLandingStepValidation {
-  if (step === 1) {
-    return validateKfzLandingStep1(input)
-  }
-  if (step === 2) {
-    return validateKfzLandingStep2(input)
+  if (granted !== true) {
+    return {
+      ok: false,
+      error: 'Bitte stimmen Sie der Bearbeitung Ihrer Anfrage zu.',
+      code: 'invalid_consent',
+    }
   }
   return { ok: true }
+}
+
+export function canAdvanceKfzLandingScreen(
+  screen: KfzLandingScreen,
+  input: KfzLandingAdvanceInput,
+): KfzLandingStepValidation {
+  const branchId = resolveKfzLandingBranchId(input.branchId, input.inquiryReason)
+  const answers = input.questionnaireAnswers ?? {}
+
+  if (screen.kind === 'branch') {
+    return validateKfzLandingBranch(input)
+  }
+
+  if (screen.kind === 'questions') {
+    const result = validateKfzQuestionScreen(screen, branchId, answers)
+    if (!result.ok) {
+      return { ok: false, error: result.error, code: result.code }
+    }
+    return { ok: true }
+  }
+
+  if (screen.kind === 'contact') {
+    const contact = validateKfzLandingContact(input)
+    if (!contact.ok) {
+      return contact
+    }
+    if (isQuestionnaireBranch(branchId)) {
+      const complete = validateKfzQuestionnaireComplete(branchId, answers)
+      if (!complete.ok) {
+        return { ok: false, error: complete.error, code: complete.code }
+      }
+      return validateKfzLandingConsent(input.inquiryProcessingConsent)
+    }
+    return { ok: true }
+  }
+
+  if (screen.kind === 'documents') {
+    return validateKfzLandingConsent(input.inquiryProcessingConsent)
+  }
+
+  return { ok: true }
+}
+
+export function isKfzLandingRequestTypeLabel(value: string): boolean {
+  return isKfzLandingBranchLabel(value)
+}
+
+export const KFZ_LANDING_REQUEST_TYPES = [
+  { id: 'upload_documents', label: 'Unterlagen hochladen' },
+  { id: 'no_documents', label: 'Keine Unterlagen vorhanden' },
+  { id: 'first_car', label: 'Erstes Auto versichern' },
+  { id: 'additional_car', label: 'Weiteres Auto versichern' },
+  { id: 'switch_car', label: 'Bestehendes Auto wechseln' },
+  { id: 'evb', label: 'eVB für Zulassung' },
+] as const
+
+export function validateKfzLandingStep1(input: { inquiryReason: string }): KfzLandingStepValidation {
+  return validateKfzLandingBranch(input)
+}
+
+export function validateKfzLandingStep2(
+  input: KfzLandingContactInput,
+): KfzLandingStepValidation {
+  return validateKfzLandingContact(input)
 }
