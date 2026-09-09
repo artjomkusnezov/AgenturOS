@@ -530,7 +530,7 @@ export const KFZ_QUESTION_SCREENS: readonly KfzQuestionScreenDefinition[] = [
   {
     id: 'coverage',
     title: 'Schutz',
-    questionIds: ['coverage', KFZ_DEDUCTIBLE_PARTIAL_ID, KFZ_DEDUCTIBLE_FULL_ID],
+    questionIds: ['coverage', KFZ_DEDUCTIBLE_FULL_ID, KFZ_DEDUCTIBLE_PARTIAL_ID],
   },
 ] as const
 
