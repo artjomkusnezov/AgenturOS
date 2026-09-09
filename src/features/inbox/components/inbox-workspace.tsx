@@ -18,6 +18,7 @@ import {
   KFZ_INBOX_HREF_BASE,
   type KfzWorkQueueFilter,
 } from '@/features/inbox/lib/kfz-work-queue'
+import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
 import { ManualQuickCaptureDialog } from '@/features/inbound/manual/components/manual-quick-capture-dialog'
 import { MANUAL_CAPTURE_ACTION_LABEL } from '@/features/inbound/manual/lib/manual-capture-copy'
@@ -42,6 +43,7 @@ type InboxWorkspaceProps = {
   onLocalConfirmed?: (item: InboxItem) => void
   /** Local fixtures may carry documented review times; live records never do. */
   allowLocalHistoryFixtureFacts?: boolean
+  onLocalApply?: (itemId: string, command: KfzManualTriageCommand) => void
 }
 
 export function InboxWorkspace({
@@ -60,6 +62,7 @@ export function InboxWorkspace({
   enableManualCapture = false,
   onLocalConfirmed,
   allowLocalHistoryFixtureFacts = false,
+  onLocalApply,
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const captureTriggerRef = useRef<HTMLButtonElement>(null)
@@ -119,8 +122,11 @@ export function InboxWorkspace({
   }, [navigateToList, refreshItems])
 
   const handleStatusChange = useCallback(() => {
+    if (onLocalApply) {
+      return
+    }
     refreshItems()
-  }, [refreshItems])
+  }, [onLocalApply, refreshItems])
 
   const showMobileDetail = selectedItem !== null
   const totalCount = items.length
@@ -200,6 +206,11 @@ export function InboxWorkspace({
               onBack={handleBackToList}
               onDeleted={handleDeleted}
               onStatusChange={handleStatusChange}
+              onLocalApply={
+                onLocalApply
+                  ? (command) => onLocalApply(selectedItem.id, command)
+                  : undefined
+              }
             />
           ) : (
             <InboxEmptyDetail />

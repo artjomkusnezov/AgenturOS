@@ -5,6 +5,8 @@
 
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconUser } from '@/features/dashboard/components/dashboard-icons'
+import { InboxKfzCopyButton } from '@/features/inbox/components/inbox-kfz-copy-button'
+import { KFZ_PREFERRED_CONTACT_MISSING } from '@/features/inbox/lib/kfz-reply-handoff'
 import { KFZ_WORK_QUEUE_PHASE_LABELS } from '@/features/inbox/lib/kfz-work-queue'
 import {
   KFZ_REVIEW_AI_SEPARATE_LABEL,
@@ -65,6 +67,67 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
       </p>
 
       <div className="space-y-5">
+        <div className="aos-kfz-channel-handoff" aria-label="Bevorzugter Antwortkanal">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+            Bevorzugter Antwortkanal
+          </p>
+          <p className={`aos-kfz-channel-name ${aosWsTextPrimaryClassName}`}>
+            {review.preferredChannelContact.channelLabel}
+          </p>
+          <p className={`aos-kfz-channel-contact ${aosWsTextPrimaryClassName}`}>
+            {review.preferredChannelContact.contactValue ?? KFZ_PREFERRED_CONTACT_MISSING}
+          </p>
+          {review.preferredChannelContact.preferenceOnlyLabel ? (
+            <p className={aosWorkspaceMetaClassName}>
+              {review.preferredChannelContact.preferenceOnlyLabel}
+            </p>
+          ) : null}
+          <div className="aos-kfz-copy-row">
+            {review.copyTargets.phone ? (
+              <InboxKfzCopyButton
+                value={review.copyTargets.phone}
+                label="Telefonnummer kopieren"
+                emptyLabel="Keine Telefonnummer zum Kopieren"
+              />
+            ) : null}
+            {review.copyTargets.email ? (
+              <InboxKfzCopyButton
+                value={review.copyTargets.email}
+                label="E-Mail kopieren"
+                emptyLabel="Keine E-Mail zum Kopieren"
+              />
+            ) : null}
+            {!review.copyTargets.phone && !review.copyTargets.email ? (
+              <p className={aosWorkspaceMetaClassName}>{KFZ_PREFERRED_CONTACT_MISSING}</p>
+            ) : null}
+          </div>
+          <p className={`text-sm font-medium ${aosWsTextPrimaryClassName}`}>
+            Nächster Schritt: {review.replyHandoff.primaryActionLabel}
+          </p>
+        </div>
+
+        {review.callPreparation.visible ? (
+          <div className="aos-kfz-call-prep" aria-label={review.callPreparation.title}>
+            <BlockTitle>{review.callPreparation.title}</BlockTitle>
+            <p className={aosWorkspaceMetaClassName}>{review.callPreparation.noAdviceLabel}</p>
+            <dl className="space-y-3">
+              {review.callPreparation.facts.map((fact) => (
+                <MetaRow key={fact.id} label={fact.label} value={fact.value} />
+              ))}
+            </dl>
+            {review.callPreparation.missingInformation.length > 0 ? (
+              <ul className="aos-kfz-checklist" aria-label="Fehlende Angaben für das Gespräch">
+                {review.callPreparation.missingInformation.map((label) => (
+                  <li key={label} className="aos-kfz-check aos-kfz-check--missing">
+                    <span aria-hidden="true">○</span>
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
         <div>
           <BlockTitle>Kurzfassung</BlockTitle>
           <p className={`text-sm leading-relaxed ${aosWsTextPrimaryClassName}`}>

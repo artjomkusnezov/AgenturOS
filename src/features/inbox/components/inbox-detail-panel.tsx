@@ -15,9 +15,11 @@ import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-ite
 import { InboxAiProposalSection } from '@/features/ai-inbound/components/inbox-ai-proposal-section'
 import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
+import { InboxKfzReplyHandoffActions } from '@/features/inbox/components/inbox-kfz-reply-handoff-actions'
 import { InboxKfzResponseDraftSection } from '@/features/inbox/components/inbox-kfz-response-draft-section'
 import { InboxKfzReviewSection } from '@/features/inbox/components/inbox-kfz-review-section'
 import { InboxKfzTriageActions } from '@/features/inbox/components/inbox-kfz-triage-actions'
+import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import { InboxManualReviewHistorySection } from '@/features/inbox/components/inbox-manual-review-history'
 import { getInboxItemSourceLabel } from '@/features/inbox/lib/inbox-source'
 import type { InboxItemView } from '@/features/inbox/lib/inbox-item-view'
@@ -67,6 +69,7 @@ type InboxDetailPanelProps = {
   onBack?: () => void
   onDeleted: () => void
   onStatusChange: () => void
+  onLocalApply?: (command: KfzManualTriageCommand) => void
 }
 
 const initialState: InboxItemMutationState = {}
@@ -83,10 +86,12 @@ function InboxStatusActionButton({
   itemId,
   variant,
   onSuccess,
+  onLocalApply,
 }: {
   itemId: string
   variant: 'process' | 'reopen'
   onSuccess: () => void
+  onLocalApply?: (command: KfzManualTriageCommand) => void
 }) {
   const action = variant === 'process' ? processInboxItemAction : reopenInboxItemAction
   const [state, formAction, isPending] = useActionState(action, initialState)
@@ -107,7 +112,16 @@ function InboxStatusActionButton({
   }, [isPending, state.success, onSuccess])
 
   return (
-    <form action={formAction}>
+    <form
+      action={formAction}
+      onSubmit={(event) => {
+        if (!onLocalApply || variant !== 'process') {
+          return
+        }
+        event.preventDefault()
+        onLocalApply({ type: 'mark_handled', at: new Date().toISOString() })
+      }}
+    >
       <input type="hidden" name="itemId" value={itemId} />
       <button
         type="submit"
@@ -139,6 +153,7 @@ export function InboxDetailPanel({
   onBack,
   onDeleted,
   onStatusChange,
+  onLocalApply,
 }: InboxDetailPanelProps) {
   const updateFormId = useId()
   const deleteFormId = useId()
@@ -244,6 +259,7 @@ export function InboxDetailPanel({
               itemId={item.id}
               variant={isUnprocessed ? 'process' : 'reopen'}
               onSuccess={onStatusChange}
+              onLocalApply={onLocalApply}
             />
           )}
         </div>
@@ -256,15 +272,6 @@ export function InboxDetailPanel({
           <>
             <InboxKfzReviewSection review={kfzReview} />
             {kfzReview ? (
-              <InboxKfzTriageActions
-                item={item}
-                linkedTaskId={linkedTaskId}
-                review={kfzReview}
-                onStatusChange={onStatusChange}
-              />
-            ) : null}
-
-            {kfzReview ? (
               <InboxKfzResponseDraftSection
                 key={`${item.id}:${kfzReview.responseDraft}`}
                 item={item}
@@ -272,6 +279,27 @@ export function InboxDetailPanel({
                 aiSuggestedReply={aiSuggestedReply}
                 formId={draftFormId}
                 onStatusChange={onStatusChange}
+                onLocalApply={onLocalApply}
+              />
+            ) : null}
+
+            {kfzReview ? (
+              <InboxKfzReplyHandoffActions
+                item={item}
+                review={kfzReview}
+                onStatusChange={onStatusChange}
+                onLocalApply={onLocalApply}
+              />
+            ) : null}
+
+            {kfzReview ? (
+              <InboxKfzTriageActions
+                item={item}
+                linkedTaskId={linkedTaskId}
+                review={kfzReview}
+                onStatusChange={onStatusChange}
+                onLocalApply={onLocalApply}
+                hideHandledAction
               />
             ) : null}
 

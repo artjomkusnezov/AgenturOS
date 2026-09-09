@@ -5,6 +5,8 @@ import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { WorkspaceSectionHeading } from '@/components/app/workspace'
 import { DashboardIconFileText } from '@/features/dashboard/components/dashboard-icons'
 import { saveInboxResponseDraftAction } from '@/features/inbox/actions/save-inbox-response-draft'
+import { InboxKfzCopyButton } from '@/features/inbox/components/inbox-kfz-copy-button'
+import type { KfzManualTriageCommand } from '@/features/inbox/lib/kfz-inbox-manual-triage'
 import {
   KFZ_AI_DRAFT_REVIEW_LABEL,
   KFZ_RESPONSE_DRAFT_MAX_LENGTH,
@@ -28,6 +30,7 @@ type InboxKfzResponseDraftSectionProps = {
   aiSuggestedReply?: string | null
   formId?: string
   onStatusChange: () => void
+  onLocalApply?: (command: KfzManualTriageCommand) => void
 }
 
 const initialState: InboxItemMutationState = {}
@@ -38,6 +41,7 @@ export function InboxKfzResponseDraftSection({
   aiSuggestedReply = null,
   formId,
   onStatusChange,
+  onLocalApply,
 }: InboxKfzResponseDraftSectionProps) {
   const generatedFormId = useId()
   const resolvedFormId = formId ?? generatedFormId
@@ -108,7 +112,26 @@ export function InboxKfzResponseDraftSection({
         </div>
       ) : null}
 
-      <form id={resolvedFormId} action={formAction} className="space-y-2">
+      <div className="mb-3">
+        <InboxKfzCopyButton
+          value={draft.trim() || null}
+          label="Geprüften Entwurf kopieren"
+          emptyLabel="Kein Entwurf zum Kopieren"
+        />
+      </div>
+
+      <form
+        id={resolvedFormId}
+        action={formAction}
+        onSubmit={(event) => {
+          if (!onLocalApply) {
+            return
+          }
+          event.preventDefault()
+          onLocalApply({ type: 'save_response_draft', draft })
+        }}
+        className="space-y-2"
+      >
         <input type="hidden" name="itemId" value={item.id} />
         <input type="hidden" name="currentContent" value={item.content} />
         <label htmlFor={`kfz-response-draft-${item.id}`} className={aosWorkspaceMetaClassName}>
