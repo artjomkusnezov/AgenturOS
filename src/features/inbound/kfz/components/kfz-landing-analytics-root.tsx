@@ -1,0 +1,215 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+
+import { recordKfzAnalyticsPreviewAction } from '@/features/inbound/kfz/actions/kfz-analytics-preview'
+import { KfzAnalyticsConsentBanner } from '@/features/inbound/kfz/components/kfz-analytics-consent-banner'
+import { classifyKfzAnalyticsSubmitError } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
+import {
+  createMemoryKfzAnalyticsConsentStorage,
+  getSessionKfzAnalyticsStorage,
+  type KfzAnalyticsConsentStorage,
+} from '@/features/inbound/kfz/lib/kfz-analytics-consent'
+import {
+  createKfzAnalyticsController,
+  type KfzAnalyticsController,
+} from '@/features/inbound/kfz/lib/kfz-analytics-session'
+import type { KfzLandingAttribution } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
+import type { KfzAnalyticsRecord } from '@/features/inbound/kfz/types/kfz-analytics'
+
+export type KfzLandingAnalyticsPort = {
+  onLanding(): void
+  onBranchSelected(branchId: string): void
+  onStepView(stepId: string): void
+  onStepCompleted(stepId: string): void
+  onBack(fromStepId: string, toStepId: string): void
+  onValidationBlocked(stepId: string, fieldId: string): void
+  onSubmitStarted(): void
+  onSubmitFailed(code: string | null | undefined): void
+  onSubmitSucceeded(): void
+  onAbandon(): void
+}
+
+export function createNoopKfzLandingAnalytics(): KfzLandingAnalyticsPort {
+  return {
+    onLanding() {},
+    onBranchSelected() {},
+    onStepView() {},
+    onStepCompleted() {},
+    onBack() {},
+    onValidationBlocked() {},
+    onSubmitStarted() {},
+    onSubmitFailed() {},
+    onSubmitSucceeded() {},
+    onAbandon() {},
+  }
+}
+
+const NOOP_KFZ_LANDING_ANALYTICS = createNoopKfzLandingAnalytics()
+
+export function getNoopKfzLandingAnalytics(): KfzLandingAnalyticsPort {
+  return NOOP_KFZ_LANDING_ANALYTICS
+}
+
+type TransportMode = 'production' | 'preview' | 'memory'
+
+async function sendRecords(
+  mode: TransportMode,
+  consent: 'granted' | 'declined' | 'unknown',
+  records: KfzAnalyticsRecord[],
+) {
+  if (consent !== 'granted' || records.length === 0) {
+    return
+  }
+  if (mode === 'memory') {
+    return
+  }
+  if (mode === 'preview') {
+    await recordKfzAnalyticsPreviewAction({ consent, events: records })
+    return
+  }
+  const body = JSON.stringify({ consent, events: records })
+  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+    const blob = new Blob([body], { type: 'application/json' })
+    const queued = navigator.sendBeacon('/api/inbound/kfz-analytics', blob)
+    if (queued) {
+      return
+    }
+  }
+  await fetch('/api/inbound/kfz-analytics', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+    keepalive: true,
+  })
+}
+
+export function bindKfzAnalyticsPort(
+  controller: KfzAnalyticsController,
+  flush: (records: KfzAnalyticsRecord[]) => void,
+): KfzLandingAnalyticsPort {
+  const push = (records: KfzAnalyticsRecord[]) => {
+    if (records.length > 0) {
+      flush(records)
+    }
+  }
+  return {
+    onLanding() {
+      push(controller.recordLandingView())
+    },
+    onBranchSelected(branchId) {
+      push(controller.recordFunnelStart(branchId))
+    },
+    onStepView(stepId) {
+      push(controller.recordStepView(stepId))
+    },
+    onStepCompleted(stepId) {
+      push(controller.recordStepCompleted(stepId))
+    },
+    onBack(fromStepId, toStepId) {
+      push(controller.recordBackNavigation(fromStepId, toStepId))
+    },
+    onValidationBlocked(stepId, fieldId) {
+      push(controller.recordValidationBlocked(stepId, fieldId))
+    },
+    onSubmitStarted() {
+      push(controller.recordSubmitStarted())
+    },
+    onSubmitFailed(code) {
+      push(controller.recordSubmitFailed(classifyKfzAnalyticsSubmitError(code)))
+    },
+    onSubmitSucceeded() {
+      push(controller.recordSubmitSucceeded())
+    },
+    onAbandon() {
+      push(controller.recordAbandoned('pagehide'))
+    },
+  }
+}
+
+type KfzLandingAnalyticsRootProps = {
+  attribution?: KfzLandingAttribution
+  mode?: TransportMode
+  storage?: KfzAnalyticsConsentStorage
+  children: (analytics: KfzLandingAnalyticsPort) => ReactNode
+}
+
+export function KfzLandingAnalyticsRoot({
+  attribution,
+  mode = 'production',
+  storage,
+  children,
+}: KfzLandingAnalyticsRootProps) {
+  const resolvedStorage = useMemo(
+    () => storage ?? getSessionKfzAnalyticsStorage() ?? createMemoryKfzAnalyticsConsentStorage(),
+    [storage],
+  )
+  const hiddenRef = useRef(
+    typeof document !== 'undefined' ? document.visibilityState !== 'visible' : false,
+  )
+  const controller = useMemo(
+    () =>
+      createKfzAnalyticsController({
+        storage: resolvedStorage,
+        attribution,
+        hidden: () => hiddenRef.current,
+      }),
+    [attribution, resolvedStorage],
+  )
+  const flush = useCallback(
+    (records: KfzAnalyticsRecord[]) => {
+      void sendRecords(mode, controller.getConsent(), records)
+    },
+    [controller, mode],
+  )
+  const analytics = useMemo(
+    () => bindKfzAnalyticsPort(controller, flush),
+    [controller, flush],
+  )
+  const [consent, setConsentState] = useState(() => controller.getConsent())
+
+  useEffect(() => {
+    if (consent === 'granted') {
+      analytics.onLanding()
+    }
+  }, [analytics, consent])
+
+  useEffect(() => {
+    function onVisibility() {
+      hiddenRef.current = document.visibilityState !== 'visible'
+      controller.onVisibilityChange(hiddenRef.current)
+      if (hiddenRef.current) {
+        flush(controller.flushActiveTime())
+      }
+    }
+    function onPageHide() {
+      hiddenRef.current = true
+      analytics.onAbandon()
+      flush(controller.flushActiveTime())
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', onPageHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onPageHide)
+    }
+  }, [analytics, controller, flush])
+
+  return (
+    <div className="space-y-4">
+      <KfzAnalyticsConsentBanner
+        consent={consent}
+        onGrant={() => {
+          const records = controller.setConsent('granted')
+          setConsentState('granted')
+          flush(records)
+        }}
+        onDecline={() => {
+          controller.setConsent('declined')
+          setConsentState('declined')
+        }}
+      />
+      {children(analytics)}
+    </div>
+  )
+}

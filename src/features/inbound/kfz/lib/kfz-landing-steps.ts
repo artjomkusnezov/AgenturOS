@@ -24,7 +24,7 @@ export const KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL: KfzPreferredChannel =
 
 export type KfzLandingStepValidation =
   | { ok: true }
-  | { ok: false; error: string; code: string }
+  | { ok: false; error: string; code: string; fieldId?: string }
 
 export type KfzLandingContactInput = {
   fullName: string
@@ -150,7 +150,7 @@ export function canAdvanceKfzLandingScreen(
   if (screen.kind === 'questions') {
     const result = validateKfzQuestionScreen(screen, branchId, answers)
     if (!result.ok) {
-      return { ok: false, error: result.error, code: result.code }
+      return { ok: false, error: result.error, code: result.code, fieldId: result.questionId }
     }
     return { ok: true }
   }

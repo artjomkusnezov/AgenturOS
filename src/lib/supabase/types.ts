@@ -726,6 +726,47 @@ export type Database = {
           },
         ]
       }
+      kfz_funnel_analytics_events: {
+        Row: {
+          agency_id: string
+          created_at: string
+          event_key: string
+          event_name: string
+          id: string
+          occurred_at: string
+          properties: Json
+          session_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          event_key: string
+          event_name: string
+          id?: string
+          occurred_at: string
+          properties?: Json
+          session_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          event_key?: string
+          event_name?: string
+          id?: string
+          occurred_at?: string
+          properties?: Json
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kfz_funnel_analytics_events_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_collections: {
         Row: {
           agency_id: string
