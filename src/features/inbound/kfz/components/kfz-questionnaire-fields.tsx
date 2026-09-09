@@ -3,7 +3,9 @@
 import {
   KFZ_ANSWER_UNKNOWN,
   KFZ_ANSWER_UNKNOWN_LABEL,
+  formatKfzDeductibleCombination,
   getKfzQuestion,
+  isKfzDeductibleQuestionId,
   type KfzQuestionDefinition,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 
@@ -52,6 +54,119 @@ function UnknownButton({
   )
 }
 
+function chipClassName(selected: boolean, compact: boolean): string {
+  const size = compact
+    ? 'min-h-10 min-w-10 justify-center px-2 py-2 text-sm'
+    : 'min-h-11 px-3.5 py-2.5 text-sm sm:text-base'
+  return `relative inline-flex cursor-pointer items-center rounded-full border font-medium transition ${size} ${
+    selected
+      ? 'border-[#0050aa] bg-[#eaf3ff] text-[#003781] ring-1 ring-[#0050aa]'
+      : 'border-zinc-200 bg-white text-zinc-900 hover:border-[#8eb6e5] hover:bg-[#f8fbff]'
+  }`
+}
+
+function ChoiceOptions({
+  question,
+  value,
+  disabled,
+  onChange,
+}: {
+  question: KfzQuestionDefinition
+  value: string
+  disabled: boolean
+  onChange: (value: string) => void
+}) {
+  const options = question.options ?? []
+  const presentation = question.presentation ?? 'stack'
+
+  if (presentation === 'dropdown') {
+    return (
+      <select
+        name={question.id}
+        disabled={disabled}
+        className={fieldClassName}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        data-kfz-choice-presentation="dropdown"
+      >
+        <option value="">{question.required ? 'Bitte wählen' : 'Keine Angabe'}</option>
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    )
+  }
+
+  if (presentation === 'chips') {
+    const compact = options.length > 12
+    return (
+      <div
+        className={
+          compact
+            ? 'grid grid-cols-5 gap-1.5 sm:grid-cols-10'
+            : 'flex flex-wrap gap-2'
+        }
+        data-kfz-choice-presentation="chips"
+      >
+        {options.map((option) => {
+          const selected = value === option.id
+          const wide = option.id === KFZ_ANSWER_UNKNOWN
+          return (
+            <label
+              key={option.id}
+              data-kfz-option={option.id}
+              className={`${chipClassName(selected, compact && !wide)} ${
+                wide && compact ? 'col-span-5 sm:col-span-10 justify-center' : ''
+              }`}
+            >
+              <input
+                type="radio"
+                name={question.id}
+                className="sr-only"
+                checked={selected}
+                disabled={disabled}
+                onChange={() => onChange(option.id)}
+              />
+              <span>{option.label}</span>
+            </label>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid gap-2" data-kfz-choice-presentation="stack">
+      {options.map((option) => {
+        const selected = value === option.id
+        return (
+          <label
+            key={option.id}
+            data-kfz-option={option.id}
+            className={`relative flex min-h-12 cursor-pointer items-center rounded-2xl border px-4 py-3 text-base font-medium transition ${
+              selected
+                ? 'border-[#0050aa] bg-[#eaf3ff] text-[#003781] ring-1 ring-[#0050aa]'
+                : 'border-zinc-200 bg-white text-zinc-900 hover:border-[#8eb6e5] hover:bg-[#f8fbff]'
+            }`}
+          >
+            <input
+              type="radio"
+              name={question.id}
+              className="sr-only"
+              checked={selected}
+              disabled={disabled}
+              onChange={() => onChange(option.id)}
+            />
+            <span>{option.label}</span>
+          </label>
+        )
+      })}
+    </div>
+  )
+}
+
 function QuestionField({
   question,
   value,
@@ -70,37 +185,18 @@ function QuestionField({
 
   if (question.kind === 'choice') {
     return (
-      <fieldset className="space-y-2">
+      <fieldset className="space-y-2" data-kfz-question={question.id}>
         <legend className="text-base font-semibold text-zinc-900">
           {question.prompt}
           {question.required ? <RequiredMark /> : null}
         </legend>
         {question.hint ? <p className="text-sm text-zinc-600">{question.hint}</p> : null}
-        <div className="grid gap-2">
-          {(question.options ?? []).map((option) => {
-            const selected = value === option.id
-            return (
-              <label
-                key={option.id}
-                className={`relative flex min-h-12 cursor-pointer items-center rounded-2xl border px-4 py-3 text-base font-medium transition ${
-                  selected
-                    ? 'border-[#0050aa] bg-[#eaf3ff] text-[#003781] ring-1 ring-[#0050aa]'
-                    : 'border-zinc-200 bg-white text-zinc-900 hover:border-[#8eb6e5] hover:bg-[#f8fbff]'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={question.id}
-                  className="sr-only"
-                  checked={selected}
-                  disabled={disabled}
-                  onChange={() => onChange(option.id)}
-                />
-                <span>{option.label}</span>
-              </label>
-            )
-          })}
-        </div>
+        <ChoiceOptions
+          question={question}
+          value={value}
+          disabled={disabled}
+          onChange={onChange}
+        />
       </fieldset>
     )
   }
@@ -108,7 +204,7 @@ function QuestionField({
   const inputType = question.kind === 'date' ? 'date' : 'text'
 
   return (
-    <div>
+    <div data-kfz-question={question.id}>
       <label className={labelClassName} htmlFor={inputId}>
         {question.prompt}
         {question.required ? <RequiredMark /> : null}
@@ -144,6 +240,9 @@ export function KfzQuestionnaireFields({
   formId,
   onChange,
 }: KfzQuestionnaireFieldsProps) {
+  const showsDeductible = questionIds.some((id) => isKfzDeductibleQuestionId(id))
+  const combination = showsDeductible ? formatKfzDeductibleCombination(answers) : null
+
   return (
     <div className="space-y-5">
       {questionIds.map((questionId) => {
@@ -162,6 +261,14 @@ export function KfzQuestionnaireFields({
           />
         )
       })}
+      {combination ? (
+        <p
+          className="rounded-xl bg-[#eaf3ff] px-3.5 py-3 text-sm font-semibold text-[#003781]"
+          data-kfz-deductible-combination={combination}
+        >
+          {combination}
+        </p>
+      ) : null}
     </div>
   )
 }

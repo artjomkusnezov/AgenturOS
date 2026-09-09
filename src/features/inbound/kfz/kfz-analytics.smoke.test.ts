@@ -164,6 +164,45 @@ describe('kfz analytics allow-list and redaction', () => {
     assert.equal(rejected, null)
   })
 
+  it('never keeps SF class or deductible selections in analytics properties', () => {
+    const poisoned = sanitizeKfzAnalyticsRecord(
+      {
+        eventName: 'validation_blocked',
+        sessionId: SESSION,
+        occurredAt: '2026-09-09T08:00:00.000Z',
+        properties: {
+          stepId: 'insurance',
+          fieldId: 'sf_class_haftpflicht',
+          sf_class: '8',
+          sf_class_haftpflicht: '12',
+          sf_class_vollkasko: '20',
+          deductible: '500 €',
+          deductible_partial: '150',
+          deductible_full: '1000',
+          selbstbeteiligung: '300 €',
+          answers: {
+            sf_class_haftpflicht: '8',
+            deductible_partial: '150',
+          },
+        },
+      },
+      '2026-09-09T08:00:00.000Z',
+    )
+
+    assert.ok(poisoned)
+    assert.equal(poisoned.properties.stepId, 'insurance')
+    assert.equal(poisoned.properties.fieldId, 'missing_field')
+    const serialized = JSON.stringify(poisoned)
+    assert.doesNotMatch(serialized, /"8"/)
+    assert.doesNotMatch(serialized, /"12"/)
+    assert.doesNotMatch(serialized, /"20"/)
+    assert.doesNotMatch(serialized, /500 €/)
+    assert.doesNotMatch(serialized, /sf_class_haftpflicht/)
+    assert.doesNotMatch(serialized, /deductible_partial/)
+    assert.doesNotMatch(serialized, /selbstbeteiligung/i)
+    assert.deepEqual(assertNoKfzAnalyticsPii(poisoned), [])
+  })
+
   it('discards unsafe and free-form traffic sources', () => {
     const dirty = sanitizeKfzAnalyticsTrafficSource({
       utmSource: 'https://evil.example/?email=a@b.c',
@@ -343,6 +382,7 @@ describe('kfz analytics dashboard aggregation', () => {
     })
     const serialized = JSON.stringify(dashboard)
     assert.doesNotMatch(serialized, /Mustermann|@|OS-AB|Golf|user-agent|filename/i)
+    assert.doesNotMatch(serialized, /SF-Klasse|Selbstbeteiligung|1\.000 €|sf_class_haftpflicht/)
     assert.ok(KFZ_ANALYTICS_FIXTURE_SESSION_A.startsWith('aaaaaaaa'))
   })
 })

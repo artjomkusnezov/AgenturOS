@@ -14,7 +14,7 @@ export const KFZ_QUESTIONNAIRE_BOUNDARIES = [
   'Offizielle Allianz-Fragenreihenfolge, Tarifnamen und Rechtsformulierungen sind im Repository nicht dokumentiert.',
   'Allianz-Nachlässe, SF-Übertragung und Zulassungsregeln werden nicht berechnet — nur Angaben eingesammelt.',
   'Optionale Allianz-Zusatzbausteine wurden nicht abgefragt, weil sie in den freigegebenen Quellen fehlen.',
-  'Selbstbeteiligungen sind Freitext; Allianz-SB-Stufen sind nicht hinterlegt.',
+  'Selbstbeteiligungen sind auswählbare Beträge ohne Tarifempfehlung. Teilkasko hat keine SF-Klasse.',
 ] as const
 
 export const KFZ_LANDING_BRANCHES = [
@@ -68,6 +68,8 @@ export type KfzQuestionnaireIntent =
 
 export type KfzQuestionKind = 'choice' | 'text' | 'date' | 'number'
 
+export type KfzChoicePresentation = 'stack' | 'chips' | 'dropdown'
+
 export type KfzQuestionOption = {
   id: string
   label: string
@@ -83,6 +85,7 @@ export type KfzQuestionDefinition = {
   placeholder?: string
   inputMode?: 'numeric' | 'text'
   maxLength?: number
+  presentation?: KfzChoicePresentation
 }
 
 export type KfzQuestionScreenDefinition = {
@@ -126,6 +129,46 @@ function choice(
     ...extras,
   }
 }
+
+function buildSfClassOptions(): KfzQuestionOption[] {
+  const special: KfzQuestionOption[] = [
+    { id: 'M', label: 'M' },
+    { id: '0', label: '0' },
+    { id: 'S', label: 'S' },
+    { id: '1/2', label: '1/2' },
+  ]
+  const numbered: KfzQuestionOption[] = []
+  for (let n = 1; n <= 50; n += 1) {
+    const id = String(n)
+    numbered.push({ id, label: id })
+  }
+  return [...special, ...numbered]
+}
+
+/** Factual German no-claims classes. No calculation, transfer or recommendation. */
+export const KFZ_SF_CLASS_OPTIONS: readonly KfzQuestionOption[] = buildSfClassOptions()
+
+export const KFZ_SF_CLASS_HAFTPFLICHT_ID = 'sf_class_haftpflicht' as const
+export const KFZ_SF_CLASS_VOLLKASKO_ID = 'sf_class_vollkasko' as const
+export const KFZ_DEDUCTIBLE_PARTIAL_ID = 'deductible_partial' as const
+export const KFZ_DEDUCTIBLE_FULL_ID = 'deductible_full' as const
+export const KFZ_DEDUCTIBLE_COMBINATION_ID = 'deductible_combination' as const
+
+export const KFZ_TEILKASKO_DEDUCTIBLE_OPTIONS: readonly KfzQuestionOption[] = [
+  { id: '0', label: '0 €' },
+  { id: '150', label: '150 €' },
+  { id: '300', label: '300 €' },
+  { id: '500', label: '500 €' },
+  { id: '1000', label: '1.000 €' },
+]
+
+export const KFZ_VOLLKASKO_DEDUCTIBLE_OPTIONS: readonly KfzQuestionOption[] = [
+  { id: '0', label: '0 €' },
+  { id: '300', label: '300 €' },
+  { id: '500', label: '500 €' },
+  { id: '1000', label: '1.000 €' },
+  { id: '2500', label: '2.500 €' },
+]
 
 export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
   choice(
@@ -268,7 +311,7 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
   {
     id: 'annual_mileage',
     prompt: 'Jahresfahrleistung in Kilometern',
-    hint: 'Bitte die erwarteten Kilometer pro Jahr angeben — ohne Allianz-Kilometerstufen.',
+    hint: 'Bitte die erwarteten Kilometer pro Jahr angeben.',
     kind: 'number',
     required: true,
     placeholder: 'km pro Jahr',
@@ -360,15 +403,24 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
     kind: 'date',
     required: false,
   },
-  {
-    id: 'sf_class',
-    prompt: 'Schadenfreiheitsklasse (SF), soweit bekannt',
-    hint: 'Keine Berechnung und keine Allianz-Übertragung — nur die bekannte Klasse.',
-    kind: 'text',
-    required: true,
-    placeholder: 'z. B. SF 12 oder unbekannt',
-    maxLength: 40,
-  },
+  choice(
+    KFZ_SF_CLASS_HAFTPFLICHT_ID,
+    'SF-Klasse Haftpflicht',
+    KFZ_SF_CLASS_OPTIONS,
+    {
+      hint: 'Bitte die bekannte Klasse wählen. Es wird nichts berechnet oder übertragen.',
+      presentation: 'chips',
+    },
+  ),
+  choice(
+    KFZ_SF_CLASS_VOLLKASKO_ID,
+    'SF-Klasse Vollkasko',
+    KFZ_SF_CLASS_OPTIONS,
+    {
+      hint: 'Nur angeben, wenn eine Vollkasko-Klasse bekannt ist. Unabhängig von der Haftpflicht.',
+      presentation: 'chips',
+    },
+  ),
   choice(
     'sf_source',
     'Woher stammt die SF-Klasse?',
@@ -386,9 +438,6 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
       { id: 'yes', label: 'Ja' },
       { id: 'no', label: 'Nein' },
     ],
-    {
-      hint: 'Der genaue Allianz-Betrachtungszeitraum ist im Repository nicht dokumentiert.',
-    },
   ),
   {
     id: 'claims_details',
@@ -407,24 +456,24 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
       { id: 'undecided', label: 'Noch unsicher — bitte persönlich beraten' },
     ],
   ),
-  {
-    id: 'deductible_partial',
-    prompt: 'Gewünschte Selbstbeteiligung Teilkasko (falls bekannt)',
-    hint: 'Freitext. Allianz-SB-Stufen sind im Repository nicht dokumentiert.',
-    kind: 'text',
-    required: false,
-    placeholder: 'Betrag in Euro oder unbekannt',
-    maxLength: 40,
-  },
-  {
-    id: 'deductible_full',
-    prompt: 'Gewünschte Selbstbeteiligung Vollkasko (falls bekannt)',
-    hint: 'Freitext. Allianz-SB-Stufen sind im Repository nicht dokumentiert.',
-    kind: 'text',
-    required: false,
-    placeholder: 'Betrag in Euro oder unbekannt',
-    maxLength: 40,
-  },
+  choice(
+    KFZ_DEDUCTIBLE_PARTIAL_ID,
+    'Selbstbeteiligung Teilkasko',
+    KFZ_TEILKASKO_DEDUCTIBLE_OPTIONS,
+    {
+      hint: 'Bitte den gewünschten Betrag wählen.',
+      presentation: 'chips',
+    },
+  ),
+  choice(
+    KFZ_DEDUCTIBLE_FULL_ID,
+    'Selbstbeteiligung Vollkasko',
+    KFZ_VOLLKASKO_DEDUCTIBLE_OPTIONS,
+    {
+      hint: 'Bitte den gewünschten Betrag wählen.',
+      presentation: 'chips',
+    },
+  ),
 ] as const
 
 export type KfzQuestionId = (typeof KFZ_QUESTIONS)[number]['id']
@@ -472,7 +521,8 @@ export const KFZ_QUESTION_SCREENS: readonly KfzQuestionScreenDefinition[] = [
       'previous_insurer',
       'previous_policy_number',
       'previous_contract_end',
-      'sf_class',
+      KFZ_SF_CLASS_HAFTPFLICHT_ID,
+      KFZ_SF_CLASS_VOLLKASKO_ID,
       'sf_source',
     ],
   },
@@ -480,7 +530,7 @@ export const KFZ_QUESTION_SCREENS: readonly KfzQuestionScreenDefinition[] = [
   {
     id: 'coverage',
     title: 'Schutz',
-    questionIds: ['coverage', 'deductible_partial', 'deductible_full'],
+    questionIds: ['coverage', KFZ_DEDUCTIBLE_PARTIAL_ID, KFZ_DEDUCTIBLE_FULL_ID],
   },
 ] as const
 
@@ -603,6 +653,17 @@ function hasPreviousInsurance(
   return readQuestionnaireAnswer(answers, 'has_previous_kfz') === 'yes'
 }
 
+/**
+ * Vollkasko SF is independent from Haftpflicht and only asked when a previous
+ * policy may actually carry a Vollkasko class. Teilkasko has no SF class.
+ */
+export function shouldAskKfzVollkaskoSf(
+  intent: KfzQuestionnaireIntent,
+  answers: KfzQuestionnaireAnswers,
+): boolean {
+  return hasPreviousInsurance(intent, answers)
+}
+
 export function isKfzQuestionVisible(
   questionId: string,
   branchId: string,
@@ -638,10 +699,12 @@ export function isKfzQuestionVisible(
     case 'policyholder_dob':
     case 'license_date':
     case 'drivers':
-    case 'sf_class':
+    case KFZ_SF_CLASS_HAFTPFLICHT_ID:
     case 'sf_source':
     case 'coverage':
       return true
+    case KFZ_SF_CLASS_VOLLKASKO_ID:
+      return shouldAskKfzVollkaskoSf(intent, answers)
     case 'first_registration':
       return !notPurchased
     case 'evb_purpose':
@@ -669,9 +732,9 @@ export function isKfzQuestionVisible(
       return hasPreviousInsurance(intent, answers) || intent === 'additional_car'
     case 'claims_details':
       return readQuestionnaireAnswer(answers, 'has_claims') === 'yes'
-    case 'deductible_partial':
+    case KFZ_DEDUCTIBLE_PARTIAL_ID:
       return coverage === 'partial' || coverage === 'full'
-    case 'deductible_full':
+    case KFZ_DEDUCTIBLE_FULL_ID:
       return coverage === 'full'
     default:
       return false
@@ -905,6 +968,62 @@ export function labelKfzQuestionValue(
   return option?.label ?? value
 }
 
+export function isKfzSfQuestionId(id: string): boolean {
+  return id === KFZ_SF_CLASS_HAFTPFLICHT_ID || id === KFZ_SF_CLASS_VOLLKASKO_ID
+}
+
+export function isKfzDeductibleQuestionId(id: string): boolean {
+  return id === KFZ_DEDUCTIBLE_PARTIAL_ID || id === KFZ_DEDUCTIBLE_FULL_ID
+}
+
+export function hasKfzTeilkaskoSfQuestion(): boolean {
+  return KFZ_QUESTIONS.some(
+    (question) =>
+      question.id.includes('teilkasko') && question.id.includes('sf'),
+  )
+}
+
+/**
+ * Writes one questionnaire answer without copying Haftpflicht into Vollkasko
+ * or the other way around.
+ */
+export function setKfzQuestionnaireAnswer(
+  answers: KfzQuestionnaireAnswers,
+  questionId: string,
+  value: string,
+): KfzQuestionnaireAnswers {
+  return { ...answers, [questionId]: value }
+}
+
+export function formatKfzDeductibleCombination(
+  answers: KfzQuestionnaireAnswers,
+): string | null {
+  const coverage = readQuestionnaireAnswer(answers, 'coverage')
+  if (coverage !== 'partial' && coverage !== 'full') {
+    return null
+  }
+
+  const tkQuestion = getKfzQuestion(KFZ_DEDUCTIBLE_PARTIAL_ID)
+  const vkQuestion = getKfzQuestion(KFZ_DEDUCTIBLE_FULL_ID)
+  const tkRaw = readQuestionnaireAnswer(answers, KFZ_DEDUCTIBLE_PARTIAL_ID)
+  const vkRaw = readQuestionnaireAnswer(answers, KFZ_DEDUCTIBLE_FULL_ID)
+  const tkLabel = tkQuestion && tkRaw ? labelKfzQuestionValue(tkQuestion, tkRaw) : ''
+  const vkLabel = vkQuestion && vkRaw ? labelKfzQuestionValue(vkQuestion, vkRaw) : ''
+
+  if (coverage === 'full') {
+    const parts: string[] = []
+    if (vkLabel) {
+      parts.push(`Vollkasko ${vkLabel}`)
+    }
+    if (tkLabel) {
+      parts.push(`Teilkasko ${tkLabel}`)
+    }
+    return parts.length > 0 ? parts.join(' / ') : null
+  }
+
+  return tkLabel ? `Teilkasko ${tkLabel}` : null
+}
+
 export type KfzQuestionnaireAnswerRecord = {
   id: string
   label: string
@@ -929,6 +1048,17 @@ export function listAnsweredKfzQuestions(
       unknown: isUnknownQuestionnaireAnswer(raw),
     })
   }
+
+  const combination = formatKfzDeductibleCombination(answers)
+  if (combination) {
+    records.push({
+      id: KFZ_DEDUCTIBLE_COMBINATION_ID,
+      label: 'Gewünschte Selbstbeteiligung',
+      value: combination,
+      unknown: false,
+    })
+  }
+
   return records
 }
 
