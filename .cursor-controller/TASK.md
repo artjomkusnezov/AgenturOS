@@ -1,4 +1,4 @@
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-c3f6
 
 # AgenturOS — Manual review of exact duplicate candidates
@@ -22,3 +22,6 @@ Help an employee notice when a new inbound item may belong to an already existin
 
 ## Safety
 Cursor-created branch only. No master, merge, deploy, secrets, production data, automatic merge/delete/status/contact/task, AI identity decision, external enrichment, paid services or destructive git.
+
+CONTROLLER_AGENT_ID: bc-c5651ca5-f4cc-4fb2-a8d5-b085d1ab7604
+CONTROLLER_STARTED_AT: 2026-09-09T06:44:30Z
