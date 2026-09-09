@@ -1,27 +1,34 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-83d4
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-c467
 
 ## Title
-AGENTUROS — PORT APPROVED KFZ LANDING REDESIGN ONTO CURRENT INBOUND FLOW
+AGENTUROS — FULL ALLIANZ KFZ QUESTION FLOW WITHOUT DOCUMENTS
 
 ## Goal
-Bring the owner-approved Kfz landing redesign from GitHub commit 80684551915024cd151fc31c54d5549759e85605 into the latest Cursor-created AgenturOS result while preserving the working normalized intake, retry/idempotency, unified inbox, search and manual duplicate review.
+Add a separate step-by-step Kfz intake branch for customers who cannot upload documents, insure a first or additional car, switch an existing car, or need an eVB. Reproduce the factual Allianz quotation question order, logic, questions and answer options as accurately as the repository's approved sources allow, while keeping the approved AgenturOS Kfz landing visual style. Never show an invented instant price; submit one normalized request for manual review by Artjom or Vera.
 
 ## Required work
-- Create and work only on a new Cursor-created result branch starting from cursor/agenturos-controller-task-83d4 (PR #37).
-- Use feature/kfz-landing-redesign commit 80684551915024cd151fc31c54d5549759e85605 only as the approved visual/content source. Port its Kfz landing changes and assets onto the current Cursor branch; do not merge branches, rewrite history, or discard newer inbound work.
-- Preserve the approved elements: second Lengerich hero with Römer, Allianz logo, Artjom and Vera, phone/WhatsApp 05481 9039041, 4.9 stars/48 Google reviews, clear funnel entry and switching option, privacy in the form, upload explicitly optional, FAQ, direct contact CTA, and official imprint/privacy/address/email content already present in that source commit.
-- Preserve the existing three-step Kfz intake and its normalized inbound submission, double-submit protection, retry/draft behavior, optional document metadata/camera picker, unified queue, factual search, manual response tools and exact duplicate review.
-- WhatsApp remains a preferred contact channel only. Do not add Meta integration, automatic messages, CRM replacement behavior, uploads to a new storage service, analytics, tracking, cookies, or invented claims.
-- Resolve conflicts conservatively. Missing facts must remain missing; do not invent legal or marketing text.
-- Add/update deterministic tests for landing content, optional upload, privacy, contact preference, single normalized submission, retry/idempotency and no automatic communication.
-- Run npm run test:inbound (or the repository's complete relevant test command), npx tsc --noEmit, npm run lint and npm run build.
-- Browser-check the live preview on desktop and mobile: hero/contact facts, three-step form, optional upload, failure/retry, exactly one inbox item, search and duplicate review. Record screenshots/evidence in the PR.
+- Create and work only on one new Cursor-created result branch starting from cursor/agenturos-controller-task-c467 (PR #38). Do not merge PR #38 or write to main/master.
+- Preserve the approved Kfz landing, Lengerich/Römer visual, Allianz branding, Artjom/Vera, 05481 9039041, 4.9 stars/48 reviews, existing optional upload path, privacy, retry/idempotency, unified inbox, search and manual duplicate review.
+- Add the initial choice exactly:
+  - Unterlagen hochladen
+  - Keine Unterlagen vorhanden
+  - Erstes Auto versichern
+  - Weiteres Auto versichern
+  - Bestehendes Auto wechseln
+  - eVB für Zulassung
+- Keep Unterlagen hochladen on the existing optional-document path.
+- For all no-document/manual branches, implement a clear multi-step flow collecting every fact needed for manual Allianz Angebotsberechnung: vehicle identification/details, registration situation, ownership/financing when relevant, usage and annual mileage, parking, drivers and dates of birth/licence details, policyholder relationship, SF class and source/transfer logic, previous insurer and policy facts, claims/loss history, desired liability/partial/full coverage and deductibles, optional protection choices only when supported by approved repository sources, start date/eVB purpose, contact and consent.
+- Branch questions conditionally so irrelevant questions are not shown. Preserve entered answers when moving back and forward and after reload.
+- Do not invent Allianz rules, discounts, eligibility, tariff names, legal wording, premiums or default answers. When an exact Allianz question/order/option is not present in approved repository material, mark the implementation boundary clearly in the PR instead of guessing.
+- No instant price, recommendation presented as final, automatic acceptance or policy creation. The final screen must state that Artjom or Vera checks the request manually.
+- Submit exactly one normalized inbound item with branch, answers, missing facts and preferred response method. WhatsApp is only a preference; no Meta/WhatsApp API or automatic message.
+- Files remain document metadata only. Add no storage service.
+- Add deterministic tests for every initial branch, conditional logic, required validation, back/forward and reload persistence, exact-once retry/idempotency, normalized inbox payload, privacy/consent and absence of invented price/automatic communication.
+- Run npm run test:inbound (or the complete relevant test suite), npx tsc --noEmit, npm run lint and npm run build.
+- Browser-check the preview on desktop and mobile for every initial branch, at least one complete no-document submission, back/forward, reload restore, failed submit/retry producing exactly one inbox item, and the final manual-review message. Put screenshots/video and exact checks in the PR.
 
 ## Safety
-Cursor-created branch only. No master/main, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid services, legal/privacy/business decisions, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-639fd0a5-a248-43b2-88b7-363b0c412c02
-CONTROLLER_STARTED_AT: 2026-09-09T08:55:53Z
+Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid services, new persistent file storage, invented Allianz/legal/business rules, force push or destructive git.
