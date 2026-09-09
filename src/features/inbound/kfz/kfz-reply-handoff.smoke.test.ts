@@ -379,8 +379,11 @@ describe('kfz preferred-channel reply handoff', () => {
         baseValues({ preferredChannel: 'email', phone: '', email: 'max@example.com' }),
         'lp-handoff-reload',
       )
-      const metadataBefore = structuredClone(item.inbound_metadata)
       const sourceBefore = item.content
+      const metadataBefore =
+        item.inbound_metadata && typeof item.inbound_metadata === 'object'
+          ? (item.inbound_metadata as Record<string, unknown>)
+          : {}
 
       const drafted = applyKfzManualTriageCommand(workingCopy(item), {
         type: 'save_response_draft',
@@ -421,15 +424,17 @@ describe('kfz preferred-channel reply handoff', () => {
       assert.equal(review.replyHandoff.state, 'contacted')
       assert.equal(review.replyHandoff.primaryActionId, 'mark_handled')
       assert.equal(reloaded.processed_at, null)
-      assert.deepEqual(reloaded.inbound_metadata, metadataBefore)
-      assert.equal(
-        Boolean(
-          reloaded.inbound_metadata &&
-            typeof reloaded.inbound_metadata === 'object' &&
-            'consentEvidence' in reloaded.inbound_metadata,
-        ),
-        true,
-      )
+      const metadataAfter =
+        reloaded.inbound_metadata && typeof reloaded.inbound_metadata === 'object'
+          ? (reloaded.inbound_metadata as Record<string, unknown>)
+          : {}
+      const inquiryBefore = metadataBefore.inquiry as Record<string, unknown>
+      const inquiryAfter = metadataAfter.inquiry as Record<string, unknown>
+      assert.deepEqual(inquiryAfter, inquiryBefore)
+      assert.deepEqual(metadataAfter.consentEvidence, metadataBefore.consentEvidence)
+      assert.deepEqual(metadataAfter.acquisition, metadataBefore.acquisition)
+      assert.equal(inquiryAfter.preferredChannel, 'email')
+      assert.equal('consentEvidence' in metadataAfter, true)
       assert.ok(history.events.some((event) => event.kind === 'draft_saved'))
       assert.ok(history.events.some((event) => event.kind === 'reply_prepared'))
       assert.ok(history.events.some((event) => event.kind === 'contact_confirmed'))
@@ -613,11 +618,19 @@ describe('kfz reply handoff side-effect boundary', () => {
     assert.match(reviewUi, /Telefonnummer kopieren/)
     assert.match(reviewUi, /E-Mail kopieren/)
     assert.match(reviewUi, /Gesprächsvorbereitung|callPreparation/)
-    assert.match(handoffUi, /Antwort vorbereiten/)
-    assert.match(handoffUi, /Als kontaktiert markieren/)
-    assert.match(handoffUi, /Rückfrage nötig/)
-    assert.match(handoffUi, /Als erledigt markieren/)
+    assert.match(handoffUi, /prepare_reply/)
+    assert.match(handoffUi, /mark_contacted/)
+    assert.match(handoffUi, /mark_follow_up/)
+    assert.match(handoffUi, /mark_handled/)
     assert.match(handoffUi, /Geprüften Entwurf kopieren/)
+    const triageLib = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/lib/kfz-inbox-manual-triage.ts'),
+      'utf8',
+    )
+    assert.match(triageLib, /label: 'Antwort vorbereiten'/)
+    assert.match(triageLib, /label: 'Als kontaktiert markieren'/)
+    assert.match(triageLib, /label: 'Rückfrage nötig'/)
+    assert.match(triageLib, /label: 'Als erledigt markieren'/)
     assert.match(draftUi, /Geprüften Entwurf kopieren/)
     assert.match(copyUi, /KFZ_COPY_NO_STATUS_CHANGE/)
     assert.doesNotMatch(reviewUi, /Nachricht senden|sendWhatsApp|wa\.me|api\.whatsapp/)
