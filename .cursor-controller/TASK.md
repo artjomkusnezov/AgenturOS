@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-e04c
 
 ## Title
@@ -34,3 +34,6 @@ Correct the owner-reviewed Kfz questionnaire so liability and comprehensive no-c
 
 ## Safety
 Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid service, tariff calculation/recommendation, invented Allianz legal/business rules, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-742b4145-23ec-42cb-a1eb-4e0504710c00
+CONTROLLER_STARTED_AT: 2026-09-09T16:10:39Z
