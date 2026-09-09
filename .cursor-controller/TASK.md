@@ -1,27 +1,24 @@
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-c3f6
+# Cursor Cloud Task
 
-# AgenturOS — Manual review of exact duplicate candidates
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-83d4
+
+## Title
+AGENTUROS — PORT APPROVED KFZ LANDING REDESIGN ONTO CURRENT INBOUND FLOW
 
 ## Goal
-Help an employee notice when a new inbound item may belong to an already existing inquiry, using only exact normalized factual matches and requiring an explicit human decision. Never merge, close or contact automatically.
+Bring the owner-approved Kfz landing redesign from GitHub commit 80684551915024cd151fc31c54d5549759e85605 into the latest Cursor-created AgenturOS result while preserving the working normalized intake, retry/idempotency, unified inbox, search and manual duplicate review.
 
 ## Required work
-- Build directly on PR #36 and reuse the unified inbound queue, factual search, review card, statuses and history.
-- On an inbound review card, show a small “Möglicherweise bereits vorhanden” section only for deterministic exact normalized matches on phone, email, vehicle registration or an existing explicit external/reference ID.
-- Explain every candidate with the exact matching field and show received time, source, status and short existing summary.
-- Never use name-only matching, fuzzy matching, AI guesses, external enrichment or hidden fields.
-- Let the employee open the candidate and return without losing queue/search/filter state.
-- Provide explicit manual actions: “Kein Duplikat” and “Als zusammengehörig markieren”. The latter may create a reversible factual relation between the two items, but must not merge/delete either record, copy data, change status, contact the customer or complete work.
-- Record each manual decision in factual history and preserve it after reload. Allow the employee to remove the relation.
-- If data is missing or ambiguous, show no automatic decision.
-- Keep desktop/mobile clear and avoid dense tables.
-- Add deterministic tests for exact phone/email/plate/reference matches, phone formatting, no name-only/fuzzy match, multiple candidates, manual relation/unlink, history, reload, state preservation and zero automatic mutations.
-- Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build.
-- Browser-check desktop/mobile fixtures: review new Kfz landing inquiry, inspect exact phone and plate candidates, open/return, mark related, undo, reload; verify no status/customer communication changes.
+- Create and work only on a new Cursor-created result branch starting from cursor/agenturos-controller-task-83d4 (PR #37).
+- Use feature/kfz-landing-redesign commit 80684551915024cd151fc31c54d5549759e85605 only as the approved visual/content source. Port its Kfz landing changes and assets onto the current Cursor branch; do not merge branches, rewrite history, or discard newer inbound work.
+- Preserve the approved elements: second Lengerich hero with Römer, Allianz logo, Artjom and Vera, phone/WhatsApp 05481 9039041, 4.9 stars/48 Google reviews, clear funnel entry and switching option, privacy in the form, upload explicitly optional, FAQ, direct contact CTA, and official imprint/privacy/address/email content already present in that source commit.
+- Preserve the existing three-step Kfz intake and its normalized inbound submission, double-submit protection, retry/draft behavior, optional document metadata/camera picker, unified queue, factual search, manual response tools and exact duplicate review.
+- WhatsApp remains a preferred contact channel only. Do not add Meta integration, automatic messages, CRM replacement behavior, uploads to a new storage service, analytics, tracking, cookies, or invented claims.
+- Resolve conflicts conservatively. Missing facts must remain missing; do not invent legal or marketing text.
+- Add/update deterministic tests for landing content, optional upload, privacy, contact preference, single normalized submission, retry/idempotency and no automatic communication.
+- Run npm run test:inbound (or the repository's complete relevant test command), npx tsc --noEmit, npm run lint and npm run build.
+- Browser-check the live preview on desktop and mobile: hero/contact facts, three-step form, optional upload, failure/retry, exactly one inbox item, search and duplicate review. Record screenshots/evidence in the PR.
 
 ## Safety
-Cursor-created branch only. No master, merge, deploy, secrets, production data, automatic merge/delete/status/contact/task, AI identity decision, external enrichment, paid services or destructive git.
-
-CONTROLLER_AGENT_ID: bc-c5651ca5-f4cc-4fb2-a8d5-b085d1ab7604
-CONTROLLER_STARTED_AT: 2026-09-09T06:44:30Z
+Cursor-created branch only. No master/main, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid services, legal/privacy/business decisions, force push or destructive git.
