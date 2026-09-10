@@ -66,7 +66,7 @@ async function resolveLandingDocuments(
  */
 export async function submitKfzLandingInquiryAction(
   payload: PublicKfzInquiryPayload,
-  files: File[] = [],
+  files: readonly File[] = [],
 ): Promise<KfzLandingSubmitState> {
   if (!isPlainObject(payload) || payload.inquiryProcessingConsent !== true) {
     return {

@@ -39,7 +39,7 @@ export function KfzLandingPreviewApp() {
       return FORCED_FAIL
     }
 
-    const result = await submitKfzLandingPreviewInquiryAction(payload, [...(files ?? [])])
+    const result = await submitKfzLandingPreviewInquiryAction(payload, files ?? [])
     const preview = await readKfzLandingPreviewInboxAction()
     setInbox([...preview.items])
     return result

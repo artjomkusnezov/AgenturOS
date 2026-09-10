@@ -407,7 +407,10 @@ describe('kfz private document storage', () => {
       store: analytics,
     })
     assert.equal(granted.accepted, 1)
-    assert.equal(granted.records[0]?.properties.filename, undefined)
+    assert.equal(
+      granted.records[0] && 'filename' in granted.records[0].properties,
+      false,
+    )
     assert.equal(JSON.stringify(granted.records).includes('schein.jpg'), false)
     assert.equal(assertNoKfzAnalyticsPii(granted.records[0]!).length, 0)
   })

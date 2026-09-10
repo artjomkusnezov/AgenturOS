@@ -32,7 +32,7 @@ function ensurePreviewEnv() {
  */
 export async function submitKfzLandingPreviewInquiryAction(
   payload: PublicKfzInquiryPayload,
-  files: File[] = [],
+  files: readonly File[] = [],
 ): Promise<KfzLandingSubmitState> {
   if (process.env.NODE_ENV === 'production') {
     return {
