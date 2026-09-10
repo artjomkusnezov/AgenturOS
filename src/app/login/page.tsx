@@ -1,15 +1,22 @@
+import { SupabaseConfigurationError } from '@/components/supabase-configuration-error'
 import { LoginForm } from '@/features/auth/components/login-form'
 import { mapCallbackError } from '@/features/auth/lib/map-login-error'
 import {
   mapLoginQueryMessage,
   mapRecoveryQueryError,
 } from '@/features/auth/lib/map-password-recovery-error'
+import { getPublicSupabaseBootState } from '@/lib/supabase/public-config'
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; message?: string }>
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const boot = getPublicSupabaseBootState()
+  if (!boot.ready) {
+    return <SupabaseConfigurationError missingNames={boot.missingNames} />
+  }
+
   const params = await searchParams
   const initialError =
     mapCallbackError(params.error) ?? mapRecoveryQueryError(params.error)

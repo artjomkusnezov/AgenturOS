@@ -1,9 +1,16 @@
 import { redirect } from 'next/navigation'
 
+import { SupabaseConfigurationError } from '@/components/supabase-configuration-error'
 import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
+import { getPublicSupabaseBootState } from '@/lib/supabase/public-config'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function ResetPasswordPage() {
+  const boot = getPublicSupabaseBootState()
+  if (!boot.ready) {
+    return <SupabaseConfigurationError missingNames={boot.missingNames} />
+  }
+
   const supabase = await createClient()
   const {
     data: { user },

@@ -36,7 +36,7 @@ Der Command prüft nur present/missing der Pflichtnamen, die eingecheckte privat
 
 1. **Supabase:** Im bestehenden Projekt (SQL Editor oder das bereits genutzte CLI-Projekt) die eingecheckten Dateien in dieser Reihenfolge anwenden: `20260906120000_inbox_website_channel_source.sql`, `20260909140000_kfz_funnel_analytics_events.sql`, `20260910120000_kfz_inbound_documents_bucket.sql`. Der Preflight wendet nichts an. Kein neues Projekt, kein neues Paid-Add-on.
 2. **Supabase:** Storage: Bucket-Name `kfz-inbound-documents` existiert. Public ist aus. Keine Policies für anon oder authenticated. Kein öffentlicher Link.
-3. **Vercel:** Im bestehenden Projekt unter Settings → Environment Variables genau diese Namen setzen. Werte bleiben in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (niemals `NEXT_PUBLIC_`), `INBOUND_KFZ_INTAKE_SECRET`, `INBOUND_KFZ_AGENCY_ID`, `INBOUND_KFZ_ACTOR_USER_ID`. Optional: `INBOUND_KFZ_RATE_LIMIT_MAX`, `INBOUND_KFZ_RATE_LIMIT_WINDOW_MS`.
+3. **Vercel:** Im bestehenden Projekt unter Settings → Environment Variables genau diese Namen setzen. Werte bleiben in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (älterer Name `NEXT_PUBLIC_SUPABASE_ANON_KEY` nur als Fallback), `SUPABASE_SERVICE_ROLE_KEY` (niemals `NEXT_PUBLIC_`), `INBOUND_KFZ_INTAKE_SECRET`, `INBOUND_KFZ_AGENCY_ID`, `INBOUND_KFZ_ACTOR_USER_ID`. Optional: `INBOUND_KFZ_RATE_LIMIT_MAX`, `INBOUND_KFZ_RATE_LIMIT_WINDOW_MS`.
 4. **Vercel:** Bestehendes Projekt nach dem Speichern neu deployen. Kein neues Vercel-Projekt, kein neuer Paid Service.
 
 ## Deterministische Tests (ohne Server)

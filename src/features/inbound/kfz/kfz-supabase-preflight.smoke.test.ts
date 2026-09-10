@@ -158,6 +158,7 @@ describe('kfz supabase preflight evaluation', () => {
     assert.doesNotMatch(blob, /aws|gcp|azure|stripe|new paid|meta|whatsapp/i)
     assert.match(blob, /kfz-inbound-documents/)
     assert.match(blob, /SUPABASE_SERVICE_ROLE_KEY/)
+    assert.match(blob, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
     assert.match(blob, /Settings → Environment Variables/)
     assert.doesNotMatch(blob, /service-role-do-not-print/)
   })
