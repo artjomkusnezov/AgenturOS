@@ -94,11 +94,14 @@ export function readPublicSupabaseConfig(
     missingNames.push(NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_NAME)
   }
 
-  if (missingNames.length > 0) {
+  if (missingNames.length > 0 || !keyName) {
     return {
       ok: false,
       error: SUPABASE_PUBLIC_CONFIG_MISSING_ERROR,
-      missingNames,
+      missingNames:
+        missingNames.length > 0
+          ? missingNames
+          : [NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_NAME],
     }
   }
 
