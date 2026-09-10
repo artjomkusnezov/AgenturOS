@@ -406,5 +406,5 @@ export function readObjectKeysFromUploadMeta(
 export function kfzDocumentContentDisposition(filename: string): string {
   const safe = filename.replace(/[\r\n"]/g, '_').trim() || 'dokument'
   const ascii = safe.replace(/[^\x20-\x7E]/g, '_')
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(safe)}`
+  return `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(safe)}`
 }

@@ -10,6 +10,7 @@ import {
   authorizeKfzDocumentReview,
   buildKfzDocumentObjectKey,
   isKfzDocumentObjectKey,
+  kfzDocumentContentDisposition,
   looksLikePublicDocumentUrl,
   persistKfzInquiryDocuments,
   readKfzDocumentReviewSession,
@@ -418,6 +419,14 @@ describe('kfz private document storage', () => {
     if (allowed.ok) {
       assert.equal(allowed.filename, 'schein.jpg')
     }
+  })
+
+  it('uses inline content-disposition with the original filename, never a public URL', () => {
+    const header = kfzDocumentContentDisposition('schein.jpg')
+    assert.match(header, /^inline;/)
+    assert.match(header, /filename="schein.jpg"/)
+    assert.doesNotMatch(header, /https?:/)
+    assert.doesNotMatch(header, /attachment/)
   })
 
   it('does not persist filenames, object keys or answers when analytics is declined', async () => {
