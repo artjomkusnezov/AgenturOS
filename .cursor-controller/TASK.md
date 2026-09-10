@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-d2b8
 
 ## Title
@@ -25,3 +25,6 @@ Make the existing first-party Kfz analytics dashboard useful for daily funnel de
 
 ## Safety
 Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, paid tracker, fingerprinting, legal-compliance claim, tariff calculation, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-5cc996a3-9c17-427c-9b95-7e4e2fa8504d
+CONTROLLER_STARTED_AT: 2026-09-10T03:34:58Z
