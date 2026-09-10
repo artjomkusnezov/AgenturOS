@@ -153,7 +153,7 @@ export function inspectKfzServiceRoleUsage(repoRoot: string): {
 } {
   const srcRoot = path.join(repoRoot, 'src')
   const leaked: string[] = []
-  const allow = new Set(KFZ_SUPABASE_SERVICE_ROLE_ALLOWLIST)
+  const allow = new Set<string>(KFZ_SUPABASE_SERVICE_ROLE_ALLOWLIST)
 
   for (const file of listSourceFiles(srcRoot)) {
     const relative = path.relative(repoRoot, file).split(path.sep).join('/')
