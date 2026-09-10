@@ -6,12 +6,13 @@
 
 import {
   evaluateKfzSupabasePreflight,
+  formatKfzSupabasePreflightReport,
   kfzSupabasePreflightContainsHiddenValue,
-  renderKfzSupabasePreflight,
+  redactHiddenEnvValues,
 } from '@/features/inbound/kfz/lib/kfz-supabase-preflight'
 
 const report = evaluateKfzSupabasePreflight()
-const output = renderKfzSupabasePreflight(report, process.env)
+const output = redactHiddenEnvValues(formatKfzSupabasePreflightReport(report), process.env)
 
 if (kfzSupabasePreflightContainsHiddenValue(output, process.env)) {
   process.stderr.write('Kfz Supabase preflight refused to print a secret-like value.\n')

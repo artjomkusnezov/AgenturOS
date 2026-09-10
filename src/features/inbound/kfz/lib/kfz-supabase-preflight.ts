@@ -157,23 +157,18 @@ export function inspectKfzServiceRoleUsage(repoRoot: string): {
 
   for (const file of listSourceFiles(srcRoot)) {
     const relative = path.relative(repoRoot, file).split(path.sep).join('/')
+    if (allow.has(relative)) {
+      continue
+    }
     const source = fs.readFileSync(file, 'utf8')
     const hasServiceRoleName = source.includes('SUPABASE_SERVICE_ROLE_KEY')
-    const hasForbiddenPublicName = /NEXT_PUBLIC_SUPABASE_SERVICE_ROLE/.test(source)
+    const hasForbiddenPublicName = source.includes('NEXT_PUBLIC_SUPABASE_SERVICE_ROLE')
     const isClientModule =
       relative.includes('/components/') ||
       relative === 'src/lib/supabase/client.ts' ||
       /^\s*['"]use client['"]/m.test(source)
 
-    if (hasForbiddenPublicName) {
-      leaked.push(relative)
-      continue
-    }
-    if (hasServiceRoleName && !allow.has(relative)) {
-      leaked.push(relative)
-      continue
-    }
-    if (hasServiceRoleName && isClientModule && !allow.has(relative)) {
+    if (hasForbiddenPublicName || (hasServiceRoleName && isClientModule) || hasServiceRoleName) {
       leaked.push(relative)
     }
   }
