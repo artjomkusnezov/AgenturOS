@@ -310,6 +310,30 @@ export type AuthorizeKfzDocumentReviewResult =
     }
   | { ok: false; status: 401 | 404; error: string }
 
+export const KFZ_DOCUMENT_UNAUTHENTICATED_ERROR = 'Sie sind nicht angemeldet.' as const
+
+export type KfzDocumentReviewSession =
+  | { ok: true; userId: string }
+  | { ok: false; status: 401; error: typeof KFZ_DOCUMENT_UNAUTHENTICATED_ERROR }
+
+/**
+ * Session for the authorized review route. Missing env, thrown auth clients,
+ * and anonymous cookies all fail closed as 401 — never 500.
+ */
+export async function readKfzDocumentReviewSession(
+  loadUser: () => Promise<{ id: string } | null>,
+): Promise<KfzDocumentReviewSession> {
+  try {
+    const user = await loadUser()
+    if (!user?.id) {
+      return { ok: false, status: 401, error: KFZ_DOCUMENT_UNAUTHENTICATED_ERROR }
+    }
+    return { ok: true, userId: user.id }
+  } catch {
+    return { ok: false, status: 401, error: KFZ_DOCUMENT_UNAUTHENTICATED_ERROR }
+  }
+}
+
 /**
  * Authorized internal review: same agency + object belongs to this inbox item.
  * Unauthenticated and cross-item access fail without leaking existence.

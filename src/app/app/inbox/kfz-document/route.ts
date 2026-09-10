@@ -4,6 +4,7 @@ import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repo
 import {
   authorizeKfzDocumentReview,
   kfzDocumentContentDisposition,
+  readKfzDocumentReviewSession,
   readObjectKeysFromUploadMeta,
 } from '@/features/inbound/kfz/lib/kfz-document-storage'
 import { createServiceRoleKfzDocumentStore } from '@/features/inbound/kfz/repositories/kfz-document-store'
@@ -21,14 +22,24 @@ export async function GET(request: Request) {
   const itemId = url.searchParams.get('item')?.trim() ?? ''
   const objectKey = url.searchParams.get('object')?.trim() ?? ''
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let supabase: Awaited<ReturnType<typeof createClient>> | null = null
+  const session = await readKfzDocumentReviewSession(async () => {
+    const client = await createClient()
+    supabase = client
+    const {
+      data: { user },
+    } = await client.auth.getUser()
+    return user
+  })
 
-  if (!user) {
-    return NextResponse.json({ error: 'Sie sind nicht angemeldet.' }, { status: 401 })
+  if (!session.ok || !supabase) {
+    return NextResponse.json(
+      { error: session.ok ? 'Sie sind nicht angemeldet.' : session.error },
+      { status: 401 },
+    )
   }
+
+  const reviewClient = supabase
 
   if (!isValidInboxItemId(itemId)) {
     return NextResponse.json({ error: 'Das Dokument wurde nicht gefunden.' }, { status: 404 })
@@ -43,7 +54,7 @@ export async function GET(request: Request) {
     )
   }
 
-  const { data: item } = await supabase
+  const { data: item } = await reviewClient
     .from('inbox_items')
     .select('id, agency_id, inbound_metadata')
     .eq('id', itemId)

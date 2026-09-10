@@ -12,6 +12,7 @@ import {
   isKfzDocumentObjectKey,
   looksLikePublicDocumentUrl,
   persistKfzInquiryDocuments,
+  readKfzDocumentReviewSession,
   validateKfzInboundDocumentBytes,
 } from '@/features/inbound/kfz/lib/kfz-document-storage'
 import { ingestKfzAnalyticsEvents } from '@/features/inbound/kfz/lib/kfz-analytics-ingest'
@@ -302,6 +303,29 @@ describe('kfz private document storage', () => {
     assert.equal(result.ok, false)
     assert.equal(documents.objects.size, 0)
     assert.ok(documents.removed.length >= 1)
+  })
+
+  it('treats a thrown or empty auth client as unauthenticated review', async () => {
+    const thrown = await readKfzDocumentReviewSession(async () => {
+      throw new Error('supabase url missing')
+    })
+    assert.equal(thrown.ok, false)
+    if (!thrown.ok) {
+      assert.equal(thrown.status, 401)
+      assert.equal(thrown.error, 'Sie sind nicht angemeldet.')
+    }
+
+    const anonymous = await readKfzDocumentReviewSession(async () => null)
+    assert.equal(anonymous.ok, false)
+    if (!anonymous.ok) {
+      assert.equal(anonymous.status, 401)
+    }
+
+    const signedIn = await readKfzDocumentReviewSession(async () => ({ id: ACTOR_ID }))
+    assert.equal(signedIn.ok, true)
+    if (signedIn.ok) {
+      assert.equal(signedIn.userId, ACTOR_ID)
+    }
   })
 
   it('denies unauthenticated and cross-item document review', () => {
