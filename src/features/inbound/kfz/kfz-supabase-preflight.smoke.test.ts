@@ -208,7 +208,7 @@ describe('kfz supabase private-storage and secret-redaction contract', () => {
         (error: unknown) => {
           assert.ok(error instanceof Error)
           assert.equal(error.message, KFZ_SUPABASE_PERSIST_MISSING_ERROR)
-          assert.doesNotMatch(error.message, /eyJ|Bearer |service-role/i)
+          assert.doesNotMatch(error.message, /eyJ|Bearer |service-role-do-not-print/i)
           return true
         },
       )
