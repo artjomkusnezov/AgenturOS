@@ -1,112 +1,79 @@
 STATUS: READY
 
 ## Goal
+Continue the approved Kfz Funnel on the existing `agent/issue-18` branch and existing Draft PR #19. Gate 3 (public Lengerich Kfz landing page wired into the secure website intake) has passed CI + independent review. Build the next coherent slice: after a Kfz website inquiry reaches AgenturOS Inbox, produce and show a safe AI analysis PROPOSAL for the agent — never an automatic customer action.
 
-Create the first safe AI-assistance foundation for AgenturOS inbound information. An inbound item must be analyzable into a structured, provider-neutral suggestion that answers:
+Expected internal flow:
+`Kfz website inquiry -> existing AgenturOS Inbox item -> AI analysis proposal -> visible internal summary for the human agent`
 
-- What does the customer want?
-- Is it service, claim, new business, or unclear?
-- Which insurance/product topic is involved?
-- How urgent is it?
-- Which important information appears to be missing?
-- Is there recognizable purchase intent?
-- Should it be linked to an existing case, or is a new case only suggested?
-- Which task could be created?
-- What reply could be drafted?
-- Must a human take over immediately?
+This task is about useful internal triage. No outbound message, no automatic task/case creation, no tariff promise, no production deployment, no production migration, no customer communication.
 
-The result is advisory only. Humans remain responsible for professional decisions.
+## Required proposal fields
+Reuse the existing AI inbound foundation and existing domain terminology where already present. For Kfz website leads, the visible proposal should cover only supported fields such as:
+- category/service type;
+- product = Kfz where confidently known;
+- urgency;
+- missing information;
+- closing intent / sales readiness as a proposal, not fact;
+- suggested next human step;
+- draft response text clearly marked as draft/proposal;
+- human-takeover flag when information is ambiguous, sensitive, contradictory or high-risk.
 
-## Current problem
-
-AgenturOS already has provider-neutral inbound normalization, email inbound, prepared WhatsApp inbound, inbox items, files, cases, and tasks. It currently lacks one explicit, reusable analysis contract between inbound intake and later AI/model integrations.
-
-Do not add business decisions to inbound adapters or intake. The analysis layer must be a separate downstream module.
-
-## Known evidence
-
-- GitHub source of truth: master at e1910df0224cfbb31a6a6421a2717b9ad432abb1 when this task was created.
-- Product principle: Alles beginnt mit einer Information.
-- Architecture: Adapter = translation, Intake = processing, Inbox = work.
-- AI principle: AI proposes and assists; humans decide.
-- Future channels include email, WhatsApp, website forms, Meta leads, voice notes, and documents.
-- The first future acquisition use case is a Kfz lead containing message text, campaign/source metadata, Fahrzeugschein, and possibly the current contribution invoice.
+Do not invent personal data, prices, discounts, tariff results, binding insurance advice or coverage promises. Unknown remains unknown.
 
 ## Acceptance criteria
+- Continue on existing `agent/issue-18` and update existing Draft PR #19; do not open a second PR.
+- Use the existing inbound item and AI-analysis foundations; do not create a parallel CRM/lead database or second AI pipeline.
+- Kfz website items can produce an AI proposal from the normalized inbound data already stored/available.
+- The proposal is internal-only and visibly labeled as AI suggestion / Entwurf / Vorschlag.
+- No automatic send, customer contact, case creation, task creation, contract/tariff action, status change or follow-up scheduling.
+- If the AI provider/config is unavailable, the Inbox item must remain usable and show a safe unavailable/not-generated state rather than breaking the page.
+- Do not log raw customer payloads, prompts containing unnecessary PII, secrets, provider tokens, or model credentials.
+- Keep AI output schema deterministic/validated at the application boundary; malformed provider output must fail safely.
+- Reuse existing fields and contracts where possible. Do not add speculative fields just because a model can generate them.
+- Add a simple internal visible section in the relevant Inbox/detail flow showing the proposal fields that are already supported.
+- Add focused deterministic tests for schema validation, Kfz mapping, missing/unknown data, provider failure, and the guarantee that proposal generation does not trigger outbound/customer-facing side effects.
+- Preserve Gate 2 intake, Gate 3 landing page, email/WhatsApp inbound behavior and existing dashboard paths.
+- Do not create temporary repository-root helper files such as `.gate4-checks.sh`; run validation commands directly or use files inside allowed paths only.
+- `npm run test:inbound` passes.
+- `npx tsc --noEmit` passes.
+- `npm run lint` passes.
+- `npm run build` passes.
+- Independent production review must pass.
+- Update existing Draft PR #19 with exact check results.
 
-1. Add a provider-neutral inbound analysis domain module with explicit TypeScript input and output types.
-2. The structured output includes at least:
-   - concise summary
-   - intent: service | claim | new_business | unclear
-   - product/topic
-   - urgency: low | normal | high | immediate
-   - missing information list
-   - purchase intent: none | possible | strong | unclear
-   - suggested case action: none | find_existing | suggest_new
-   - suggested task with title, reason, and priority, or null
-   - suggested reply draft, or null
-   - human review required boolean
-   - human review reason
-   - confidence value with a documented range
-3. Add runtime validation for untrusted analysis output using an existing repository dependency where possible. Do not add a dependency unless it is genuinely required.
-4. Add a provider interface so a later LLM implementation can be plugged in without coupling the domain to OpenAI, Anthropic, Meta, or another provider.
-5. Add a deterministic safe fallback. Invalid, incomplete, or failed provider output must never create an action; it must return humanReviewRequired=true with a useful reason.
-6. Add a prompt/instruction builder that clearly states:
-   - return structured data only
-   - do not invent customer facts
-   - do not make coverage, legal, tariff, or contract decisions
-   - do not claim a case/contact match without supplied evidence
-   - escalate uncertainty to human review
-7. Add focused automated tests for at least:
-   - Kfz new-business price-check request with Fahrzeugschein mentioned
-   - motor claim with an urgent safety/towing signal
-   - routine service request such as address change
-   - ambiguous message
-   - malformed provider response and provider failure
-8. Document the boundary and the next integration step in one concise architecture document.
-9. All repository baseline checks pass:
-   - npm run test:inbound
-   - npx tsc --noEmit
-   - npm run lint
-   - npm run build
-10. Open a draft PR only. Do not merge or deploy.
+## Final review correction
+- Keep this correction limited to the false-green side-effect test unless a real defect is exposed.
+- Remove the cosmetic `sideEffects`/constant probe as a claimed runtime guarantee, or stop relying on it as proof.
+- Add an enforceable test lock covering `get-inbox-ai-proposal.ts` and the providers it resolves: the test must fail if proposal generation imports or calls outbound messaging, case creation, task creation, inbox-status mutation, or follow-up scheduling code.
+- A static import/call boundary assertion is acceptable; a spy/mock that fails on any write is also acceptable.
+- Preserve advisory-only production behavior and all existing proposal tests.
+- Run `npm run test:inbound`, `npx tsc --noEmit`, `npm run lint`, `npm run build`, then independent review.
+- Do not add product features or begin another gate.
 
 ## Allowed paths
-
-- src/features/ai/**
-- src/lib/ai/**
-- tests/ai/**
-- tests/inbound/**
-- docs/ai-inbound-analysis.md
-- package.json
-- package-lock.json
+- `src/app/**`
+- `src/components/**`
+- `src/features/inbound/**`
+- `src/features/ai-inbound/**`
+- `src/features/inbox/**`
+- `src/lib/**`
+- `src/styles/**`
+- `src/config/**`
+- `tests/**`
+- `docs/**`
+- `.agent-loop/TASK.md`
+- `.env.example`
+- `package.json`
 
 ## Out of scope
-
-- No UI changes.
-- No database migration or production data access.
-- No automatic creation or mutation of cases, tasks, contacts, leads, or inbox items.
-- No automatic customer replies.
-- No OpenAI, Anthropic, Meta, or other paid/external API call.
-- No secrets or environment-variable changes.
-- No WhatsApp activation.
-- No changes to inbound adapters, webhook routes, domain configuration, deployment, or authentication.
-- No CRM/customer master-data feature.
-- No lead dashboard, campaign analytics, SEO, landing page, or Kfz funnel implementation in this task.
-- No merge, auto-merge, or production deployment.
-
-## Guardrails
-
-- Read AGENTS.md before implementation.
-- Keep the module downstream of normalized intake.
-- Prefer pure functions and explicit contracts.
-- Treat all provider/model output as untrusted.
-- Suggestions must be inspectable and reversible.
-- Human review is the default whenever confidence or evidence is insufficient.
-- German customer text must work; architecture must not hardcode one inbound channel.
-- Do not expose customer data to an external provider in this task.
-
-## Human blockers
-
-None expected. If existing repository structures make the allowed paths insufficient, stop and report the exact required path instead of editing outside scope.
+- No merge or auto-merge.
+- No deployment, Vercel/domain/DNS changes.
+- Do not apply any Supabase migration or change production data.
+- No Meta campaign, Pixel, CAPI or advertising spend.
+- No WhatsApp onboarding/outbound automation.
+- No automatic customer messages, tasks, cases, appointments, tariff recommendations or contractual actions.
+- No real customer data or secrets.
+- No broad AgenturOS redesign unrelated to the Kfz inbound/AI proposal flow.
+- No fake AI confidence, unsupported pricing claims or invented customer facts.
 

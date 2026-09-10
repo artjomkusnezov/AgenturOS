@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { WorkspaceFrame, WorkspaceSplit } from '@/components/app/workspace'
+import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxDetailPanel } from '@/features/inbox/components/inbox-detail-panel'
 import { InboxEmptyDetail } from '@/features/inbox/components/inbox-empty-detail'
 import { InboxList } from '@/features/inbox/components/inbox-list'
@@ -17,6 +18,7 @@ type InboxWorkspaceProps = {
   selectedItemId: string | null
   attachments?: InboxLinkedFile[]
   memberNameMap?: Record<string, string>
+  aiProposal?: InboxAiProposal | null
 }
 
 export function InboxWorkspace({
@@ -26,6 +28,7 @@ export function InboxWorkspace({
   selectedItemId,
   attachments = [],
   memberNameMap = {},
+  aiProposal = null,
 }: InboxWorkspaceProps) {
   const router = useRouter()
   const items = useMemo(
@@ -107,6 +110,7 @@ export function InboxWorkspace({
               linkedTaskId={taskRelationsByItemId[selectedItem.id] ?? null}
               attachments={attachments}
               memberNameMap={memberNameMap}
+              aiProposal={aiProposal}
               onBack={handleBackToList}
               onDeleted={handleDeleted}
               onStatusChange={handleStatusChange}

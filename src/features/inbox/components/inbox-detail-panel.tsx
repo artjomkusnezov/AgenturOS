@@ -12,6 +12,8 @@ import { InboxPromotionMenu } from '@/features/inbox/components/inbox-promotion-
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
 import { updateInboxItemAction } from '@/features/inbox/actions/update-inbox-item'
+import { InboxAiProposalSection } from '@/features/ai-inbound/components/inbox-ai-proposal-section'
+import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxAttachmentSection } from '@/features/inbox/components/inbox-attachment-section'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
@@ -42,6 +44,8 @@ type InboxDetailPanelProps = {
   linkedTaskId: string | null
   attachments?: InboxLinkedFile[]
   memberNameMap?: Record<string, string>
+  /** Internal AI proposal for Kfz website leads — advisory only. */
+  aiProposal?: InboxAiProposal | null
   onBack?: () => void
   onDeleted: () => void
   onStatusChange: () => void
@@ -108,6 +112,7 @@ export function InboxDetailPanel({
   linkedTaskId,
   attachments = [],
   memberNameMap = {},
+  aiProposal = null,
   onBack,
   onDeleted,
   onStatusChange,
@@ -162,7 +167,9 @@ export function InboxDetailPanel({
               <span>{getInboxSourceLabel(item.source)}</span>
               <span className="mx-1.5 text-zinc-300">·</span>
               <span>
-                {item.channel === 'whatsapp' || item.channel === 'email'
+                {item.channel === 'whatsapp' ||
+                item.channel === 'email' ||
+                item.channel === 'website'
                   ? `Von ${creatorName}`
                   : `Erfasst von ${creatorName}`}
               </span>
@@ -225,6 +232,8 @@ export function InboxDetailPanel({
           attachments={attachments}
           onStatusChange={onStatusChange}
         />
+
+        <InboxAiProposalSection proposal={aiProposal} />
 
         <section aria-label="Aufgabe" className={aosWorkspaceSectionClassName}>
           <WorkspaceSectionHeading

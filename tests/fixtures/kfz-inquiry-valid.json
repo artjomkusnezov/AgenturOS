@@ -1,0 +1,32 @@
+{
+  "fullName": "Anna Beispiel",
+  "postalCode": "10115",
+  "city": "Berlin",
+  "phone": "+491701234567",
+  "email": null,
+  "preferredChannel": "phone",
+  "inquiryReason": "Preischeck Kfz-Versicherung",
+  "inquiryProcessingConsent": true,
+  "consentVersion": "kfz-lp-2026-09-01",
+  "consentTimestamp": "2026-09-05T11:59:00.000Z",
+  "language": "de",
+  "vehicleMake": "VW",
+  "vehicleModel": "Golf",
+  "vehicleYear": "2019",
+  "contextNotes": null,
+  "source": "kfz.artkus.de",
+  "campaign": "autumn-2026",
+  "utmSource": "meta",
+  "utmMedium": "paid-social",
+  "utmCampaign": "kfz-autumn-2026",
+  "utmTerm": null,
+  "utmContent": null,
+  "submissionId": "fixture-kfz-valid-001",
+  "uploads": [
+    {
+      "filename": "fahrzeugschein.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 1024
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
+import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'
+import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
 import { enrichInboxAttachmentsWithMediaUrls } from '@/features/inbox/lib/enrich-inbox-attachments'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
@@ -40,12 +42,19 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       : null
 
   let attachments: InboxLinkedFile[] = []
+  let aiProposal: InboxAiProposal | null = null
 
   if (selectedItemId) {
+    const selectedItem = allItems.find((entry) => entry.id === selectedItemId) ?? null
     const attachmentsResult = await listFilesForInboxItem(selectedItemId)
 
     if (attachmentsResult.success) {
       attachments = await enrichInboxAttachmentsWithMediaUrls(attachmentsResult.files)
+    }
+
+    if (selectedItem) {
+      const proposalResult = await getInboxAiProposal(selectedItem)
+      aiProposal = proposalResult.proposal
     }
   }
 
@@ -57,6 +66,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       selectedItemId={selectedItemId}
       attachments={attachments}
       memberNameMap={memberNameMap}
+      aiProposal={aiProposal}
     />
   )
 }

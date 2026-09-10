@@ -12,19 +12,35 @@ import {
   INBOX_SOURCE_WHATSAPP,
 } from '@/features/inbox/lib/inbox-source'
 
+/** Provider-neutral website/acquisition inbox source (Landingpage, Formulare). */
+export const INBOX_SOURCE_WEBSITE = 'website' as const
+
 export function isInboundChannel(value: string): value is InboundChannel {
-  return value === 'manual' || value === 'whatsapp' || value === 'email'
+  return (
+    value === 'manual' ||
+    value === 'whatsapp' ||
+    value === 'email' ||
+    value === 'website'
+  )
 }
 
 export function mapInboundChannelToInboxSource(
   channel: InboundChannel,
-): typeof INBOX_SOURCE_MANUAL_TEXT | typeof INBOX_SOURCE_WHATSAPP | typeof INBOX_SOURCE_EMAIL {
+):
+  | typeof INBOX_SOURCE_MANUAL_TEXT
+  | typeof INBOX_SOURCE_WHATSAPP
+  | typeof INBOX_SOURCE_EMAIL
+  | typeof INBOX_SOURCE_WEBSITE {
   if (channel === 'whatsapp') {
     return INBOX_SOURCE_WHATSAPP
   }
 
   if (channel === 'email') {
     return INBOX_SOURCE_EMAIL
+  }
+
+  if (channel === 'website') {
+    return INBOX_SOURCE_WEBSITE
   }
 
   return INBOX_SOURCE_MANUAL_TEXT
@@ -81,7 +97,7 @@ export function buildInboundInboxContent(
 
 /** Externe Quellen: Absender aus `sender`/`origin`, nicht Mitgliedsname. */
 export function isExternalInboundChannel(channel: string | null | undefined): boolean {
-  return channel === 'whatsapp' || channel === 'email'
+  return channel === 'whatsapp' || channel === 'email' || channel === 'website'
 }
 
 export function formatInboundSenderLabel(
