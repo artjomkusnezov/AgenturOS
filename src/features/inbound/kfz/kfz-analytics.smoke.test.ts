@@ -21,8 +21,16 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-analytics-consent'
 import {
   KFZ_ANALYTICS_FIXTURE_ALL,
+  KFZ_ANALYTICS_FIXTURE_OTHER_DAY,
   KFZ_ANALYTICS_FIXTURE_SESSION_A,
+  KFZ_ANALYTICS_FIXTURE_UNKNOWN,
 } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
+import {
+  buildKfzAnalyticsDashboardHref,
+  KFZ_ANALYTICS_MAX_RANGE_DAYS,
+  parseKfzAnalyticsCalendarDate,
+  resolveKfzAnalyticsDashboardFilters,
+} from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { ingestKfzAnalyticsEvents } from '@/features/inbound/kfz/lib/kfz-analytics-ingest'
 import {
   KFZ_ANALYTICS_PRIVACY_NOTES,
@@ -372,7 +380,19 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(empty.empty, true)
     assert.equal(empty.visits, 0)
     assert.equal(empty.conversionRate, null)
+    assert.equal(empty.startRate, null)
+    assert.equal(empty.submitFromStartRate, null)
     assert.equal(empty.steps.length, 0)
+    assert.equal(empty.dropOffs.length, 0)
+    assert.equal(empty.filterActive, false)
+    assert.equal(empty.matchedSessions, 0)
+
+    assert.ok(dashboard.startRate != null)
+    assert.equal(Number(dashboard.startRate.toFixed(2)), 0.75)
+    assert.ok(dashboard.submitFromStartRate != null)
+    assert.equal(Number(dashboard.submitFromStartRate.toFixed(2)), 0.67)
+    assert.ok(dashboard.dropOffs.some((row) => row.id === 'usage' && row.count === 1))
+    assert.ok(dashboard.dropOffs.some((row) => row.id === 'branch' && row.count === 1))
   })
 
   it('does not leak fixture personal data into dashboard rows', () => {
@@ -387,6 +407,246 @@ describe('kfz analytics dashboard aggregation', () => {
   })
 })
 
+describe('kfz analytics dashboard filters', () => {
+  const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
+
+  it('filters an explicit calendar date range and ignores events outside it', () => {
+    const events = [...KFZ_ANALYTICS_FIXTURE_ALL, ...KFZ_ANALYTICS_FIXTURE_OTHER_DAY]
+    const day = aggregateKfzAnalyticsDashboard(events, {
+      nowMs,
+      query: { from: '2026-09-09', to: '2026-09-09' },
+    })
+    assert.equal(day.periodId, 'custom')
+    assert.equal(day.visits, 4)
+    assert.equal(day.filters.fromDate, '2026-09-09')
+    assert.equal(day.filters.toDate, '2026-09-09')
+    assert.equal(
+      day.trafficSources.some((row) => row.id === 'campaign'),
+      false,
+    )
+
+    const other = aggregateKfzAnalyticsDashboard(events, {
+      nowMs,
+      query: { from: '2026-08-01', to: '2026-08-01' },
+    })
+    assert.equal(other.visits, 1)
+    assert.equal(other.funnelStarts, 1)
+    assert.equal(other.submissions, 1)
+    assert.ok(other.trafficSources.some((row) => row.id === 'campaign' && row.count === 1))
+    assert.ok(other.branches.some((row) => row.id === 'evb' && row.count === 1))
+  })
+
+  it('clamps oversized ranges and rejects invalid dates without inventing a window', () => {
+    assert.equal(parseKfzAnalyticsCalendarDate('2026-02-31'), null)
+    assert.equal(parseKfzAnalyticsCalendarDate('09-09-2026'), null)
+    assert.equal(KFZ_ANALYTICS_MAX_RANGE_DAYS, 31)
+
+    const clamped = resolveKfzAnalyticsDashboardFilters(
+      { from: '2026-08-01', to: '2026-09-09' },
+      nowMs,
+    )
+    assert.equal(clamped.filters.periodId, 'custom')
+    assert.equal(clamped.filters.fromDate, '2026-08-01')
+    assert.equal(clamped.filters.toDate, '2026-08-31')
+
+    const swapped = resolveKfzAnalyticsDashboardFilters(
+      { from: '2026-09-09', to: '2026-09-01' },
+      nowMs,
+    )
+    assert.equal(swapped.filters.fromDate, '2026-09-01')
+    assert.equal(swapped.filters.toDate, '2026-09-09')
+
+    const invalid = resolveKfzAnalyticsDashboardFilters(
+      { from: 'not-a-date', to: '2026-02-31', period: '7d' },
+      nowMs,
+    )
+    assert.equal(invalid.filters.periodId, '7d')
+    assert.equal(invalid.filters.fromDate, null)
+    assert.ok(invalid.from)
+  })
+
+  it('filters by allowed traffic source, initial branch, reached step and drop-off', () => {
+    const utm = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
+      periodId: 'all',
+      nowMs,
+      query: { source: 'utm' },
+    })
+    assert.equal(utm.filterActive, true)
+    assert.equal(utm.visits, 2)
+    assert.equal(utm.funnelStarts, 2)
+    assert.equal(utm.submissions, 2)
+    assert.equal(utm.abandoned, 0)
+    assert.ok(utm.conversionRate != null)
+    assert.equal(utm.conversionRate, 1)
+    assert.equal(utm.trafficSources.every((row) => row.id === 'utm'), true)
+
+    const switchCar = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
+      periodId: 'all',
+      nowMs,
+      query: { branch: 'switch_car' },
+    })
+    assert.equal(switchCar.visits, 1)
+    assert.equal(switchCar.funnelStarts, 1)
+    assert.equal(switchCar.submissions, 0)
+    assert.equal(switchCar.abandoned, 1)
+    assert.ok(switchCar.branches.every((row) => row.id === 'switch_car'))
+
+    const usage = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
+      periodId: 'all',
+      nowMs,
+      query: { step: 'usage' },
+    })
+    assert.equal(usage.matchedSessions, 1)
+    assert.equal(usage.visits, 1)
+    assert.equal(usage.submissions, 0)
+    const usageStep = usage.steps.find((step) => step.stepId === 'usage')
+    assert.ok(usageStep)
+    assert.equal(usageStep.reached, 1)
+    assert.equal(usageStep.dropOff, 1)
+
+    const dropUsage = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
+      periodId: 'all',
+      nowMs,
+      query: { drop: 'usage' },
+    })
+    assert.equal(dropUsage.abandoned, 1)
+    assert.equal(dropUsage.submissions, 0)
+    assert.ok(dropUsage.dropOffs.every((row) => row.id === 'usage'))
+  })
+
+  it('keeps unknown source, branch and drop-off honest instead of inventing attribution', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(
+      [...KFZ_ANALYTICS_FIXTURE_ALL, ...KFZ_ANALYTICS_FIXTURE_UNKNOWN],
+      { periodId: 'all', nowMs },
+    )
+    assert.equal(dashboard.visits, 5)
+    assert.equal(dashboard.funnelStarts, 4)
+    assert.ok(dashboard.trafficSources.some((row) => row.id === 'unknown' && row.count === 1))
+    assert.ok(dashboard.trafficSources.every((row) => row.id !== 'direct' || row.count === 2))
+    assert.ok(dashboard.branches.some((row) => row.id === 'unknown' && row.count === 1))
+    assert.ok(dashboard.dropOffs.some((row) => row.id === 'unknown' && row.count === 1))
+
+    const unknownSource = aggregateKfzAnalyticsDashboard(
+      [...KFZ_ANALYTICS_FIXTURE_ALL, ...KFZ_ANALYTICS_FIXTURE_UNKNOWN],
+      { periodId: 'all', nowMs, query: { source: 'unknown' } },
+    )
+    assert.equal(unknownSource.visits, 1)
+    assert.equal(unknownSource.funnelStarts, 1)
+    assert.equal(unknownSource.submissions, 0)
+    assert.equal(unknownSource.abandoned, 1)
+
+    const unknownDrop = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_UNKNOWN, {
+      periodId: 'all',
+      nowMs,
+      query: { drop: 'unknown' },
+    })
+    assert.equal(unknownDrop.matchedSessions, 1)
+    assert.equal(unknownDrop.dropOffs[0]?.id, 'unknown')
+  })
+
+  it('does not invent matches for empty filters or unsafe query values', () => {
+    const emptyMatch = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
+      periodId: 'all',
+      nowMs,
+      query: { source: 'utm', branch: 'first_car' },
+    })
+    assert.equal(emptyMatch.empty, true)
+    assert.equal(emptyMatch.filterActive, true)
+    assert.equal(emptyMatch.visits, 0)
+    assert.equal(emptyMatch.funnelStarts, 0)
+    assert.equal(emptyMatch.submissions, 0)
+    assert.equal(emptyMatch.conversionRate, null)
+    assert.equal(emptyMatch.matchedSessions, 0)
+
+    const unsafe = resolveKfzAnalyticsDashboardFilters(
+      {
+        source: 'https://evil.example/?email=max@example.com',
+        branch: 'Mustermann',
+        step: 'sf_class_haftpflicht',
+        drop: 'OS-AB 123',
+        from: 'javascript:alert(1)',
+      },
+      nowMs,
+    )
+    assert.equal(unsafe.filters.trafficSource, 'all')
+    assert.equal(unsafe.filters.branchId, 'all')
+    assert.equal(unsafe.filters.reachedStepId, 'all')
+    assert.equal(unsafe.filters.dropOffStepId, 'all')
+    assert.equal(unsafe.filters.fromDate, null)
+  })
+
+  it('builds shareable filter URLs without duplicating preset dates', () => {
+    const href = buildKfzAnalyticsDashboardHref({
+      periodId: '30d',
+      fromDate: null,
+      toDate: null,
+      trafficSource: 'direct',
+      branchId: 'evb',
+      reachedStepId: 'contact',
+      dropOffStepId: 'all',
+    })
+    assert.equal(
+      href,
+      '/app/kfz-analytics?period=30d&source=direct&branch=evb&step=contact',
+    )
+
+    const custom = buildKfzAnalyticsDashboardHref({
+      periodId: 'custom',
+      fromDate: '2026-09-01',
+      toDate: '2026-09-09',
+      trafficSource: 'all',
+      branchId: 'all',
+      reachedStepId: 'all',
+      dropOffStepId: 'unknown',
+    })
+    assert.equal(
+      custom,
+      '/app/kfz-analytics?from=2026-09-01&to=2026-09-09&drop=unknown',
+    )
+  })
+
+  it('does not leak form answers or PII through filtered aggregation', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(
+      [...KFZ_ANALYTICS_FIXTURE_ALL, ...KFZ_ANALYTICS_FIXTURE_UNKNOWN],
+      {
+        periodId: 'all',
+        nowMs,
+        query: { source: 'unknown', branch: 'unknown' },
+      },
+    )
+    const serialized = JSON.stringify(dashboard)
+    assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
+    assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)
+    assert.doesNotMatch(serialized, /user-agent|https?:\/\//i)
+    assert.equal(dashboard.visits, 1)
+  })
+
+  it('does not inflate filtered counts when the same events are stored twice', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: KFZ_ANALYTICS_FIXTURE_ALL,
+      store,
+    })
+    await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: KFZ_ANALYTICS_FIXTURE_ALL,
+      store,
+    })
+    const dashboard = aggregateKfzAnalyticsDashboard(await store.listEvents(), {
+      periodId: 'all',
+      nowMs,
+      query: { source: 'direct', step: 'branch' },
+    })
+    assert.equal(dashboard.visits, 2)
+    assert.equal(dashboard.funnelStarts, 1)
+    assert.equal(dashboard.submissions, 0)
+    assert.equal(dashboard.abandoned, 2)
+  })
+})
+
+
+
 describe('kfz analytics source hygiene', () => {
   it('keeps first-party modules free of cookies, pixels and paid analytics', () => {
     const files = [
@@ -396,6 +656,8 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/components/kfz-landing-analytics-root.tsx',
       'features/inbound/kfz/components/kfz-analytics-consent-banner.tsx',
       'features/inbound/kfz/components/kfz-analytics-dashboard.tsx',
+      'features/inbound/kfz/components/kfz-analytics-dashboard-filters.tsx',
+      'features/inbound/kfz/lib/kfz-analytics-filters.ts',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
     const source = files.map((relative) => readSrc(relative)).join('\n')

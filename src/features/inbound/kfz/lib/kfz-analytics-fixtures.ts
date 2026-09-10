@@ -170,6 +170,39 @@ export const KFZ_ANALYTICS_FIXTURE_RETRY_SUCCESS: KfzAnalyticsRecord[] = [
   event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'submit_succeeded', T4, { activeMs: 48_000 }),
 ]
 
+export const KFZ_ANALYTICS_FIXTURE_SESSION_E =
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+export const KFZ_ANALYTICS_FIXTURE_SESSION_F =
+  'ffffffff-ffff-4fff-8fff-ffffffffffff'
+
+const T_OTHER = '2026-08-01T10:00:00.000Z'
+
+/** Visit and funnel start with no traffic source, branch or last step — unknown, not invented. */
+export const KFZ_ANALYTICS_FIXTURE_UNKNOWN: KfzAnalyticsRecord[] = [
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_E, 'landing_view', T0, { activeMs: 6_000 }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_E, 'funnel_start', T1, { activeMs: 6_000 }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_E, 'funnel_abandoned', T4, { activeMs: 6_000 }),
+]
+
+/** Same anonymous shape on a different calendar day, for date-range isolation. */
+export const KFZ_ANALYTICS_FIXTURE_OTHER_DAY: KfzAnalyticsRecord[] = [
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'landing_view', T_OTHER, { activeMs: 9_000 }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'traffic_source', T_OTHER, {
+    trafficSource: 'campaign',
+    utmCampaign: 'evb',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'funnel_start', T_OTHER, {
+    branchId: 'evb',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'initial_branch_selected', T_OTHER, {
+    branchId: 'evb',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'step_view', T_OTHER, { stepId: 'branch' }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'submit_succeeded', T_OTHER, {
+    activeMs: 9_000,
+  }),
+]
+
 export const KFZ_ANALYTICS_FIXTURE_ALL: KfzAnalyticsRecord[] = [
   ...KFZ_ANALYTICS_FIXTURE_COMPLETED,
   ...KFZ_ANALYTICS_FIXTURE_ABANDONED_MID,

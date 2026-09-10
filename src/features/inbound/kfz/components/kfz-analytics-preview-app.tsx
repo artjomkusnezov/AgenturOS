@@ -5,9 +5,13 @@ import { useMemo, useState, useTransition } from 'react'
 import { recordKfzAnalyticsPreviewAction } from '@/features/inbound/kfz/actions/kfz-analytics-preview'
 import { KfzAnalyticsDashboardView } from '@/features/inbound/kfz/components/kfz-analytics-dashboard'
 import { aggregateKfzAnalyticsDashboard } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
+import {
+  KFZ_ANALYTICS_DEFAULT_FILTERS,
+  buildKfzAnalyticsDashboardHref,
+} from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { KFZ_ANALYTICS_FIXTURE_ALL } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import type {
-  KfzAnalyticsPeriodId,
+  KfzAnalyticsDashboardFilters,
   KfzAnalyticsRecord,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
@@ -16,7 +20,10 @@ type KfzAnalyticsPreviewAppProps = {
 }
 
 export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewAppProps) {
-  const [periodId, setPeriodId] = useState<KfzAnalyticsPeriodId>('all')
+  const [filters, setFilters] = useState<KfzAnalyticsDashboardFilters>({
+    ...KFZ_ANALYTICS_DEFAULT_FILTERS,
+    periodId: 'all',
+  })
   const [events, setEvents] = useState(initialEvents)
   const [isPending, startTransition] = useTransition()
   const [nowMs] = useState(() => Date.now())
@@ -24,10 +31,20 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
   const dashboard = useMemo(
     () =>
       aggregateKfzAnalyticsDashboard(events, {
-        periodId,
+        periodId: filters.periodId,
         nowMs,
+        filters,
+        query: {
+          period: filters.periodId === 'custom' ? 'custom' : filters.periodId,
+          from: filters.fromDate ?? undefined,
+          to: filters.toDate ?? undefined,
+          source: filters.trafficSource,
+          branch: filters.branchId,
+          step: filters.reachedStepId,
+          drop: filters.dropOffStepId,
+        },
       }),
-    [events, periodId, nowMs],
+    [events, filters, nowMs],
   )
 
   function seedFixtures() {
@@ -55,10 +72,14 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
       >
         {isPending ? 'Lädt …' : 'Anonyme Beispielereignisse laden'}
       </button>
+      <p className="sr-only" data-kfz-analytics-preview-href={buildKfzAnalyticsDashboardHref(filters)}>
+        Filter bleiben lokal. Ein Reload verdoppelt keine Ereignisse.
+      </p>
       <KfzAnalyticsDashboardView
         dashboard={dashboard}
-        periodId={periodId}
-        onPeriodChange={setPeriodId}
+        filters={filters}
+        defaultPeriodId="all"
+        onFiltersChange={setFilters}
         events={events}
         inspector
       />

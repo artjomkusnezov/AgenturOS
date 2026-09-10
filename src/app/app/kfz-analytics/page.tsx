@@ -1,23 +1,27 @@
 import { WorkspaceFrame } from '@/components/app/workspace'
 import { loadKfzAnalyticsDashboardAction } from '@/features/inbound/kfz/actions/load-kfz-analytics-dashboard'
 import { KfzAnalyticsDashboardApp } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-app'
-import type { KfzAnalyticsPeriodId } from '@/features/inbound/kfz/types/kfz-analytics'
+import { parseKfzAnalyticsDashboardQuery } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 export const dynamic = 'force-dynamic'
 
-const PERIODS = new Set<KfzAnalyticsPeriodId>(['24h', '7d', '30d', 'all'])
-
 type KfzAnalyticsPageProps = {
-  searchParams: Promise<{ period?: string }>
+  searchParams: Promise<{
+    period?: string
+    from?: string
+    to?: string
+    source?: string
+    branch?: string
+    step?: string
+    drop?: string
+  }>
 }
 
 export default async function KfzAnalyticsPage({ searchParams }: KfzAnalyticsPageProps) {
   const params = await searchParams
-  const periodId: KfzAnalyticsPeriodId = PERIODS.has(params.period as KfzAnalyticsPeriodId)
-    ? (params.period as KfzAnalyticsPeriodId)
-    : '7d'
-  const result = await loadKfzAnalyticsDashboardAction(periodId)
+  const query = parseKfzAnalyticsDashboardQuery(params)
+  const result = await loadKfzAnalyticsDashboardAction(query)
 
   if (!result.ok) {
     return (
@@ -29,7 +33,10 @@ export default async function KfzAnalyticsPage({ searchParams }: KfzAnalyticsPag
 
   return (
     <WorkspaceFrame>
-      <KfzAnalyticsDashboardApp dashboard={result.dashboard} periodId={periodId} />
+      <KfzAnalyticsDashboardApp
+        dashboard={result.dashboard}
+        filters={result.dashboard.filters}
+      />
     </WorkspaceFrame>
   )
 }
