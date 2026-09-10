@@ -1,10 +1,10 @@
 import { dashboardSurfaceClassName } from '@/features/dashboard/lib/dashboard-surface'
-import { KFZ_ANALYTICS_PERIODS } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
+import { KfzAnalyticsDashboardFiltersBar } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-filters'
 import { KFZ_ANALYTICS_PRIVACY_NOTES } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import type {
   KfzAnalyticsCountRow,
   KfzAnalyticsDashboard,
-  KfzAnalyticsPeriodId,
+  KfzAnalyticsDashboardFilters,
   KfzAnalyticsRecord,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
@@ -41,72 +41,73 @@ function maxCount(rows: Array<{ count?: number; reached?: number }>): number {
 
 type KfzAnalyticsDashboardViewProps = {
   dashboard: KfzAnalyticsDashboard
-  periodId: KfzAnalyticsPeriodId
-  onPeriodChange?: (periodId: KfzAnalyticsPeriodId) => void
+  filters?: KfzAnalyticsDashboardFilters
+  onFiltersChange?: (filters: KfzAnalyticsDashboardFilters) => void
+  defaultPeriodId?: '24h' | '7d' | '30d' | 'all'
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
 }
 
 export function KfzAnalyticsDashboardView({
   dashboard,
-  periodId,
-  onPeriodChange,
+  filters,
+  onFiltersChange,
+  defaultPeriodId = '7d',
   events,
   inspector = false,
 }: KfzAnalyticsDashboardViewProps) {
+  const activeFilters = filters ?? dashboard.filters
   const funnelMax = maxCount(dashboard.steps)
+  const inspectorEvents = (events ?? []).filter((event) =>
+    dashboard.matchedSessionIds.includes(event.sessionId),
+  )
 
   return (
-    <div className="space-y-5" data-kfz-analytics-dashboard="true">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Intern · Kfz-Funnel
-          </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-            Messung der Kfz-Strecke
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Nur anonyme, allow-listed Ereignisse. Keine Formularantworten, keine
-            Kontaktdaten, keine automatische Bewertung.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1.5" data-kfz-analytics-period={periodId}>
-          {KFZ_ANALYTICS_PERIODS.map((period) => {
-            const active = period.id === periodId
-            return (
-              <button
-                key={period.id}
-                type="button"
-                data-kfz-analytics-period-option={period.id}
-                onClick={() => onPeriodChange?.(period.id)}
-                className={`min-h-10 rounded-full px-3.5 text-sm font-medium ${
-                  active
-                    ? 'bg-zinc-900 text-white'
-                    : 'bg-white text-zinc-700 ring-1 ring-zinc-200 hover:bg-zinc-50'
-                }`}
-              >
-                {period.label}
-              </button>
-            )
-          })}
-        </div>
+    <div className="space-y-5" data-kfz-analytics-dashboard="true" data-kfz-analytics-filter-active={dashboard.filterActive ? 'true' : 'false'}>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          Intern · Kfz-Funnel
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+          Messung der Kfz-Strecke
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-600">
+          Nur anonyme, allow-listed Ereignisse. Keine Formularantworten, keine
+          Kontaktdaten, keine automatische Bewertung.
+        </p>
+        <p
+          className="mt-2 text-xs text-zinc-500"
+          data-kfz-analytics-matched={String(dashboard.matchedSessions)}
+        >
+          {formatCount(dashboard.matchedSessions)} Sitzungen in der Auswahl
+        </p>
       </div>
+
+      <KfzAnalyticsDashboardFiltersBar
+        dashboard={dashboard}
+        filters={activeFilters}
+        onChange={onFiltersChange}
+        defaultPeriodId={defaultPeriodId}
+      />
 
       {dashboard.empty ? (
         <div
           className={`${dashboardSurfaceClassName} px-5 py-8`}
           data-kfz-analytics-empty="true"
+          data-kfz-analytics-filter-active={dashboard.filterActive ? 'true' : 'false'}
         >
-          <p className="text-base font-semibold text-zinc-900">Noch keine Messdaten</p>
+          <p className="text-base font-semibold text-zinc-900">
+            {dashboard.filterActive ? 'Keine Sitzungen für diese Auswahl' : 'Noch keine Messdaten'}
+          </p>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-            In diesem Zeitraum liegen keine anonymen Ereignisse vor. Es wird nichts
-            hochgerechnet und keine Herkunft erfunden.
+            {dashboard.filterActive
+              ? 'Die Filter treffen auf keine anonymen Sitzungen zu. Es wird nichts hochgerechnet und keine Herkunft erfunden.'
+              : 'In diesem Zeitraum liegen keine anonymen Ereignisse vor. Es wird nichts hochgerechnet und keine Herkunft erfunden.'}
           </p>
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <KpiCard label="Besuche" value={formatCount(dashboard.visits)} testId="visits" />
         <KpiCard
           label="Funnel-Starts"
@@ -123,6 +124,18 @@ export function KfzAnalyticsDashboardView({
           value={formatRate(dashboard.conversionRate)}
           detail="Anfragen / Besuche"
           testId="conversion"
+        />
+        <KpiCard
+          label="Startquote"
+          value={formatRate(dashboard.startRate)}
+          detail="Starts / Besuche"
+          testId="start-rate"
+        />
+        <KpiCard
+          label="Abschluss der Starts"
+          value={formatRate(dashboard.submitFromStartRate)}
+          detail="Anfragen / Starts"
+          testId="submit-from-start"
         />
       </div>
 
@@ -165,7 +178,7 @@ export function KfzAnalyticsDashboardView({
         <BarCard
           title="Herkunft"
           rows={dashboard.trafficSources}
-          empty="Keine Herkunftsdaten."
+          empty="Keine Herkunftsdaten. Unbekannte Sitzungen erscheinen als Unbekannt."
           testId="sources"
         />
         <BarCard
@@ -177,12 +190,18 @@ export function KfzAnalyticsDashboardView({
         <BarCard
           title="Einstiegswege"
           rows={dashboard.branches}
-          empty="Kein Zweig gewählt."
+          empty="Kein Zweig gewählt. Unbekannter Einstieg bleibt Unbekannt."
           testId="branches"
         />
-        <section className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}>
+        <BarCard
+          title="Abbruchpunkte"
+          rows={dashboard.dropOffs}
+          empty="Keine Abbrüche in dieser Auswahl."
+          testId="dropoffs"
+        />
+        <section className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5 lg:col-span-2`}>
           <h3 className="text-sm font-semibold text-zinc-900">Zeit und Reibung</h3>
-          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
             <div data-kfz-analytics-landing-avg="true">
               <dt className="text-zinc-500">Landing Ø</dt>
               <dd className="mt-0.5 font-semibold text-zinc-900">
@@ -240,7 +259,7 @@ export function KfzAnalyticsDashboardView({
             Nur zur lokalen Prüfung: keine Antworten, keine Kontaktdaten.
           </p>
           <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-zinc-950 p-3 text-[11px] leading-relaxed text-emerald-100">
-            {JSON.stringify(events ?? [], null, 2)}
+            {JSON.stringify(inspectorEvents, null, 2)}
           </pre>
         </section>
       ) : null}
@@ -288,7 +307,7 @@ function BarCard({
       ) : (
         <div className="mt-3 space-y-2.5">
           {rows.map((row) => (
-            <div key={row.id}>
+            <div key={row.id} data-kfz-analytics-bar-row={row.id}>
               <div className="mb-1 flex justify-between text-sm">
                 <span className="text-zinc-800">{row.label}</span>
                 <span className="text-zinc-500">{formatCount(row.count)}</span>

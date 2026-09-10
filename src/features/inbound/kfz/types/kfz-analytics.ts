@@ -75,7 +75,47 @@ export type KfzAnalyticsRecord = {
   properties: KfzAnalyticsProperties
 }
 
-export type KfzAnalyticsPeriodId = '24h' | '7d' | '30d' | 'all'
+export type KfzAnalyticsPeriodId = '24h' | '7d' | '30d' | 'all' | 'custom'
+
+export const KFZ_ANALYTICS_FILTER_ALL = 'all' as const
+export const KFZ_ANALYTICS_UNKNOWN_ID = 'unknown' as const
+
+export type KfzAnalyticsTrafficSourceFilter =
+  | KfzAnalyticsTrafficSource
+  | typeof KFZ_ANALYTICS_FILTER_ALL
+  | typeof KFZ_ANALYTICS_UNKNOWN_ID
+
+export type KfzAnalyticsBranchFilter =
+  | typeof KFZ_ANALYTICS_FILTER_ALL
+  | typeof KFZ_ANALYTICS_UNKNOWN_ID
+  | string
+
+export type KfzAnalyticsStepFilter = typeof KFZ_ANALYTICS_FILTER_ALL | string
+
+export type KfzAnalyticsDropOffFilter =
+  | typeof KFZ_ANALYTICS_FILTER_ALL
+  | typeof KFZ_ANALYTICS_UNKNOWN_ID
+  | string
+
+export type KfzAnalyticsDashboardFilters = {
+  periodId: KfzAnalyticsPeriodId
+  fromDate: string | null
+  toDate: string | null
+  trafficSource: KfzAnalyticsTrafficSourceFilter
+  branchId: KfzAnalyticsBranchFilter
+  reachedStepId: KfzAnalyticsStepFilter
+  dropOffStepId: KfzAnalyticsDropOffFilter
+}
+
+export type KfzAnalyticsDashboardQuery = {
+  period?: string
+  from?: string
+  to?: string
+  source?: string
+  branch?: string
+  step?: string
+  drop?: string
+}
 
 export type KfzAnalyticsCountRow = {
   id: string
@@ -96,23 +136,30 @@ export type KfzAnalyticsStepFunnelRow = {
 
 export type KfzAnalyticsDashboard = {
   periodId: KfzAnalyticsPeriodId
+  filters: KfzAnalyticsDashboardFilters
   from: string | null
   to: string
   empty: boolean
+  filterActive: boolean
+  matchedSessions: number
   visits: number
   funnelStarts: number
   submissions: number
   conversionRate: number | null
+  startRate: number | null
+  submitFromStartRate: number | null
   trafficSources: KfzAnalyticsCountRow[]
   campaigns: KfzAnalyticsCountRow[]
   branches: KfzAnalyticsCountRow[]
   steps: KfzAnalyticsStepFunnelRow[]
+  dropOffs: KfzAnalyticsCountRow[]
   validationBlocked: number
   submitFailed: number
   submitFailedByCategory: KfzAnalyticsCountRow[]
   landingAverageActiveMs: number | null
   landingMedianActiveMs: number | null
   abandoned: number
+  matchedSessionIds: string[]
 }
 
 export type KfzAnalyticsStore = {

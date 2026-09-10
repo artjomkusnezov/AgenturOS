@@ -3,38 +3,30 @@ import {
   kfzAnalyticsStepLabel,
   KFZ_ANALYTICS_STEP_IDS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
+import {
+  deriveKfzAnalyticsSessionFacts,
+  kfzAnalyticsDashboardFiltersAreActive,
+  kfzAnalyticsTrafficSourceLabel,
+  KFZ_ANALYTICS_PERIODS,
+  resolveKfzAnalyticsDashboardFilters,
+  resolveKfzAnalyticsPeriod,
+  sessionMatchesKfzAnalyticsFilters,
+  type KfzAnalyticsSessionFacts,
+} from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { KFZ_ANALYTICS_ABANDON_AFTER_MS } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import type {
   KfzAnalyticsCountRow,
   KfzAnalyticsDashboard,
+  KfzAnalyticsDashboardFilters,
+  KfzAnalyticsDashboardQuery,
   KfzAnalyticsErrorCategory,
   KfzAnalyticsPeriodId,
   KfzAnalyticsRecord,
   KfzAnalyticsStepFunnelRow,
 } from '@/features/inbound/kfz/types/kfz-analytics'
+import { KFZ_ANALYTICS_UNKNOWN_ID } from '@/features/inbound/kfz/types/kfz-analytics'
 
-export const KFZ_ANALYTICS_PERIODS: ReadonlyArray<{
-  id: KfzAnalyticsPeriodId
-  label: string
-  durationMs: number | null
-}> = [
-  { id: '24h', label: '24 Stunden', durationMs: 24 * 60 * 60 * 1000 },
-  { id: '7d', label: '7 Tage', durationMs: 7 * 24 * 60 * 60 * 1000 },
-  { id: '30d', label: '30 Tage', durationMs: 30 * 24 * 60 * 60 * 1000 },
-  { id: 'all', label: 'Gesamt', durationMs: null },
-]
-
-export function resolveKfzAnalyticsPeriod(
-  periodId: KfzAnalyticsPeriodId,
-  nowMs: number,
-): { from: string | null; to: string } {
-  const spec = KFZ_ANALYTICS_PERIODS.find((entry) => entry.id === periodId)
-  const to = new Date(nowMs).toISOString()
-  if (!spec || spec.durationMs == null) {
-    return { from: null, to }
-  }
-  return { from: new Date(nowMs - spec.durationMs).toISOString(), to }
-}
+export { KFZ_ANALYTICS_PERIODS, resolveKfzAnalyticsPeriod }
 
 function inRange(iso: string, from: string | null, to: string): boolean {
   if (iso > to) {
@@ -65,6 +57,13 @@ function average(values: number[]): number | null {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
 }
 
+function ratio(numerator: number, denominator: number): number | null {
+  if (denominator <= 0) {
+    return null
+  }
+  return numerator / denominator
+}
+
 function countMapToRows(
   counts: Map<string, number>,
   labelFor: (id: string) => string,
@@ -85,25 +84,63 @@ function latestByKey(events: KfzAnalyticsRecord[]): Map<string, KfzAnalyticsReco
   return latest
 }
 
-export function aggregateKfzAnalyticsDashboard(
+function groupEventsBySession(
   events: readonly KfzAnalyticsRecord[],
-  input: {
-    periodId: KfzAnalyticsPeriodId
-    nowMs: number
-    abandonAfterMs?: number
-  },
-): KfzAnalyticsDashboard {
-  const { from, to } = resolveKfzAnalyticsPeriod(input.periodId, input.nowMs)
-  const abandonAfterMs = input.abandonAfterMs ?? KFZ_ANALYTICS_ABANDON_AFTER_MS
-  const ranged = events.filter((event) => inRange(event.occurredAt, from, to))
-  const latest = [...latestByKey(ranged).values()]
-
+): Map<string, KfzAnalyticsRecord[]> {
   const bySession = new Map<string, KfzAnalyticsRecord[]>()
-  for (const event of latest) {
+  for (const event of events) {
     const list = bySession.get(event.sessionId) ?? []
     list.push(event)
     bySession.set(event.sessionId, list)
   }
+  return bySession
+}
+
+export function aggregateKfzAnalyticsDashboard(
+  events: readonly KfzAnalyticsRecord[],
+  input: {
+    periodId?: KfzAnalyticsPeriodId
+    nowMs: number
+    abandonAfterMs?: number
+    filters?: Partial<KfzAnalyticsDashboardFilters>
+    query?: KfzAnalyticsDashboardQuery
+  },
+): KfzAnalyticsDashboard {
+  const abandonAfterMs = input.abandonAfterMs ?? KFZ_ANALYTICS_ABANDON_AFTER_MS
+  const query: KfzAnalyticsDashboardQuery = {
+    period: input.query?.period ?? input.filters?.periodId ?? input.periodId,
+    from: input.query?.from ?? input.filters?.fromDate ?? undefined,
+    to: input.query?.to ?? input.filters?.toDate ?? undefined,
+    source: input.query?.source ?? input.filters?.trafficSource,
+    branch: input.query?.branch ?? input.filters?.branchId,
+    step: input.query?.step ?? input.filters?.reachedStepId,
+    drop: input.query?.drop ?? input.filters?.dropOffStepId,
+  }
+  const defaultPeriodId =
+    input.periodId && input.periodId !== 'custom' ? input.periodId : '7d'
+  const resolved = resolveKfzAnalyticsDashboardFilters(
+    query,
+    input.nowMs,
+    defaultPeriodId,
+  )
+  const filters: KfzAnalyticsDashboardFilters = resolved.filters
+  const from = resolved.from
+  const to = resolved.to
+
+  const ranged = events.filter((event) => inRange(event.occurredAt, from, to))
+  const latest = [...latestByKey(ranged).values()]
+  const bySession = groupEventsBySession(latest)
+  const sessions: KfzAnalyticsSessionFacts[] = []
+  for (const [sessionId, sessionEvents] of bySession) {
+    sessions.push(
+      deriveKfzAnalyticsSessionFacts(sessionId, sessionEvents, {
+        nowMs: input.nowMs,
+        abandonAfterMs,
+      }),
+    )
+  }
+
+  const matched = sessions.filter((facts) => sessionMatchesKfzAnalyticsFilters(facts, filters))
 
   let visits = 0
   let funnelStarts = 0
@@ -115,53 +152,51 @@ export function aggregateKfzAnalyticsDashboard(
   const campaigns = new Map<string, number>()
   const branches = new Map<string, number>()
   const submitFailedByCategory = new Map<string, number>()
+  const dropOffs = new Map<string, number>()
   const reached = new Map<string, Set<string>>()
   const completed = new Map<string, Set<string>>()
-  const dropOff = new Map<string, number>()
   const landingTimes: number[] = []
   const stepTimes = new Map<string, number[]>()
 
-  for (const [sessionId, sessionEvents] of bySession) {
-    const names = new Set(sessionEvents.map((event) => event.eventName))
-    if (names.has('landing_view')) {
+  for (const facts of matched) {
+    if (facts.visit) {
       visits += 1
     }
-    if (names.has('funnel_start')) {
+    if (facts.funnelStart) {
       funnelStarts += 1
     }
-    if (names.has('submit_succeeded')) {
+    if (facts.submitted) {
       submissions += 1
     }
-    validationBlocked += sessionEvents.filter((event) => event.eventName === 'validation_blocked')
+    if (facts.abandoned) {
+      abandoned += 1
+      const dropId = facts.dropOffStepId ?? KFZ_ANALYTICS_UNKNOWN_ID
+      dropOffs.set(dropId, (dropOffs.get(dropId) ?? 0) + 1)
+    }
+
+    trafficSources.set(facts.trafficSource, (trafficSources.get(facts.trafficSource) ?? 0) + 1)
+    if (facts.utmCampaign) {
+      campaigns.set(facts.utmCampaign, (campaigns.get(facts.utmCampaign) ?? 0) + 1)
+    }
+    if (facts.branchId) {
+      branches.set(facts.branchId, (branches.get(facts.branchId) ?? 0) + 1)
+    }
+
+    validationBlocked += facts.events.filter((event) => event.eventName === 'validation_blocked')
       .length
-    for (const event of sessionEvents) {
+
+    for (const event of facts.events) {
       if (event.eventName === 'submit_failed') {
         submitFailed += 1
-        const category = event.properties.errorCategory ?? 'unknown'
+        const category = event.properties.errorCategory ?? KFZ_ANALYTICS_UNKNOWN_ID
         submitFailedByCategory.set(
           category,
           (submitFailedByCategory.get(category) ?? 0) + 1,
         )
       }
-      if (event.eventName === 'traffic_source') {
-        const source = event.properties.trafficSource ?? 'direct'
-        trafficSources.set(source, (trafficSources.get(source) ?? 0) + 1)
-        if (event.properties.utmCampaign) {
-          campaigns.set(
-            event.properties.utmCampaign,
-            (campaigns.get(event.properties.utmCampaign) ?? 0) + 1,
-          )
-        }
-      }
-      if (event.eventName === 'initial_branch_selected' && event.properties.branchId) {
-        branches.set(
-          event.properties.branchId,
-          (branches.get(event.properties.branchId) ?? 0) + 1,
-        )
-      }
       if (event.eventName === 'step_view' && event.properties.stepId) {
         const set = reached.get(event.properties.stepId) ?? new Set()
-        set.add(sessionId)
+        set.add(facts.sessionId)
         reached.set(event.properties.stepId, set)
         if (typeof event.properties.activeMs === 'number') {
           const times = stepTimes.get(event.properties.stepId) ?? []
@@ -171,7 +206,7 @@ export function aggregateKfzAnalyticsDashboard(
       }
       if (event.eventName === 'step_completed' && event.properties.stepId) {
         const set = completed.get(event.properties.stepId) ?? new Set()
-        set.add(sessionId)
+        set.add(facts.sessionId)
         completed.set(event.properties.stepId, set)
       }
       if (
@@ -181,38 +216,17 @@ export function aggregateKfzAnalyticsDashboard(
         landingTimes.push(event.properties.activeMs)
       }
     }
-
-    const succeeded = names.has('submit_succeeded')
-    const lastEvent = sessionEvents.reduce((latestEvent, event) =>
-      event.occurredAt > latestEvent.occurredAt ? event : latestEvent,
-    )
-    const lastMs = Date.parse(lastEvent.occurredAt)
-    const timedOut =
-      Number.isFinite(lastMs) && input.nowMs - lastMs >= abandonAfterMs
-    const isAbandoned =
-      !succeeded && (names.has('funnel_abandoned') || timedOut)
-    if (isAbandoned) {
-      abandoned += 1
-      const lastStep =
-        sessionEvents.find((event) => event.eventName === 'funnel_abandoned')
-          ?.properties.lastStepId ??
-        [...sessionEvents]
-          .filter((event) => event.eventName === 'step_view' && event.properties.stepId)
-          .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt))
-          .at(-1)?.properties.stepId ??
-        'branch'
-      dropOff.set(lastStep, (dropOff.get(lastStep) ?? 0) + 1)
-    }
   }
 
   const stepIds = KFZ_ANALYTICS_STEP_IDS.filter(
-    (stepId) => (reached.get(stepId)?.size ?? 0) > 0 || (dropOff.get(stepId) ?? 0) > 0,
+    (stepId) =>
+      (reached.get(stepId)?.size ?? 0) > 0 || (dropOffs.get(stepId) ?? 0) > 0,
   )
 
   const steps: KfzAnalyticsStepFunnelRow[] = stepIds.map((stepId) => {
     const reachedCount = reached.get(stepId)?.size ?? 0
     const completedCount = completed.get(stepId)?.size ?? 0
-    const dropOffCount = dropOff.get(stepId) ?? 0
+    const dropOffCount = dropOffs.get(stepId) ?? 0
     const times = stepTimes.get(stepId) ?? []
     return {
       stepId,
@@ -226,27 +240,38 @@ export function aggregateKfzAnalyticsDashboard(
     }
   })
 
-  const empty = latest.length === 0
+  const empty = latest.length === 0 || matched.length === 0
 
   return {
-    periodId: input.periodId,
+    periodId: filters.periodId,
+    filters,
     from,
     to,
     empty,
+    filterActive: kfzAnalyticsDashboardFiltersAreActive(filters),
+    matchedSessions: matched.length,
     visits,
     funnelStarts,
     submissions,
-    conversionRate: visits > 0 ? submissions / visits : null,
-    trafficSources: countMapToRows(trafficSources, (id) => id),
+    conversionRate: ratio(submissions, visits),
+    startRate: ratio(funnelStarts, visits),
+    submitFromStartRate: ratio(submissions, funnelStarts),
+    trafficSources: countMapToRows(trafficSources, kfzAnalyticsTrafficSourceLabel),
     campaigns: countMapToRows(campaigns, (id) => id),
-    branches: countMapToRows(branches, kfzAnalyticsBranchLabel),
+    branches: countMapToRows(branches, (id) =>
+      id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsBranchLabel(id),
+    ),
     steps,
+    dropOffs: countMapToRows(dropOffs, (id) =>
+      id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsStepLabel(id),
+    ),
     validationBlocked,
     submitFailed,
     submitFailedByCategory: countMapToRows(submitFailedByCategory, (id) => id),
     landingAverageActiveMs: average(landingTimes),
     landingMedianActiveMs: median(landingTimes),
     abandoned,
+    matchedSessionIds: matched.map((facts) => facts.sessionId),
   }
 }
 

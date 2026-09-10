@@ -3,26 +3,28 @@
 import { useRouter } from 'next/navigation'
 
 import { KfzAnalyticsDashboardView } from '@/features/inbound/kfz/components/kfz-analytics-dashboard'
+import { buildKfzAnalyticsDashboardHref } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import type {
   KfzAnalyticsDashboard,
-  KfzAnalyticsPeriodId,
+  KfzAnalyticsDashboardFilters,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
 export function KfzAnalyticsDashboardApp({
   dashboard,
-  periodId,
+  filters,
 }: {
   dashboard: KfzAnalyticsDashboard
-  periodId: KfzAnalyticsPeriodId
+  filters: KfzAnalyticsDashboardFilters
 }) {
   const router = useRouter()
 
   return (
     <KfzAnalyticsDashboardView
       dashboard={dashboard}
-      periodId={periodId}
-      onPeriodChange={(next) => {
-        router.push(`/app/kfz-analytics?period=${next}`)
+      filters={filters}
+      defaultPeriodId="7d"
+      onFiltersChange={(next) => {
+        router.push(buildKfzAnalyticsDashboardHref(next))
       }}
     />
   )
