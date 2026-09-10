@@ -1,5 +1,9 @@
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 
+import {
+  kfzSupabasePersistFailClosed,
+  KFZ_SUPABASE_PERSIST_MISSING_ERROR,
+} from '@/features/inbound/kfz/lib/kfz-supabase-persist-env'
 import { KFZ_INBOUND_DOCUMENTS_BUCKET } from '@/features/inbound/kfz/types/kfz-document-storage'
 import type { KfzDocumentStore } from '@/features/inbound/kfz/types/kfz-document-storage'
 
@@ -45,11 +49,16 @@ export function createMemoryKfzDocumentStore(
  * Never expose the key. No public URLs. No client policies required.
  */
 export function createServiceRoleKfzDocumentStore(): KfzDocumentStore {
+  const persist = kfzSupabasePersistFailClosed()
+  if (!persist.allowsStore) {
+    throw new Error(KFZ_SUPABASE_PERSIST_MISSING_ERROR)
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url || !serviceRoleKey) {
-    throw new Error('Service-Role-Konfiguration fehlt.')
+    throw new Error(KFZ_SUPABASE_PERSIST_MISSING_ERROR)
   }
 
   const supabase = createSupabaseJsClient(url, serviceRoleKey, {

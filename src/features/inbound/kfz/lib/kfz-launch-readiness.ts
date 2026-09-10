@@ -13,6 +13,11 @@ import path from 'node:path'
 import { listMissingInboundKfzEnvFields } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { KFZ_LANDING_STORAGE_NOTICE } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
+  KFZ_SUPABASE_DOCUMENTS_MIGRATION,
+  KFZ_SUPABASE_OWNER_CHECKLIST,
+  KFZ_SUPABASE_PREFLIGHT_COMMAND,
+} from '@/features/inbound/kfz/lib/kfz-supabase-preflight'
+import {
   validateKfzLandingConsent,
   validateKfzLandingContact,
 } from '@/features/inbound/kfz/lib/kfz-landing-steps'
@@ -83,6 +88,9 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   'src/features/inbound/kfz/lib/kfz-document-storage.ts',
   'src/app/app/inbox/kfz-document/route.ts',
+  'src/features/inbound/kfz/lib/kfz-supabase-preflight.ts',
+  'src/features/inbound/kfz/lib/kfz-supabase-persist-env.ts',
+  'src/features/inbound/kfz/bin/run-kfz-supabase-preflight.ts',
   ...KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => entry.file),
   'docs/kfz-inbound-local-test.md',
   '.env.example',
@@ -331,6 +339,14 @@ export function evaluateKfzLaunchReadiness(input: {
     'src/features/inbound/kfz/lib/kfz-document-storage.ts',
   )
   const documentReviewFile = filePresent(files, 'src/app/app/inbox/kfz-document/route.ts')
+  const supabasePreflightFile = filePresent(
+    files,
+    'src/features/inbound/kfz/lib/kfz-supabase-preflight.ts',
+  )
+  const supabasePreflightBin = filePresent(
+    files,
+    'src/features/inbound/kfz/bin/run-kfz-supabase-preflight.ts',
+  )
   const docsFile = filePresent(files, 'docs/kfz-inbound-local-test.md')
   const envExampleFile = filePresent(files, '.env.example')
 
@@ -619,6 +635,42 @@ export function evaluateKfzLaunchReadiness(input: {
           [
             codeRef('src/features/inbound/kfz/lib/rate-limit-seam.ts'),
             envRef('INBOUND_KFZ_RATE_LIMIT_MAX'),
+            DOC_LOCAL_TEST,
+          ],
+        ),
+      ],
+    },
+    {
+      id: 'supabase_preflight',
+      title: 'Supabase-Konfiguration (Preflight)',
+      summary:
+        'Ein Command prüft Pflichtnamen, privaten Bucket, serverseitige Service-Role und Fail-closed. Apply bleibt Owner.',
+      facts: [
+        fact(
+          'supabase_preflight_command',
+          'Deterministischer Preflight ist eingecheckt',
+          supabasePreflightFile && supabasePreflightBin ? 'PASS' : 'BLOCKED',
+          supabasePreflightFile && supabasePreflightBin
+            ? `npm run ${KFZ_SUPABASE_PREFLIGHT_COMMAND} prüft Env-Namen (present/missing), ${KFZ_SUPABASE_DOCUMENTS_MIGRATION}, Server-only Service-Role und Fail-closed. Werte werden nicht angezeigt.`
+            : 'Kfz-Supabase-Preflight fehlt im Repository.',
+          [
+            codeRef('src/features/inbound/kfz/lib/kfz-supabase-preflight.ts'),
+            codeRef('src/features/inbound/kfz/bin/run-kfz-supabase-preflight.ts'),
+            DOC_LOCAL_TEST,
+            DOC_ENV_EXAMPLE,
+          ],
+        ),
+        fact(
+          'supabase_owner_checklist',
+          'Owner-Checkliste: bestehendes Supabase + Vercel',
+          'OWNER_INPUT',
+          KFZ_SUPABASE_OWNER_CHECKLIST.map(
+            (step, index) => `${index + 1}. [${step.tool}] ${step.instruction}`,
+          ).join(' '),
+          [
+            migrationRef(KFZ_SUPABASE_DOCUMENTS_MIGRATION),
+            envRef('NEXT_PUBLIC_SUPABASE_URL'),
+            envRef('SUPABASE_SERVICE_ROLE_KEY'),
             DOC_LOCAL_TEST,
           ],
         ),

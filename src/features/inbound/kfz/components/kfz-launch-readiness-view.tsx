@@ -5,6 +5,7 @@ import {
   KFZ_LAUNCH_READINESS_DISCLAIMER,
   KFZ_LAUNCH_READINESS_HEADLINE,
 } from '@/features/inbound/kfz/lib/kfz-launch-readiness'
+import { KFZ_SUPABASE_OWNER_CHECKLIST } from '@/features/inbound/kfz/lib/kfz-supabase-preflight'
 import type {
   KfzLaunchReadinessFact,
   KfzLaunchReadinessItem,
@@ -192,7 +193,37 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
             .join(', ')}
           .
         </p>
+        <p className={`mt-2 ${aosTextCaptionClassName}`}>
+          Konfigurations-Preflight ohne Secrets:{' '}
+                  <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-800">
+                    npm run preflight:kfz-supabase
+                  </code>
+        </p>
       </div>
+
+      <section
+        className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+        data-kfz-supabase-owner-checklist="true"
+      >
+        <h3 className="text-base font-semibold text-zinc-900">
+          Owner-Checkliste · bestehendes Supabase + Vercel
+        </h3>
+        <p className={`mt-1 ${aosTextMetaClassName}`}>
+          Eine Liste. Dieser Startcheck wendet keine Migration an und setzt keine Secrets.
+          Werte bleiben im bestehenden Vercel-Projekt.
+        </p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5">
+          {KFZ_SUPABASE_OWNER_CHECKLIST.map((step) => (
+            <li
+              key={step.id}
+              className={`text-sm leading-relaxed text-zinc-700`}
+              data-kfz-supabase-owner-step={step.id}
+            >
+              <span className="font-semibold text-zinc-900">[{step.tool}]</span> {step.instruction}
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {report.items.map((item) => (
         <ItemCard key={item.id} item={item} />
