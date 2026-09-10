@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-a5b3
 
 ## Title
@@ -24,3 +24,6 @@ Prepare the existing Kfz landing, questionnaire, normalized inbox handoff and pr
 
 ## Safety
 Cursor-created branch only. No main/master, merge, auto-merge, deploy, production data, secrets, customer communication, Meta/WhatsApp API, ad campaign, paid service, legal-compliance claim, tariff calculation, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-8edb2167-7f80-4350-b5ef-99aaa90ee8f7
+CONTROLLER_STARTED_AT: 2026-09-10T06:50:46Z
