@@ -27,6 +27,7 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import {
   buildKfzAnalyticsDashboardHref,
+  describeKfzAnalyticsTimeRange,
   KFZ_ANALYTICS_MAX_RANGE_DAYS,
   parseKfzAnalyticsCalendarDate,
   resolveKfzAnalyticsDashboardFilters,
@@ -573,6 +574,19 @@ describe('kfz analytics dashboard filters', () => {
     assert.equal(unsafe.filters.reachedStepId, 'all')
     assert.equal(unsafe.filters.dropOffStepId, 'all')
     assert.equal(unsafe.filters.fromDate, null)
+  })
+
+  it('describes explicit UTC calendar ranges without inventing a window', () => {
+    const resolved = resolveKfzAnalyticsDashboardFilters(
+      { from: '2026-09-09', to: '2026-09-09' },
+      nowMs,
+    )
+    assert.equal(
+      describeKfzAnalyticsTimeRange(resolved.filters, resolved),
+      'Kalendertage UTC 9.9.2026 – 9.9.2026',
+    )
+    const all = resolveKfzAnalyticsDashboardFilters({ period: 'all' }, nowMs)
+    assert.match(describeKfzAnalyticsTimeRange(all.filters, all), /Kein Kalenderlimit/)
   })
 
   it('builds shareable filter URLs without duplicating preset dates', () => {

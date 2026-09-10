@@ -513,6 +513,33 @@ export function sessionMatchesKfzAnalyticsFilters(
   return true
 }
 
+export function formatKfzAnalyticsDisplayDate(date: string | null): string {
+  if (!date) {
+    return '—'
+  }
+  const parsed = parseKfzAnalyticsCalendarDate(date)
+  if (!parsed) {
+    return '—'
+  }
+  const [year, month, day] = parsed.split('-')
+  return `${Number(day)}.${Number(month)}.${year}`
+}
+
+export function describeKfzAnalyticsTimeRange(
+  filters: KfzAnalyticsDashboardFilters,
+  range: { from: string | null; to: string },
+): string {
+  if (filters.periodId === 'custom' && filters.fromDate && filters.toDate) {
+    return `Kalendertage UTC ${formatKfzAnalyticsDisplayDate(filters.fromDate)} – ${formatKfzAnalyticsDisplayDate(filters.toDate)}`
+  }
+  if (filters.periodId === 'all') {
+    return 'Kein Kalenderlimit — alle gespeicherten Ereignisse'
+  }
+  const fromDate = isoToKfzAnalyticsDate(range.from)
+  const toDate = isoToKfzAnalyticsDate(range.to)
+  return `Rollierendes Fenster ${formatKfzAnalyticsDisplayDate(fromDate)} – ${formatKfzAnalyticsDisplayDate(toDate)}`
+}
+
 export function displayedKfzAnalyticsDateValue(
   filters: KfzAnalyticsDashboardFilters,
   bound: 'from' | 'to',

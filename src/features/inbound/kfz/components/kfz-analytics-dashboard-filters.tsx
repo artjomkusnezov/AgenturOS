@@ -1,4 +1,5 @@
 import {
+  describeKfzAnalyticsTimeRange,
   displayedKfzAnalyticsDateValue,
   kfzAnalyticsBranchFilterOptions,
   kfzAnalyticsDropOffFilterOptions,
@@ -71,6 +72,7 @@ export function KfzAnalyticsDashboardFiltersBar({
     <section
       className="rounded-xl bg-[var(--aos-color-surface)] px-4 py-4 shadow-[var(--aos-shadow-zentrale-panel)] ring-1 ring-white/60 sm:px-5"
       data-kfz-analytics-filters="true"
+      lang="de"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -119,6 +121,7 @@ export function KfzAnalyticsDashboardFiltersBar({
           <span className="mb-1 block text-xs font-medium text-zinc-500">Von</span>
           <input
             type="date"
+            lang="de"
             className="aos-input min-h-11"
             data-kfz-analytics-date-from="true"
             value={fromValue}
@@ -130,6 +133,7 @@ export function KfzAnalyticsDashboardFiltersBar({
           <span className="mb-1 block text-xs font-medium text-zinc-500">Bis</span>
           <input
             type="date"
+            lang="de"
             className="aos-input min-h-11"
             data-kfz-analytics-date-to="true"
             value={toValue}
@@ -220,6 +224,12 @@ export function KfzAnalyticsDashboardFiltersBar({
           </select>
         </label>
       </div>
+      <p
+        className="mt-3 text-xs text-zinc-500"
+        data-kfz-analytics-range={dashboard.from ?? 'all'}
+      >
+        {describeKfzAnalyticsTimeRange(filters, dashboard)}
+      </p>
     </section>
   )
 }
