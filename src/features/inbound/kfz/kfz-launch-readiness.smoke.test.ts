@@ -146,10 +146,12 @@ describe('kfz launch readiness surface', () => {
     assert.match(view, /Keine Produktionsfreigabe/)
     assert.match(view, /\/app\/inbox/)
     assert.match(view, /\/app\/kfz-analytics/)
+    assert.match(view, /aosTextPageTitleClassName/)
     assert.doesNotMatch(view, /Meta Pixel|gtag\(|facebook\.com\/tr/)
 
     const preview = readSrc('app/dev/kfz-readiness/page.tsx')
     assert.match(preview, /NODE_ENV === 'production'/)
     assert.match(preview, /notFound/)
+    assert.match(preview, /aos-workspace-page/)
   })
 })

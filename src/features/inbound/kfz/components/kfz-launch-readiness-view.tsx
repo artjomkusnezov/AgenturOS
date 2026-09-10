@@ -19,6 +19,7 @@ import {
   aosTextBodyClassName,
   aosTextCaptionClassName,
   aosTextMetaClassName,
+  aosTextPageTitleClassName,
 } from '@/lib/design-system'
 
 const STATUS_LABEL: Record<KfzLaunchReadinessStatus, string> = {
@@ -130,10 +131,10 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
           Intern · Kfz-Startcheck
         </p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+        <h2 className={`${aosTextPageTitleClassName} mt-1`}>
           {KFZ_LAUNCH_READINESS_HEADLINE}
         </h2>
-        <p className={`mt-2 max-w-3xl ${aosTextBodyClassName} text-sm leading-relaxed text-zinc-600`}>
+        <p className={`mt-2 max-w-3xl ${aosTextBodyClassName}`}>
           {KFZ_LAUNCH_READINESS_DISCLAIMER}
         </p>
       </div>

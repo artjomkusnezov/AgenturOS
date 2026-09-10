@@ -27,7 +27,7 @@ export default function KfzLaunchReadinessPreviewPage() {
       <p className="mb-3 text-xs font-medium tracking-wide text-zinc-400">
         Lokale Vorschau · /dev/kfz-readiness · interner Startcheck · keine Produktionsfreigabe
       </p>
-      <div className="mx-auto max-w-3xl">
+      <div className="aos-workspace-page mx-auto max-w-3xl">
         <KfzLaunchReadinessView report={report} />
       </div>
     </main>
