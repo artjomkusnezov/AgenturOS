@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { readPublicSupabaseConfig } from './public-config'
 import type { Database } from './types'
 
 export async function updateSession(request: NextRequest) {
@@ -8,9 +9,14 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  const config = readPublicSupabaseConfig()
+  if (!config.ok) {
+    return supabaseResponse
+  }
+
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    config.url,
+    config.key,
     {
       cookies: {
         getAll() {

@@ -63,6 +63,7 @@ const SECRET_NAME_PATTERN = /SECRET|SERVICE_ROLE|TOKEN|PASSWORD|PRIVATE_KEY|_KEY
 const HIDDEN_ENV_NAMES = [
   ...KFZ_SUPABASE_PERSIST_ENV_NAMES,
   'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
   'INBOUND_KFZ_INTAKE_SECRET',
   'INBOUND_KFZ_AGENCY_ID',
   'INBOUND_KFZ_ACTOR_USER_ID',
@@ -87,7 +88,7 @@ export const KFZ_SUPABASE_OWNER_CHECKLIST: readonly KfzSupabaseOwnerChecklistSte
     id: 'vercel-env-names',
     tool: 'Vercel',
     instruction:
-      'Im bestehenden Vercel-Projekt unter Settings → Environment Variables genau diese Namen setzen. Werte bleiben in Vercel und werden hier nicht angezeigt: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (niemals als NEXT_PUBLIC_), INBOUND_KFZ_INTAKE_SECRET, INBOUND_KFZ_AGENCY_ID, INBOUND_KFZ_ACTOR_USER_ID. Optional: INBOUND_KFZ_RATE_LIMIT_MAX, INBOUND_KFZ_RATE_LIMIT_WINDOW_MS.',
+      'Im bestehenden Vercel-Projekt unter Settings → Environment Variables genau diese Namen setzen. Werte bleiben in Vercel und werden hier nicht angezeigt: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (älterer Name NEXT_PUBLIC_SUPABASE_ANON_KEY nur als Fallback), SUPABASE_SERVICE_ROLE_KEY (niemals als NEXT_PUBLIC_), INBOUND_KFZ_INTAKE_SECRET, INBOUND_KFZ_AGENCY_ID, INBOUND_KFZ_ACTOR_USER_ID. Optional: INBOUND_KFZ_RATE_LIMIT_MAX, INBOUND_KFZ_RATE_LIMIT_WINDOW_MS.',
   },
   {
     id: 'vercel-redeploy',
