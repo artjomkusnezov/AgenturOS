@@ -45,8 +45,11 @@ export const KFZ_LANDING_MAX_DOCUMENTS_TOTAL = KFZ_PUBLIC_LIMITS.maxUploads
 export const KFZ_LANDING_DOCUMENT_ACCEPT = 'image/*,application/pdf' as const
 export const KFZ_LANDING_CAMERA_ACCEPT = 'image/*' as const
 
-export const KFZ_LANDING_STORAGE_BLOCKER =
-  'Keine dauerhafte Dokumentablage: der Landing-Submit speichert nur Dateiname, Typ, Größe und Gruppe. Binärdaten bleiben lokal (Vorschau) und werden nicht hochgeladen. Sichere authentifizierte Speicherung ist nicht Teil dieses Pfads.' as const
+export const KFZ_LANDING_STORAGE_NOTICE =
+  'Unterlagen speichern wir privat nur für die persönliche Prüfung. Es gibt keinen öffentlichen Link.' as const
+
+/** @deprecated Use KFZ_LANDING_STORAGE_NOTICE. Kept so older local copy still compiles. */
+export const KFZ_LANDING_STORAGE_BLOCKER = KFZ_LANDING_STORAGE_NOTICE
 
 export type KfzLandingDocumentCandidate = {
   id: string

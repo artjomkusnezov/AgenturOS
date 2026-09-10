@@ -26,6 +26,7 @@ import {
   createKfzLandingDraftController,
   emptyKfzLandingDraftValues,
   getSessionKfzLandingDraftStorage,
+  KFZ_LANDING_DOCUMENT_RESELECT_NOTICE,
   type KfzLandingDraftStorage,
 } from '@/features/inbound/kfz/lib/kfz-landing-draft'
 import {
@@ -137,6 +138,7 @@ export function KfzLandingForm({
   const inFlightRef = useRef(false)
   const errorRef = useRef<HTMLDivElement>(null)
   const previewUrlsRef = useRef<Record<string, string>>({})
+  const filesByIdRef = useRef<Record<string, File>>({})
   const storage = draftStorage ?? getSessionKfzLandingDraftStorage()
   const draftController = useMemo(
     () => createKfzLandingDraftController(storage),
@@ -351,6 +353,22 @@ export function KfzLandingForm({
       }
       return next
     })
+
+    const beforeIds = new Set(documents.map((doc) => doc.id))
+    for (const doc of added.documents) {
+      if (beforeIds.has(doc.id) || filesByIdRef.current[doc.id]) {
+        continue
+      }
+      const match = incoming.find(
+        (entry) =>
+          entry.group === doc.group &&
+          entry.filename === doc.filename &&
+          entry.sizeBytes === doc.sizeBytes,
+      )
+      if (match) {
+        filesByIdRef.current[doc.id] = match.file
+      }
+    }
   }
 
   function handleRemoveDocument(id: string) {
@@ -359,6 +377,7 @@ export function KfzLandingForm({
       URL.revokeObjectURL(url)
       delete previewUrlsRef.current[id]
     }
+    delete filesByIdRef.current[id]
     const nextDocuments = removeKfzLandingDocument(documents, id)
     setDocuments(nextDocuments)
     setPreviews((current) => {
@@ -401,6 +420,14 @@ export function KfzLandingForm({
       values,
       documents,
       previews,
+      files: documents
+        .map((doc) => filesByIdRef.current[doc.id])
+        .filter((file): file is File => Boolean(file)),
+    }
+
+    if (documents.length > 0 && prepared.files.length !== documents.length) {
+      setClientError(KFZ_LANDING_DOCUMENT_RESELECT_NOTICE)
+      return
     }
 
     persistDraft()
@@ -437,6 +464,7 @@ export function KfzLandingForm({
           setValues(emptyKfzLandingDraftValues())
           setDocuments([])
           setPreviews({})
+          filesByIdRef.current = {}
           setDocumentReselectNotice(null)
           analytics.onSubmitSucceeded()
           return

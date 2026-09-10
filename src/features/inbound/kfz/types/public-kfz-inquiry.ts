@@ -12,12 +12,17 @@ export type KfzLanguage = (typeof KFZ_LANGUAGES)[number]
 export const KFZ_UPLOAD_GROUPS = ['fahrzeugschein', 'vorversicherung'] as const
 export type KfzUploadGroup = (typeof KFZ_UPLOAD_GROUPS)[number]
 
-/** Optionaler Upload-Metadaten-Seam — keine Binärdaten in Gate 2. */
+/**
+ * Upload-Metadaten für den öffentlichen Vertrag.
+ * `objectKey` setzt nur der Server nach privater Ablage — kein Client-Wert, keine URL.
+ */
 export type PublicKfzUploadMeta = {
   filename: string
   mimeType?: string | null
   sizeBytes?: number | null
   group?: KfzUploadGroup | null
+  /** Non-secret private object reference. Never a public URL. Server-set only. */
+  objectKey?: string | null
 }
 
 /** Manueller Fragebogen ohne Unterlagen — Fakten, keine Tarifentscheidung. */

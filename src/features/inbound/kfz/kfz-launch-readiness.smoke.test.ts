@@ -20,7 +20,7 @@ import {
   listKfzLaunchReadinessFacts,
   snapshotKfzLaunchEnvPresence,
 } from '@/features/inbound/kfz/lib/kfz-launch-readiness'
-import { KFZ_LANDING_STORAGE_BLOCKER } from '@/features/inbound/kfz/lib/kfz-landing-documents'
+import { KFZ_LANDING_STORAGE_NOTICE } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import { KFZ_LANDING_BRANCHES } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..')
@@ -61,18 +61,18 @@ describe('kfz launch readiness evaluation', () => {
     assert.match(serialized, /INBOUND_KFZ_INTAKE_SECRET/)
     assert.match(serialized, /20260906120000_inbox_website_channel_source\.sql/)
     assert.match(serialized, /20260909140000_kfz_funnel_analytics_events\.sql/)
+    assert.match(serialized, /20260910120000_kfz_inbound_documents_bucket\.sql/)
 
     const facts = listKfzLaunchReadinessFacts(report)
     const statuses = new Set(facts.map((fact) => fact.status))
     assert.ok(statuses.has('PASS'))
-    assert.ok(statuses.has('BLOCKED'))
     assert.ok(statuses.has('OWNER_INPUT'))
     assert.ok(statuses.has('NOT_VERIFIED'))
 
     const documentBytes = facts.find((fact) => fact.id === 'document_bytes')
     assert.ok(documentBytes)
-    assert.equal(documentBytes.status, 'BLOCKED')
-    assert.equal(documentBytes.detail, KFZ_LANDING_STORAGE_BLOCKER)
+    assert.equal(documentBytes.status, 'PASS')
+    assert.ok(documentBytes.detail.includes(KFZ_LANDING_STORAGE_NOTICE))
 
     const productionSubmit = facts.find((fact) => fact.id === 'production_submit')
     assert.equal(productionSubmit?.status, 'NOT_VERIFIED')

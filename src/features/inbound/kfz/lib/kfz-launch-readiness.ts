@@ -11,7 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { listMissingInboundKfzEnvFields } from '@/features/inbound/kfz/config/inbound-kfz-config'
-import { KFZ_LANDING_STORAGE_BLOCKER } from '@/features/inbound/kfz/lib/kfz-landing-documents'
+import { KFZ_LANDING_STORAGE_NOTICE } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
   validateKfzLandingConsent,
   validateKfzLandingContact,
@@ -61,6 +61,10 @@ export const KFZ_LAUNCH_REQUIRED_MIGRATIONS = [
     file: 'supabase/migrations/20260909140000_kfz_funnel_analytics_events.sql',
     purpose: 'kfz_funnel_analytics_events',
   },
+  {
+    file: 'supabase/migrations/20260910120000_kfz_inbound_documents_bucket.sql',
+    purpose: 'kfz-inbound-documents private bucket',
+  },
 ] as const
 
 export const KFZ_LAUNCH_REQUIRED_FILES = [
@@ -77,6 +81,8 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbox/lib/kfz-inbox-manual-triage.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
+  'src/features/inbound/kfz/lib/kfz-document-storage.ts',
+  'src/app/app/inbox/kfz-document/route.ts',
   ...KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => entry.file),
   'docs/kfz-inbound-local-test.md',
   '.env.example',
@@ -104,6 +110,12 @@ const ROUTE_READINESS: KfzLaunchReadinessRef = {
   kind: 'route',
   label: '/app/kfz-readiness',
   href: '/app/kfz-readiness',
+}
+
+const ROUTE_DOCUMENT_REVIEW: KfzLaunchReadinessRef = {
+  kind: 'route',
+  label: '/app/inbox/kfz-document',
+  href: '/app/inbox/kfz-document',
 }
 
 const ROUTE_INTAKE_API: KfzLaunchReadinessRef = {
@@ -314,6 +326,11 @@ export function evaluateKfzLaunchReadiness(input: {
     files,
     'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   )
+  const documentStorageFile = filePresent(
+    files,
+    'src/features/inbound/kfz/lib/kfz-document-storage.ts',
+  )
+  const documentReviewFile = filePresent(files, 'src/app/app/inbox/kfz-document/route.ts')
   const docsFile = filePresent(files, 'docs/kfz-inbound-local-test.md')
   const envExampleFile = filePresent(files, '.env.example')
 
@@ -483,11 +500,16 @@ export function evaluateKfzLaunchReadiness(input: {
         fact(
           'document_bytes',
           'Dauerhafte Dokument-Bytes',
-          'BLOCKED',
-          KFZ_LANDING_STORAGE_BLOCKER,
+          documentStorageFile && documentReviewFile && migrationsPresent ? 'PASS' : 'BLOCKED',
+          documentStorageFile && documentReviewFile && migrationsPresent
+            ? `${KFZ_LANDING_STORAGE_NOTICE} Private Bucket-Migration und serverseitiger Upload sind eingecheckt. Apply auf Preview/Production bleibt Owner.`
+            : 'Private Dokumentablage oder autorisierter Prüfpfad fehlt im Repository.',
           [
             ROUTE_LANDING,
-            codeRef('src/features/inbound/kfz/lib/kfz-landing-documents.ts'),
+            ROUTE_DOCUMENT_REVIEW,
+            ROUTE_INBOX,
+            codeRef('src/features/inbound/kfz/lib/kfz-document-storage.ts'),
+            migrationRef('supabase/migrations/20260910120000_kfz_inbound_documents_bucket.sql'),
             DOC_LOCAL_TEST,
           ],
         ),
@@ -556,7 +578,7 @@ export function evaluateKfzLaunchReadiness(input: {
           'Pflicht-Migrationen sind im Repository',
           migrationsPresent ? 'PASS' : 'BLOCKED',
           migrationsPresent
-            ? '20260906120000_inbox_website_channel_source.sql und 20260909140000_kfz_funnel_analytics_events.sql sind eingecheckt. Apply auf Preview/Production ist das nicht.'
+            ? '20260906120000_inbox_website_channel_source.sql, 20260909140000_kfz_funnel_analytics_events.sql und 20260910120000_kfz_inbound_documents_bucket.sql sind eingecheckt. Apply auf Preview/Production ist das nicht.'
             : 'Mindestens eine Kfz-Pflichtmigration fehlt im Repository.',
           KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => migrationRef(entry.file)),
         ),

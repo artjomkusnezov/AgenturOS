@@ -147,9 +147,25 @@ export function InboxKfzReviewSection({ review }: InboxKfzReviewSectionProps) {
             <MetaRow label="Prüfstand" value={KFZ_WORK_QUEUE_PHASE_LABELS[review.phase]} />
           </dl>
           {review.documents.length > 0 ? (
-            <p className={`mt-2 ${aosWorkspaceMetaClassName}`}>
-              Nur Metadaten — keine Datei-Bytes in diesem Inbox-Pfad.
-            </p>
+            <ul className="mt-3 space-y-2" aria-label="Eingereichte Unterlagen">
+              {review.documents.map((doc) => (
+                <li key={`${doc.group ?? 'dokument'}:${doc.filename}`} className="text-sm">
+                  <p className={aosWsTextPrimaryClassName}>
+                    {doc.groupLabel}: {doc.filename}
+                  </p>
+                  {doc.reviewHref ? (
+                    <a
+                      href={doc.reviewHref}
+                      className="text-sm font-medium text-blue-800 underline-offset-2 hover:underline"
+                    >
+                      Dokument prüfen
+                    </a>
+                  ) : (
+                    <p className={aosWorkspaceMetaClassName}>Keine gespeicherte Datei.</p>
+                  )}
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
 

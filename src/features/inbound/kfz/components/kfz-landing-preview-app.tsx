@@ -22,7 +22,7 @@ type PreviewInboxItem = {
   externalId: string | null
   preferredChannel: string | null
   request: string | null
-  documents: Array<{ filename: string }>
+  documents: Array<{ filename: string; reviewHref: string | null }>
 }
 
 /**
@@ -33,13 +33,13 @@ export function KfzLandingPreviewApp() {
   const failNextRef = useRef(true)
   const [inbox, setInbox] = useState<PreviewInboxItem[]>([])
 
-  const submitInquiry: KfzLandingSubmitFn = async (payload) => {
+  const submitInquiry: KfzLandingSubmitFn = async (payload, files) => {
     if (failNextRef.current) {
       failNextRef.current = false
       return FORCED_FAIL
     }
 
-    const result = await submitKfzLandingPreviewInquiryAction(payload)
+    const result = await submitKfzLandingPreviewInquiryAction(payload, [...(files ?? [])])
     const preview = await readKfzLandingPreviewInboxAction()
     setInbox([...preview.items])
     return result
@@ -68,7 +68,19 @@ export function KfzLandingPreviewApp() {
             {inbox.map((item) => (
               <li key={item.id}>
                 {item.request ?? 'Anfrage'} · {item.preferredChannel ?? 'Kanal'} ·{' '}
-                {item.documents.length} Dokument-Metadaten
+                {item.documents.length} Dokument
+                {item.documents[0]?.reviewHref ? (
+                  <>
+                    {' '}
+                    ·{' '}
+                    <a
+                      className="font-semibold underline-offset-2 hover:underline"
+                      href={item.documents[0].reviewHref}
+                    >
+                      Dokument prüfen
+                    </a>
+                  </>
+                ) : null}
               </li>
             ))}
           </ul>

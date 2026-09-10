@@ -102,6 +102,7 @@ function normalizeUploadMeta(
     if (entry.group) {
       meta.group = entry.group
     }
+    // objectKey is never taken from the public payload.
     return meta
   })
 }
