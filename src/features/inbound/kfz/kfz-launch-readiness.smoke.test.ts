@@ -91,7 +91,17 @@ describe('kfz launch readiness evaluation', () => {
     assert.equal(report.items.some((item) => item.id === 'manual_review'), true)
     assert.equal(report.items.some((item) => item.id === 'analytics'), true)
     assert.equal(report.items.some((item) => item.id === 'migrations_configuration'), true)
+    assert.equal(report.items.some((item) => item.id === 'supabase_preflight'), true)
     assert.equal(report.items.some((item) => item.id === 'production_unknowns'), true)
+
+    const preflight = facts.find((fact) => fact.id === 'supabase_preflight_command')
+    assert.equal(preflight?.status, 'PASS')
+    assert.match(preflight?.detail ?? '', /preflight:kfz-supabase/)
+
+    const ownerChecklist = facts.find((fact) => fact.id === 'supabase_owner_checklist')
+    assert.equal(ownerChecklist?.status, 'OWNER_INPUT')
+    assert.match(ownerChecklist?.detail ?? '', /Supabase/)
+    assert.match(ownerChecklist?.detail ?? '', /Vercel/)
   })
 
   it('marks this-process intake as BLOCKED when required env names are absent', () => {
@@ -147,6 +157,8 @@ describe('kfz launch readiness surface', () => {
     assert.match(view, /\/app\/inbox/)
     assert.match(view, /\/app\/kfz-analytics/)
     assert.match(view, /aosTextPageTitleClassName/)
+    assert.match(view, /data-kfz-supabase-owner-checklist/)
+    assert.match(view, /preflight:kfz-supabase/)
     assert.doesNotMatch(view, /Meta Pixel|gtag\(|facebook\.com\/tr/)
 
     const preview = readSrc('app/dev/kfz-readiness/page.tsx')
