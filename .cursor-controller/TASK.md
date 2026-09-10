@@ -1,28 +1,24 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-097a
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-5cb3
 
 ## Title
-AGENTUROS — PRIVATE DURABLE KFZ DOCUMENT STORAGE
+AGENTUROS — SUPABASE KFZ CONFIGURATION PREFLIGHT
 
 ## Goal
-Close the confirmed Kfz upload blocker by storing uploaded document bytes privately through the repository's existing Supabase infrastructure, without adding a new paid service or exposing customer documents.
+Make the existing private Kfz document-storage integration safely verifiable before owner setup, without applying production migrations, exposing secrets or deploying anything.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-097a (PR #44). No merge or main/master write.
-- Use only existing Supabase/storage patterns and checked-in configuration. If a required product decision is genuinely absent, stop at OWNER INPUT and document one exact question.
-- Create a private bucket/migration and least-privilege server-side upload path; never expose service-role values or public document URLs.
-- Store only a non-secret object reference in the normalized inbox record; preserve the original filename only where already approved for manual review.
-- Validate file type/size using existing limits, reject unsupported input, clean up orphaned bytes after deterministic failures where safe, and keep retry/idempotency exact-once.
-- Add an authorized internal download/review path; unauthenticated and cross-item access must fail.
-- Preserve the six branches, questionnaire, consent, inbox, analytics privacy boundary and readiness checklist. Analytics must never receive file names, object keys, answers or personal data.
-- Add deterministic tests for upload, retry, duplicate submit, authorization denial, cleanup, declined analytics and one normalized inbox item.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-5cb3 (PR #45). No merge or main/master write.
+- Add one deterministic preflight command/check that validates required Supabase environment variable names, private bucket/migration presence, server-only service-role usage and fail-closed behavior.
+- Never print, store or transmit secret values. Report only present/missing and safe configuration facts.
+- Keep migration application and real environment changes as OWNER INPUT; provide one exact owner checklist using existing Supabase and Vercel only.
+- Verify public bucket access stays disabled, anonymous/cross-item review stays blocked, retries remain exact-once and analytics receive no filenames, object keys, answers or personal data.
+- Preserve the six Kfz branches, questionnaire, consent, inbox, analytics and readiness screen.
+- Add deterministic tests for configured/missing environment states, private-storage contract and secret redaction.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts.
-- Browser-check desktop/mobile upload → designed failure/retry → one inbox item → authorized document review → blocked anonymous access → readiness status. Use local/test data only and record evidence.
+- Browser-check desktop/mobile local/test flow and record what cannot be verified without owner configuration. No production data.
 
 ## Safety
-Cursor-created branch only. No merge, deploy, production data, secrets, customer contact, Meta/WhatsApp API, ads, new paid services, public buckets, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-cf117fe8-e4e3-48ad-9fe3-be8429273c99
-CONTROLLER_STARTED_AT: 2026-09-10T09:30:45Z
+Cursor-created branch only. No merge, deploy, production mutation, secrets, customer contact, Meta/WhatsApp API, ads, new paid services, force push or destructive git.
