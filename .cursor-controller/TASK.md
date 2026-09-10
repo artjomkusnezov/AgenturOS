@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-792b
 
 ## Title
@@ -29,3 +29,6 @@ Make the Vercel Preview boot safely and make the public Kfz route verifiable aft
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer contact, Meta/WhatsApp API, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-59298b5e-1f9d-4b42-ad6e-a6afddb4acfb
+CONTROLLER_STARTED_AT: 2026-09-10T23:46:09Z
