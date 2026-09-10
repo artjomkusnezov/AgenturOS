@@ -175,6 +175,18 @@ curl -sS -X POST "http://localhost:3000/api/inbound/kfz" \
 
 Erwartete Antwort bei Erfolg: `{ "ok": true, "deduplicated": false, "inboxItemId": "…" }`.
 
+## Kfz-Startcheck (interne Startlage)
+
+**Browser:** `http://localhost:3000/app/kfz-readiness`  
+Lokale Vorschau ohne Login: `http://localhost:3000/dev/kfz-readiness` (Production: 404).
+
+Interne Checkliste in AgenturOS — kein zweites Dashboard. Zeigt faktische Zustände PASS / BLOCKED / OWNER INPUT / NOT VERIFIED für Landing-Route, sechs Zweige, Kontakt-/Consent-Validierung, Submit/Retry/Idempotenz, normalisierten Inbox-Eingang, manuelle Prüfung, Analytics, eingecheckte Migrationen/Konfiguration und Production-Unbekannte.
+
+- Keine Produktionsfreigabe und kein PASS aus lokalen Fixtures für Live-Traffic.
+- Blocker verlinken auf Route, Migrationsdatei, Env-**Namen** oder Dokumentation. Secret-Werte werden nicht angezeigt.
+- Bekannter Code-Blocker: keine dauerhafte Dokument-Bytes-Ablage (`KFZ_LANDING_STORAGE_BLOCKER`).
+- Lokaler Acceptance-Walk: `src/features/inbound/kfz/kfz-launch-acceptance.smoke.test.ts`.
+
 ## Follow-ups (bewusst nicht in diesem Slice)
 
 1. **Migration anwenden (Owner):** `20260906120000_inbox_website_channel_source.sql` ist eingecheckt; Apply auf Preview/Staging/Production bleibt Owner-Entscheidung.  
