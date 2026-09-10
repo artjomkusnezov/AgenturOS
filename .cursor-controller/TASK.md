@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-5cb3
 
 ## Title
@@ -22,3 +22,6 @@ Make the existing private Kfz document-storage integration safely verifiable bef
 
 ## Safety
 Cursor-created branch only. No merge, deploy, production mutation, secrets, customer contact, Meta/WhatsApp API, ads, new paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-48625523-1c92-427f-bde4-a73164947760
+CONTROLLER_STARTED_AT: 2026-09-10T21:59:06Z
