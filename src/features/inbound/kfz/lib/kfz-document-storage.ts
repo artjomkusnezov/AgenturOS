@@ -345,7 +345,7 @@ export function authorizeKfzDocumentReview(input: {
   requestedObjectKey: string
 }): AuthorizeKfzDocumentReviewResult {
   if (!input.actor.authenticated || !input.actor.agencyId) {
-    return { ok: false, status: 401, error: 'Sie sind nicht angemeldet.' }
+    return { ok: false, status: 401, error: KFZ_DOCUMENT_UNAUTHENTICATED_ERROR }
   }
 
   if (!isKfzDocumentObjectKey(input.requestedObjectKey) || looksLikePublicDocumentUrl(input.requestedObjectKey)) {

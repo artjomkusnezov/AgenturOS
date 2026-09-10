@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import {
   authorizeKfzDocumentReview,
+  KFZ_DOCUMENT_UNAUTHENTICATED_ERROR,
   kfzDocumentContentDisposition,
   readKfzDocumentReviewSession,
   readObjectKeysFromUploadMeta,
@@ -22,24 +23,23 @@ export async function GET(request: Request) {
   const itemId = url.searchParams.get('item')?.trim() ?? ''
   const objectKey = url.searchParams.get('object')?.trim() ?? ''
 
-  let supabase: Awaited<ReturnType<typeof createClient>> | null = null
+  let supabase: Awaited<ReturnType<typeof createClient>>
+  try {
+    supabase = await createClient()
+  } catch {
+    return NextResponse.json({ error: KFZ_DOCUMENT_UNAUTHENTICATED_ERROR }, { status: 401 })
+  }
+
   const session = await readKfzDocumentReviewSession(async () => {
-    const client = await createClient()
-    supabase = client
     const {
       data: { user },
-    } = await client.auth.getUser()
+    } = await supabase.auth.getUser()
     return user
   })
 
-  if (!session.ok || !supabase) {
-    return NextResponse.json(
-      { error: session.ok ? 'Sie sind nicht angemeldet.' : session.error },
-      { status: 401 },
-    )
+  if (!session.ok) {
+    return NextResponse.json({ error: session.error }, { status: session.status })
   }
-
-  const reviewClient = supabase
 
   if (!isValidInboxItemId(itemId)) {
     return NextResponse.json({ error: 'Das Dokument wurde nicht gefunden.' }, { status: 404 })
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     )
   }
 
-  const { data: item } = await reviewClient
+  const { data: item } = await supabase
     .from('inbox_items')
     .select('id, agency_id, inbound_metadata')
     .eq('id', itemId)
