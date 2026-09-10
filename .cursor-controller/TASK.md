@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-097a
 
 ## Title
@@ -23,3 +23,6 @@ Close the confirmed Kfz upload blocker by storing uploaded document bytes privat
 
 ## Safety
 Cursor-created branch only. No merge, deploy, production data, secrets, customer contact, Meta/WhatsApp API, ads, new paid services, public buckets, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-cf117fe8-e4e3-48ad-9fe3-be8429273c99
+CONTROLLER_STARTED_AT: 2026-09-10T09:30:45Z
