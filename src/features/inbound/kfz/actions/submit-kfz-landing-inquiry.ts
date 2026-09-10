@@ -7,8 +7,10 @@ import {
   getInboundKfzRuntimeConfig,
   listMissingInboundKfzEnvFields,
 } from '@/features/inbound/kfz/config/inbound-kfz-config'
+import { readKfzInboundDocumentsFromFiles } from '@/features/inbound/kfz/lib/kfz-document-storage'
 import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
+import type { KfzInboundDocumentBytes } from '@/features/inbound/kfz/types/kfz-document-storage'
 import type { KfzLandingSubmitState } from '@/features/inbound/kfz/types/kfz-landing-submit'
 import type { PublicKfzInquiryPayload } from '@/features/inbound/kfz/types/public-kfz-inquiry'
 
@@ -30,12 +32,41 @@ function retryableStatus(status: number, code?: string): boolean {
   )
 }
 
+async function resolveLandingDocuments(
+  payload: PublicKfzInquiryPayload,
+  files: readonly File[],
+): Promise<
+  | { ok: true; documents: KfzInboundDocumentBytes[] }
+  | { ok: false; state: KfzLandingSubmitState }
+> {
+  if (files.length === 0) {
+    return { ok: true, documents: [] }
+  }
+
+  const read = await readKfzInboundDocumentsFromFiles(files, payload.uploads ?? [])
+  if (!read.ok) {
+    return {
+      ok: false,
+      state: {
+        ok: false,
+        error: read.error,
+        code: read.code,
+        retryable: false,
+      },
+    }
+  }
+
+  return { ok: true, documents: read.documents }
+}
+
 /**
  * Öffentliche Landingpage → denselben Handler wie `POST /api/inbound/kfz`.
  * Bearer-Secret nur serverseitig; kein Secret im Browser; kein PII in Logs/URLs.
+ * Dateibytes nur serverseitig in den privaten Bucket — keine öffentlichen URLs.
  */
 export async function submitKfzLandingInquiryAction(
   payload: PublicKfzInquiryPayload,
+  files: readonly File[] = [],
 ): Promise<KfzLandingSubmitState> {
   if (!isPlainObject(payload) || payload.inquiryProcessingConsent !== true) {
     return {
@@ -67,6 +98,11 @@ export async function submitKfzLandingInquiryAction(
     }
   }
 
+  const documentsResult = await resolveLandingDocuments(payload, files)
+  if (!documentsResult.ok) {
+    return documentsResult.state
+  }
+
   const headerList = await headers()
   const forwarded = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
 
@@ -80,7 +116,9 @@ export async function submitKfzLandingInquiryAction(
     body: JSON.stringify(payload),
   })
 
-  const result = await handleKfzInboundHttpRequest(request)
+  const result = await handleKfzInboundHttpRequest(request, {
+    documents: documentsResult.documents,
+  })
 
   if (!result.ok) {
     logKfzInbound('landing_rejected', {
@@ -97,6 +135,7 @@ export async function submitKfzLandingInquiryAction(
 
   logKfzInbound('landing_accepted', {
     deduplicated: result.body.deduplicated,
+    documents: documentsResult.documents.length,
   })
 
   return {

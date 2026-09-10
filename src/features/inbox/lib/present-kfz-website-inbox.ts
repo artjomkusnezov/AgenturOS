@@ -35,6 +35,11 @@ import {
 } from '@/features/inbox/lib/kfz-reply-handoff'
 import { labelKfzUploadGroup } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
+  buildKfzDocumentReviewHref,
+  isKfzDocumentObjectKey,
+} from '@/features/inbound/kfz/lib/kfz-document-storage'
+import { KFZ_DOCUMENT_REVIEW_PATH } from '@/features/inbound/kfz/types/kfz-document-storage'
+import {
   KFZ_UPLOAD_GROUPS,
   type KfzUploadGroup,
 } from '@/features/inbound/kfz/types/public-kfz-inquiry'
@@ -66,6 +71,8 @@ export type KfzSubmittedDocument = {
   groupLabel: string
   mimeType: string | null
   sizeBytes: number | null
+  objectKey: string | null
+  reviewHref: string | null
 }
 
 export type KfzMissingInfoCheckId = string
@@ -397,7 +404,11 @@ function readQuestionnaire(inquiry: Record<string, unknown> | null): ReadKfzQues
   return { branchLabel, path, answers, missingFacts, boundaries }
 }
 
-function readSubmittedDocuments(meta: Record<string, unknown> | null): KfzSubmittedDocument[] {
+function readSubmittedDocuments(
+  meta: Record<string, unknown> | null,
+  inboxItemId?: string,
+  reviewBasePath: string = KFZ_DOCUMENT_REVIEW_PATH,
+): KfzSubmittedDocument[] {
   if (!meta || !Array.isArray(meta.uploadMeta)) {
     return []
   }
@@ -416,6 +427,9 @@ function readSubmittedDocuments(meta: Record<string, unknown> | null): KfzSubmit
       groupRaw && (KFZ_UPLOAD_GROUPS as readonly string[]).includes(groupRaw)
         ? (groupRaw as KfzUploadGroup)
         : null
+    const objectKeyRaw = asNullableString(entry.objectKey)
+    const objectKey =
+      objectKeyRaw && isKfzDocumentObjectKey(objectKeyRaw) ? objectKeyRaw : null
     documents.push({
       filename,
       group,
@@ -424,6 +438,11 @@ function readSubmittedDocuments(meta: Record<string, unknown> | null): KfzSubmit
       sizeBytes:
         typeof entry.sizeBytes === 'number' && Number.isFinite(entry.sizeBytes)
           ? entry.sizeBytes
+          : null,
+      objectKey,
+      reviewHref:
+        inboxItemId && objectKey
+          ? buildKfzDocumentReviewHref(inboxItemId, objectKey, reviewBasePath)
           : null,
     })
   }
@@ -485,10 +504,11 @@ export function presentKfzWebsiteInboxItem(
     InboxItem,
     'channel' | 'source' | 'inbound_metadata' | 'title' | 'content' | 'sender'
   > & {
+    id?: string
     processed_at?: string | null
     origin?: InboxItem['origin']
   },
-  options?: { linkedTaskId?: string | null },
+  options?: { linkedTaskId?: string | null; documentReviewBasePath?: string },
 ): KfzWebsiteInboxReview | null {
   if (!isKfzInboxItem(item)) {
     return null
@@ -536,7 +556,11 @@ export function presentKfzWebsiteInboxItem(
   })
   const urgencyNote = detectUrgencyNote(reason, contextNotes)
   const acquisitionSource = websiteItem ? asNullableString(acquisition?.source) : null
-  const documents = readSubmittedDocuments(meta)
+  const documents = readSubmittedDocuments(
+    meta,
+    item.id,
+    options?.documentReviewBasePath,
+  )
   const questionnaire = readQuestionnaire(inquiry)
   const submittedFacts = buildSubmittedFacts({
     sourceLabel,

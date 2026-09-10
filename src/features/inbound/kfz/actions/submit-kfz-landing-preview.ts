@@ -1,7 +1,12 @@
 'use server'
 
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
-import { getKfzLandingPreviewStore } from '@/features/inbound/kfz/lib/kfz-landing-preview-store'
+import { KFZ_DOCUMENT_PREVIEW_REVIEW_PATH } from '@/features/inbound/kfz/types/kfz-document-storage'
+import { readKfzInboundDocumentsFromFiles } from '@/features/inbound/kfz/lib/kfz-document-storage'
+import {
+  getKfzLandingPreviewDocumentStore,
+  getKfzLandingPreviewStore,
+} from '@/features/inbound/kfz/lib/kfz-landing-preview-store'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import type { KfzLandingSubmitState } from '@/features/inbound/kfz/types/kfz-landing-submit'
 import type { PublicKfzInquiryPayload } from '@/features/inbound/kfz/types/public-kfz-inquiry'
@@ -27,6 +32,7 @@ function ensurePreviewEnv() {
  */
 export async function submitKfzLandingPreviewInquiryAction(
   payload: PublicKfzInquiryPayload,
+  files: readonly File[] = [],
 ): Promise<KfzLandingSubmitState> {
   if (process.env.NODE_ENV === 'production') {
     return {
@@ -39,7 +45,22 @@ export async function submitKfzLandingPreviewInquiryAction(
 
   ensurePreviewEnv()
   const store = getKfzLandingPreviewStore()
+  const documentStore = getKfzLandingPreviewDocumentStore()
   const secret = process.env.INBOUND_KFZ_INTAKE_SECRET?.trim() || PREVIEW_SECRET
+
+  let documents
+  if (files.length > 0) {
+    const read = await readKfzInboundDocumentsFromFiles(files, payload.uploads ?? [])
+    if (!read.ok) {
+      return {
+        ok: false,
+        error: read.error,
+        code: read.code,
+        retryable: false,
+      }
+    }
+    documents = read.documents
+  }
 
   const result = await handleKfzInboundHttpRequest(
     new Request('http://localhost/api/inbound/kfz', {
@@ -50,7 +71,7 @@ export async function submitKfzLandingPreviewInquiryAction(
       },
       body: JSON.stringify(payload),
     }),
-    { store },
+    { store, documentStore, documents },
   )
 
   if (!result.ok) {
@@ -75,7 +96,9 @@ export async function readKfzLandingPreviewInboxAction() {
 
   return {
     items: getKfzLandingPreviewStore().items.map((item) => {
-      const review = presentKfzWebsiteInboxItem(item)
+      const review = presentKfzWebsiteInboxItem(item, {
+        documentReviewBasePath: KFZ_DOCUMENT_PREVIEW_REVIEW_PATH,
+      })
       return {
         id: item.id,
         externalId: item.external_id,

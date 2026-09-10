@@ -160,7 +160,7 @@ Minimal gültiger Body:
 - Mindestens `phone` oder `email` setzen.  
 - `inquiryProcessingConsent` muss exakt `true` sein (Anfragebearbeitung — getrennt von Marketing).  
 - `submissionId` für Idempotenz/Replay-Schutz mitsenden.  
-- Uploads: nur Metadaten (`uploads[].filename|mimeType|sizeBytes`) — keine Binärdaten in Gate 2.
+- Uploads: Landing sendet Dateibytes serverseitig in den privaten Bucket `kfz-inbound-documents`. Im Inbox-Datensatz steht nur `objectKey` (keine öffentliche URL). Dateiname bleibt für die manuelle Prüfung. `POST /api/inbound/kfz` (JSON) akzeptiert weiterhin nur Metadaten ohne Bytes.
 
 Fixture: `tests/fixtures/kfz-inquiry-valid.json`.
 
@@ -184,13 +184,13 @@ Interne Checkliste in AgenturOS — kein zweites Dashboard. Zeigt faktische Zust
 
 - Keine Produktionsfreigabe und kein PASS aus lokalen Fixtures für Live-Traffic.
 - Blocker verlinken auf Route, Migrationsdatei, Env-**Namen** oder Dokumentation. Secret-Werte werden nicht angezeigt.
-- Bekannter Code-Blocker: keine dauerhafte Dokument-Bytes-Ablage (`KFZ_LANDING_STORAGE_BLOCKER`).
+- Bekannter Code-Vertrag: private Dokumentablage über `kfz-inbound-documents` plus autorisierter Prüfpfad `/app/inbox/kfz-document`. Apply der Migration bleibt Owner.
 - Lokaler Acceptance-Walk: `src/features/inbound/kfz/kfz-launch-acceptance.smoke.test.ts`.
 
 ## Follow-ups (bewusst nicht in diesem Slice)
 
 1. **Migration anwenden (Owner):** `20260906120000_inbox_website_channel_source.sql` ist eingecheckt; Apply auf Preview/Staging/Production bleibt Owner-Entscheidung.  
-2. **Dokumentablage (Blocker):** `/kfz` lässt Desktop-Datei und Mobil-Foto/Galerie zu, prüft Typ/Größe und zeigt lokale Vorschauen. Der Submit trägt nur `uploads[]` (Dateiname, MIME, Größe, Gruppe `fahrzeugschein` | `vorversicherung`). Es gibt keine dauerhafte, authentifizierte Bytes-Ablage in diesem Pfad und keine Secrets-Änderung. Sichere Speicherung bleibt Follow-up (bestehende File-Pipeline braucht Bytes + Auth-Akteur).  
+2. **Dokumentablage (Owner Apply):** `/kfz` prüft Typ/Größe, lädt Bytes serverseitig in den privaten Bucket `kfz-inbound-documents` und speichert nur `objectKey` plus Dateiname für die Prüfung. Unauthentifizierter und fremder Zugriff auf `/app/inbox/kfz-document` schlägt fehl. Die Migration ist eingecheckt; Apply auf Preview/Production bleibt Owner-Entscheidung. Retention/Löschung bleibt Follow-up.  
 3. **Retention/Löschung:** Anfrage-/Consent-Nachweise und Metadaten löschbar machen, falls noch nicht vorhanden.  
 4. **Rate-Limit Production:** `consumeRateLimit`-Seam durch shared store ersetzen.  
 5. **Domain/Routing:** `kfz.artkus.de` → `/kfz` (oder eigenes Deployment) — Owner/DNS/Vercel, nicht Teil dieses Slices.  

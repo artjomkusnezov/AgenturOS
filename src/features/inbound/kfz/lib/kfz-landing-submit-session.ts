@@ -22,6 +22,7 @@ import type { PublicKfzInquiryPayload } from '@/features/inbound/kfz/types/publi
 
 export type KfzLandingSubmitFn = (
   payload: PublicKfzInquiryPayload,
+  files?: readonly File[],
 ) => Promise<KfzLandingSubmitState>
 
 export type KfzLandingPreparedInquiry = {
@@ -29,6 +30,7 @@ export type KfzLandingPreparedInquiry = {
   values: KfzLandingFormValues
   documents: readonly KfzLandingDocumentCandidate[]
   previews: Record<string, string>
+  files?: File[]
 }
 
 export type KfzLandingSubmitAttemptResult = {
@@ -39,6 +41,7 @@ export type KfzLandingSubmitAttemptResult = {
   values: KfzLandingFormValues
   documents: readonly KfzLandingDocumentCandidate[]
   previews: Record<string, string>
+  files: File[]
   payload: PublicKfzInquiryPayload | null
   result: KfzLandingSubmitState | null
   timedOut: boolean
@@ -60,6 +63,7 @@ export function retainKfzLandingPreparedInquiry<T extends KfzLandingPreparedInqu
     values: { ...prepared.values },
     documents: [...prepared.documents],
     previews: { ...prepared.previews },
+    files: [...(prepared.files ?? [])],
   }
 }
 
@@ -103,6 +107,7 @@ export async function executeKfzLandingSubmitAttempt(input: {
     values: prepared.values,
     documents: prepared.documents,
     previews: prepared.previews,
+    files: prepared.files ?? [],
     payload: null,
     result: null,
     timedOut: false,
@@ -140,7 +145,7 @@ export async function executeKfzLandingSubmitAttempt(input: {
   }
 
   const raced = await withKfzLandingSubmitTimeout(
-    input.submit(built.payload),
+    input.submit(built.payload, prepared.files ?? []),
     input.timeoutMs ?? KFZ_LANDING_SUBMIT_TIMEOUT_MS,
   )
 
@@ -187,11 +192,13 @@ export function applyKfzLandingSubmitSuccess(storageClear: () => void): {
   values: KfzLandingFormValues
   documents: KfzLandingDocumentCandidate[]
   previews: Record<string, string>
+  files: File[]
 } {
   storageClear()
   return {
     values: emptyKfzLandingDraftValues(),
     documents: [],
     previews: {},
+    files: [],
   }
 }

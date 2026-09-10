@@ -1,9 +1,19 @@
 import { getInboundKfzRuntimeConfig } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { toInboundItemFromKfzInquiry } from '@/features/inbound/kfz/lib/kfz-adapter'
+import {
+  cleanupKfzDocumentObjects,
+  documentsMatchUploadMeta,
+  persistKfzInquiryDocuments,
+} from '@/features/inbound/kfz/lib/kfz-document-storage'
+import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
 import { normalizeKfzInquiry } from '@/features/inbound/kfz/lib/normalize-kfz-inquiry'
 import { consumeRateLimit } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { validatePublicKfzInquiry } from '@/features/inbound/kfz/lib/validate-public-kfz-inquiry'
 import { verifyKfzIntakeBearer } from '@/features/inbound/kfz/lib/verify-kfz-intake-auth'
+import type {
+  KfzDocumentStore,
+  KfzInboundDocumentBytes,
+} from '@/features/inbound/kfz/types/kfz-document-storage'
 import { ingestInboundItem } from '@/features/inbound/services/inbound-intake-service'
 import type { InboundIntakeStore } from '@/features/inbound/types/inbound-intake-store'
 
@@ -23,6 +33,7 @@ export type ProcessKfzInquiryResult =
 /**
  * Website/Kfz-Transport → Validate → Normalize → Adapter → Intake.
  * Adapter enthält keine Businesslogik; AI bleibt außerhalb.
+ * Dokumentbytes gehen in den privaten Bucket; Inbox speichert nur objectKey.
  */
 export async function processKfzWebsiteInquiry(input: {
   rawBody: string
@@ -31,6 +42,8 @@ export async function processKfzWebsiteInquiry(input: {
   rateLimitKey: string
   store: InboundIntakeStore
   receivedAt?: string
+  documents?: readonly KfzInboundDocumentBytes[]
+  documentStore?: KfzDocumentStore
 }): Promise<ProcessKfzInquiryResult> {
   const config = getInboundKfzRuntimeConfig()
   if (!config) {
@@ -88,6 +101,27 @@ export async function processKfzWebsiteInquiry(input: {
   }
 
   const receivedAt = input.receivedAt ?? new Date().toISOString()
+  const documents = input.documents ?? []
+
+  if (documents.length > 0) {
+    if (!documentsMatchUploadMeta(documents, validated.payload.uploads)) {
+      return {
+        success: false,
+        error: 'Upload-Dateien passen nicht zu den Angaben.',
+        status: 422,
+        code: 'invalid_field',
+      }
+    }
+    if (!input.documentStore) {
+      return {
+        success: false,
+        error: 'Kfz-Inbound ist nicht konfiguriert (Dokumentablage).',
+        status: 503,
+        code: 'store_unavailable',
+      }
+    }
+  }
+
   const normalized = normalizeKfzInquiry(validated.payload, receivedAt)
   if (!normalized.ok) {
     return {
@@ -98,6 +132,52 @@ export async function processKfzWebsiteInquiry(input: {
     }
   }
 
+  const existing = await input.store.findByExternalIdentity({
+    agencyId: config.agencyId,
+    channel: 'website',
+    externalId: normalized.inquiry.externalId,
+  })
+
+  if (existing) {
+    return {
+      success: true,
+      deduplicated: true,
+      inboxItemId: existing.id,
+    }
+  }
+
+  let storedKeys: string[] = []
+  if (documents.length > 0 && input.documentStore) {
+    const persisted = await persistKfzInquiryDocuments({
+      agencyId: config.agencyId,
+      documents,
+      documentStore: input.documentStore,
+    })
+    if (!persisted.ok) {
+      const status =
+        persisted.code === 'oversized_field'
+          ? 413
+          : persisted.code === 'invalid_field'
+            ? 422
+            : 503
+      return {
+        success: false,
+        error: persisted.error,
+        status,
+        code: persisted.code,
+      }
+    }
+    storedKeys = persisted.stored.map((entry) => entry.objectKey)
+    normalized.inquiry.uploadMeta = persisted.stored.map((entry) => ({
+      filename: entry.filename,
+      mimeType: entry.mimeType,
+      sizeBytes: entry.sizeBytes,
+      group: entry.group,
+      objectKey: entry.objectKey,
+    }))
+    logKfzInbound('documents_stored', { count: storedKeys.length })
+  }
+
   const item = toInboundItemFromKfzInquiry(normalized.inquiry)
   const result = await ingestInboundItem(input.store, {
     agencyId: config.agencyId,
@@ -106,12 +186,19 @@ export async function processKfzWebsiteInquiry(input: {
   })
 
   if (!result.success) {
+    if (storedKeys.length > 0 && input.documentStore) {
+      await cleanupKfzDocumentObjects(input.documentStore, storedKeys)
+    }
     return {
       success: false,
       error: result.error,
       status: 500,
       code: 'intake_failed',
     }
+  }
+
+  if (result.deduplicated && storedKeys.length > 0 && input.documentStore) {
+    await cleanupKfzDocumentObjects(input.documentStore, storedKeys)
   }
 
   return {

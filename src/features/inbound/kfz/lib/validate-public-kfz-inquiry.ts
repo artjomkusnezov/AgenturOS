@@ -110,6 +110,13 @@ function parseUploads(
     if (entry.filename.length > KFZ_PUBLIC_LIMITS.uploadFilename) {
       return { ok: false, error: 'Upload-Dateiname ist zu lang.', code: 'oversized_field' }
     }
+    if (entry.objectKey !== undefined && entry.objectKey !== null) {
+      return {
+        ok: false,
+        error: 'Upload-Referenz ist ungültig.',
+        code: 'invalid_field',
+      }
+    }
     if (
       entry.mimeType !== undefined &&
       entry.mimeType !== null &&

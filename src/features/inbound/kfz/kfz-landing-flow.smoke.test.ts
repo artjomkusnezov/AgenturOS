@@ -17,7 +17,7 @@ import {
   addKfzLandingDocuments,
   KFZ_LANDING_MAX_DOCUMENTS_PER_GROUP,
   KFZ_LANDING_MAX_DOCUMENT_BYTES,
-  KFZ_LANDING_STORAGE_BLOCKER,
+  KFZ_LANDING_STORAGE_NOTICE,
   removeKfzLandingDocument,
   toPublicKfzUploadMeta,
 } from '@/features/inbound/kfz/lib/kfz-landing-documents'
@@ -332,7 +332,7 @@ describe('kfz landing document selection', () => {
         group: 'fahrzeugschein',
       },
     ])
-    assert.match(KFZ_LANDING_STORAGE_BLOCKER, /keine Datei-Bytes|nicht hochgeladen/i)
+    assert.match(KFZ_LANDING_STORAGE_NOTICE, /privat|persönliche Prüfung/i)
   })
 })
 
@@ -559,7 +559,7 @@ describe('kfz landing approved redesign content', () => {
     assert.match(fields, /ohne Upload absenden/)
     assert.match(fields, /Foto aufnehmen/)
     assert.match(fields, /capture="environment"/)
-    assert.match(fields, /KFZ_LANDING_STORAGE_BLOCKER/)
+    assert.match(fields, /KFZ_LANDING_STORAGE_NOTICE/)
   })
 })
 

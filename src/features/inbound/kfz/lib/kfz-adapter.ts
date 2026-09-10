@@ -111,8 +111,8 @@ export function toInboundItemFromKfzInquiry(inquiry: NormalizedKfzInquiry): Inbo
      */
     consentEvidence: inquiry.consent,
     /**
-     * Gate 2: nur Metadaten. Sichere Dokumentablage ohne Architekturänderung
-     * ist Follow-up (bestehende File-Pipeline erfordert Bytes + Auth-Akteur).
+     * Dateiname für manuelle Prüfung; objectKey ist eine nicht-geheime
+     * private Speicherreferenz — niemals eine öffentliche URL.
      */
     uploadMeta: inquiry.uploadMeta.length > 0 ? inquiry.uploadMeta : undefined,
   }

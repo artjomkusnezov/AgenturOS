@@ -11,6 +11,8 @@ import {
 } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
+import type { KfzDocumentStore, KfzInboundDocumentBytes } from '@/features/inbound/kfz/types/kfz-document-storage'
+import { createServiceRoleKfzDocumentStore } from '@/features/inbound/kfz/repositories/kfz-document-store'
 import { createServiceRoleInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
 import type { InboundIntakeStore } from '@/features/inbound/types/inbound-intake-store'
 
@@ -33,7 +35,11 @@ export type KfzInboundHttpResult =
  */
 export async function handleKfzInboundHttpRequest(
   request: Request,
-  options?: { store?: InboundIntakeStore },
+  options?: {
+    store?: InboundIntakeStore
+    documentStore?: KfzDocumentStore
+    documents?: readonly KfzInboundDocumentBytes[]
+  },
 ): Promise<KfzInboundHttpResult> {
   const missing = listMissingInboundKfzEnvFields()
   if (missing.length > 0) {
@@ -46,8 +52,12 @@ export async function handleKfzInboundHttpRequest(
   }
 
   let store
+  let documentStore = options?.documentStore
   try {
     store = options?.store ?? createServiceRoleInboundIntakeStore()
+    if (!documentStore && (options?.documents?.length ?? 0) > 0) {
+      documentStore = createServiceRoleKfzDocumentStore()
+    }
   } catch {
     logKfzInbound('store_unavailable', {})
     return {
@@ -72,6 +82,8 @@ export async function handleKfzInboundHttpRequest(
     authorizationHeader: request.headers.get('authorization'),
     rateLimitKey,
     store,
+    documentStore,
+    documents: options?.documents,
   })
 
   if (!result.success) {

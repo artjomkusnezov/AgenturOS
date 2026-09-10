@@ -49,7 +49,7 @@ export type NormalizedKfzInquiry = {
   contextNotes: string | null
   consent: KfzInquiryConsentEvidence
   attribution: NormalizedKfzAttribution
-  /** Nur Metadaten — Binärspeicherung ist Follow-up. */
+  /** Metadaten plus optionale private objectKey-Referenz. Keine öffentlichen URLs. */
   uploadMeta: PublicKfzUploadMeta[]
   questionnaire: PublicKfzQuestionnaire | null
   receivedAt: string

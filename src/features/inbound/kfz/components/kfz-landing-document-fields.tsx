@@ -7,7 +7,7 @@ import {
   KFZ_LANDING_CAMERA_ACCEPT,
   KFZ_LANDING_DOCUMENT_ACCEPT,
   KFZ_LANDING_DOCUMENT_GROUPS,
-  KFZ_LANDING_STORAGE_BLOCKER,
+  KFZ_LANDING_STORAGE_NOTICE,
   type KfzLandingDocumentCandidate,
   type KfzLandingDocumentRejection,
 } from '@/features/inbound/kfz/lib/kfz-landing-documents'
@@ -135,7 +135,7 @@ export function KfzLandingDocumentFields({
         </ul>
       ) : null}
 
-      <p className="text-xs leading-relaxed text-zinc-500">{KFZ_LANDING_STORAGE_BLOCKER}</p>
+      <p className="text-xs leading-relaxed text-zinc-500">{KFZ_LANDING_STORAGE_NOTICE}</p>
     </div>
   )
 }
