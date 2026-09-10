@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   readKfzLandingPreviewInboxAction,
@@ -32,6 +32,18 @@ type PreviewInboxItem = {
 export function KfzLandingPreviewApp() {
   const failNextRef = useRef(true)
   const [inbox, setInbox] = useState<PreviewInboxItem[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    void readKfzLandingPreviewInboxAction().then((preview) => {
+      if (!cancelled) {
+        setInbox([...preview.items])
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const submitInquiry: KfzLandingSubmitFn = async (payload, files) => {
     if (failNextRef.current) {

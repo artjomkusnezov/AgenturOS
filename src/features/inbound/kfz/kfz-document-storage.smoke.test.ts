@@ -22,6 +22,11 @@ import { createMemoryKfzAnalyticsStore } from '@/features/inbound/kfz/repositori
 import { createMemoryKfzDocumentStore } from '@/features/inbound/kfz/repositories/kfz-document-store'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
 import { validatePublicKfzInquiry } from '@/features/inbound/kfz/lib/validate-public-kfz-inquiry'
+import {
+  getKfzLandingPreviewDocumentStore,
+  getKfzLandingPreviewStore,
+  resetKfzLandingPreviewStore,
+} from '@/features/inbound/kfz/lib/kfz-landing-preview-store'
 import type { KfzInboundDocumentBytes } from '@/features/inbound/kfz/types/kfz-document-storage'
 import { KFZ_INBOUND_DOCUMENTS_BUCKET } from '@/features/inbound/kfz/types/kfz-document-storage'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
@@ -303,6 +308,30 @@ describe('kfz private document storage', () => {
     assert.equal(result.ok, false)
     assert.equal(documents.objects.size, 0)
     assert.ok(documents.removed.length >= 1)
+  })
+
+  it('shares the local preview document store across getters', async () => {
+    resetKfzLandingPreviewStore()
+    const first = getKfzLandingPreviewDocumentStore()
+    const second = getKfzLandingPreviewDocumentStore()
+    assert.equal(first, second)
+    assert.equal(getKfzLandingPreviewStore(), getKfzLandingPreviewStore())
+
+    const objectKey = buildKfzDocumentObjectKey({
+      agencyId: AGENCY_ID,
+      objectId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    })
+    const put = await first.putObject({
+      objectKey,
+      bytes: jpegBytes(),
+      mimeType: 'image/jpeg',
+    })
+    assert.equal(put.ok, true)
+    assert.equal(second.objects.size, 1)
+    const stored = await getKfzLandingPreviewDocumentStore().getObject(objectKey)
+    assert.equal(stored.ok, true)
+    resetKfzLandingPreviewStore()
+    assert.equal(getKfzLandingPreviewDocumentStore().objects.size, 0)
   })
 
   it('treats a thrown or empty auth client as unauthenticated review', async () => {
