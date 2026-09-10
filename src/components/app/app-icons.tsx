@@ -127,6 +127,22 @@ export function AppNavIconGlyph({
           <path d="M16 15v-7" />
         </svg>
       )
+    case 'checklist':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          aria-hidden="true"
+        >
+          <path d="M9 7h11M9 12h11M9 17h11" />
+          <path d="m4 7 1.2 1.2L7.2 6" />
+          <path d="m4 12 1.2 1.2L7.2 11" />
+          <path d="m4 17 1.2 1.2L7.2 16" />
+        </svg>
+      )
     case 'settings':
       return (
         <svg

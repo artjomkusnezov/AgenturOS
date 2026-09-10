@@ -7,6 +7,7 @@ export type AppNavIcon =
   | 'files'
   | 'activity'
   | 'analytics'
+  | 'checklist'
   | 'settings'
 
 export type AppNavItem = {
@@ -50,6 +51,12 @@ export const appNavigationGroups: AppNavGroup[] = [
         href: '/app/kfz-analytics',
         icon: 'analytics',
         description: 'Anonyme Nutzung der öffentlichen Kfz-Strecke.',
+      },
+      {
+        title: 'Kfz-Startcheck',
+        href: '/app/kfz-readiness',
+        icon: 'checklist',
+        description: 'Faktische lokale Startlage — keine Produktionsfreigabe.',
       },
       {
         title: 'Vorgänge',
