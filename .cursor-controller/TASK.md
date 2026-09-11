@@ -1,28 +1,26 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-8bd0
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-ee86
 
 ## Title
-AGENTUROS — KFZ RELEASE CHAIN AND MIGRATION HANDOFF
+AGENTUROS — KFZ ANALYTICS FAILURE VISIBILITY AND SAFE RETRY
 
 ## Goal
-Create one precise, secret-safe release handoff for the stacked Kfz work: dependency order, required migrations, verification commands and owner-only production steps, without merging or touching production.
+Make privacy-safe Kfz funnel analytics failures visible and safely recoverable without losing or duplicating approved metadata, and without storing answers or personal data.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-8bd0 (PR #54). No merge or main/master write.
-- Derive the exact stacked PR/commit dependency chain from the current branch and checked-in migrations; do not guess.
-- Add or update one concise repository handoff document and surface its status on the existing Kfz readiness screen.
-- List required environment variable names only, migration filenames/order, build/test commands, expected readiness checks, Preview checks and rollback-safe stop conditions.
-- Never read, print or store secret values, customer data, answers, filenames, object keys, document contents or personal identifiers.
-- Make clear which steps are automated/tested and which require the owner; do not perform any owner-only, merge, deployment or production database step.
-- Preserve all six Kfz branches, questionnaire, consent, analytics, private storage, inbox and authorized review.
-- Add deterministic tests that the handoff matches the checked-in migration order/routes and contains no forbidden values.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-ee86 (PR #55). No merge or main/master write.
+- Extend the existing analytics ingestion and authorized aggregate review; do not create a parallel analytics store.
+- Add aggregate health facts for accepted, rejected, duplicate and transiently failed events, using approved metadata only.
+- Provide bounded, idempotent retry behavior for transient persistence failures; the existing event key must prevent duplicates.
+- Never persist or display answers, names, contacts, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
+- Consent remains a hard write gate; revoked or absent consent must not queue or retry events.
+- Surface a concise authorized health state on the existing Kfz analytics/readiness UI, with honest READY/BLOCKED/UNKNOWN states and no secret values.
+- Preserve all six Kfz branches, questionnaire, private document flow, inbox and authorized review.
+- Add deterministic tests for transient failure, retry success, duplicate conflict, permanent rejection, consent withdrawal and sanitized aggregates.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check readiness/handoff locally on desktop and mobile; inspect Vercel Preview read-only if available.
+- Browser-check local desktop/mobile analytics and readiness with synthetic anonymous fixtures; inspect Preview read-only if available.
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-d2e62650-f5cb-4df7-87d0-ec261866b19c
-CONTROLLER_STARTED_AT: 2026-09-11T07:39:55Z
