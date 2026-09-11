@@ -580,6 +580,7 @@ export async function runKfzReleaseCandidateAcceptance(input: {
       prepared,
       submit: failingThenReal,
     })
+    const failedLeftEmpty = store.items.length === 0 && documents.objects.size === 0
     const retry = await executeKfzLandingSubmitAttempt({
       phase: failed.phase,
       inFlight: false,
@@ -606,8 +607,8 @@ export async function runKfzReleaseCandidateAcceptance(input: {
     const inboxItem = store.items[0]
     const review = inboxItem ? presentKfzWebsiteInboxItem(inboxItem) : null
     const keys = readObjectKeysFromUploadMeta(
-      inboxItem && typeof inboxItem.inbound_metadata === 'object'
-        ? inboxItem.inbound_metadata
+      inboxItem && typeof inboxItem.inbound_metadata === 'object' && inboxItem.inbound_metadata
+        ? (inboxItem.inbound_metadata as { uploadMeta?: unknown }).uploadMeta
         : null,
     )
     const objectKey = keys.objectKeys[0] ?? ''
@@ -667,7 +668,7 @@ export async function runKfzReleaseCandidateAcceptance(input: {
     const submitRetryOk =
       failed.started &&
       failed.phase === 'error' &&
-      store.items.length === 0 &&
+      failedLeftEmpty &&
       retry.started &&
       retry.phase === 'success' &&
       retry.result?.ok === true &&
