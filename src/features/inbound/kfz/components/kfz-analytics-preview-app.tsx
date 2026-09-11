@@ -3,7 +3,10 @@
 import { useMemo, useState, useTransition } from 'react'
 
 import { recordKfzAnalyticsPreviewAction } from '@/features/inbound/kfz/actions/kfz-analytics-preview'
-import { KfzAnalyticsDashboardView } from '@/features/inbound/kfz/components/kfz-analytics-dashboard'
+import {
+  KfzAnalyticsDashboardView,
+  KfzAnalyticsReviewScreen,
+} from '@/features/inbound/kfz/components/kfz-analytics-dashboard'
 import { aggregateKfzAnalyticsDashboard } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
 import {
   buildKfzAnalyticsDashboardHref,
@@ -13,6 +16,7 @@ import { KFZ_ANALYTICS_FIXTURE_ALL } from '@/features/inbound/kfz/lib/kfz-analyt
 import type {
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsRecord,
+  KfzAnalyticsReviewStatus,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
 type KfzAnalyticsPreviewAppProps = {
@@ -27,6 +31,7 @@ const PREVIEW_DEFAULT_FILTERS: KfzAnalyticsDashboardFilters = {
 export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewAppProps) {
   const [filters, setFilters] = useState<KfzAnalyticsDashboardFilters>(PREVIEW_DEFAULT_FILTERS)
   const [events, setEvents] = useState(initialEvents)
+  const [reviewStatus, setReviewStatus] = useState<KfzAnalyticsReviewStatus>('ready')
   const [isPending, startTransition] = useTransition()
   const [nowMs] = useState(() => Date.now())
 
@@ -82,14 +87,41 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
       >
         {isPending ? 'Lädt …' : 'Anonyme Beispielereignisse laden'}
       </button>
-      <KfzAnalyticsDashboardView
-        dashboard={dashboard}
-        filters={filters}
-        defaultPeriodId="all"
-        onFiltersChange={applyFilters}
-        events={events}
-        inspector
-      />
+      <div className="flex flex-wrap gap-2" data-kfz-analytics-preview-states="true">
+        {(
+          [
+            ['ready', 'Bereit'],
+            ['empty', 'Leer'],
+            ['unavailable', 'Nicht verfügbar'],
+            ['configuration_missing', 'Nicht konfiguriert'],
+          ] as const
+        ).map(([status, label]) => (
+          <button
+            key={status}
+            type="button"
+            className="min-h-11 rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800"
+            data-kfz-analytics-preview-state={status}
+            onClick={() => setReviewStatus(status)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {reviewStatus === 'ready' ? (
+        <KfzAnalyticsDashboardView
+          dashboard={dashboard}
+          filters={filters}
+          defaultPeriodId="all"
+          onFiltersChange={applyFilters}
+          events={events}
+          inspector
+        />
+      ) : (
+        <KfzAnalyticsReviewScreen
+          status={reviewStatus}
+          dashboard={reviewStatus === 'empty' ? { ...dashboard, empty: true } : undefined}
+        />
+      )}
     </div>
   )
 }

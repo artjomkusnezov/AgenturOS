@@ -1220,6 +1220,7 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/components/kfz-landing-analytics-root.tsx',
       'features/inbound/kfz/components/kfz-analytics-consent-banner.tsx',
       'features/inbound/kfz/components/kfz-analytics-dashboard.tsx',
+      'features/inbound/kfz/components/kfz-analytics-preview-app.tsx',
       'features/inbound/kfz/components/kfz-analytics-dashboard-filters.tsx',
       'features/inbound/kfz/lib/kfz-analytics-filters.ts',
       'features/inbound/kfz/lib/kfz-analytics-referrer.ts',
