@@ -1,5 +1,5 @@
 # Cursor Cloud Controller Trigger
 
 STATE: START_REQUESTED
-REQUESTED_AT: 2026-09-10T23:45:00Z
-REASON: Owner supplied fresh Vercel Runtime Logs confirming GET /app still returns 500 because the Supabase URL/key are not visible to the Preview runtime, while /kfz and /dev/kfz-landing returned 404. Launch exactly one repair task from cursor/agenturos-controller-task-792b. No production deploy or mutation, no secrets, and duplicate guard remains authoritative.
+REQUESTED_AT: 2026-09-11T00:16:00Z
+REASON: PR #47 is a confirmed completion candidate with 346 passing tests across 105 suites, TypeScript, lint and build successful, local desktop/mobile proof for safe /app fallback and public /kfz, plus a Ready protected Vercel Preview. Launch exactly one KFZ release-candidate end-to-end acceptance task from cursor/agenturos-controller-task-9bc0; no production deploy or secret changes; duplicate guard remains authoritative.
