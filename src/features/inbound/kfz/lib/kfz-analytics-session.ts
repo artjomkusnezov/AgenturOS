@@ -33,6 +33,7 @@ import type {
 export type KfzAnalyticsControllerOptions = {
   storage: KfzAnalyticsConsentStorage
   attribution?: KfzLandingAttribution | null
+  referrer?: string | null
   now?: () => number
   hidden?: () => boolean
   randomUuid?: () => string
@@ -164,9 +165,15 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
     if (landing) {
       records.push(landing)
     }
-    const traffic = sanitizeKfzAnalyticsTrafficSource(options.attribution)
+    const traffic = sanitizeKfzAnalyticsTrafficSource(
+      options.attribution,
+      options.referrer,
+    )
     const source = emit('traffic_source', {
       trafficSource: traffic.trafficSource,
+      ...(traffic.referrerCategory
+        ? { referrerCategory: traffic.referrerCategory }
+        : {}),
       ...(traffic.utmSource ? { utmSource: traffic.utmSource } : {}),
       ...(traffic.utmCampaign ? { utmCampaign: traffic.utmCampaign } : {}),
     })
@@ -205,10 +212,15 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
       if (!isKfzAnalyticsStepId(stepId)) {
         return []
       }
+      const fromStepId =
+        lastStepId && lastStepId !== stepId && isKfzAnalyticsStepId(lastStepId)
+          ? lastStepId
+          : undefined
       flushTiming(stepId)
       lastStepId = stepId
       const record = emit('step_view', {
         stepId,
+        ...(fromStepId ? { fromStepId } : {}),
         activeMs: timing.stepActiveMs[stepId] ?? 0,
       })
       return record ? [record] : []

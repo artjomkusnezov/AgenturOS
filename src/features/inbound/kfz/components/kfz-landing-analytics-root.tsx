@@ -150,6 +150,7 @@ export function KfzLandingAnalyticsRoot({
       createKfzAnalyticsController({
         storage: resolvedStorage,
         attribution,
+        referrer: typeof document !== 'undefined' ? document.referrer : null,
         hidden: () => visibility.hidden,
       }),
     [attribution, resolvedStorage, visibility],

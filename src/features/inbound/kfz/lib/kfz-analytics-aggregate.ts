@@ -3,6 +3,7 @@ import {
   kfzAnalyticsStepLabel,
   KFZ_ANALYTICS_STEP_IDS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
+import { kfzAnalyticsReferrerCategoryLabel } from '@/features/inbound/kfz/lib/kfz-analytics-referrer'
 import {
   deriveKfzAnalyticsSessionFacts,
   kfzAnalyticsDashboardFiltersAreActive,
@@ -23,6 +24,7 @@ import type {
   KfzAnalyticsPeriodId,
   KfzAnalyticsRecord,
   KfzAnalyticsStepFunnelRow,
+  KfzAnalyticsTransitionRow,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 import { KFZ_ANALYTICS_UNKNOWN_ID } from '@/features/inbound/kfz/types/kfz-analytics'
 
@@ -149,14 +151,27 @@ export function aggregateKfzAnalyticsDashboard(
   let validationBlocked = 0
   let submitFailed = 0
   const trafficSources = new Map<string, number>()
+  const referrerCategories = new Map<string, number>()
   const campaigns = new Map<string, number>()
   const branches = new Map<string, number>()
   const submitFailedByCategory = new Map<string, number>()
   const dropOffs = new Map<string, number>()
+  const transitionSessions = new Map<string, Set<string>>()
   const reached = new Map<string, Set<string>>()
   const completed = new Map<string, Set<string>>()
   const landingTimes: number[] = []
+  const siteTimes: number[] = []
   const stepTimes = new Map<string, number[]>()
+
+  function addTransition(sessionId: string, fromStepId: string, toStepId: string) {
+    if (!fromStepId || !toStepId || fromStepId === toStepId) {
+      return
+    }
+    const id = `${fromStepId}->${toStepId}`
+    const sessions = transitionSessions.get(id) ?? new Set<string>()
+    sessions.add(sessionId)
+    transitionSessions.set(id, sessions)
+  }
 
   for (const facts of matched) {
     if (facts.visit) {
@@ -175,6 +190,13 @@ export function aggregateKfzAnalyticsDashboard(
     }
 
     trafficSources.set(facts.trafficSource, (trafficSources.get(facts.trafficSource) ?? 0) + 1)
+    referrerCategories.set(
+      facts.referrerCategory,
+      (referrerCategories.get(facts.referrerCategory) ?? 0) + 1,
+    )
+    if (facts.siteActiveMs != null) {
+      siteTimes.push(facts.siteActiveMs)
+    }
     if (facts.utmCampaign) {
       campaigns.set(facts.utmCampaign, (campaigns.get(facts.utmCampaign) ?? 0) + 1)
     }
@@ -198,11 +220,21 @@ export function aggregateKfzAnalyticsDashboard(
         const set = reached.get(event.properties.stepId) ?? new Set()
         set.add(facts.sessionId)
         reached.set(event.properties.stepId, set)
+        if (event.properties.fromStepId) {
+          addTransition(facts.sessionId, event.properties.fromStepId, event.properties.stepId)
+        }
         if (typeof event.properties.activeMs === 'number') {
           const times = stepTimes.get(event.properties.stepId) ?? []
           times.push(event.properties.activeMs)
           stepTimes.set(event.properties.stepId, times)
         }
+      }
+      if (
+        event.eventName === 'back_navigation' &&
+        event.properties.fromStepId &&
+        event.properties.stepId
+      ) {
+        addTransition(facts.sessionId, event.properties.fromStepId, event.properties.stepId)
       }
       if (event.eventName === 'step_completed' && event.properties.stepId) {
         const set = completed.get(event.properties.stepId) ?? new Set()
@@ -240,6 +272,21 @@ export function aggregateKfzAnalyticsDashboard(
     }
   })
 
+  const transitions: KfzAnalyticsTransitionRow[] = [...transitionSessions.entries()]
+    .map(([id, sessions]) => {
+      const [fromStepId, toStepId] = id.split('->')
+      const from = fromStepId ?? 'unknown'
+      const to = toStepId ?? 'unknown'
+      return {
+        id,
+        fromStepId: from,
+        toStepId: to,
+        label: `${kfzAnalyticsStepLabel(from)} → ${kfzAnalyticsStepLabel(to)}`,
+        count: sessions.size,
+      }
+    })
+    .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id))
+
   const empty = latest.length === 0 || matched.length === 0
 
   return {
@@ -257,11 +304,15 @@ export function aggregateKfzAnalyticsDashboard(
     startRate: ratio(funnelStarts, visits),
     submitFromStartRate: ratio(submissions, funnelStarts),
     trafficSources: countMapToRows(trafficSources, kfzAnalyticsTrafficSourceLabel),
+    referrerCategories: countMapToRows(referrerCategories, (id) =>
+      id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsReferrerCategoryLabel(id),
+    ),
     campaigns: countMapToRows(campaigns, (id) => id),
     branches: countMapToRows(branches, (id) =>
       id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsBranchLabel(id),
     ),
     steps,
+    transitions,
     dropOffs: countMapToRows(dropOffs, (id) =>
       id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsStepLabel(id),
     ),
@@ -270,6 +321,8 @@ export function aggregateKfzAnalyticsDashboard(
     submitFailedByCategory: countMapToRows(submitFailedByCategory, (id) => id),
     landingAverageActiveMs: average(landingTimes),
     landingMedianActiveMs: median(landingTimes),
+    siteAverageActiveMs: average(siteTimes),
+    siteMedianActiveMs: median(siteTimes),
     abandoned,
     matchedSessionIds: matched.map((facts) => facts.sessionId),
   }

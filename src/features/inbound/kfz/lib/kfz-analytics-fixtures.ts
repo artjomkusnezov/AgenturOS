@@ -46,6 +46,7 @@ export const KFZ_ANALYTICS_FIXTURE_COMPLETED: KfzAnalyticsRecord[] = [
   event(KFZ_ANALYTICS_FIXTURE_SESSION_A, 'landing_view', T0, { activeMs: 40_000 }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_A, 'traffic_source', T0, {
     trafficSource: 'utm',
+    referrerCategory: 'search',
     utmSource: 'google',
     utmCampaign: 'kfz-check',
   }),
@@ -66,6 +67,7 @@ export const KFZ_ANALYTICS_FIXTURE_COMPLETED: KfzAnalyticsRecord[] = [
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_A, 'step_view', T1, {
     stepId: 'contact',
+    fromStepId: 'branch',
     activeMs: 20_000,
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_A, 'step_completed', T2, {
@@ -74,6 +76,7 @@ export const KFZ_ANALYTICS_FIXTURE_COMPLETED: KfzAnalyticsRecord[] = [
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_A, 'step_view', T2, {
     stepId: 'documents',
+    fromStepId: 'contact',
     activeMs: 15_000,
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_A, 'submit_started', T3, { activeMs: 55_000 }),
@@ -85,6 +88,7 @@ export const KFZ_ANALYTICS_FIXTURE_ABANDONED_MID: KfzAnalyticsRecord[] = [
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'landing_view', T0, { activeMs: 25_000 }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'traffic_source', T0, {
     trafficSource: 'direct',
+    referrerCategory: 'direct',
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'step_view', T0, {
     stepId: 'branch',
@@ -103,6 +107,7 @@ export const KFZ_ANALYTICS_FIXTURE_ABANDONED_MID: KfzAnalyticsRecord[] = [
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'step_view', T1, {
     stepId: 'registration',
+    fromStepId: 'branch',
     activeMs: 12_000,
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'step_completed', T2, {
@@ -111,6 +116,7 @@ export const KFZ_ANALYTICS_FIXTURE_ABANDONED_MID: KfzAnalyticsRecord[] = [
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'step_view', T2, {
     stepId: 'vehicle',
+    fromStepId: 'registration',
     activeMs: 18_000,
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'back_navigation', T2, {
@@ -119,6 +125,7 @@ export const KFZ_ANALYTICS_FIXTURE_ABANDONED_MID: KfzAnalyticsRecord[] = [
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'step_view', T4, {
     stepId: 'usage',
+    fromStepId: 'registration',
     activeMs: 7_000,
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_B, 'funnel_abandoned', T4, {
@@ -132,6 +139,7 @@ export const KFZ_ANALYTICS_FIXTURE_BOUNCE: KfzAnalyticsRecord[] = [
   event(KFZ_ANALYTICS_FIXTURE_SESSION_C, 'landing_view', T0, { activeMs: 4_000 }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_C, 'traffic_source', T0, {
     trafficSource: 'direct',
+    referrerCategory: 'direct',
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_C, 'step_view', T0, {
     stepId: 'branch',
@@ -148,6 +156,7 @@ export const KFZ_ANALYTICS_FIXTURE_RETRY_SUCCESS: KfzAnalyticsRecord[] = [
   event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'landing_view', T0, { activeMs: 30_000 }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'traffic_source', T0, {
     trafficSource: 'utm',
+    referrerCategory: 'social',
     utmSource: 'instagram',
     utmCampaign: 'wechsel',
   }),
@@ -158,7 +167,10 @@ export const KFZ_ANALYTICS_FIXTURE_RETRY_SUCCESS: KfzAnalyticsRecord[] = [
     branchId: 'evb',
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'step_view', T1, { stepId: 'branch' }),
-  event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'step_view', T2, { stepId: 'contact' }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'step_view', T2, {
+    stepId: 'contact',
+    fromStepId: 'branch',
+  }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_D, 'validation_blocked', T2, {
     stepId: 'contact',
     fieldId: 'whatsapp_requires_phone',
@@ -189,6 +201,7 @@ export const KFZ_ANALYTICS_FIXTURE_OTHER_DAY: KfzAnalyticsRecord[] = [
   event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'landing_view', T_OTHER, { activeMs: 9_000 }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'traffic_source', T_OTHER, {
     trafficSource: 'campaign',
+    referrerCategory: 'other',
     utmCampaign: 'evb',
   }),
   event(KFZ_ANALYTICS_FIXTURE_SESSION_F, 'funnel_start', T_OTHER, {

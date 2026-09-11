@@ -188,7 +188,10 @@ export function createServiceRoleKfzAnalyticsStore(agencyId: string): KfzAnalyti
       }
 
       const { data, error } = await query
-      if (error || !data) {
+      if (error) {
+        throw new Error('Kfz analytics store unavailable')
+      }
+      if (!data) {
         return []
       }
       const nowIso = new Date().toISOString()
@@ -228,7 +231,10 @@ export async function createAuthenticatedKfzAnalyticsStore(
       }
 
       const { data, error } = await query
-      if (error || !data) {
+      if (error) {
+        throw new Error('Kfz analytics store unavailable')
+      }
+      if (!data) {
         return []
       }
       const nowIso = new Date().toISOString()

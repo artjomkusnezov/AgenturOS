@@ -24,6 +24,17 @@ export const KFZ_ANALYTICS_TRAFFIC_SOURCES = [
 export type KfzAnalyticsTrafficSource =
   (typeof KFZ_ANALYTICS_TRAFFIC_SOURCES)[number]
 
+export const KFZ_ANALYTICS_REFERRER_CATEGORIES = [
+  'direct',
+  'search',
+  'social',
+  'internal',
+  'other',
+] as const
+
+export type KfzAnalyticsReferrerCategory =
+  (typeof KFZ_ANALYTICS_REFERRER_CATEGORIES)[number]
+
 export const KFZ_ANALYTICS_ERROR_CATEGORIES = [
   'timeout',
   'rate_limited',
@@ -42,6 +53,7 @@ export const KFZ_ANALYTICS_PROPERTY_KEYS = [
   'fromStepId',
   'branchId',
   'trafficSource',
+  'referrerCategory',
   'utmSource',
   'utmCampaign',
   'fieldId',
@@ -57,6 +69,7 @@ export type KfzAnalyticsProperties = {
   fromStepId?: string
   branchId?: string
   trafficSource?: KfzAnalyticsTrafficSource
+  referrerCategory?: KfzAnalyticsReferrerCategory
   utmSource?: string
   utmCampaign?: string
   fieldId?: string
@@ -123,6 +136,20 @@ export type KfzAnalyticsCountRow = {
   count: number
 }
 
+export type KfzAnalyticsTransitionRow = {
+  id: string
+  fromStepId: string
+  toStepId: string
+  label: string
+  count: number
+}
+
+export type KfzAnalyticsReviewStatus =
+  | 'ready'
+  | 'empty'
+  | 'unavailable'
+  | 'configuration_missing'
+
 export type KfzAnalyticsStepFunnelRow = {
   stepId: string
   label: string
@@ -149,18 +176,30 @@ export type KfzAnalyticsDashboard = {
   startRate: number | null
   submitFromStartRate: number | null
   trafficSources: KfzAnalyticsCountRow[]
+  referrerCategories: KfzAnalyticsCountRow[]
   campaigns: KfzAnalyticsCountRow[]
   branches: KfzAnalyticsCountRow[]
   steps: KfzAnalyticsStepFunnelRow[]
+  transitions: KfzAnalyticsTransitionRow[]
   dropOffs: KfzAnalyticsCountRow[]
   validationBlocked: number
   submitFailed: number
   submitFailedByCategory: KfzAnalyticsCountRow[]
   landingAverageActiveMs: number | null
   landingMedianActiveMs: number | null
+  siteAverageActiveMs: number | null
+  siteMedianActiveMs: number | null
   abandoned: number
   matchedSessionIds: string[]
 }
+
+export type KfzAnalyticsDashboardLoadResult =
+  | { ok: true; status: 'ready'; dashboard: KfzAnalyticsDashboard }
+  | {
+      ok: false
+      status: 'unavailable' | 'configuration_missing'
+      error: string
+    }
 
 export type KfzAnalyticsStore = {
   insertEvent: (
