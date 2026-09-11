@@ -11,10 +11,12 @@ import {
   KFZ_ANALYTICS_ERROR_CATEGORIES,
   KFZ_ANALYTICS_EVENT_NAMES,
   KFZ_ANALYTICS_PROPERTY_KEYS,
+  KFZ_ANALYTICS_REFERRER_CATEGORIES,
   KFZ_ANALYTICS_TRAFFIC_SOURCES,
   type KfzAnalyticsErrorCategory,
   type KfzAnalyticsEventName,
   type KfzAnalyticsPropertyKey,
+  type KfzAnalyticsReferrerCategory,
   type KfzAnalyticsTrafficSource,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
@@ -101,6 +103,7 @@ const FIELD_ID_SET = new Set<string>(KFZ_ANALYTICS_FIELD_IDS)
 const EVENT_NAME_SET = new Set<string>(KFZ_ANALYTICS_EVENT_NAMES)
 const PROPERTY_KEY_SET = new Set<string>(KFZ_ANALYTICS_PROPERTY_KEYS)
 const TRAFFIC_SOURCE_SET = new Set<string>(KFZ_ANALYTICS_TRAFFIC_SOURCES)
+const REFERRER_CATEGORY_SET = new Set<string>(KFZ_ANALYTICS_REFERRER_CATEGORIES)
 const ERROR_CATEGORY_SET = new Set<string>(KFZ_ANALYTICS_ERROR_CATEGORIES)
 const UTM_SOURCE_SET = new Set<string>(KFZ_ANALYTICS_ALLOWED_UTM_SOURCES)
 const UTM_CAMPAIGN_SET = new Set<string>(KFZ_ANALYTICS_ALLOWED_UTM_CAMPAIGNS)
@@ -140,6 +143,12 @@ export function isKfzAnalyticsTrafficSource(
   value: unknown,
 ): value is KfzAnalyticsTrafficSource {
   return typeof value === 'string' && TRAFFIC_SOURCE_SET.has(value)
+}
+
+export function isKfzAnalyticsReferrerCategory(
+  value: unknown,
+): value is KfzAnalyticsReferrerCategory {
+  return typeof value === 'string' && REFERRER_CATEGORY_SET.has(value)
 }
 
 export function isKfzAnalyticsErrorCategory(

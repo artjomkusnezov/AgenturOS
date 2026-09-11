@@ -4,6 +4,7 @@ import {
   isKfzAnalyticsEventName,
   isKfzAnalyticsFieldId,
   isKfzAnalyticsPropertyKey,
+  isKfzAnalyticsReferrerCategory,
   isKfzAnalyticsSessionId,
   isKfzAnalyticsStepId,
   isKfzAnalyticsTrafficSource,
@@ -34,6 +35,7 @@ const FORBIDDEN_KEY_FRAGMENTS = [
   'url',
   'href',
   'query',
+  'searchparams',
   'answer',
   'payload',
   'file',
@@ -55,13 +57,38 @@ const FORBIDDEN_KEY_FRAGMENTS = [
   'city',
   'token',
   'secret',
+  'password',
+  'authorization',
+  'bearer',
   'cookie',
   'fingerprint',
+  'referrer',
+  'content',
   'sf_class',
   'sfclass',
   'deductible',
   'selbstbeteiligung',
   'schadenfrei',
+] as const
+
+export const KFZ_ANALYTICS_FORBIDDEN_PROPERTY_EXAMPLES = [
+  'fullName',
+  'email',
+  'phone',
+  'answers',
+  'filename',
+  'objectKey',
+  'documentContent',
+  'freeText',
+  'url',
+  'href',
+  'query',
+  'referrer',
+  'secret',
+  'token',
+  'userAgent',
+  'ip',
+  'licensePlate',
 ] as const
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -148,6 +175,12 @@ export function redactKfzAnalyticsProperties(
     if (key === 'trafficSource') {
       if (isKfzAnalyticsTrafficSource(value)) {
         properties.trafficSource = value
+      }
+      continue
+    }
+    if (key === 'referrerCategory') {
+      if (isKfzAnalyticsReferrerCategory(value)) {
+        properties.referrerCategory = value
       }
       continue
     }
@@ -261,6 +294,8 @@ export function assertNoKfzAnalyticsPii(record: KfzAnalyticsRecord): string[] {
     /"fullName"/i,
     /"filename"/i,
     /"objectKey"/i,
+    /"secret"/i,
+    /"token"/i,
     /kfz-inbound-documents/i,
     /selbstbeteiligung/i,
     /schadenfreiheitsklasse/i,

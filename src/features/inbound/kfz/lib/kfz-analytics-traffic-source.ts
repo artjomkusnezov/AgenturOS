@@ -3,20 +3,26 @@ import {
   sanitizeKfzAnalyticsUtmCampaign,
   sanitizeKfzAnalyticsUtmSource,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
-import type { KfzAnalyticsTrafficSource } from '@/features/inbound/kfz/types/kfz-analytics'
+import { classifyKfzAnalyticsReferrerCategory } from '@/features/inbound/kfz/lib/kfz-analytics-referrer'
+import type {
+  KfzAnalyticsReferrerCategory,
+  KfzAnalyticsTrafficSource,
+} from '@/features/inbound/kfz/types/kfz-analytics'
 
 export type KfzAnalyticsTrafficSnapshot = {
   trafficSource: KfzAnalyticsTrafficSource
   utmSource: string | null
   utmCampaign: string | null
+  referrerCategory: KfzAnalyticsReferrerCategory | null
 }
 
 /**
  * Coarse traffic origin. Full URLs, referrers, query strings and free-form
- * UTM values are discarded — never stored.
+ * UTM values are discarded — never stored. Referrer becomes a category only.
  */
 export function sanitizeKfzAnalyticsTrafficSource(
   attribution: KfzLandingAttribution | null | undefined,
+  referrer?: string | null,
 ): KfzAnalyticsTrafficSnapshot {
   const utmSource = sanitizeKfzAnalyticsUtmSource(
     attribution?.utmSource ?? null,
@@ -24,12 +30,17 @@ export function sanitizeKfzAnalyticsTrafficSource(
   const utmCampaign = sanitizeKfzAnalyticsUtmCampaign(
     attribution?.utmCampaign ?? attribution?.campaign ?? null,
   )
+  const referrerCategory =
+    referrer === undefined
+      ? null
+      : classifyKfzAnalyticsReferrerCategory(referrer) ?? null
 
   if (utmSource || utmCampaign) {
     return {
       trafficSource: 'utm',
       utmSource,
       utmCampaign,
+      referrerCategory,
     }
   }
 
@@ -39,6 +50,7 @@ export function sanitizeKfzAnalyticsTrafficSource(
       trafficSource: 'campaign',
       utmSource: null,
       utmCampaign: campaignOnly,
+      referrerCategory,
     }
   }
 
@@ -46,5 +58,6 @@ export function sanitizeKfzAnalyticsTrafficSource(
     trafficSource: 'direct',
     utmSource: null,
     utmCampaign: null,
+    referrerCategory,
   }
 }

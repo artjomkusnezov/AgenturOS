@@ -1,5 +1,6 @@
 import {
   isKfzAnalyticsBranchId,
+  isKfzAnalyticsReferrerCategory,
   isKfzAnalyticsStepId,
   isKfzAnalyticsTrafficSource,
   kfzAnalyticsBranchLabel,
@@ -14,6 +15,7 @@ import type {
   KfzAnalyticsDropOffFilter,
   KfzAnalyticsPeriodId,
   KfzAnalyticsRecord,
+  KfzAnalyticsReferrerCategory,
   KfzAnalyticsStepFilter,
   KfzAnalyticsTrafficSource,
   KfzAnalyticsTrafficSourceFilter,
@@ -71,10 +73,12 @@ export type KfzAnalyticsSessionFacts = {
   submitted: boolean
   abandoned: boolean
   trafficSource: KfzAnalyticsTrafficSource | typeof KFZ_ANALYTICS_UNKNOWN_ID
+  referrerCategory: KfzAnalyticsReferrerCategory | typeof KFZ_ANALYTICS_UNKNOWN_ID
   utmCampaign: string | null
   branchId: string | typeof KFZ_ANALYTICS_UNKNOWN_ID | null
   reachedStepIds: Set<string>
   dropOffStepId: string | typeof KFZ_ANALYTICS_UNKNOWN_ID | null
+  siteActiveMs: number | null
 }
 
 export function parseKfzAnalyticsCalendarDate(value: unknown): string | null {
@@ -432,7 +436,24 @@ export function deriveKfzAnalyticsSessionFacts(
   const trafficSource = isKfzAnalyticsTrafficSource(trafficEvent?.properties.trafficSource)
     ? trafficEvent.properties.trafficSource
     : KFZ_ANALYTICS_UNKNOWN_ID
+  const referrerCategory = isKfzAnalyticsReferrerCategory(
+    trafficEvent?.properties.referrerCategory,
+  )
+    ? trafficEvent.properties.referrerCategory
+    : KFZ_ANALYTICS_UNKNOWN_ID
   const utmCampaign = trafficEvent?.properties.utmCampaign ?? null
+
+  const siteCandidates = sessionEvents
+    .filter(
+      (event) =>
+        (event.eventName === 'landing_view' ||
+          event.eventName === 'submit_started' ||
+          event.eventName === 'submit_succeeded' ||
+          event.eventName === 'funnel_abandoned') &&
+        typeof event.properties.activeMs === 'number',
+    )
+    .map((event) => event.properties.activeMs as number)
+  const siteActiveMs = siteCandidates.length > 0 ? Math.max(...siteCandidates) : null
 
   const branchEvent = sessionEvents.find(
     (event) => event.eventName === 'initial_branch_selected' && event.properties.branchId,
@@ -478,10 +499,12 @@ export function deriveKfzAnalyticsSessionFacts(
     submitted,
     abandoned,
     trafficSource,
+    referrerCategory,
     utmCampaign,
     branchId,
     reachedStepIds,
     dropOffStepId,
+    siteActiveMs,
   }
 }
 

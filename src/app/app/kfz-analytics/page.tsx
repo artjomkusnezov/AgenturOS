@@ -1,8 +1,8 @@
 import { WorkspaceFrame } from '@/components/app/workspace'
 import { loadKfzAnalyticsDashboardAction } from '@/features/inbound/kfz/actions/load-kfz-analytics-dashboard'
 import { KfzAnalyticsDashboardApp } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-app'
+import { KfzAnalyticsReviewScreen } from '@/features/inbound/kfz/components/kfz-analytics-dashboard'
 import { parseKfzAnalyticsDashboardQuery } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
-import { aosAlertErrorClassName } from '@/lib/design-system'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +26,7 @@ export default async function KfzAnalyticsPage({ searchParams }: KfzAnalyticsPag
   if (!result.ok) {
     return (
       <WorkspaceFrame>
-        <div className={`${aosAlertErrorClassName} px-5 py-4`}>{result.error}</div>
+        <KfzAnalyticsReviewScreen status={result.status} />
       </WorkspaceFrame>
     )
   }

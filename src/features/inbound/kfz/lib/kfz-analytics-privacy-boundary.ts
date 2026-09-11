@@ -20,7 +20,9 @@
  *   (`inquiry_processing`). Analytics consent does not replace it.
  * - Event names and property keys are allow-listed. Form answers, names,
  *   phone, email, licence plate, vehicle data, file names, object keys, answers,
- *   personal data, free text, IP, user agent and full URLs are dropped before persist.
+ *   personal data, free text, IP, user agent, secrets and full URLs/query
+ *   strings/referrers are dropped before persist. Only a coarse referrer
+ *   category may be stored.
  * - No Google Analytics, Meta Pixel, Matomo cloud, paid analytics vendor,
  *   fingerprinting or advertising IDs.
  *
@@ -53,6 +55,6 @@ export const KFZ_ANALYTICS_ACTIVE_MS_CAP = 24 * 60 * 60 * 1000
 export const KFZ_ANALYTICS_PRIVACY_NOTES = [
   'Technische Grenze: Messung nur nach ausdrücklicher Zustimmung in der UI.',
   'Kein Tracking-Cookie, kein Fingerprinting, keine Werbe-ID, kein externes Analytics.',
-  'Kein Speichern von Formularantworten, Dateinamen, Object-Keys oder Selbstbeteiligungen in Analytics-Events.',
+  'Kein Speichern von Formularantworten, Dateinamen, Object-Keys, vollen URLs/Referrern oder Selbstbeteiligungen in Analytics-Events.',
   'Kein Rechtsanspruch und keine Datenschutzerklärung — nur Implementierungsgrenze.',
 ] as const

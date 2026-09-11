@@ -1,11 +1,17 @@
 import { dashboardSurfaceClassName } from '@/features/dashboard/lib/dashboard-surface'
 import { KfzAnalyticsDashboardFiltersBar } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-filters'
 import { KFZ_ANALYTICS_PRIVACY_NOTES } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
+import {
+  kfzAnalyticsReviewStateCopy,
+  resolveKfzAnalyticsReviewStatus,
+} from '@/features/inbound/kfz/lib/kfz-analytics-review-state'
 import type {
   KfzAnalyticsCountRow,
   KfzAnalyticsDashboard,
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsRecord,
+  KfzAnalyticsReviewStatus,
+  KfzAnalyticsTransitionRow,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
 function formatActiveMs(ms: number | null): string {
@@ -63,7 +69,12 @@ export function KfzAnalyticsDashboardView({
   )
 
   return (
-    <div className="space-y-5" data-kfz-analytics-dashboard="true" data-kfz-analytics-filter-active={dashboard.filterActive ? 'true' : 'false'}>
+    <div
+      className="space-y-5"
+      data-kfz-analytics-dashboard="true"
+      data-kfz-analytics-state={dashboard.empty ? 'empty' : 'ready'}
+      data-kfz-analytics-filter-active={dashboard.filterActive ? 'true' : 'false'}
+    >
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
           Intern · Kfz-Funnel
@@ -72,8 +83,9 @@ export function KfzAnalyticsDashboardView({
           Messung der Kfz-Strecke
         </h2>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-600">
-          Nur anonyme, allow-listed Ereignisse. Keine Formularantworten, keine
-          Kontaktdaten, keine automatische Bewertung.
+          Interne Prüfung anonymer Metadaten: Herkunft, Besuch, gewählter Weg,
+          erreichter Schritt, Stopppunkt, Zeit, Übergänge und Versand. Keine
+          Formularantworten, Kontaktdaten oder Dateiinhalte.
         </p>
         <p
           className="mt-2 text-xs text-zinc-500"
@@ -137,6 +149,12 @@ export function KfzAnalyticsDashboardView({
           detail="Anfragen / Starts"
           testId="submit-from-start"
         />
+        <KpiCard
+          label="Zeit auf der Seite Ø"
+          value={formatActiveMs(dashboard.siteAverageActiveMs)}
+          detail={`Median ${formatActiveMs(dashboard.siteMedianActiveMs)}`}
+          testId="site-time"
+        />
       </div>
 
       <section className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}>
@@ -182,6 +200,12 @@ export function KfzAnalyticsDashboardView({
           testId="sources"
         />
         <BarCard
+          title="Referrer-Kategorie"
+          rows={dashboard.referrerCategories}
+          empty="Keine Referrer-Kategorie. Volle URLs werden nicht gespeichert."
+          testId="referrers"
+        />
+        <BarCard
           title="Kampagnen"
           rows={dashboard.campaigns}
           empty="Keine allow-listed Kampagnen."
@@ -199,9 +223,22 @@ export function KfzAnalyticsDashboardView({
           empty="Keine Abbrüche in dieser Auswahl."
           testId="dropoffs"
         />
+        <TransitionCard rows={dashboard.transitions} />
         <section className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5 lg:col-span-2`}>
           <h3 className="text-sm font-semibold text-zinc-900">Zeit und Reibung</h3>
-          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+            <div data-kfz-analytics-site-avg="true">
+              <dt className="text-zinc-500">Seite Ø</dt>
+              <dd className="mt-0.5 font-semibold text-zinc-900">
+                {formatActiveMs(dashboard.siteAverageActiveMs)}
+              </dd>
+            </div>
+            <div data-kfz-analytics-site-median="true">
+              <dt className="text-zinc-500">Seite Median</dt>
+              <dd className="mt-0.5 font-semibold text-zinc-900">
+                {formatActiveMs(dashboard.siteMedianActiveMs)}
+              </dd>
+            </div>
             <div data-kfz-analytics-landing-avg="true">
               <dt className="text-zinc-500">Landing Ø</dt>
               <dd className="mt-0.5 font-semibold text-zinc-900">
@@ -284,6 +321,124 @@ function KpiCard({
       <p className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">{value}</p>
       {detail ? <p className="mt-0.5 text-[11px] text-zinc-500">{detail}</p> : null}
     </div>
+  )
+}
+
+export function KfzAnalyticsReviewStateView({
+  status,
+  filterActive = false,
+}: {
+  status: Exclude<KfzAnalyticsReviewStatus, 'ready'>
+  filterActive?: boolean
+}) {
+  const copy =
+    status === 'empty' && filterActive
+      ? {
+          title: 'Keine Sitzungen für diese Auswahl',
+          body: 'Die Filter treffen auf keine anonymen Sitzungen zu. Es wird nichts hochgerechnet und keine Herkunft erfunden.',
+        }
+      : kfzAnalyticsReviewStateCopy(status)
+
+  return (
+    <div
+      className={`${dashboardSurfaceClassName} px-5 py-8`}
+      data-kfz-analytics-state={status}
+      data-kfz-analytics-empty={status === 'empty' ? 'true' : 'false'}
+      data-kfz-analytics-filter-active={filterActive ? 'true' : 'false'}
+    >
+      <p className="text-base font-semibold text-zinc-900">{copy.title}</p>
+      <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">{copy.body}</p>
+    </div>
+  )
+}
+
+export function KfzAnalyticsReviewScreen({
+  status,
+  dashboard,
+  filters,
+  onFiltersChange,
+  defaultPeriodId = '7d',
+  events,
+  inspector = false,
+}: {
+  status: KfzAnalyticsReviewStatus
+  dashboard?: KfzAnalyticsDashboard
+  filters?: KfzAnalyticsDashboardFilters
+  onFiltersChange?: (filters: KfzAnalyticsDashboardFilters) => void
+  defaultPeriodId?: '24h' | '7d' | '30d' | 'all'
+  events?: KfzAnalyticsRecord[]
+  inspector?: boolean
+}) {
+  const resolved = resolveKfzAnalyticsReviewStatus({
+    loadStatus:
+      status === 'unavailable' || status === 'configuration_missing' ? status : 'ready',
+    empty: status === 'empty' || dashboard?.empty,
+  })
+
+  if (resolved === 'unavailable' || resolved === 'configuration_missing') {
+    return (
+      <div className="space-y-5" data-kfz-analytics-dashboard="true">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Intern · Kfz-Funnel
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+            Messung der Kfz-Strecke
+          </h2>
+        </div>
+        <KfzAnalyticsReviewStateView status={resolved} />
+      </div>
+    )
+  }
+
+  if (!dashboard) {
+    return <KfzAnalyticsReviewStateView status="unavailable" />
+  }
+
+  return (
+    <KfzAnalyticsDashboardView
+      dashboard={dashboard}
+      filters={filters}
+      onFiltersChange={onFiltersChange}
+      defaultPeriodId={defaultPeriodId}
+      events={events}
+      inspector={inspector}
+    />
+  )
+}
+
+function TransitionCard({ rows }: { rows: KfzAnalyticsTransitionRow[] }) {
+  const widthMax = maxCount(rows)
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5 lg:col-span-2`}
+      data-kfz-analytics-transitions="true"
+    >
+      <h3 className="text-sm font-semibold text-zinc-900">Übergänge</h3>
+      <p className="mt-1 text-xs text-zinc-500">
+        Nur Schritt-IDs. Wiederholte gleiche Kanten einer Sitzung zählen einmal.
+      </p>
+      {rows.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-500">Keine Übergänge in dieser Auswahl.</p>
+      ) : (
+        <div className="mt-3 space-y-2.5">
+          {rows.map((row) => (
+            <div key={row.id} data-kfz-analytics-transition={row.id}>
+              <div className="mb-1 flex justify-between text-sm">
+                <span className="text-zinc-800">{row.label}</span>
+                <span className="text-zinc-500">{formatCount(row.count)}</span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                <div
+                  className="h-2.5 rounded-full bg-[#0050aa]"
+                  style={{ width: `${Math.max(6, (row.count / widthMax) * 100)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 

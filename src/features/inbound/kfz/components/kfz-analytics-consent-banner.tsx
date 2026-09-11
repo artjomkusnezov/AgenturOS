@@ -38,10 +38,11 @@ export function KfzAnalyticsConsentBanner({
     >
       <p className="text-sm font-semibold text-zinc-900">Nutzung dieser Seite messen?</p>
       <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">
-        Optional und nur nach Ihrer Wahl. Gemessen werden Besuche, grobe Herkunft,
-        gewählter Weg, Schritte, Abbrüche und aktive Zeit. Nicht gespeichert werden
-        Formularantworten, Name, Telefon, E-Mail, Kennzeichen, Fahrzeugdaten, Dateien,
-        IP-Adresse oder die volle Adresszeile.
+        Optional und nur nach Ihrer Wahl. Gemessen werden Besuche, grobe Herkunft
+        und Referrer-Kategorie, gewählter Weg, Schritte, Übergänge, Abbrüche und
+        aktive Zeit. Nicht gespeichert werden Formularantworten, Name, Telefon,
+        E-Mail, Kennzeichen, Fahrzeugdaten, Dateien, Object-Keys, freie Texte,
+        IP-Adresse oder volle URLs.
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
         Technische Grenze für spätere rechtliche Prüfung — keine Rechtsaussage.

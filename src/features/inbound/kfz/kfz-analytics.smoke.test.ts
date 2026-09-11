@@ -42,8 +42,21 @@ import {
   sanitizeKfzAnalyticsRecord,
 } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
 import { createKfzAnalyticsController } from '@/features/inbound/kfz/lib/kfz-analytics-session'
+import {
+  classifyKfzAnalyticsReferrerCategory,
+} from '@/features/inbound/kfz/lib/kfz-analytics-referrer'
+import {
+  classifyKfzAnalyticsDashboardFailure,
+  kfzAnalyticsReviewStateCopy,
+  resolveKfzAnalyticsReviewStatus,
+  reviewCopyLeaksEnvironment,
+  KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR,
+  KFZ_ANALYTICS_UNAVAILABLE_ERROR,
+} from '@/features/inbound/kfz/lib/kfz-analytics-review-state'
 import { sanitizeKfzAnalyticsTrafficSource } from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
+import { KFZ_ANALYTICS_PROPERTY_KEYS } from '@/features/inbound/kfz/types/kfz-analytics'
 import { createMemoryKfzAnalyticsStore } from '@/features/inbound/kfz/repositories/kfz-analytics-store'
+import { SupabasePublicConfigError } from '@/lib/supabase/public-config'
 
 const srcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
 const SESSION = '11111111-1111-4111-8111-111111111111'
@@ -131,6 +144,100 @@ describe('kfz analytics consent', () => {
 })
 
 describe('kfz analytics allow-list and redaction', () => {
+  it('keeps only allow-listed metadata fields and redacts forbidden payload keys', () => {
+    const allowed = sanitizeKfzAnalyticsRecord(
+      {
+        eventName: 'step_view',
+        sessionId: SESSION,
+        occurredAt: '2026-09-09T08:00:00.000Z',
+        properties: {
+          stepId: 'contact',
+          fromStepId: 'branch',
+          branchId: 'switch_car',
+          trafficSource: 'utm',
+          referrerCategory: 'search',
+          utmSource: 'google',
+          utmCampaign: 'kfz-check',
+          fieldId: 'missing_contact',
+          errorCategory: 'timeout',
+          activeMs: 2400,
+          lastStepId: 'contact',
+        },
+      },
+      '2026-09-09T08:00:00.000Z',
+    )
+    assert.ok(allowed)
+    assert.deepEqual(allowed.properties, {
+      stepId: 'contact',
+      fromStepId: 'branch',
+      branchId: 'switch_car',
+      trafficSource: 'utm',
+      referrerCategory: 'search',
+      utmSource: 'google',
+      utmCampaign: 'kfz-check',
+      fieldId: 'missing_contact',
+      errorCategory: 'timeout',
+      activeMs: 2400,
+      lastStepId: 'contact',
+    })
+    for (const key of Object.keys(allowed.properties)) {
+      assert.ok((KFZ_ANALYTICS_PROPERTY_KEYS as readonly string[]).includes(key))
+    }
+
+    const forbidden = sanitizeKfzAnalyticsRecord(
+      {
+        eventName: 'submit_succeeded',
+        sessionId: SESSION,
+        occurredAt: '2026-09-09T08:00:00.000Z',
+        properties: {
+          stepId: 'documents',
+          fullName: 'Max Mustermann',
+          email: 'max@example.com',
+          phone: '+491701234567',
+          answers: { intent: 'switch_car', sf_class_haftpflicht: '8' },
+          filename: 'schein.pdf',
+          objectKey: 'kfz/agency/item/schein.pdf',
+          documentContent: '%PDF-1.4 secret-bytes',
+          freeText: 'Bitte um Rückruf wegen Schaden',
+          url: 'https://kfz.artkus.de/kfz?email=max@example.com&ref=1',
+          href: 'https://evil.example/ref?name=leak',
+          query: '?utm_source=google&email=max@example.com',
+          referrer: 'https://google.com/search?q=Max+Mustermann',
+          secret: 'INBOUND_KFZ_INTAKE_SECRET=super-secret',
+          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.aaa.bbb',
+          userAgent: 'Mozilla/5.0',
+          ip: '203.0.113.10',
+          licensePlate: 'OS-AB 123',
+        },
+      },
+      '2026-09-09T08:00:00.000Z',
+    )
+    assert.ok(forbidden)
+    assert.equal(forbidden.properties.stepId, 'documents')
+    const serialized = JSON.stringify(forbidden)
+    for (const leak of [
+      'Mustermann',
+      'max@example.com',
+      '+491701234567',
+      'schein.pdf',
+      'kfz/agency/item',
+      'secret-bytes',
+      'Rückruf',
+      'kfz.artkus.de',
+      'evil.example',
+      'email=max',
+      'google.com/search',
+      'super-secret',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+      'Mozilla',
+      '203.0.113.10',
+      'OS-AB',
+    ]) {
+      assert.equal(serialized.includes(leak), false, `leaked ${leak}`)
+    }
+    assert.deepEqual(assertNoKfzAnalyticsPii(forbidden), [])
+  })
+
   it('drops unknown events, PII keys and free-form values', () => {
     const poisoned = sanitizeKfzAnalyticsRecord(
       {
@@ -222,7 +329,9 @@ describe('kfz analytics allow-list and redaction', () => {
       trafficSource: 'direct',
       utmSource: null,
       utmCampaign: null,
+      referrerCategory: null,
     })
+    assert.equal(JSON.stringify(dirty).includes('evil.example'), false)
 
     const clean = sanitizeKfzAnalyticsTrafficSource({
       utmSource: 'Google',
@@ -232,6 +341,7 @@ describe('kfz analytics allow-list and redaction', () => {
       trafficSource: 'utm',
       utmSource: 'google',
       utmCampaign: 'kfz-check',
+      referrerCategory: null,
     })
   })
 })
@@ -341,6 +451,116 @@ describe('kfz analytics abandonment and exact-once submit', () => {
   })
 })
 
+describe('kfz analytics referrer category', () => {
+  it('classifies hosts without keeping the URL or query string', () => {
+    assert.equal(classifyKfzAnalyticsReferrerCategory(''), 'direct')
+    assert.equal(classifyKfzAnalyticsReferrerCategory(null), 'direct')
+    assert.equal(
+      classifyKfzAnalyticsReferrerCategory('https://www.google.com/search?q=max@example.com'),
+      'search',
+    )
+    assert.equal(
+      classifyKfzAnalyticsReferrerCategory('https://l.instagram.com/?u=https://evil.example'),
+      'social',
+    )
+    assert.equal(
+      classifyKfzAnalyticsReferrerCategory('https://www.artkus.de/kfz?phone=+49170'),
+      'internal',
+    )
+    assert.equal(
+      classifyKfzAnalyticsReferrerCategory('https://evil.example/ref?email=a@b.c'),
+      'other',
+    )
+    assert.equal(classifyKfzAnalyticsReferrerCategory('not a url @@'), undefined)
+
+    const classified = sanitizeKfzAnalyticsTrafficSource(
+      { utmSource: 'google', utmCampaign: 'kfz-check' },
+      'https://www.google.de/search?q=OS-AB+123&email=max@example.com',
+    )
+    assert.equal(classified.referrerCategory, 'search')
+    assert.equal(JSON.stringify(classified).includes('google.de'), false)
+    assert.equal(JSON.stringify(classified).includes('max@'), false)
+    assert.equal(JSON.stringify(classified).includes('OS-AB'), false)
+  })
+})
+
+describe('kfz analytics transitions are idempotent', () => {
+  it('records a from-to edge once per session even after retry', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const storage = createMemoryKfzAnalyticsConsentStorage()
+    const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
+    const controller = createKfzAnalyticsController({
+      storage,
+      randomUuid: () => SESSION,
+      now: () => nowMs,
+    })
+    const granted = controller.setConsent('granted')
+    const first = [
+      ...controller.recordStepView('branch'),
+      ...controller.recordStepView('contact'),
+      ...controller.recordStepView('documents'),
+    ]
+    const retry = [
+      ...controller.recordStepView('branch'),
+      ...controller.recordStepView('contact'),
+      ...controller.recordStepView('documents'),
+    ]
+    await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: [...granted, ...first, ...retry, ...first],
+      store,
+      nowIso: '2026-09-09T12:00:00.000Z',
+    })
+    const dashboard = aggregateKfzAnalyticsDashboard(await store.listEvents(), {
+      periodId: 'all',
+      nowMs,
+    })
+    assert.equal(retry.length, 0)
+    assert.equal(
+      dashboard.transitions.find((row) => row.id === 'branch->contact')?.count,
+      1,
+    )
+    assert.equal(
+      dashboard.transitions.find((row) => row.id === 'contact->documents')?.count,
+      1,
+    )
+    assert.equal(dashboard.visits, 1)
+  })
+})
+
+describe('kfz analytics review states', () => {
+  it('exposes empty, unavailable and configuration-missing copy without env values', () => {
+    assert.equal(resolveKfzAnalyticsReviewStatus({ empty: true }), 'empty')
+    assert.equal(
+      resolveKfzAnalyticsReviewStatus({ loadStatus: 'unavailable' }),
+      'unavailable',
+    )
+    assert.equal(
+      resolveKfzAnalyticsReviewStatus({ loadStatus: 'configuration_missing' }),
+      'configuration_missing',
+    )
+
+    const config = classifyKfzAnalyticsDashboardFailure(new SupabasePublicConfigError())
+    assert.equal(config.ok, false)
+    assert.equal(config.status, 'configuration_missing')
+    assert.equal(config.error, KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR)
+
+    const unavailable = classifyKfzAnalyticsDashboardFailure(new Error('relation missing'))
+    assert.equal(unavailable.ok, false)
+    assert.equal(unavailable.status, 'unavailable')
+    assert.equal(unavailable.error, KFZ_ANALYTICS_UNAVAILABLE_ERROR)
+    assert.equal(unavailable.error.includes('relation'), false)
+
+    for (const status of ['empty', 'unavailable', 'configuration_missing'] as const) {
+      const copy = kfzAnalyticsReviewStateCopy(status)
+      assert.equal(reviewCopyLeaksEnvironment(copy.title), false)
+      assert.equal(reviewCopyLeaksEnvironment(copy.body), false)
+      assert.doesNotMatch(copy.body, /eyJ/)
+      assert.doesNotMatch(copy.body, /KEY=|SECRET=|TOKEN=/)
+    }
+  })
+})
+
 describe('kfz analytics dashboard aggregation', () => {
   it('aggregates visits, conversion, sources, branches, drop-off and timing', () => {
     const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
@@ -373,6 +593,20 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(dashboard.submitFailed, 1)
     assert.ok(dashboard.landingAverageActiveMs != null)
     assert.ok(dashboard.landingMedianActiveMs != null)
+    assert.ok(dashboard.siteAverageActiveMs != null)
+    assert.ok(dashboard.siteMedianActiveMs != null)
+    assert.ok(dashboard.referrerCategories.some((row) => row.id === 'search' && row.count === 1))
+    assert.ok(dashboard.referrerCategories.some((row) => row.id === 'social' && row.count === 1))
+    assert.ok(dashboard.referrerCategories.some((row) => row.id === 'direct' && row.count === 2))
+    assert.ok(
+      dashboard.transitions.some((row) => row.id === 'branch->contact' && row.count === 2),
+    )
+    assert.ok(
+      dashboard.transitions.some((row) => row.id === 'contact->documents' && row.count === 1),
+    )
+    assert.ok(
+      dashboard.transitions.some((row) => row.id === 'vehicle->registration' && row.count === 1),
+    )
 
     const empty = aggregateKfzAnalyticsDashboard([], {
       periodId: '24h',
@@ -385,6 +619,9 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(empty.submitFromStartRate, null)
     assert.equal(empty.steps.length, 0)
     assert.equal(empty.dropOffs.length, 0)
+    assert.equal(empty.transitions.length, 0)
+    assert.equal(empty.referrerCategories.length, 0)
+    assert.equal(empty.siteAverageActiveMs, null)
     assert.equal(empty.filterActive, false)
     assert.equal(empty.matchedSessions, 0)
 
@@ -672,6 +909,8 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/components/kfz-analytics-dashboard.tsx',
       'features/inbound/kfz/components/kfz-analytics-dashboard-filters.tsx',
       'features/inbound/kfz/lib/kfz-analytics-filters.ts',
+      'features/inbound/kfz/lib/kfz-analytics-referrer.ts',
+      'features/inbound/kfz/lib/kfz-analytics-review-state.ts',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
     const source = files.map((relative) => readSrc(relative)).join('\n')
@@ -689,6 +928,10 @@ describe('kfz analytics source hygiene', () => {
       assert.doesNotMatch(source, new RegExp(fragment.replace(/[()]/g, '\\$&')))
     }
     assert.match(source, /sessionStorage/)
+    assert.match(source, /configuration_missing/)
+    assert.match(source, /data-kfz-analytics-transitions/)
+    assert.match(source, /data-kfz-analytics-state/)
+    assert.match(source, /Referrer-Kategorie/)
   })
 
   it('adds a checked-in migration for anonymous analytics events', () => {
