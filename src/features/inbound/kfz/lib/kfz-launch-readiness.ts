@@ -106,6 +106,8 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   'src/features/inbound/kfz/lib/kfz-document-storage.ts',
   'src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts',
+  'src/features/inbound/kfz/lib/kfz-migration-chain-dry-run.ts',
+  'src/features/inbound/kfz/types/kfz-migration-chain-dry-run.ts',
   'src/app/app/inbox/kfz-document/route.ts',
   'src/features/inbound/kfz/lib/kfz-supabase-preflight.ts',
   'src/features/inbound/kfz/lib/kfz-supabase-persist-env.ts',
@@ -371,6 +373,10 @@ export function evaluateKfzLaunchReadiness(input: {
   const releaseCandidateFile = filePresent(
     files,
     'src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts',
+  )
+  const migrationChainFile = filePresent(
+    files,
+    'src/features/inbound/kfz/lib/kfz-migration-chain-dry-run.ts',
   )
   const supabasePreflightFile = filePresent(
     files,
@@ -646,6 +652,19 @@ export function evaluateKfzLaunchReadiness(input: {
             ? '20260906120000_inbox_website_channel_source.sql, 20260909140000_kfz_funnel_analytics_events.sql, 20260910120000_kfz_inbound_documents_bucket.sql und 20260911120000_kfz_funnel_analytics_persistence_contract.sql sind eingecheckt. Apply auf Preview/Production ist das nicht.'
             : 'Mindestens eine Kfz-Pflichtmigration fehlt im Repository.',
           KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => migrationRef(entry.file)),
+        ),
+        fact(
+          'migration_chain_dry_run',
+          'Test-only Migrationskette ist eingecheckt',
+          migrationChainFile ? 'PASS' : 'BLOCKED',
+          migrationChainFile
+            ? 'kfz-migration-chain-dry-run.ts wendet die eingecheckten Kfz-Migrationen nur auf In-Memory-Testdatenbanken an (leer und Legacy vor Analytics-Vertrag). Zweimal anwenden prüft additive Idempotenz. Kein Production-Apply und keine Secret-Werte.'
+            : 'Der test-only Migrations-Harness fehlt.',
+          [
+            codeRef('src/features/inbound/kfz/lib/kfz-migration-chain-dry-run.ts'),
+            ...KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => migrationRef(entry.file)),
+            DOC_LOCAL_TEST,
+          ],
         ),
         fact(
           'migrations_applied',

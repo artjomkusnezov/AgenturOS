@@ -67,6 +67,9 @@ prüft, dass die eingecheckten Migrationen `channel='website'` und `source='webs
 Analytics-Persistenzvertrag (ohne DB-Apply): `tests/inbound/kfz-analytics-persistence-db-contract.test.ts`
 prüft Allow-list, RLS und die additive Migration `20260911120000_kfz_funnel_analytics_persistence_contract.sql`.
 
+Test-only Migrationskette (In-Memory, kein Preview/Production-Apply): `src/features/inbound/kfz/kfz-migration-chain-dry-run.smoke.test.ts`
+wendet die vier eingecheckten Kfz-Migrationen zweimal auf eine leere Testdatenbank und auf das unterstützte Legacy-Schema vor dem Analytics-Vertrag an. Geprüft werden privater Bucket/Policies, Submit→Inbox-Verknüpfung, autorisierte Prüfung, Analytics-Allow-list, Unique-Retry und keine öffentlichen Reads. Nur synthetische Daten. Fehler nur per Check-/Migrationsname. Secrets, Antworten, Namen, Kontakte, Dateinamen, Object-Keys, Freitext und volle URLs stehen nicht im Bericht.
+
 ## Öffentliche Landingpage (Gate 3 Slice)
 
 **Browser:** `http://localhost:3000/kfz`  
@@ -207,6 +210,7 @@ Interne Checkliste in AgenturOS — kein zweites Dashboard. Oben eine Owner-Antw
 - Supabase-Preflight: `npm run preflight:kfz-supabase` (Namen present/missing, privater Bucket, Server-only Service-Role, Fail-closed). Dieselbe Owner-Checkliste steht auf dem Startcheck.
 - Lokaler Acceptance-Walk: `src/features/inbound/kfz/kfz-launch-acceptance.smoke.test.ts`.
 - Test-only Release-Candidate-Harness: `src/features/inbound/kfz/kfz-release-candidate-acceptance.smoke.test.ts` — `/kfz` → Submit → exact-once Retry → ein Inbox-Item → autorisierte Dokumentprüfung → anonyme/fremde Ablehnung. Nur synthetische Testdaten und eine winzige generierte Datei. Analytics bleibt metadaten-only (Quelle, Besuch, Zweig, Schritt, Stopp, Timing, Submit). Fehlerklassen: `configuration_missing`, `persistence_unavailable`, `unauthorized_review`, `route_missing` — ohne Werte. Kein Production-Claim.
+- Test-only Migrationskette: `src/features/inbound/kfz/kfz-migration-chain-dry-run.smoke.test.ts` — In-Memory-Apply der eingecheckten Kfz-Migrationen zweimal (leer + Legacy). Kein Remote-Apply.
 
 ## Follow-ups (bewusst nicht in diesem Slice)
 

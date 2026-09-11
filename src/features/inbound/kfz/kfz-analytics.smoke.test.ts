@@ -1461,7 +1461,7 @@ describe('kfz analytics source hygiene', () => {
       ),
       'utf8',
     )
-    assert.match(sql, /create table public\.kfz_funnel_analytics_events/)
+    assert.match(sql, /create table if not exists public\.kfz_funnel_analytics_events/)
     assert.match(sql, /landing_view/)
     assert.match(sql, /enable row level security/)
     assert.match(sql, /No customer answers/)

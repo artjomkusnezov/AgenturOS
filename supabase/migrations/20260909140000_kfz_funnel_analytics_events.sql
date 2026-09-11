@@ -1,7 +1,8 @@
 -- First-party Kfz funnel analytics.
 -- Anonymous allow-listed events only. No form answers, contact data, IP or URLs.
+-- Additive. Safe to re-run. Apply on Preview/Production remains an Owner step.
 
-create table public.kfz_funnel_analytics_events (
+create table if not exists public.kfz_funnel_analytics_events (
   id uuid primary key default gen_random_uuid(),
   agency_id uuid not null references public.agencies (id) on delete cascade,
   session_id text not null,
@@ -38,13 +39,16 @@ comment on column public.kfz_funnel_analytics_events.session_id is
 comment on column public.kfz_funnel_analytics_events.properties is
   'Allow-listed coarse properties only (step/branch/source/error/activeMs).';
 
-create unique index kfz_funnel_analytics_events_agency_event_key_uidx
+create unique index if not exists kfz_funnel_analytics_events_agency_event_key_uidx
   on public.kfz_funnel_analytics_events (agency_id, event_key);
 
-create index kfz_funnel_analytics_events_agency_occurred_at_idx
+create index if not exists kfz_funnel_analytics_events_agency_occurred_at_idx
   on public.kfz_funnel_analytics_events (agency_id, occurred_at desc);
 
 alter table public.kfz_funnel_analytics_events enable row level security;
+
+drop policy if exists kfz_funnel_analytics_events_select_agency_member
+  on public.kfz_funnel_analytics_events;
 
 create policy kfz_funnel_analytics_events_select_agency_member
   on public.kfz_funnel_analytics_events

@@ -28,5 +28,7 @@ describe('kfz inbound documents bucket contract', () => {
     assert.doesNotMatch(sql, /getPublicUrl|signedUrl/i)
     assert.match(sql, /service_role/)
     assert.match(sql, /Least privilege/i)
+    assert.match(sql, /on conflict \(id\) do update/)
+    assert.match(sql, /public = false/)
   })
 })
