@@ -56,7 +56,7 @@ export const appNavigationGroups: AppNavGroup[] = [
         title: 'Kfz-Startcheck',
         href: '/app/kfz-readiness',
         icon: 'checklist',
-        description: 'Faktische lokale Startlage — keine Produktionsfreigabe.',
+        description: 'Eine Antwort zur Startlage — keine Produktionsfreigabe.',
       },
       {
         title: 'Vorgänge',

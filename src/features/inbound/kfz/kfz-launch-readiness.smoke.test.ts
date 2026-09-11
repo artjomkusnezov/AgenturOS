@@ -12,6 +12,7 @@ import { appNavigation } from '@/config/app-navigation'
 import {
   evaluateKfzLaunchReadiness,
   inspectKfzLaunchFiles,
+  kfzLaunchReadinessContainsForbiddenValue,
   kfzLaunchReadinessHasProductionClaim,
   KFZ_LAUNCH_READINESS_DISCLAIMER,
   KFZ_LAUNCH_REQUIRED_BRANCH_IDS,
@@ -20,6 +21,7 @@ import {
   listKfzLaunchReadinessFacts,
   snapshotKfzLaunchEnvPresence,
 } from '@/features/inbound/kfz/lib/kfz-launch-readiness'
+import { KFZ_LAUNCH_CHECK_IDS } from '@/features/inbound/kfz/types/kfz-launch-readiness'
 import { KFZ_LANDING_STORAGE_NOTICE } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import { KFZ_LANDING_BRANCHES } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 
@@ -28,6 +30,22 @@ const srcRoot = path.join(repoRoot, 'src')
 
 function readSrc(relativeFromSrc: string): string {
   return fs.readFileSync(path.join(srcRoot, relativeFromSrc), 'utf8')
+}
+
+const HIDDEN_SECRET = 'local-only-secret-do-not-print'
+const HIDDEN_SERVICE_ROLE = 'service-role-do-not-print'
+const HIDDEN_PUBLISHABLE = 'publishable-key-do-not-print'
+const HIDDEN_URL = 'https://example.supabase.co'
+
+function configuredEnv(): Record<string, string> {
+  return {
+    INBOUND_KFZ_INTAKE_SECRET: HIDDEN_SECRET,
+    INBOUND_KFZ_AGENCY_ID: '11111111-1111-4111-8111-111111111111',
+    INBOUND_KFZ_ACTOR_USER_ID: '22222222-2222-4222-8222-222222222222',
+    NEXT_PUBLIC_SUPABASE_URL: HIDDEN_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: HIDDEN_PUBLISHABLE,
+    SUPABASE_SERVICE_ROLE_KEY: HIDDEN_SERVICE_ROLE,
+  }
 }
 
 describe('kfz launch readiness evaluation', () => {
@@ -40,14 +58,23 @@ describe('kfz launch readiness evaluation', () => {
     const report = evaluateKfzLaunchReadiness({
       nowIso: '2026-09-10T06:00:00.000Z',
       repoRoot,
-      env: {
-        INBOUND_KFZ_INTAKE_SECRET: 'local-only-secret-do-not-print',
-        INBOUND_KFZ_AGENCY_ID: '11111111-1111-4111-8111-111111111111',
-        INBOUND_KFZ_ACTOR_USER_ID: '22222222-2222-4222-8222-222222222222',
-        NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
-        SUPABASE_SERVICE_ROLE_KEY: 'service-role-do-not-print',
-      },
+      env: configuredEnv(),
     })
+
+    assert.equal(report.result, 'READY')
+    assert.equal(report.nextAction, null)
+    assert.equal(report.ownerCounts.ready, KFZ_LAUNCH_CHECK_IDS.length)
+    assert.equal(report.ownerCounts.blocked, 0)
+    assert.equal(report.ownerCounts.unknown, 0)
+    assert.deepEqual(
+      report.checks.map((entry) => entry.id),
+      [...KFZ_LAUNCH_CHECK_IDS],
+    )
+    assert.equal(
+      report.checks.every((entry) => entry.status === 'READY' && entry.nextAction === null),
+      true,
+    )
+    assert.equal(kfzLaunchReadinessContainsForbiddenValue(report, configuredEnv()), false)
 
     assert.equal(report.productionClaim, false)
     assert.equal(report.scope, 'local_code_contract')
@@ -58,6 +85,10 @@ describe('kfz launch readiness evaluation', () => {
     const serialized = JSON.stringify(report)
     assert.doesNotMatch(serialized, /local-only-secret-do-not-print/)
     assert.doesNotMatch(serialized, /service-role-do-not-print/)
+    assert.doesNotMatch(serialized, /publishable-key-do-not-print/)
+    assert.doesNotMatch(serialized, /example\.supabase\.co/)
+    assert.doesNotMatch(serialized, /kfz\/11111111-1111-4111-8111-111111111111/)
+    assert.doesNotMatch(serialized, /synthetic\.pdf|\.jpg|\.png/)
     assert.match(serialized, /INBOUND_KFZ_INTAKE_SECRET/)
     assert.match(serialized, /20260906120000_inbox_website_channel_source\.sql/)
     assert.match(serialized, /20260909140000_kfz_funnel_analytics_events\.sql/)
@@ -116,7 +147,98 @@ describe('kfz launch readiness evaluation', () => {
     )
     assert.equal(thisRuntime?.status, 'BLOCKED')
     assert.match(thisRuntime?.detail ?? '', /INBOUND_KFZ_INTAKE_SECRET/)
+    assert.equal(report.result, 'BLOCKED')
+    assert.match(report.nextAction ?? '', /Vercel|Repository/)
     assert.doesNotMatch(JSON.stringify(report), /Bearer /)
+  })
+
+  it('returns BLOCKED with one next action when required names are missing', () => {
+    const report = evaluateKfzLaunchReadiness({
+      repoRoot,
+      env: {},
+    })
+    assert.equal(report.result, 'BLOCKED')
+    assert.ok(report.nextAction)
+    const publicConfig = report.checks.find((entry) => entry.id === 'public_configuration')
+    const persist = report.checks.find((entry) => entry.id === 'submission_persistence')
+    assert.equal(publicConfig?.status, 'BLOCKED')
+    assert.equal(persist?.status, 'BLOCKED')
+    assert.match(publicConfig?.nextAction ?? '', /NEXT_PUBLIC_SUPABASE_URL/)
+    assert.match(persist?.nextAction ?? '', /INBOUND_KFZ_INTAKE_SECRET/)
+    assert.equal(report.probes.find((probe) => probe.id === 'persist_unavailable')?.outcome, 'fail_closed')
+    assert.doesNotMatch(JSON.stringify(report), /Bearer |eyJ/)
+  })
+
+  it('returns BLOCKED for a partial public configuration', () => {
+    const env = {
+      ...configuredEnv(),
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: '',
+    }
+    const report = evaluateKfzLaunchReadiness({
+      repoRoot,
+      env,
+    })
+    assert.equal(report.result, 'BLOCKED')
+    const publicConfig = report.checks.find((entry) => entry.id === 'public_configuration')
+    assert.equal(publicConfig?.status, 'BLOCKED')
+    assert.match(publicConfig?.nextAction ?? '', /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/)
+    assert.equal(report.checks.find((entry) => entry.id === 'questionnaire')?.status, 'READY')
+    assert.doesNotMatch(JSON.stringify(report), /publishable-key-do-not-print/)
+    assert.doesNotMatch(JSON.stringify(report), /service-role-do-not-print/)
+  })
+
+  it('returns BLOCKED when unauthorized review would be allowed', () => {
+    const report = evaluateKfzLaunchReadiness({
+      repoRoot,
+      env: configuredEnv(),
+      probeOverrides: { unauthorizedReview: 'allowed' },
+    })
+    assert.equal(report.result, 'BLOCKED')
+    const review = report.checks.find((entry) => entry.id === 'authorized_review')
+    assert.equal(review?.status, 'BLOCKED')
+    assert.match(review?.nextAction ?? '', /401\/404/)
+    assert.equal(report.probes.find((probe) => probe.id === 'unauthorized_review')?.outcome, 'allowed')
+    assert.equal(kfzLaunchReadinessContainsForbiddenValue(report, configuredEnv()), false)
+  })
+
+  it('returns UNKNOWN when synthetic probes are unavailable', () => {
+    const report = evaluateKfzLaunchReadiness({
+      repoRoot,
+      env: configuredEnv(),
+      probeOverrides: {
+        unauthorizedReview: 'unavailable',
+        persistUnavailable: 'unavailable',
+      },
+    })
+    assert.equal(report.result, 'UNKNOWN')
+    assert.equal(report.checks.find((entry) => entry.id === 'authorized_review')?.status, 'UNKNOWN')
+    assert.equal(report.checks.find((entry) => entry.id === 'submission_persistence')?.status, 'UNKNOWN')
+    assert.ok(report.nextAction)
+    assert.match(report.nextAction ?? '', /nicht/)
+    assert.doesNotMatch(JSON.stringify(report), /local-only-secret-do-not-print/)
+  })
+
+  it('keeps persist unavailable fail-closed without leaking values', () => {
+    const report = evaluateKfzLaunchReadiness({
+      repoRoot,
+      env: {
+        INBOUND_KFZ_INTAKE_SECRET: HIDDEN_SECRET,
+        INBOUND_KFZ_AGENCY_ID: '11111111-1111-4111-8111-111111111111',
+        INBOUND_KFZ_ACTOR_USER_ID: '22222222-2222-4222-8222-222222222222',
+        NEXT_PUBLIC_SUPABASE_URL: HIDDEN_URL,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: HIDDEN_PUBLISHABLE,
+      },
+    })
+    assert.equal(report.result, 'BLOCKED')
+    const persist = report.checks.find((entry) => entry.id === 'submission_persistence')
+    assert.equal(persist?.status, 'BLOCKED')
+    assert.match(persist?.nextAction ?? '', /SUPABASE_SERVICE_ROLE_KEY/)
+    const probe = report.probes.find((entry) => entry.id === 'persist_unavailable')
+    assert.equal(probe?.outcome, 'fail_closed')
+    assert.doesNotMatch(JSON.stringify(report), /local-only-secret-do-not-print/)
+    assert.doesNotMatch(JSON.stringify(report), /publishable-key-do-not-print/)
+    assert.doesNotMatch(JSON.stringify(report), /example\.supabase\.co/)
   })
 
   it('inspects required files and env names without values', () => {
@@ -155,6 +277,11 @@ describe('kfz launch readiness surface', () => {
 
     const view = readSrc('features/inbound/kfz/components/kfz-launch-readiness-view.tsx')
     assert.match(view, /data-kfz-readiness-page/)
+    assert.match(view, /data-kfz-readiness-result/)
+    assert.match(view, /data-kfz-readiness-verdict/)
+    assert.match(view, /data-kfz-launch-checks/)
+    assert.match(view, /READY/)
+    assert.match(view, /UNKNOWN/)
     assert.match(view, /Keine Produktionsfreigabe/)
     assert.match(view, /\/app\/inbox/)
     assert.match(view, /\/app\/kfz-analytics/)

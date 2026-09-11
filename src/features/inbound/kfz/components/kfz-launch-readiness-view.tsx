@@ -7,6 +7,8 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-launch-readiness'
 import { KFZ_SUPABASE_OWNER_CHECKLIST } from '@/features/inbound/kfz/lib/kfz-supabase-preflight'
 import type {
+  KfzLaunchCheck,
+  KfzLaunchOwnerStatus,
   KfzLaunchReadinessFact,
   KfzLaunchReadinessItem,
   KfzLaunchReadinessRef,
@@ -14,6 +16,8 @@ import type {
   KfzLaunchReadinessStatus,
 } from '@/features/inbound/kfz/types/kfz-launch-readiness'
 import {
+  aosAlertErrorClassName,
+  aosAlertSuccessClassName,
   aosAlertWarningClassName,
   aosBadgeClassName,
   aosLinkInlineClassName,
@@ -37,6 +41,24 @@ const STATUS_CLASS: Record<KfzLaunchReadinessStatus, string> = {
   NOT_VERIFIED: 'bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200',
 }
 
+const OWNER_LABEL: Record<KfzLaunchOwnerStatus, string> = {
+  READY: 'READY',
+  BLOCKED: 'BLOCKED',
+  UNKNOWN: 'UNKNOWN',
+}
+
+const OWNER_CLASS: Record<KfzLaunchOwnerStatus, string> = {
+  READY: 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200',
+  BLOCKED: 'bg-red-50 text-red-900 ring-1 ring-red-200',
+  UNKNOWN: 'bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200',
+}
+
+const OWNER_ALERT: Record<KfzLaunchOwnerStatus, string> = {
+  READY: aosAlertSuccessClassName,
+  BLOCKED: aosAlertErrorClassName,
+  UNKNOWN: aosAlertWarningClassName,
+}
+
 function StatusBadge({ status }: { status: KfzLaunchReadinessStatus }) {
   return (
     <span
@@ -44,6 +66,17 @@ function StatusBadge({ status }: { status: KfzLaunchReadinessStatus }) {
       data-kfz-readiness-status={status}
     >
       {STATUS_LABEL[status]}
+    </span>
+  )
+}
+
+function OwnerBadge({ status }: { status: KfzLaunchOwnerStatus }) {
+  return (
+    <span
+      className={`${aosBadgeClassName} ${OWNER_CLASS[status]}`}
+      data-kfz-readiness-owner-status={status}
+    >
+      {OWNER_LABEL[status]}
     </span>
   )
 }
@@ -116,6 +149,41 @@ function ItemCard({ item }: { item: KfzLaunchReadinessItem }) {
   )
 }
 
+function LaunchCheckRow({ entry }: { entry: KfzLaunchCheck }) {
+  return (
+    <div
+      className="border-t border-zinc-100 py-3 first:border-t-0 first:pt-0 last:pb-0"
+      data-kfz-launch-check={entry.id}
+      data-kfz-readiness-owner-status={entry.status}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-zinc-900">{entry.label}</p>
+        <OwnerBadge status={entry.status} />
+      </div>
+      <p className={`mt-1.5 ${aosTextBodyClassName} text-sm leading-relaxed text-zinc-600`}>
+        {entry.detail}
+      </p>
+      {entry.nextAction ? (
+        <p
+          className={`mt-2 text-sm font-medium text-zinc-800`}
+          data-kfz-launch-next-action={entry.id}
+        >
+          Nächster Schritt: {entry.nextAction}
+        </p>
+      ) : null}
+      {entry.refs.length > 0 ? (
+        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          {entry.refs.map((reference) => (
+            <li key={`${reference.kind}:${reference.label}`} className={aosTextCaptionClassName}>
+              <ReadinessRef reference={reference} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
 type KfzLaunchReadinessViewProps = {
   report: KfzLaunchReadinessReport
 }
@@ -127,6 +195,7 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
       data-kfz-readiness-page="true"
       data-kfz-readiness-production-claim={report.productionClaim ? 'true' : 'false'}
       data-kfz-readiness-scope={report.scope}
+      data-kfz-readiness-result={report.result}
     >
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
@@ -140,14 +209,64 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
         </p>
       </div>
 
+      <section
+        className={`${OWNER_ALERT[report.result]} px-4 py-4`}
+        data-kfz-readiness-verdict="true"
+        data-kfz-readiness-result={report.result}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm font-semibold">Startlage {OWNER_LABEL[report.result]}</p>
+          <OwnerBadge status={report.result} />
+        </div>
+        <p className="mt-2 text-sm leading-relaxed">{report.resultDetail}</p>
+        {report.nextAction ? (
+          <p className="mt-3 text-sm font-semibold" data-kfz-readiness-next-action="true">
+            Nächster Schritt: {report.nextAction}
+          </p>
+        ) : (
+          <p className="mt-3 text-sm" data-kfz-readiness-next-action="none">
+            Kein offener Konfigurationsschritt in diesem Prozess. Go-Live bleibt Owner-Entscheidung.
+          </p>
+        )}
+      </section>
+
+      <div
+        className="grid grid-cols-3 gap-3"
+        data-kfz-readiness-owner-counts="true"
+      >
+        <OwnerCountCard label="READY" value={report.ownerCounts.ready} status="READY" />
+        <OwnerCountCard label="BLOCKED" value={report.ownerCounts.blocked} status="BLOCKED" />
+        <OwnerCountCard label="UNKNOWN" value={report.ownerCounts.unknown} status="UNKNOWN" />
+      </div>
+
+      <section
+        className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+        data-kfz-launch-checks="true"
+      >
+        <h3 className="text-base font-semibold text-zinc-900">
+          Launch-Punkte · Namen und Vertrag
+        </h3>
+        <p className={`mt-1 ${aosTextMetaClassName}`}>
+          Fragebogen, öffentliche Konfiguration, Migrationen, privater Bucket, Persistenz,
+          Inbox-Item, autorisierte Prüfung, Analytics nur Metadaten. Ein nächster Schritt
+          pro Lücke. Keine Secret-Werte.
+        </p>
+        <div className="mt-3">
+          {report.checks.map((entry) => (
+            <LaunchCheckRow key={entry.id} entry={entry} />
+          ))}
+        </div>
+      </section>
+
       <div
         className={`${aosAlertWarningClassName} px-4 py-3`}
         data-kfz-readiness-disclaimer="true"
       >
         <p className="text-sm font-semibold text-amber-950">Keine Produktionsfreigabe</p>
         <p className="mt-1 text-sm leading-relaxed text-amber-950/90">
-          PASS beschreibt den lokalen Vertrag. BLOCKED ist eine bekannte Lücke. OWNER INPUT
-          braucht eine Entscheidung. NOT VERIFIED wurde hier nicht gegen Production geprüft.
+          READY beschreibt Konfiguration in diesem Prozess, nicht Production. PASS bleibt der
+          lokale Vertrags-Detailstatus. BLOCKED ist eine bekannte Lücke. OWNER INPUT braucht
+          eine Entscheidung. NOT VERIFIED wurde hier nicht gegen Production geprüft.
         </p>
       </div>
 
@@ -195,9 +314,9 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
         </p>
         <p className={`mt-2 ${aosTextCaptionClassName}`}>
           Konfigurations-Preflight ohne Secrets:{' '}
-                  <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-800">
-                    npm run preflight:kfz-supabase
-                  </code>
+          <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-800">
+            npm run preflight:kfz-supabase
+          </code>
         </p>
       </div>
 
@@ -216,7 +335,7 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
           {KFZ_SUPABASE_OWNER_CHECKLIST.map((step) => (
             <li
               key={step.id}
-              className={`text-sm leading-relaxed text-zinc-700`}
+              className="text-sm leading-relaxed text-zinc-700"
               data-kfz-supabase-owner-step={step.id}
             >
               <span className="font-semibold text-zinc-900">[{step.tool}]</span> {step.instruction}
@@ -245,6 +364,26 @@ function CountCard({
     <div
       className={`${dashboardSurfaceClassName} px-3.5 py-3`}
       data-kfz-readiness-count={status}
+    >
+      <p className={aosTextCaptionClassName}>{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-900">{value}</p>
+    </div>
+  )
+}
+
+function OwnerCountCard({
+  label,
+  value,
+  status,
+}: {
+  label: string
+  value: number
+  status: KfzLaunchOwnerStatus
+}) {
+  return (
+    <div
+      className={`${dashboardSurfaceClassName} px-3.5 py-3`}
+      data-kfz-readiness-owner-count={status}
     >
       <p className={aosTextCaptionClassName}>{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-900">{value}</p>
