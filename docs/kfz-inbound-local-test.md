@@ -204,6 +204,7 @@ Interne Checkliste in AgenturOS — kein zweites Dashboard. Zeigt faktische Zust
 - Bekannter Code-Vertrag: private Dokumentablage über `kfz-inbound-documents` plus autorisierter Prüfpfad `/app/inbox/kfz-document`. Apply der Migration bleibt Owner.
 - Supabase-Preflight: `npm run preflight:kfz-supabase` (Namen present/missing, privater Bucket, Server-only Service-Role, Fail-closed). Dieselbe Owner-Checkliste steht auf dem Startcheck.
 - Lokaler Acceptance-Walk: `src/features/inbound/kfz/kfz-launch-acceptance.smoke.test.ts`.
+- Test-only Release-Candidate-Harness: `src/features/inbound/kfz/kfz-release-candidate-acceptance.smoke.test.ts` — `/kfz` → Submit → exact-once Retry → ein Inbox-Item → autorisierte Dokumentprüfung → anonyme/fremde Ablehnung. Nur synthetische Testdaten und eine winzige generierte Datei. Analytics bleibt metadaten-only (Quelle, Besuch, Zweig, Schritt, Stopp, Timing, Submit). Fehlerklassen: `configuration_missing`, `persistence_unavailable`, `unauthorized_review`, `route_missing` — ohne Werte. Kein Production-Claim.
 
 ## Follow-ups (bewusst nicht in diesem Slice)
 
