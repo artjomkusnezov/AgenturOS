@@ -554,7 +554,7 @@ describe('kfz analytics review states', () => {
       assert.equal(reviewCopyLeaksEnvironment(copy.title), false)
       assert.equal(reviewCopyLeaksEnvironment(copy.body), false)
       assert.doesNotMatch(copy.body, /eyJ/)
-      assert.doesNotMatch(copy.body, /SUPABASE_SERVICE_ROLE_KEY=/)
+      assert.doesNotMatch(copy.body, /KEY=|SECRET=|TOKEN=/)
     }
   })
 })
