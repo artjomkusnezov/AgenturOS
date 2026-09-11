@@ -10,13 +10,26 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { listMissingInboundKfzEnvFields } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { KFZ_LANDING_STORAGE_NOTICE } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
+  evaluateKfzLaunchOwnerChecks,
+  listKfzLaunchForbiddenReportValues,
+  type KfzLaunchProbeOverrides,
+} from '@/features/inbound/kfz/lib/kfz-launch-readiness-checks'
+import {
+  collectHiddenEnvValues,
   KFZ_SUPABASE_DOCUMENTS_MIGRATION,
   KFZ_SUPABASE_OWNER_CHECKLIST,
   KFZ_SUPABASE_PREFLIGHT_COMMAND,
+  redactHiddenEnvValues,
 } from '@/features/inbound/kfz/lib/kfz-supabase-preflight'
+import {
+  listMissingKfzSupabasePersistEnvNames,
+} from '@/features/inbound/kfz/lib/kfz-supabase-persist-env'
+import {
+  NEXT_PUBLIC_SUPABASE_ANON_KEY_NAME,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_NAME,
+} from '@/lib/supabase/public-config'
 import {
   validateKfzLandingConsent,
   validateKfzLandingContact,
@@ -34,10 +47,10 @@ import type {
 } from '@/features/inbound/kfz/types/kfz-launch-readiness'
 
 export const KFZ_LAUNCH_READINESS_DISCLAIMER =
-  'Keine Produktionsfreigabe. Diese Seite bewertet den lokalen Code-Vertrag und benennt bekannte Lücken. PASS kommt nicht aus Production-Daten. Owner entscheidet über Domain, Migration-Apply, Secrets, Rechtstext, Kampagne und Go-Live.'
+  'Keine Produktionsfreigabe. READY heißt: Pflichtnamen und der lokale Vertrag sind in diesem Prozess gesetzt. BLOCKED ist eine bekannte Lücke. UNKNOWN wurde hier nicht geprüft. Werte, Formularantworten, Dateinamen, Object-Keys und Dokumentinhalte erscheinen nicht. Owner entscheidet über Domain, Migration-Apply, Secrets, Rechtstext, Kampagne und Go-Live.'
 
 export const KFZ_LAUNCH_READINESS_HEADLINE =
-  'Kfz-Startlage · faktisch, lokal, ohne Launch-Behauptung'
+  'Kfz-Startlage · eine Antwort, ohne Secrets und ohne Launch-Behauptung'
 
 export const KFZ_LAUNCH_REQUIRED_BRANCH_IDS = [
   'upload_documents',
@@ -198,6 +211,13 @@ export function snapshotKfzLaunchEnvPresence(
       requiredFor: 'persist',
     },
     {
+      name: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_NAME,
+      present: present(NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_NAME, env),
+      fallbackName: NEXT_PUBLIC_SUPABASE_ANON_KEY_NAME,
+      fallbackPresent: present(NEXT_PUBLIC_SUPABASE_ANON_KEY_NAME, env),
+      requiredFor: 'public',
+    },
+    {
       name: 'SUPABASE_SERVICE_ROLE_KEY',
       present: present('SUPABASE_SERVICE_ROLE_KEY', env),
       requiredFor: 'persist',
@@ -262,18 +282,20 @@ function persistConfigured(env: readonly KfzLaunchEnvPresence[]): boolean {
 }
 
 function missingIntakeNames(env: KfzLaunchEnvSource): string[] {
-  return listMissingInboundKfzEnvFields().filter((name) => {
-    if (name === 'INBOUND_KFZ_AGENCY_ID') {
-      return !present('INBOUND_KFZ_AGENCY_ID', env) && !present('INBOUND_EMAIL_AGENCY_ID', env)
-    }
-    if (name === 'INBOUND_KFZ_ACTOR_USER_ID') {
-      return (
-        !present('INBOUND_KFZ_ACTOR_USER_ID', env) &&
-        !present('INBOUND_EMAIL_ACTOR_USER_ID', env)
-      )
-    }
-    return !present(name, env)
-  })
+  const missing: string[] = []
+  if (!present('INBOUND_KFZ_INTAKE_SECRET', env)) {
+    missing.push('INBOUND_KFZ_INTAKE_SECRET')
+  }
+  if (!present('INBOUND_KFZ_AGENCY_ID', env) && !present('INBOUND_EMAIL_AGENCY_ID', env)) {
+    missing.push('INBOUND_KFZ_AGENCY_ID')
+  }
+  if (
+    !present('INBOUND_KFZ_ACTOR_USER_ID', env) &&
+    !present('INBOUND_EMAIL_ACTOR_USER_ID', env)
+  ) {
+    missing.push('INBOUND_KFZ_ACTOR_USER_ID')
+  }
+  return missing
 }
 
 function fact(
@@ -309,11 +331,12 @@ export function evaluateKfzLaunchReadiness(input: {
   env?: KfzLaunchEnvSource
   files?: readonly KfzLaunchFilePresence[]
   repoRoot?: string
+  probeOverrides?: KfzLaunchProbeOverrides
 } = {}): KfzLaunchReadinessReport {
-  const envSnapshot = snapshotKfzLaunchEnvPresence(input.env ?? process.env)
-  const files =
-    input.files ?? inspectKfzLaunchFiles(input.repoRoot ?? resolveKfzLaunchRepoRoot())
   const processEnv = input.env ?? process.env
+  const repoRoot = input.repoRoot ?? resolveKfzLaunchRepoRoot()
+  const envSnapshot = snapshotKfzLaunchEnvPresence(processEnv)
+  const files = input.files ?? inspectKfzLaunchFiles(repoRoot)
 
   const landingFile = filePresent(files, 'src/app/kfz/page.tsx')
   const inboxFile = filePresent(files, 'src/app/app/inbox/page.tsx')
@@ -740,17 +763,84 @@ export function evaluateKfzLaunchReadiness(input: {
     },
   ]
 
-  return {
-    generatedAt: input.nowIso ?? new Date().toISOString(),
-    scope: 'local_code_contract',
-    productionClaim: false,
-    disclaimer: KFZ_LAUNCH_READINESS_DISCLAIMER,
-    headline: KFZ_LAUNCH_READINESS_HEADLINE,
-    counts: countFacts(items),
-    env: envSnapshot,
+  const owner = evaluateKfzLaunchOwnerChecks({
+    questionnaireOk: sixBranchesOk && validationOk,
     files,
-    items,
+    env: processEnv,
+    repoRoot,
+    persistConfigured: thisRuntimePersist,
+    intakeConfigured: thisRuntimeIntake,
+    missingIntakeNames: missingIntake,
+    missingPersistNames: listMissingKfzSupabasePersistEnvNames(processEnv),
+    migrationsPresent,
+    probeOverrides: input.probeOverrides,
+  })
+
+  return sanitizeKfzLaunchReadinessReport(
+    {
+      generatedAt: input.nowIso ?? new Date().toISOString(),
+      scope: 'local_code_contract',
+      productionClaim: false,
+      disclaimer: KFZ_LAUNCH_READINESS_DISCLAIMER,
+      headline: KFZ_LAUNCH_READINESS_HEADLINE,
+      result: owner.result,
+      resultDetail: owner.resultDetail,
+      nextAction: owner.nextAction,
+      checks: owner.checks,
+      probes: owner.probes,
+      ownerCounts: owner.ownerCounts,
+      counts: countFacts(items),
+      env: envSnapshot,
+      files,
+      items,
+    },
+    processEnv,
+  )
+}
+
+export function sanitizeKfzLaunchReadinessReport(
+  report: KfzLaunchReadinessReport,
+  env: KfzLaunchEnvSource = process.env,
+): KfzLaunchReadinessReport {
+  const hidden = [
+    ...collectHiddenEnvValues(env),
+    ...listKfzLaunchForbiddenReportValues(env),
+  ]
+  const seen = new Set<string>()
+  const values = hidden.filter((value) => {
+    if (seen.has(value)) {
+      return false
+    }
+    seen.add(value)
+    return true
+  })
+
+  const redact = (text: string): string => {
+    let out = redactHiddenEnvValues(text, env)
+    for (const value of values) {
+      if (value.length >= 8) {
+        out = out.split(value).join('[redacted]')
+      }
+    }
+    return out
   }
+
+  const walk = (value: unknown): unknown => {
+    if (typeof value === 'string') {
+      return redact(value)
+    }
+    if (Array.isArray(value)) {
+      return value.map((entry) => walk(entry))
+    }
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, entry]) => [key, walk(entry)]),
+      )
+    }
+    return value
+  }
+
+  return walk(report) as KfzLaunchReadinessReport
 }
 
 export function listKfzLaunchReadinessFacts(
@@ -771,4 +861,12 @@ export function kfzLaunchReadinessHasProductionClaim(report: KfzLaunchReadinessR
     blob.includes('freigegeben für production') ||
     blob.includes('launch approved')
   )
+}
+
+export function kfzLaunchReadinessContainsForbiddenValue(
+  report: KfzLaunchReadinessReport,
+  env: KfzLaunchEnvSource = process.env,
+): boolean {
+  const serialized = JSON.stringify(report)
+  return listKfzLaunchForbiddenReportValues(env).some((value) => serialized.includes(value))
 }

@@ -197,7 +197,7 @@ Erwartete Antwort bei Erfolg: `{ "ok": true, "deduplicated": false, "inboxItemId
 **Browser:** `http://localhost:3000/app/kfz-readiness`  
 Lokale Vorschau ohne Login: `http://localhost:3000/dev/kfz-readiness` (Production: 404).
 
-Interne Checkliste in AgenturOS — kein zweites Dashboard. Zeigt faktische Zustände PASS / BLOCKED / OWNER INPUT / NOT VERIFIED für Landing-Route, sechs Zweige, Kontakt-/Consent-Validierung, Submit/Retry/Idempotenz, normalisierten Inbox-Eingang, manuelle Prüfung, Analytics, eingecheckte Migrationen/Konfiguration und Production-Unbekannte.
+Interne Checkliste in AgenturOS — kein zweites Dashboard. Oben eine Owner-Antwort READY / BLOCKED / UNKNOWN zu Fragebogen, öffentlicher Konfiguration, Migrationen, privatem Bucket, Persistenz, Inbox-Item, autorisierter Prüfung und Analytics (nur Metadaten). Jede Lücke hat einen konkreten nächsten Schritt ohne Secret-Werte. Darunter bleiben die Vertrags-Details PASS / BLOCKED / OWNER INPUT / NOT VERIFIED.
 
 - Keine Produktionsfreigabe und kein PASS aus lokalen Fixtures für Live-Traffic.
 - Blocker verlinken auf Route, Migrationsdatei, Env-**Namen** oder Dokumentation. Secret-Werte werden nicht angezeigt.
