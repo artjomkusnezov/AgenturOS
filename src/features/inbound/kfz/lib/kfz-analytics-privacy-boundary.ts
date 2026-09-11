@@ -23,6 +23,8 @@
  *   personal data, free text, IP, user agent, secrets and full URLs/query
  *   strings/referrers are dropped before persist. Only a coarse referrer
  *   category may be stored.
+ * - Transient persist failures may retry a bounded number of times. The event
+ *   key prevents duplicates. Revoked or absent consent never queues or retries.
  * - No Google Analytics, Meta Pixel, Matomo cloud, paid analytics vendor,
  *   fingerprinting or advertising IDs.
  *

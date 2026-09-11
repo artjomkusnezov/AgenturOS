@@ -42,6 +42,11 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { ingestKfzAnalyticsEvents } from '@/features/inbound/kfz/lib/kfz-analytics-ingest'
 import {
+  kfzAnalyticsHealthCopy,
+  resolveKfzAnalyticsHealthStatus,
+  sendKfzAnalyticsRecordsWithRetry,
+} from '@/features/inbound/kfz/lib/kfz-analytics-health'
+import {
   KFZ_ANALYTICS_PRIVACY_NOTES,
   KFZ_ANALYTICS_PURPOSE,
 } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
@@ -637,16 +642,99 @@ describe('kfz analytics review states', () => {
     })
     assert.equal(missing.available, false)
     assert.equal(missing.status, 'configuration_missing')
+    assert.equal(missing.healthStatus, 'BLOCKED')
     const unavailableQuality = resolveKfzAnalyticsDataQualityState({
       loadStatus: 'unavailable',
     })
     assert.deepEqual(unavailableQuality, unavailableKfzAnalyticsDataQuality('unavailable'))
+    assert.equal(unavailableQuality.healthStatus, 'UNKNOWN')
     for (const quality of [missing, unavailableQuality]) {
       const copy = kfzAnalyticsQualityStateCopy(quality)
       assert.equal(reviewCopyLeaksEnvironment(copy.title), false)
       assert.equal(reviewCopyLeaksEnvironment(copy.body), false)
       assert.match(copy.title, /nicht verfügbar/)
     }
+
+    assert.equal(resolveKfzAnalyticsHealthStatus({ loadStatus: 'ready' }), 'READY')
+    assert.equal(
+      resolveKfzAnalyticsHealthStatus({
+        loadStatus: 'ready',
+        ingestAvailable: true,
+        facts: {
+          accepted: 0,
+          rejected: 0,
+          duplicates: 0,
+          transientFailed: 2,
+          retryRecovered: 0,
+        },
+      }),
+      'BLOCKED',
+    )
+    for (const status of ['READY', 'BLOCKED', 'UNKNOWN'] as const) {
+      const copy = kfzAnalyticsHealthCopy(status)
+      assert.equal(reviewCopyLeaksEnvironment(copy.title), false)
+      assert.equal(reviewCopyLeaksEnvironment(copy.body), false)
+      assert.doesNotMatch(copy.body, /Mustermann|filename|https?:\/\/|SECRET=/)
+    }
+  })
+})
+
+describe('kfz analytics ingest health and consent-gated retry', () => {
+  it('keeps sanitized aggregate health facts without answers or contacts', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: [
+        {
+          eventName: 'landing_view',
+          sessionId: SESSION,
+          occurredAt: '2026-09-09T08:00:00.000Z',
+          properties: { activeMs: 900, fullName: 'Max Mustermann', email: 'max@example.com' },
+        },
+        {
+          eventName: 'custom_tracker',
+          sessionId: SESSION,
+          properties: { filename: 'schein.pdf', objectKey: 'kfz/hidden/key' },
+        },
+      ],
+      store,
+    })
+    const dashboard = aggregateKfzAnalyticsDashboard(await store.listEvents(), {
+      periodId: 'all',
+      nowMs: Date.parse('2026-09-09T12:00:00.000Z'),
+      ingestHealth: { available: true, facts: ingested.health },
+    })
+    assert.equal(dashboard.dataQuality.healthStatus, 'READY')
+    assert.equal(dashboard.dataQuality.acceptedEvents, 1)
+    assert.equal(dashboard.dataQuality.rejectedEvents, 1)
+    assert.equal(dashboard.dataQuality.ingestHealthAvailable, true)
+    const serialized = JSON.stringify({ health: ingested.health, quality: dashboard.dataQuality })
+    assert.doesNotMatch(serialized, /Mustermann|max@example.com|schein\.pdf|kfz\/hidden/)
+  })
+
+  it('does not queue or retry events after consent withdrawal', async () => {
+    let consent: 'granted' | 'declined' = 'granted'
+    let sends = 0
+    const result = await sendKfzAnalyticsRecordsWithRetry({
+      consent: () => consent,
+      records: [
+        {
+          eventName: 'landing_view',
+          eventKey: `${SESSION}:landing_view`,
+          sessionId: SESSION,
+          occurredAt: '2026-09-09T08:00:00.000Z',
+          properties: {},
+        },
+      ],
+      send: async () => {
+        sends += 1
+        consent = 'declined'
+        throw new Error('timeout')
+      },
+    })
+    assert.equal(sends, 1)
+    assert.equal(result.sent, false)
+    assert.equal(result.reason, 'consent_blocked')
   })
 })
 
@@ -722,6 +810,7 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(empty.matchedSessions, 0)
     assert.equal(empty.dataQuality.status, 'empty')
     assert.equal(empty.dataQuality.available, true)
+    assert.equal(empty.dataQuality.healthStatus, 'READY')
     assert.equal(empty.dataQuality.duplicateEvents, 0)
     assert.equal(empty.dataQuality.invalidTransitions, 0)
     assert.equal(empty.dataQuality.rejectedTimings, 0)
@@ -1421,6 +1510,7 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-referrer.ts',
       'features/inbound/kfz/lib/kfz-analytics-review-state.ts',
       'features/inbound/kfz/lib/kfz-analytics-quality.ts',
+      'features/inbound/kfz/lib/kfz-analytics-health.ts',
       'features/inbound/kfz/lib/kfz-analytics-compare.ts',
       'features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
       'app/api/inbound/kfz-analytics/route.ts',
@@ -1444,6 +1534,7 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /data-kfz-analytics-transitions/)
     assert.match(source, /data-kfz-analytics-state/)
     assert.match(source, /data-kfz-analytics-quality/)
+    assert.match(source, /data-kfz-analytics-health/)
     assert.match(source, /data-kfz-analytics-comparisons/)
     assert.match(source, /data-kfz-analytics-consent-withdraw/)
     assert.match(source, /Referrer-Kategorie/)

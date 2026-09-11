@@ -110,6 +110,7 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbox/lib/present-kfz-website-inbox.ts',
   'src/features/inbox/lib/kfz-inbox-manual-triage.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts',
+  'src/features/inbound/kfz/lib/kfz-analytics-health.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   'src/features/inbound/kfz/lib/kfz-document-storage.ts',
@@ -378,6 +379,7 @@ export function evaluateKfzLaunchReadiness(input: {
   const reviewFile = filePresent(files, 'src/features/inbox/lib/present-kfz-website-inbox.ts')
   const triageFile = filePresent(files, 'src/features/inbox/lib/kfz-inbox-manual-triage.ts')
   const ingestFile = filePresent(files, 'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts')
+  const healthFile = filePresent(files, 'src/features/inbound/kfz/lib/kfz-analytics-health.ts')
   const privacyFile = filePresent(
     files,
     'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
@@ -633,15 +635,16 @@ export function evaluateKfzLaunchReadiness(input: {
         fact(
           'analytics_code',
           'Lokaler Analytics-Vertrag ist eingecheckt',
-          analyticsFile && analyticsApiFile && ingestFile && privacyFile ? 'PASS' : 'BLOCKED',
-          analyticsFile && analyticsApiFile && ingestFile && privacyFile
-            ? 'Consent, Redaction, Ingest und /app/kfz-analytics sind vorhanden. Declined speichert lokal nichts. Das ist keine Rechtsaussage.'
+          analyticsFile && analyticsApiFile && ingestFile && healthFile && privacyFile ? 'PASS' : 'BLOCKED',
+          analyticsFile && analyticsApiFile && ingestFile && healthFile && privacyFile
+            ? 'Consent, Redaction, begrenzter Retry, Ingest und /app/kfz-analytics sind vorhanden. Declined speichert lokal nichts. READY/BLOCKED/UNKNOWN ohne Secret-Werte.'
             : 'Analytics-Dashboard, Ingest oder Privacy-Grenze fehlt.',
           [
             ROUTE_ANALYTICS,
             ROUTE_ANALYTICS_API,
             ROUTE_LANDING,
             codeRef('src/features/inbound/kfz/lib/kfz-analytics-ingest.ts'),
+            codeRef('src/features/inbound/kfz/lib/kfz-analytics-health.ts'),
             codeRef('src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts'),
           ],
         ),

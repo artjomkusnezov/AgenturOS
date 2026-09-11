@@ -1,5 +1,12 @@
 import { analyticsConsentAllowsPersist } from '@/features/inbound/kfz/lib/kfz-analytics-consent'
 import {
+  addKfzAnalyticsHealthFacts,
+  emptyKfzAnalyticsHealthFacts,
+  healthFactsFromPersistOutcome,
+  insertKfzAnalyticsEventWithRetry,
+  sanitizeKfzAnalyticsHealthFacts,
+} from '@/features/inbound/kfz/lib/kfz-analytics-health'
+import {
   countForbiddenAnalyticsPropertyKeys,
   emptyKfzAnalyticsIngestQuality,
   rawEventHasInvalidTransition,
@@ -13,6 +20,7 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
 import type {
   KfzAnalyticsConsentState,
+  KfzAnalyticsHealthFacts,
   KfzAnalyticsIngestQuality,
   KfzAnalyticsRecord,
   KfzAnalyticsStore,
@@ -23,31 +31,48 @@ export async function ingestKfzAnalyticsEvents(input: {
   events: unknown
   store: KfzAnalyticsStore
   nowIso?: string
+  readConsent?: () => KfzAnalyticsConsentState
 }): Promise<{
   accepted: number
   dropped: number
   records: KfzAnalyticsRecord[]
   quality: KfzAnalyticsIngestQuality
+  health: KfzAnalyticsHealthFacts
 }> {
   const quality = emptyKfzAnalyticsIngestQuality()
+  const readConsent =
+    input.readConsent ??
+    (() => input.consent as KfzAnalyticsConsentState)
 
-  if (!analyticsConsentAllowsPersist(input.consent as KfzAnalyticsConsentState)) {
+  if (!analyticsConsentAllowsPersist(readConsent())) {
     const dropped = Array.isArray(input.events) ? input.events.length : 0
     quality.consentBlocked = dropped
-    return { accepted: 0, dropped, records: [], quality }
+    const health = emptyKfzAnalyticsHealthFacts()
+    input.store.addHealthFacts(health)
+    return { accepted: 0, dropped, records: [], quality, health }
   }
 
   if (!Array.isArray(input.events)) {
     quality.missingSessionMetadata = 1
-    return { accepted: 0, dropped: 1, records: [], quality }
+    quality.rejected = 1
+    const health = { ...emptyKfzAnalyticsHealthFacts(), rejected: 1 }
+    input.store.addHealthFacts(health)
+    return { accepted: 0, dropped: 1, records: [], quality, health }
   }
 
   const nowIso = input.nowIso ?? new Date().toISOString()
   let accepted = 0
   let dropped = 0
   const records: KfzAnalyticsRecord[] = []
+  let health = emptyKfzAnalyticsHealthFacts()
 
   for (const raw of input.events.slice(0, 40)) {
+    if (!analyticsConsentAllowsPersist(readConsent())) {
+      quality.consentBlocked += 1
+      dropped += 1
+      continue
+    }
+
     quality.redactedForbiddenFields += countForbiddenAnalyticsPropertyKeys(raw)
     if (rawEventHasMalformedSourceCategory(raw)) {
       quality.malformedSourceCategories += 1
@@ -68,6 +93,8 @@ export async function ingestKfzAnalyticsEvents(input: {
     )
     if (!sanitized) {
       dropped += 1
+      quality.rejected += 1
+      health = addKfzAnalyticsHealthFacts(health, { rejected: 1 })
       continue
     }
     if (
@@ -77,16 +104,53 @@ export async function ingestKfzAnalyticsEvents(input: {
       !sanitized.properties.stepId
     ) {
       dropped += 1
+      quality.rejected += 1
+      health = addKfzAnalyticsHealthFacts(health, { rejected: 1 })
       continue
     }
-    const written = await input.store.insertEvent(sanitized)
+
+    const written = await insertKfzAnalyticsEventWithRetry({
+      store: input.store,
+      record: sanitized,
+      consent: readConsent,
+    })
+    const delta = healthFactsFromPersistOutcome(written.outcome)
+    health = addKfzAnalyticsHealthFacts(health, delta)
+
+    if (written.outcome === 'consent_blocked') {
+      quality.consentBlocked += 1
+      dropped += 1
+      continue
+    }
+    if (written.outcome === 'rejected') {
+      quality.rejected += 1
+      dropped += 1
+      continue
+    }
+    if (written.outcome === 'transient_failed') {
+      quality.transientFailed += 1
+      dropped += 1
+      continue
+    }
+
     records.push(written.record)
-    if (written.inserted) {
-      accepted += 1
-    } else {
+    if (written.outcome === 'duplicate') {
       quality.duplicates += 1
+      continue
+    }
+    accepted += 1
+    quality.accepted += 1
+    if (written.outcome === 'recovered') {
+      quality.retryRecovered += 1
     }
   }
 
-  return { accepted, dropped, records, quality }
+  health = sanitizeKfzAnalyticsHealthFacts(health)
+  input.store.addHealthFacts(health)
+  quality.accepted = health.accepted
+  quality.rejected = health.rejected
+  quality.duplicates = health.duplicates
+  quality.transientFailed = health.transientFailed
+  quality.retryRecovered = health.retryRecovered
+  return { accepted, dropped, records, quality, health }
 }

@@ -183,11 +183,37 @@ export type KfzAnalyticsReviewStatus =
   | 'unavailable'
   | 'configuration_missing'
 
+export const KFZ_ANALYTICS_HEALTH_STATUSES = [
+  'READY',
+  'BLOCKED',
+  'UNKNOWN',
+] as const
+
+export type KfzAnalyticsHealthStatus = (typeof KFZ_ANALYTICS_HEALTH_STATUSES)[number]
+
+export type KfzAnalyticsHealthFacts = {
+  accepted: number
+  rejected: number
+  duplicates: number
+  transientFailed: number
+  retryRecovered: number
+}
+
+export type KfzAnalyticsHealthSnapshot = {
+  available: boolean
+  facts: KfzAnalyticsHealthFacts
+}
+
 export type KfzAnalyticsDataQuality = {
   available: boolean
   status: KfzAnalyticsReviewStatus
+  healthStatus: KfzAnalyticsHealthStatus
+  ingestHealthAvailable: boolean
   acceptedEvents: number
+  rejectedEvents: number
   duplicateEvents: number
+  transientFailedEvents: number
+  retryRecoveredEvents: number
   invalidTransitions: number
   rejectedTimings: number
   missingSessionMetadata: number
@@ -197,7 +223,11 @@ export type KfzAnalyticsDataQuality = {
 
 export type KfzAnalyticsIngestQuality = {
   consentBlocked: number
+  accepted: number
+  rejected: number
   duplicates: number
+  transientFailed: number
+  retryRecovered: number
   invalidTransitions: number
   rejectedTimings: number
   missingSessionMetadata: number
@@ -270,4 +300,6 @@ export type KfzAnalyticsStore = {
     from?: string | null
     to?: string | null
   }) => Promise<KfzAnalyticsRecord[]>
+  readHealthFacts: () => Promise<KfzAnalyticsHealthSnapshot>
+  addHealthFacts: (facts: KfzAnalyticsHealthFacts) => void
 }

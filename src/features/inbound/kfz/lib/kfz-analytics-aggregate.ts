@@ -34,6 +34,7 @@ import type {
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsDashboardQuery,
   KfzAnalyticsErrorCategory,
+  KfzAnalyticsHealthSnapshot,
   KfzAnalyticsPeriodId,
   KfzAnalyticsRecord,
   KfzAnalyticsStepFunnelRow,
@@ -79,6 +80,7 @@ export function aggregateKfzAnalyticsDashboard(
     abandonAfterMs?: number
     filters?: Partial<KfzAnalyticsDashboardFilters>
     query?: KfzAnalyticsDashboardQuery
+    ingestHealth?: KfzAnalyticsHealthSnapshot | null
   },
 ): KfzAnalyticsDashboard {
   const abandonAfterMs = input.abandonAfterMs ?? KFZ_ANALYTICS_ABANDON_AFTER_MS
@@ -342,6 +344,7 @@ export function aggregateKfzAnalyticsDashboard(
       uniqueEventCount,
       sessions,
       empty: uniqueEventCount === 0,
+      ingestHealth: input.ingestHealth,
     }),
   }
 }

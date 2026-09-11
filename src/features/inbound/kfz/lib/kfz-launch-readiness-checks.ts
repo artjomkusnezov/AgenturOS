@@ -141,16 +141,24 @@ function inspectAnalyticsMetadataOnly(repoRoot: string): boolean {
     'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   )
   const ingest = readRepoFile(repoRoot, 'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts')
+  const health = readRepoFile(repoRoot, 'src/features/inbound/kfz/lib/kfz-analytics-health.ts')
   return Boolean(
     redact &&
       boundary &&
       ingest &&
+      health &&
       redact.includes("'filename'") &&
       redact.includes("'objectkey'") &&
       redact.includes("'answer'") &&
       boundary.includes('file names') &&
       boundary.includes('object keys') &&
-      ingest.includes('sanitizeKfzAnalyticsRecord'),
+      ingest.includes('sanitizeKfzAnalyticsRecord') &&
+      ingest.includes('insertKfzAnalyticsEventWithRetry') &&
+      health.includes('consent_blocked') &&
+      health.includes('transient_failed') &&
+      health.includes('READY') &&
+      health.includes('BLOCKED') &&
+      health.includes('UNKNOWN'),
   )
 }
 
@@ -360,6 +368,7 @@ export function evaluateKfzLaunchOwnerChecks(input: {
     filePresent(input.files, 'src/app/app/kfz-analytics/page.tsx') &&
     filePresent(input.files, 'src/app/api/inbound/kfz-analytics/route.ts') &&
     filePresent(input.files, 'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts') &&
+    filePresent(input.files, 'src/features/inbound/kfz/lib/kfz-analytics-health.ts') &&
     filePresent(
       input.files,
       'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
@@ -543,13 +552,14 @@ export function evaluateKfzLaunchOwnerChecks(input: {
       'Analytics nur Metadaten',
       analyticsOk ? 'READY' : 'BLOCKED',
       analyticsOk
-        ? 'Ingest, Redaction und /app/kfz-analytics sind vorhanden. Keine Antworten, Dateinamen, Object-Keys oder Personenbezüge.'
-        : 'Analytics-Dashboard, Ingest oder Privacy-Grenze fehlt.',
-      'Analytics-Redaction und Privacy-Grenze wiederherstellen. Keine Antworten, Dateinamen oder Object-Keys speichern.',
+        ? 'Ingest, Redaction, begrenzter Retry und /app/kfz-analytics sind vorhanden. READY/BLOCKED/UNKNOWN ohne Secrets. Keine Antworten, Dateinamen, Object-Keys oder Personenbezüge.'
+        : 'Analytics-Dashboard, Ingest, Health oder Privacy-Grenze fehlt.',
+      'Analytics-Redaction, Retry und Privacy-Grenze wiederherstellen. Keine Antworten, Dateinamen oder Object-Keys speichern.',
       [
         routeRef('/app/kfz-analytics', '/app/kfz-analytics'),
         routeRef('POST /api/inbound/kfz-analytics', '/api/inbound/kfz-analytics'),
         codeRef('src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts'),
+        codeRef('src/features/inbound/kfz/lib/kfz-analytics-health.ts'),
       ],
     ),
   ]

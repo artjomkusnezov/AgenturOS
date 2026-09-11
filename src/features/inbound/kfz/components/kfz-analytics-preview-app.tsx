@@ -16,8 +16,10 @@ import {
   KFZ_ANALYTICS_FIXTURE_COMPARISON,
   KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW,
 } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
+import { emptyKfzAnalyticsHealthFacts } from '@/features/inbound/kfz/lib/kfz-analytics-health'
 import type {
   KfzAnalyticsDashboardFilters,
+  KfzAnalyticsHealthFacts,
   KfzAnalyticsRecord,
   KfzAnalyticsReviewStatus,
 } from '@/features/inbound/kfz/types/kfz-analytics'
@@ -34,6 +36,10 @@ const PREVIEW_DEFAULT_FILTERS: KfzAnalyticsDashboardFilters = {
 export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewAppProps) {
   const [filters, setFilters] = useState<KfzAnalyticsDashboardFilters>(PREVIEW_DEFAULT_FILTERS)
   const [events, setEvents] = useState(initialEvents)
+  const [health, setHealth] = useState<KfzAnalyticsHealthFacts>(() => ({
+    ...emptyKfzAnalyticsHealthFacts(),
+    accepted: initialEvents.length,
+  }))
   const [reviewStatus, setReviewStatus] = useState<KfzAnalyticsReviewStatus>('ready')
   const [isPending, startTransition] = useTransition()
   const [nowMs] = useState(() => Date.now())
@@ -44,6 +50,7 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
         periodId: filters.periodId,
         nowMs,
         filters,
+        ingestHealth: { available: true, facts: health },
         query: {
           period: filters.periodId === 'custom' ? 'custom' : filters.periodId,
           from: filters.fromDate ?? undefined,
@@ -54,7 +61,7 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
           drop: filters.dropOffStepId,
         },
       }),
-    [events, filters, nowMs],
+    [events, filters, health, nowMs],
   )
 
   function applyFilters(next: KfzAnalyticsDashboardFilters) {
@@ -67,11 +74,12 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
 
   function seedFixtures() {
     startTransition(async () => {
-      await recordKfzAnalyticsPreviewAction({
+      const result = await recordKfzAnalyticsPreviewAction({
         consent: 'granted',
         events: [...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW],
       })
       setEvents([...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW])
+      setHealth(result.health)
     })
   }
 
