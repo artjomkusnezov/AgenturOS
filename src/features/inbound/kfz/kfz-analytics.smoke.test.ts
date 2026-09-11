@@ -10,6 +10,10 @@ import { describe, it } from 'node:test'
 
 import { aggregateKfzAnalyticsDashboard } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
 import {
+  KFZ_ANALYTICS_MIN_RATE_GROUP,
+  resolveKfzAnalyticsPreviousRange,
+} from '@/features/inbound/kfz/lib/kfz-analytics-compare'
+import {
   emptyKfzAnalyticsTiming,
   tickKfzAnalyticsTiming,
 } from '@/features/inbound/kfz/lib/kfz-analytics-active-time'
@@ -22,7 +26,9 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-analytics-consent'
 import {
   KFZ_ANALYTICS_FIXTURE_ALL,
+  KFZ_ANALYTICS_FIXTURE_COMPARISON,
   KFZ_ANALYTICS_FIXTURE_OTHER_DAY,
+  KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW,
   KFZ_ANALYTICS_FIXTURE_QUALITY_DIRTY,
   KFZ_ANALYTICS_FIXTURE_SESSION_A,
   KFZ_ANALYTICS_FIXTURE_UNKNOWN,
@@ -655,8 +661,9 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(dashboard.visits, 4)
     assert.equal(dashboard.funnelStarts, 3)
     assert.equal(dashboard.submissions, 2)
-    assert.ok(dashboard.conversionRate != null)
-    assert.equal(Number(dashboard.conversionRate.toFixed(2)), 0.5)
+    assert.equal(dashboard.ratesHidden, true)
+    assert.equal(dashboard.conversionRate, null)
+    assert.equal(dashboard.matchedSessions < KFZ_ANALYTICS_MIN_RATE_GROUP, true)
     assert.ok(dashboard.trafficSources.some((row) => row.id === 'utm' && row.count === 2))
     assert.ok(dashboard.campaigns.some((row) => row.id === 'kfz-check' && row.count === 1))
     assert.ok(dashboard.branches.some((row) => row.id === 'upload_documents' && row.count === 1))
@@ -700,6 +707,12 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(empty.conversionRate, null)
     assert.equal(empty.startRate, null)
     assert.equal(empty.submitFromStartRate, null)
+    assert.equal(empty.ratesHidden, true)
+    assert.equal(empty.sourceComparisons.length, 0)
+    assert.equal(empty.referrerComparisons.length, 0)
+    assert.equal(empty.branchComparisons.length, 0)
+    assert.equal(empty.periodComparison.current.visits, 0)
+    assert.equal(empty.periodComparison.current.conversionRate, null)
     assert.equal(empty.steps.length, 0)
     assert.equal(empty.dropOffs.length, 0)
     assert.equal(empty.transitions.length, 0)
@@ -720,10 +733,8 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(dashboard.dataQuality.malformedSourceCategories, 0)
     assert.equal(dashboard.dataQuality.incompleteSessions, 0)
 
-    assert.ok(dashboard.startRate != null)
-    assert.equal(Number(dashboard.startRate.toFixed(2)), 0.75)
-    assert.ok(dashboard.submitFromStartRate != null)
-    assert.equal(Number(dashboard.submitFromStartRate.toFixed(2)), 0.67)
+    assert.equal(dashboard.startRate, null)
+    assert.equal(dashboard.submitFromStartRate, null)
     assert.ok(dashboard.dropOffs.some((row) => row.id === 'usage' && row.count === 1))
     assert.ok(dashboard.dropOffs.some((row) => row.id === 'branch' && row.count === 1))
   })
@@ -809,9 +820,10 @@ describe('kfz analytics dashboard filters', () => {
     assert.equal(utm.funnelStarts, 2)
     assert.equal(utm.submissions, 2)
     assert.equal(utm.abandoned, 0)
-    assert.ok(utm.conversionRate != null)
-    assert.equal(utm.conversionRate, 1)
+    assert.equal(utm.ratesHidden, true)
+    assert.equal(utm.conversionRate, null)
     assert.equal(utm.trafficSources.every((row) => row.id === 'utm'), true)
+    assert.equal(utm.sourceComparisons.every((row) => row.ratesHidden), true)
 
     const switchCar = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ALL, {
       periodId: 'all',
@@ -992,7 +1004,190 @@ describe('kfz analytics dashboard filters', () => {
   })
 })
 
+describe('kfz analytics aggregate comparisons', () => {
+  const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
 
+  it('resolves deterministic period presets and previous-window date boundaries', () => {
+    assert.equal(KFZ_ANALYTICS_MIN_RATE_GROUP, 5)
+
+    const rolling = resolveKfzAnalyticsDashboardFilters({ period: '7d' }, nowMs)
+    assert.equal(rolling.filters.periodId, '7d')
+    assert.equal(rolling.from, '2026-09-02T12:00:00.000Z')
+    assert.equal(rolling.to, '2026-09-09T12:00:00.000Z')
+
+    const previous = resolveKfzAnalyticsPreviousRange(rolling.filters, rolling)
+    assert.ok(previous)
+    assert.equal(previous.from, '2026-08-26T12:00:00.000Z')
+    assert.equal(previous.to, '2026-09-02T11:59:59.999Z')
+
+    const custom = resolveKfzAnalyticsDashboardFilters(
+      { from: '2026-09-09', to: '2026-09-09' },
+      nowMs,
+    )
+    const customPrevious = resolveKfzAnalyticsPreviousRange(custom.filters, custom)
+    assert.ok(customPrevious)
+    assert.equal(customPrevious.from, '2026-09-08T00:00:00.000Z')
+    assert.equal(customPrevious.to, '2026-09-08T23:59:59.999Z')
+
+    const all = resolveKfzAnalyticsDashboardFilters({ period: 'all' }, nowMs)
+    assert.equal(resolveKfzAnalyticsPreviousRange(all.filters, all), null)
+  })
+
+  it('compares source, referrer and branch aggregates with honest small groups', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_COMPARISON, {
+      periodId: 'all',
+      nowMs,
+    })
+
+    assert.equal(dashboard.visits, 12)
+    assert.equal(dashboard.funnelStarts, 11)
+    assert.equal(dashboard.submissions, 6)
+    assert.equal(dashboard.ratesHidden, false)
+    assert.ok(dashboard.conversionRate != null)
+    assert.equal(Number(dashboard.conversionRate.toFixed(2)), 0.5)
+    assert.ok(dashboard.startRate != null)
+    assert.equal(dashboard.startRate, 11 / 12)
+    assert.ok(dashboard.submitFromStartRate != null)
+    assert.equal(dashboard.submitFromStartRate, 6 / 11)
+
+    const utm = dashboard.sourceComparisons.find((row) => row.id === 'utm')
+    assert.ok(utm)
+    assert.equal(utm.visits, 6)
+    assert.equal(utm.funnelStarts, 6)
+    assert.equal(utm.submissions, 6)
+    assert.equal(utm.ratesHidden, false)
+    assert.equal(utm.conversionRate, 1)
+    assert.equal(utm.topReachedStepId, 'documents')
+    assert.ok((utm.transitionCount ?? 0) > 0)
+
+    const direct = dashboard.sourceComparisons.find((row) => row.id === 'direct')
+    assert.ok(direct)
+    assert.equal(direct.visits, 6)
+    assert.equal(direct.submissions, 0)
+    assert.equal(direct.conversionRate, 0)
+    assert.equal(direct.dropOffRate, 1)
+    assert.equal(direct.topDropOffStepId, 'usage')
+
+    const evb = dashboard.branchComparisons.find((row) => row.id === 'evb')
+    assert.ok(evb)
+    assert.equal(evb.sessions, 1)
+    assert.equal(evb.visits, 1)
+    assert.equal(evb.submissions, 1)
+    assert.equal(evb.ratesHidden, true)
+    assert.equal(evb.conversionRate, null)
+    assert.equal(evb.dropOffRate, null)
+    assert.equal(evb.topReachedStepId, null)
+    assert.equal(evb.topDropOffStepId, null)
+    assert.equal(evb.transitionCount, null)
+    assert.equal(evb.averageActiveMs, null)
+
+    const social = dashboard.referrerComparisons.find((row) => row.id === 'social')
+    assert.ok(social)
+    assert.equal(social.sessions, 1)
+    assert.equal(social.ratesHidden, true)
+    assert.equal(social.conversionRate, null)
+
+    const search = dashboard.referrerComparisons.find((row) => row.id === 'search')
+    assert.ok(search)
+    assert.equal(search.visits, 5)
+    assert.equal(search.ratesHidden, false)
+    assert.equal(search.conversionRate, 1)
+
+    const switchCar = dashboard.branchComparisons.find((row) => row.id === 'switch_car')
+    assert.ok(switchCar)
+    assert.equal(switchCar.visits, 5)
+    assert.equal(switchCar.submissions, 0)
+    assert.equal(switchCar.conversionRate, 0)
+    assert.equal(switchCar.topDropOffStepId, 'usage')
+
+    const emptyGroup = dashboard.branchComparisons.find((row) => row.id === 'additional_car')
+    assert.equal(emptyGroup, undefined)
+  })
+
+  it('keeps empty and filtered small groups honest and does not invent matches', () => {
+    const empty = aggregateKfzAnalyticsDashboard([], {
+      periodId: 'all',
+      nowMs,
+    })
+    assert.equal(empty.periodComparison.available, false)
+    assert.equal(empty.periodComparison.previous, null)
+    assert.equal(empty.sourceComparisons.length, 0)
+    assert.equal(empty.conversionRate, null)
+
+    const filtered = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_COMPARISON, {
+      periodId: 'all',
+      nowMs,
+      query: { branch: 'evb' },
+    })
+    assert.equal(filtered.matchedSessions, 1)
+    assert.equal(filtered.visits, 1)
+    assert.equal(filtered.submissions, 1)
+    assert.equal(filtered.ratesHidden, true)
+    assert.equal(filtered.conversionRate, null)
+    assert.equal(filtered.branchComparisons.length, 1)
+    assert.equal(filtered.branchComparisons[0]?.id, 'evb')
+    assert.equal(filtered.branchComparisons[0]?.ratesHidden, true)
+    assert.equal(filtered.steps.every((step) => step.dropOffRate == null || step.reached >= 5), true)
+
+    const none = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_COMPARISON, {
+      periodId: 'all',
+      nowMs,
+      query: { source: 'campaign', branch: 'first_car' },
+    })
+    assert.equal(none.empty, true)
+    assert.equal(none.sourceComparisons.length, 0)
+    assert.equal(none.branchComparisons.length, 0)
+    assert.equal(none.conversionRate, null)
+  })
+
+  it('compares the previous period without overlapping the current window', () => {
+    const events = [...KFZ_ANALYTICS_FIXTURE_ALL, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW]
+    const dashboard = aggregateKfzAnalyticsDashboard(events, {
+      periodId: '7d',
+      nowMs,
+    })
+
+    assert.equal(dashboard.visits, 4)
+    assert.equal(dashboard.periodComparison.available, true)
+    assert.equal(dashboard.periodComparison.previousFrom, '2026-08-26T12:00:00.000Z')
+    assert.equal(dashboard.periodComparison.previousTo, '2026-09-02T11:59:59.999Z')
+    assert.equal(dashboard.periodComparison.current.visits, 4)
+    assert.equal(dashboard.periodComparison.current.ratesHidden, true)
+    assert.equal(dashboard.periodComparison.current.conversionRate, null)
+    assert.ok(dashboard.periodComparison.previous)
+    assert.equal(dashboard.periodComparison.previous.visits, 1)
+    assert.equal(dashboard.periodComparison.previous.funnelStarts, 1)
+    assert.equal(dashboard.periodComparison.previous.submissions, 1)
+    assert.equal(dashboard.periodComparison.previous.ratesHidden, true)
+    assert.equal(dashboard.periodComparison.previous.conversionRate, null)
+    assert.equal(dashboard.periodComparison.previous.topReachedStepId, null)
+
+    const otherDay = aggregateKfzAnalyticsDashboard(
+      [...events, ...KFZ_ANALYTICS_FIXTURE_OTHER_DAY],
+      { periodId: '7d', nowMs },
+    )
+    assert.equal(otherDay.visits, 4)
+    assert.equal(otherDay.periodComparison.previous?.visits, 1)
+  })
+
+  it('redacts forbidden fields from comparison aggregates', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(
+      [...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_UNKNOWN],
+      { periodId: 'all', nowMs },
+    )
+    const serialized = JSON.stringify({
+      sourceComparisons: dashboard.sourceComparisons,
+      referrerComparisons: dashboard.referrerComparisons,
+      branchComparisons: dashboard.branchComparisons,
+      periodComparison: dashboard.periodComparison,
+    })
+    assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
+    assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)
+    assert.doesNotMatch(serialized, /user-agent|https?:\/\/|filename|objectKey|freeText/i)
+    assert.doesNotMatch(serialized, /sessionId|aaaaaaaa-aaaa/)
+    assert.ok(dashboard.sourceComparisons.every((row) => !('sessionId' in row)))
+  })
+})
 
 describe('kfz analytics quality guardrails', () => {
   const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
@@ -1226,6 +1421,7 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-referrer.ts',
       'features/inbound/kfz/lib/kfz-analytics-review-state.ts',
       'features/inbound/kfz/lib/kfz-analytics-quality.ts',
+      'features/inbound/kfz/lib/kfz-analytics-compare.ts',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
     const source = files.map((relative) => readSrc(relative)).join('\n')
@@ -1247,6 +1443,7 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /data-kfz-analytics-transitions/)
     assert.match(source, /data-kfz-analytics-state/)
     assert.match(source, /data-kfz-analytics-quality/)
+    assert.match(source, /data-kfz-analytics-comparisons/)
     assert.match(source, /data-kfz-analytics-consent-withdraw/)
     assert.match(source, /Referrer-Kategorie/)
   })

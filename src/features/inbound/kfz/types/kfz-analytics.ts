@@ -136,6 +136,39 @@ export type KfzAnalyticsCountRow = {
   count: number
 }
 
+/** Minimum sessions before conversion or drop-off rates are shown. */
+export const KFZ_ANALYTICS_MIN_RATE_GROUP = 5
+
+export type KfzAnalyticsComparisonRow = {
+  id: string
+  label: string
+  sessions: number
+  visits: number
+  funnelStarts: number
+  submissions: number
+  abandoned: number
+  ratesHidden: boolean
+  conversionRate: number | null
+  startRate: number | null
+  submitFromStartRate: number | null
+  dropOffRate: number | null
+  averageActiveMs: number | null
+  medianActiveMs: number | null
+  topReachedStepId: string | null
+  topReachedStepLabel: string | null
+  topDropOffStepId: string | null
+  topDropOffStepLabel: string | null
+  transitionCount: number | null
+}
+
+export type KfzAnalyticsPeriodComparison = {
+  available: boolean
+  previousFrom: string | null
+  previousTo: string | null
+  current: KfzAnalyticsComparisonRow
+  previous: KfzAnalyticsComparisonRow | null
+}
+
 export type KfzAnalyticsTransitionRow = {
   id: string
   fromStepId: string
@@ -197,10 +230,15 @@ export type KfzAnalyticsDashboard = {
   conversionRate: number | null
   startRate: number | null
   submitFromStartRate: number | null
+  ratesHidden: boolean
   trafficSources: KfzAnalyticsCountRow[]
   referrerCategories: KfzAnalyticsCountRow[]
   campaigns: KfzAnalyticsCountRow[]
   branches: KfzAnalyticsCountRow[]
+  sourceComparisons: KfzAnalyticsComparisonRow[]
+  referrerComparisons: KfzAnalyticsComparisonRow[]
+  branchComparisons: KfzAnalyticsComparisonRow[]
+  periodComparison: KfzAnalyticsPeriodComparison
   steps: KfzAnalyticsStepFunnelRow[]
   transitions: KfzAnalyticsTransitionRow[]
   dropOffs: KfzAnalyticsCountRow[]

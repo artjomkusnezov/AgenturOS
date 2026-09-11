@@ -7,14 +7,18 @@ import {
   resolveKfzAnalyticsDataQualityState,
   resolveKfzAnalyticsReviewStatus,
 } from '@/features/inbound/kfz/lib/kfz-analytics-review-state'
-import type {
-  KfzAnalyticsCountRow,
-  KfzAnalyticsDashboard,
-  KfzAnalyticsDashboardFilters,
-  KfzAnalyticsDataQuality,
-  KfzAnalyticsRecord,
-  KfzAnalyticsReviewStatus,
-  KfzAnalyticsTransitionRow,
+import { formatKfzAnalyticsDisplayDate, isoToKfzAnalyticsDate } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
+import {
+  KFZ_ANALYTICS_MIN_RATE_GROUP,
+  type KfzAnalyticsComparisonRow,
+  type KfzAnalyticsCountRow,
+  type KfzAnalyticsDashboard,
+  type KfzAnalyticsDashboardFilters,
+  type KfzAnalyticsDataQuality,
+  type KfzAnalyticsPeriodComparison,
+  type KfzAnalyticsRecord,
+  type KfzAnalyticsReviewStatus,
+  type KfzAnalyticsTransitionRow,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
 function formatActiveMs(ms: number | null): string {
@@ -77,6 +81,7 @@ export function KfzAnalyticsDashboardView({
       data-kfz-analytics-dashboard="true"
       data-kfz-analytics-state={dashboard.empty ? 'empty' : 'ready'}
       data-kfz-analytics-filter-active={dashboard.filterActive ? 'true' : 'false'}
+      data-kfz-analytics-rates-hidden={dashboard.ratesHidden ? 'true' : 'false'}
     >
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
@@ -139,19 +144,31 @@ export function KfzAnalyticsDashboardView({
         <KpiCard
           label="Abschlussquote"
           value={formatRate(dashboard.conversionRate)}
-          detail="Anfragen / Besuche"
+          detail={
+            dashboard.ratesHidden
+              ? `Quote erst ab ${KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen`
+              : 'Anfragen / Besuche'
+          }
           testId="conversion"
         />
         <KpiCard
           label="Startquote"
           value={formatRate(dashboard.startRate)}
-          detail="Starts / Besuche"
+          detail={
+            dashboard.ratesHidden
+              ? `Quote erst ab ${KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen`
+              : 'Starts / Besuche'
+          }
           testId="start-rate"
         />
         <KpiCard
           label="Abschluss der Starts"
           value={formatRate(dashboard.submitFromStartRate)}
-          detail="Anfragen / Starts"
+          detail={
+            dashboard.ratesHidden
+              ? `Quote erst ab ${KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen`
+              : 'Anfragen / Starts'
+          }
           testId="submit-from-start"
         />
         <KpiCard
@@ -161,6 +178,27 @@ export function KfzAnalyticsDashboardView({
           testId="site-time"
         />
       </div>
+
+      <PeriodComparisonCard comparison={dashboard.periodComparison} />
+
+      <ComparisonTable
+        title="Vergleich nach Herkunft"
+        empty="Keine Herkunftsdaten. Unbekannte Sitzungen erscheinen als Unbekannt."
+        rows={dashboard.sourceComparisons}
+        testId="source"
+      />
+      <ComparisonTable
+        title="Vergleich nach Referrer-Kategorie"
+        empty="Keine Referrer-Kategorie. Volle URLs werden nicht gespeichert."
+        rows={dashboard.referrerComparisons}
+        testId="referrer"
+      />
+      <ComparisonTable
+        title="Vergleich nach Einstieg"
+        empty="Kein Zweig gewählt. Unbekannter Einstieg bleibt Unbekannt."
+        rows={dashboard.branchComparisons}
+        testId="branch"
+      />
 
       <section className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}>
         <h3 className="text-sm font-semibold text-zinc-900">Funnel nach Schritt</h3>
@@ -199,28 +237,10 @@ export function KfzAnalyticsDashboardView({
 
       <div className="grid gap-3 lg:grid-cols-2">
         <BarCard
-          title="Herkunft"
-          rows={dashboard.trafficSources}
-          empty="Keine Herkunftsdaten. Unbekannte Sitzungen erscheinen als Unbekannt."
-          testId="sources"
-        />
-        <BarCard
-          title="Referrer-Kategorie"
-          rows={dashboard.referrerCategories}
-          empty="Keine Referrer-Kategorie. Volle URLs werden nicht gespeichert."
-          testId="referrers"
-        />
-        <BarCard
           title="Kampagnen"
           rows={dashboard.campaigns}
           empty="Keine allow-listed Kampagnen."
           testId="campaigns"
-        />
-        <BarCard
-          title="Einstiegswege"
-          rows={dashboard.branches}
-          empty="Kein Zweig gewählt. Unbekannter Einstieg bleibt Unbekannt."
-          testId="branches"
         />
         <BarCard
           title="Abbruchpunkte"
@@ -506,6 +526,170 @@ function TransitionCard({ rows }: { rows: KfzAnalyticsTransitionRow[] }) {
           ))}
         </div>
       )}
+    </section>
+  )
+}
+
+function formatComparisonDate(iso: string | null): string {
+  return formatKfzAnalyticsDisplayDate(isoToKfzAnalyticsDate(iso))
+}
+
+function ComparisonMetric({
+  label,
+  value,
+  testId,
+}: {
+  label: string
+  value: string
+  testId: string
+}) {
+  return (
+    <div data-kfz-analytics-comparison-metric={testId}>
+      <dt className="text-[11px] text-zinc-500">{label}</dt>
+      <dd className="mt-0.5 text-sm font-semibold text-zinc-900">{value}</dd>
+    </div>
+  )
+}
+
+function ComparisonTable({
+  title,
+  empty,
+  rows,
+  testId,
+}: {
+  title: string
+  empty: string
+  rows: KfzAnalyticsComparisonRow[]
+  testId: string
+}) {
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+      data-kfz-analytics-comparisons={testId}
+    >
+      <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
+      <p className="mt-1 text-xs text-zinc-500">
+        Abschluss und Abbruch nur als Aggregat. Quoten und Stopppunkte erst ab{' '}
+        {KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen — kleine Gruppen bleiben ehrlich
+        und zeigen keine einzelnen Verläufe.
+      </p>
+      {rows.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-500">{empty}</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-[720px] w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-[11px] uppercase tracking-wide text-zinc-500">
+                <th className="py-2 pr-3 font-medium">Gruppe</th>
+                <th className="py-2 pr-3 font-medium">Besuche</th>
+                <th className="py-2 pr-3 font-medium">Starts</th>
+                <th className="py-2 pr-3 font-medium">Anfragen</th>
+                <th className="py-2 pr-3 font-medium">Abschluss</th>
+                <th className="py-2 pr-3 font-medium">Abbruch</th>
+                <th className="py-2 pr-3 font-medium">Schritt</th>
+                <th className="py-2 pr-3 font-medium">Stopp</th>
+                <th className="py-2 pr-3 font-medium">Übergänge</th>
+                <th className="py-2 font-medium">Zeit Ø</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-zinc-100 last:border-0"
+                  data-kfz-analytics-comparison-row={row.id}
+                  data-kfz-analytics-rates-hidden={row.ratesHidden ? 'true' : 'false'}
+                >
+                  <td className="py-2.5 pr-3 font-medium text-zinc-800">{row.label}</td>
+                  <td className="py-2.5 pr-3 text-zinc-700">{formatCount(row.visits)}</td>
+                  <td className="py-2.5 pr-3 text-zinc-700">{formatCount(row.funnelStarts)}</td>
+                  <td className="py-2.5 pr-3 text-zinc-700">{formatCount(row.submissions)}</td>
+                  <td className="py-2.5 pr-3 text-zinc-700">{formatRate(row.conversionRate)}</td>
+                  <td className="py-2.5 pr-3 text-zinc-700">
+                    {row.ratesHidden ? '—' : formatRate(row.dropOffRate)}
+                  </td>
+                  <td className="py-2.5 pr-3 text-zinc-600">
+                    {row.topReachedStepLabel ?? '—'}
+                  </td>
+                  <td className="py-2.5 pr-3 text-zinc-600">
+                    {row.topDropOffStepLabel ?? '—'}
+                  </td>
+                  <td className="py-2.5 pr-3 text-zinc-700">
+                    {row.transitionCount == null ? '—' : formatCount(row.transitionCount)}
+                  </td>
+                  <td className="py-2.5 text-zinc-700">{formatActiveMs(row.averageActiveMs)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function PeriodComparisonCard({
+  comparison,
+}: {
+  comparison: KfzAnalyticsPeriodComparison
+}) {
+  const rows = [comparison.current]
+  if (comparison.previous) {
+    rows.push(comparison.previous)
+  }
+
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+      data-kfz-analytics-comparisons="period"
+      data-kfz-analytics-period-comparison={comparison.available ? 'true' : 'false'}
+    >
+      <h3 className="text-sm font-semibold text-zinc-900">Vergleich zum vorherigen Zeitraum</h3>
+      <p className="mt-1 text-xs text-zinc-500">
+        {comparison.available
+          ? `Vorheriges Fenster UTC ${formatComparisonDate(comparison.previousFrom)} – ${formatComparisonDate(comparison.previousTo)}. Gleiche Filter, keine einzelnen Sitzungen.`
+          : 'Bei „Gesamt“ gibt es keinen Vorzeitraum. Es wird kein Fenster erfunden.'}
+      </p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {rows.map((row) => (
+          <div
+            key={row.id}
+            className="rounded-lg bg-zinc-50 px-3 py-3"
+            data-kfz-analytics-comparison-row={row.id}
+            data-kfz-analytics-rates-hidden={row.ratesHidden ? 'true' : 'false'}
+          >
+            <p className="text-sm font-semibold text-zinc-900">{row.label}</p>
+            <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <ComparisonMetric label="Besuche" value={formatCount(row.visits)} testId="visits" />
+              <ComparisonMetric
+                label="Starts"
+                value={formatCount(row.funnelStarts)}
+                testId="starts"
+              />
+              <ComparisonMetric
+                label="Anfragen"
+                value={formatCount(row.submissions)}
+                testId="submissions"
+              />
+              <ComparisonMetric
+                label="Abschluss"
+                value={formatRate(row.conversionRate)}
+                testId="conversion"
+              />
+              <ComparisonMetric
+                label="Abbruch"
+                value={row.ratesHidden ? '—' : formatRate(row.dropOffRate)}
+                testId="dropoff"
+              />
+              <ComparisonMetric
+                label="Zeit Ø"
+                value={formatActiveMs(row.averageActiveMs)}
+                testId="timing"
+              />
+            </dl>
+          </div>
+        ))}
+      </div>
     </section>
   )
 }
