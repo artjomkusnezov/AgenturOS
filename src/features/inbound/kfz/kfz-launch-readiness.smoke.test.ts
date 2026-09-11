@@ -92,6 +92,7 @@ describe('kfz launch readiness evaluation', () => {
     assert.match(serialized, /INBOUND_KFZ_INTAKE_SECRET/)
     assert.match(serialized, /20260906120000_inbox_website_channel_source\.sql/)
     assert.match(serialized, /20260909140000_kfz_funnel_analytics_events\.sql/)
+    assert.match(serialized, /20260911120000_kfz_funnel_analytics_persistence_contract\.sql/)
     assert.match(serialized, /20260910120000_kfz_inbound_documents_bucket\.sql/)
 
     const facts = listKfzLaunchReadinessFacts(report)

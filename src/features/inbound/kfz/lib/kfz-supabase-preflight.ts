@@ -44,6 +44,7 @@ export const KFZ_SUPABASE_RELATED_MIGRATIONS = [
   'supabase/migrations/20260906120000_inbox_website_channel_source.sql',
   'supabase/migrations/20260909140000_kfz_funnel_analytics_events.sql',
   KFZ_SUPABASE_DOCUMENTS_MIGRATION,
+  'supabase/migrations/20260911120000_kfz_funnel_analytics_persistence_contract.sql',
 ] as const
 
 export const KFZ_SUPABASE_SERVICE_ROLE_ALLOWLIST = [
@@ -76,7 +77,7 @@ export const KFZ_SUPABASE_OWNER_CHECKLIST: readonly KfzSupabaseOwnerChecklistSte
     id: 'supabase-apply-migrations',
     tool: 'Supabase',
     instruction:
-      'Im bestehenden Supabase-Projekt (SQL Editor oder das bereits genutzte CLI-Projekt) die eingecheckten Dateien in dieser Reihenfolge anwenden: supabase/migrations/20260906120000_inbox_website_channel_source.sql, supabase/migrations/20260909140000_kfz_funnel_analytics_events.sql, supabase/migrations/20260910120000_kfz_inbound_documents_bucket.sql. Dieser Command wendet nichts an. Kein neues Supabase-Projekt, kein neues Paid-Add-on.',
+      'Im bestehenden Supabase-Projekt (SQL Editor oder das bereits genutzte CLI-Projekt) die eingecheckten Dateien in dieser Reihenfolge anwenden: supabase/migrations/20260906120000_inbox_website_channel_source.sql, supabase/migrations/20260909140000_kfz_funnel_analytics_events.sql, supabase/migrations/20260910120000_kfz_inbound_documents_bucket.sql, supabase/migrations/20260911120000_kfz_funnel_analytics_persistence_contract.sql. Dieser Command wendet nichts an. Kein neues Supabase-Projekt, kein neues Paid-Add-on.',
   },
   {
     id: 'supabase-confirm-private-bucket',
@@ -263,14 +264,27 @@ function inspectAnalyticsPrivacy(repoRoot: string): boolean {
     repoRoot,
     'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   )
+  const persistence = readRepoFile(
+    repoRoot,
+    'src/features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
+  )
+  const migration = readRepoFile(
+    repoRoot,
+    'supabase/migrations/20260911120000_kfz_funnel_analytics_persistence_contract.sql',
+  )
   return Boolean(
     redact &&
       boundary &&
+      persistence &&
+      migration &&
       redact.includes("'filename'") &&
       redact.includes("'objectkey'") &&
       redact.includes("'answer'") &&
       boundary.includes('file names') &&
-      boundary.includes('object keys'),
+      boundary.includes('object keys') &&
+      persistence.includes('kfzAnalyticsPropertiesPassPersistenceAllowlist') &&
+      migration.includes('kfz_funnel_analytics_properties_are_allowed') &&
+      migration.includes('revoke all on table public.kfz_funnel_analytics_events from anon'),
   )
 }
 
