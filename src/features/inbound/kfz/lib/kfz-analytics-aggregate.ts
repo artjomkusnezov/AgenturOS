@@ -15,6 +15,12 @@ import {
   type KfzAnalyticsSessionFacts,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { KFZ_ANALYTICS_ABANDON_AFTER_MS } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
+import {
+  classifyKfzAnalyticsActiveMs,
+  isKfzAnalyticsTransitionAllowed,
+  recordHasInvalidTransition,
+  summarizeKfzAnalyticsDataQuality,
+} from '@/features/inbound/kfz/lib/kfz-analytics-quality'
 import type {
   KfzAnalyticsCountRow,
   KfzAnalyticsDashboard,
@@ -163,8 +169,16 @@ export function aggregateKfzAnalyticsDashboard(
   const siteTimes: number[] = []
   const stepTimes = new Map<string, number[]>()
 
-  function addTransition(sessionId: string, fromStepId: string, toStepId: string) {
+  function addTransition(
+    sessionId: string,
+    fromStepId: string,
+    toStepId: string,
+    kind: 'forward' | 'back',
+  ) {
     if (!fromStepId || !toStepId || fromStepId === toStepId) {
+      return
+    }
+    if (!isKfzAnalyticsTransitionAllowed(fromStepId, toStepId, kind)) {
       return
     }
     const id = `${fromStepId}->${toStepId}`
@@ -195,7 +209,10 @@ export function aggregateKfzAnalyticsDashboard(
       (referrerCategories.get(facts.referrerCategory) ?? 0) + 1,
     )
     if (facts.siteActiveMs != null) {
-      siteTimes.push(facts.siteActiveMs)
+      const siteTiming = classifyKfzAnalyticsActiveMs(facts.siteActiveMs)
+      if (siteTiming.activeMs != null) {
+        siteTimes.push(siteTiming.activeMs)
+      }
     }
     if (facts.utmCampaign) {
       campaigns.set(facts.utmCampaign, (campaigns.get(facts.utmCampaign) ?? 0) + 1)
@@ -220,32 +237,46 @@ export function aggregateKfzAnalyticsDashboard(
         const set = reached.get(event.properties.stepId) ?? new Set()
         set.add(facts.sessionId)
         reached.set(event.properties.stepId, set)
-        if (event.properties.fromStepId) {
-          addTransition(facts.sessionId, event.properties.fromStepId, event.properties.stepId)
+        if (event.properties.fromStepId && !recordHasInvalidTransition(event)) {
+          addTransition(
+            facts.sessionId,
+            event.properties.fromStepId,
+            event.properties.stepId,
+            'forward',
+          )
         }
         if (typeof event.properties.activeMs === 'number') {
-          const times = stepTimes.get(event.properties.stepId) ?? []
-          times.push(event.properties.activeMs)
-          stepTimes.set(event.properties.stepId, times)
+          const timing = classifyKfzAnalyticsActiveMs(event.properties.activeMs)
+          if (timing.activeMs != null) {
+            const times = stepTimes.get(event.properties.stepId) ?? []
+            times.push(timing.activeMs)
+            stepTimes.set(event.properties.stepId, times)
+          }
         }
       }
       if (
         event.eventName === 'back_navigation' &&
         event.properties.fromStepId &&
-        event.properties.stepId
+        event.properties.stepId &&
+        !recordHasInvalidTransition(event)
       ) {
-        addTransition(facts.sessionId, event.properties.fromStepId, event.properties.stepId)
+        addTransition(
+          facts.sessionId,
+          event.properties.fromStepId,
+          event.properties.stepId,
+          'back',
+        )
       }
       if (event.eventName === 'step_completed' && event.properties.stepId) {
         const set = completed.get(event.properties.stepId) ?? new Set()
         set.add(facts.sessionId)
         completed.set(event.properties.stepId, set)
       }
-      if (
-        event.eventName === 'landing_view' &&
-        typeof event.properties.activeMs === 'number'
-      ) {
-        landingTimes.push(event.properties.activeMs)
+      if (event.eventName === 'landing_view') {
+        const timing = classifyKfzAnalyticsActiveMs(event.properties.activeMs)
+        if (timing.activeMs != null) {
+          landingTimes.push(timing.activeMs)
+        }
       }
     }
   }
@@ -325,6 +356,12 @@ export function aggregateKfzAnalyticsDashboard(
     siteMedianActiveMs: median(siteTimes),
     abandoned,
     matchedSessionIds: matched.map((facts) => facts.sessionId),
+    dataQuality: summarizeKfzAnalyticsDataQuality({
+      events: ranged,
+      uniqueEventCount: latest.length,
+      sessions,
+      empty: latest.length === 0,
+    }),
   }
 }
 

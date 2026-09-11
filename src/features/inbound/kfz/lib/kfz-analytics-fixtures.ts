@@ -216,6 +216,47 @@ export const KFZ_ANALYTICS_FIXTURE_OTHER_DAY: KfzAnalyticsRecord[] = [
   }),
 ]
 
+export const KFZ_ANALYTICS_FIXTURE_SESSION_G =
+  'abababab-abab-4aba-8aba-abababababab'
+export const KFZ_ANALYTICS_FIXTURE_SESSION_H =
+  '12121212-1212-4121-8121-121212121212'
+
+const T_RECENT = '2026-09-09T11:50:00.000Z'
+
+/**
+ * Dirty metadata-only fixture: impossible jump, extreme/negative time,
+ * duplicate step_view, incomplete session. No answers or personal data.
+ */
+export const KFZ_ANALYTICS_FIXTURE_QUALITY_DIRTY: KfzAnalyticsRecord[] = [
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_G, 'landing_view', T_RECENT, {
+    activeMs: 99_999_999_999,
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_G, 'traffic_source', T_RECENT, {
+    trafficSource: 'utm',
+    referrerCategory: 'search',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_G, 'step_view', T_RECENT, {
+    stepId: 'documents',
+    activeMs: -40,
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_G, 'step_view', T_RECENT, {
+    stepId: 'branch',
+    fromStepId: 'documents',
+    activeMs: 8_000,
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_G, 'step_view', '2026-09-09T11:51:00.000Z', {
+    stepId: 'branch',
+    fromStepId: 'documents',
+    activeMs: 8_000,
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_H, 'traffic_source', T_RECENT, {}),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_H, 'step_view', T_RECENT, {
+    stepId: 'usage',
+    fromStepId: 'branch',
+    activeMs: 3_000,
+  }),
+]
+
 export const KFZ_ANALYTICS_FIXTURE_ALL: KfzAnalyticsRecord[] = [
   ...KFZ_ANALYTICS_FIXTURE_COMPLETED,
   ...KFZ_ANALYTICS_FIXTURE_ABANDONED_MID,

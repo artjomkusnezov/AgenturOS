@@ -17,15 +17,28 @@ export function KfzAnalyticsConsentBanner({
 }: KfzAnalyticsConsentBannerProps) {
   if (consent !== 'unknown') {
     return (
-      <p
-        className="text-xs leading-relaxed text-zinc-500"
+      <div
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
         data-kfz-analytics-consent={consent}
       >
-        {consent === 'granted'
-          ? 'Nutzungsmessung aktiv (anonym, ohne Formularantworten).'
-          : 'Nutzungsmessung aus. Es werden keine Messereignisse gespeichert.'}{' '}
-        Stand: {KFZ_ANALYTICS_CONSENT_VERSION}.
-      </p>
+        <p className="text-xs leading-relaxed text-zinc-500">
+          {consent === 'granted'
+            ? 'Nutzungsmessung aktiv (anonym, ohne Formularantworten).'
+            : 'Nutzungsmessung aus. Es werden keine Messereignisse gespeichert.'}{' '}
+          Stand: {KFZ_ANALYTICS_CONSENT_VERSION}.
+        </p>
+        {consent === 'granted' ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 self-start sm:self-auto"
+            data-kfz-analytics-consent-withdraw="true"
+            onClick={onDecline}
+          >
+            Messung beenden
+          </Button>
+        ) : null}
+      </div>
     )
   }
 

@@ -150,6 +150,28 @@ export type KfzAnalyticsReviewStatus =
   | 'unavailable'
   | 'configuration_missing'
 
+export type KfzAnalyticsDataQuality = {
+  available: boolean
+  status: KfzAnalyticsReviewStatus
+  acceptedEvents: number
+  duplicateEvents: number
+  invalidTransitions: number
+  rejectedTimings: number
+  missingSessionMetadata: number
+  malformedSourceCategories: number
+  incompleteSessions: number
+}
+
+export type KfzAnalyticsIngestQuality = {
+  consentBlocked: number
+  duplicates: number
+  invalidTransitions: number
+  rejectedTimings: number
+  missingSessionMetadata: number
+  malformedSourceCategories: number
+  redactedForbiddenFields: number
+}
+
 export type KfzAnalyticsStepFunnelRow = {
   stepId: string
   label: string
@@ -191,6 +213,7 @@ export type KfzAnalyticsDashboard = {
   siteMedianActiveMs: number | null
   abandoned: number
   matchedSessionIds: string[]
+  dataQuality: KfzAnalyticsDataQuality
 }
 
 export type KfzAnalyticsDashboardLoadResult =

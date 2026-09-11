@@ -21,6 +21,10 @@ import {
   buildKfzAnalyticsEventKey,
   sanitizeKfzAnalyticsRecord,
 } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
+import {
+  isKfzAnalyticsBackTransitionAllowed,
+  isKfzAnalyticsForwardTransitionAllowed,
+} from '@/features/inbound/kfz/lib/kfz-analytics-quality'
 import { sanitizeKfzAnalyticsTrafficSource } from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
 import type {
   KfzAnalyticsConsentState,
@@ -213,7 +217,10 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
         return []
       }
       const fromStepId =
-        lastStepId && lastStepId !== stepId && isKfzAnalyticsStepId(lastStepId)
+        lastStepId &&
+        lastStepId !== stepId &&
+        isKfzAnalyticsStepId(lastStepId) &&
+        isKfzAnalyticsForwardTransitionAllowed(lastStepId, stepId)
           ? lastStepId
           : undefined
       flushTiming(stepId)
@@ -257,6 +264,9 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
     },
     recordBackNavigation(fromStepId: string, toStepId: string): KfzAnalyticsRecord[] {
       if (!isKfzAnalyticsStepId(fromStepId) || !isKfzAnalyticsStepId(toStepId)) {
+        return []
+      }
+      if (!isKfzAnalyticsBackTransitionAllowed(fromStepId, toStepId)) {
         return []
       }
       flushTiming(toStepId)
