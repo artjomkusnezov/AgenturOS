@@ -1,28 +1,24 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-c46d
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-4e4f
 
 ## Title
-AGENTUROS — KFZ ANALYTICS PERSISTENCE CONTRACT
+AGENTUROS — KFZ MIGRATION CHAIN DRY RUN
 
 ## Goal
-Verify and harden the existing Supabase persistence contract for privacy-safe Kfz analytics so the database schema, migrations and policies accept only the approved aggregate metadata and reject forbidden fields.
+Prove the complete Kfz Supabase migration chain works safely on clean and legacy test databases, including private documents, inbox review and metadata-only analytics, without touching production.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-c46d (PR #52). No merge or main/master write.
-- Extend the existing analytics persistence and migrations, not a parallel store.
-- Confirm schema/migrations support coarse source/referrer category, visit, branch, reached step, stop point, site/step timing, transitions and submission plus current consent/data-quality fields.
-- Reject or discard names, contacts, answers, filenames, object keys, free text, full URLs/query strings, secrets and personal identifiers before persistence.
-- Verify RLS/policies keep anonymous writes narrowly allow-listed and prevent public reads; authorized aggregate review remains server-side.
-- Keep migrations additive/idempotent and safe for already-created tables; do not run them against production.
-- Preserve all six Kfz branches, questionnaire, consent, private documents, inbox, authorized review and current analytics UI.
-- Add deterministic migration/schema, payload allow-list, RLS contract, retry and redaction tests using synthetic data only.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-4e4f (PR #53). No merge or main/master write.
+- Build a deterministic test-only migration harness for an empty schema and the supported pre-analytics legacy schema.
+- Apply the checked-in Kfz migrations twice in the test harness to prove additive idempotency and compatibility.
+- Verify private bucket/policies, submission/inbox linkage, authorized review, analytics allow-list, unique retry behavior and no public reads.
+- Use synthetic data only. Never read, print or persist real secrets, answers, names, contacts, filenames, object keys, free text or full URLs/query strings.
+- Report failures by migration/check name only; never print environment values or credentials.
+- Preserve current routes, all six Kfz branches, questionnaire, consent, readiness and analytics UI.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check desktop and mobile locally/test-only; inspect Vercel Preview read-only if available. No deploy or environment mutation.
+- Browser-check readiness and analytics locally/test-only after the harness; inspect Vercel Preview read-only if available. No production database or environment mutation.
 
 ## Safety
-Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-97d1116c-fa7a-4ba7-8d33-ed4888cd5df6
-CONTROLLER_STARTED_AT: 2026-09-11T05:50:28Z
+Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
