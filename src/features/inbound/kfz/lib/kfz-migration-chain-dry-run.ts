@@ -91,6 +91,13 @@ function sqlErrorCode(error: unknown): string | null {
   return null
 }
 
+function failedWith(
+  result: { ok: true } | { ok: false; code: string | null },
+  code: string,
+): boolean {
+  return !result.ok && result.code === code
+}
+
 function isTrue(value: unknown): boolean {
   return value === true || value === 't' || value === 'true'
 }
@@ -520,7 +527,7 @@ async function verifyAnalyticsAllowlist(
     )
   }
 
-  const ok = allowed.ok && !forbidden.ok && forbidden.code === '23514' && legacyOk
+  const ok = allowed.ok && failedWith(forbidden, '23514') && legacyOk
   return check('analytics_allowlist', ok, ANALYTICS_CONTRACT_MIGRATION)
 }
 
@@ -600,8 +607,8 @@ async function verifyUniqueRetry(db: MemoryDb): Promise<KfzMigrationChainCheckRe
 
   const ok =
     firstAnalytics.ok &&
-    retryAnalytics.code === '23505' &&
-    retryInbox.code === '23505' &&
+    failedWith(retryAnalytics, '23505') &&
+    failedWith(retryInbox, '23505') &&
     oneAnalytics &&
     oneInbox
 
@@ -688,7 +695,7 @@ async function verifyNoPublicReads(db: MemoryDb): Promise<KfzMigrationChainCheck
   )
   await db.exec('reset role')
 
-  const anonBlocked = !anonSelect.ok || anonSelect.code === '42501'
+  const anonBlocked = !anonSelect.ok
   const ok =
     grantsOk &&
     anonBlocked &&
