@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-13c0
 
 ## Title
@@ -23,3 +23,6 @@ Extend the existing privacy-safe Kfz analytics review with useful period, source
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-ffacc9a1-ec23-4d4e-8c02-03f64fa3060d
+CONTROLLER_STARTED_AT: 2026-09-11T04:20:10Z
