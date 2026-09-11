@@ -211,6 +211,7 @@ Interne Checkliste in AgenturOS — kein zweites Dashboard. Oben eine Owner-Antw
 - Lokaler Acceptance-Walk: `src/features/inbound/kfz/kfz-launch-acceptance.smoke.test.ts`.
 - Test-only Release-Candidate-Harness: `src/features/inbound/kfz/kfz-release-candidate-acceptance.smoke.test.ts` — `/kfz` → Submit → exact-once Retry → ein Inbox-Item → autorisierte Dokumentprüfung → anonyme/fremde Ablehnung. Nur synthetische Testdaten und eine winzige generierte Datei. Analytics bleibt metadaten-only (Quelle, Besuch, Zweig, Schritt, Stopp, Timing, Submit). Fehlerklassen: `configuration_missing`, `persistence_unavailable`, `unauthorized_review`, `route_missing` — ohne Werte. Kein Production-Claim.
 - Test-only Migrationskette: `src/features/inbound/kfz/kfz-migration-chain-dry-run.smoke.test.ts` — In-Memory-Apply der eingecheckten Kfz-Migrationen zweimal (leer + Legacy). Kein Remote-Apply.
+- Release-Handoff (Stack, Migrationen, Commands, Owner-only, Stopp): `docs/kfz-release-handoff.md`, sichtbar auf `/app/kfz-readiness`. Tests: `src/features/inbound/kfz/kfz-release-handoff.smoke.test.ts`. Kein Merge, kein Apply, keine Secret-Werte.
 
 ## Follow-ups (bewusst nicht in diesem Slice)
 

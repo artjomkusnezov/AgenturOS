@@ -17,6 +17,14 @@ import {
   type KfzLaunchProbeOverrides,
 } from '@/features/inbound/kfz/lib/kfz-launch-readiness-checks'
 import {
+  inspectKfzReleaseHandoff,
+} from '@/features/inbound/kfz/lib/kfz-release-handoff'
+import {
+  KFZ_RELEASE_HANDOFF_DISCLAIMER,
+  KFZ_RELEASE_HANDOFF_DOC,
+  KFZ_RELEASE_HANDOFF_HEADLINE,
+} from '@/features/inbound/kfz/types/kfz-release-handoff'
+import {
   collectHiddenEnvValues,
   KFZ_SUPABASE_DOCUMENTS_MIGRATION,
   KFZ_SUPABASE_OWNER_CHECKLIST,
@@ -108,12 +116,15 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts',
   'src/features/inbound/kfz/lib/kfz-migration-chain-dry-run.ts',
   'src/features/inbound/kfz/types/kfz-migration-chain-dry-run.ts',
+  'src/features/inbound/kfz/lib/kfz-release-handoff.ts',
+  'src/features/inbound/kfz/types/kfz-release-handoff.ts',
   'src/app/app/inbox/kfz-document/route.ts',
   'src/features/inbound/kfz/lib/kfz-supabase-preflight.ts',
   'src/features/inbound/kfz/lib/kfz-supabase-persist-env.ts',
   'src/features/inbound/kfz/bin/run-kfz-supabase-preflight.ts',
   ...KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => entry.file),
   'docs/kfz-inbound-local-test.md',
+  KFZ_RELEASE_HANDOFF_DOC,
   '.env.example',
 ] as const
 
@@ -169,6 +180,12 @@ const DOC_ENV_EXAMPLE: KfzLaunchReadinessRef = {
   kind: 'doc',
   label: '.env.example',
   path: '.env.example',
+}
+
+const DOC_RELEASE_HANDOFF: KfzLaunchReadinessRef = {
+  kind: 'doc',
+  label: KFZ_RELEASE_HANDOFF_DOC,
+  path: KFZ_RELEASE_HANDOFF_DOC,
 }
 
 function envRef(name: string): KfzLaunchReadinessRef {
@@ -388,6 +405,8 @@ export function evaluateKfzLaunchReadiness(input: {
   )
   const docsFile = filePresent(files, 'docs/kfz-inbound-local-test.md')
   const envExampleFile = filePresent(files, '.env.example')
+  const handoffFile = filePresent(files, KFZ_RELEASE_HANDOFF_DOC)
+  const handoff = inspectKfzReleaseHandoff(repoRoot)
 
   const branchIds = KFZ_LANDING_BRANCHES.map((branch) => branch.id)
   const branchLabels = KFZ_LANDING_BRANCHES.map((branch) => branch.label)
@@ -745,6 +764,60 @@ export function evaluateKfzLaunchReadiness(input: {
       ],
     },
     {
+      id: 'release_handoff',
+      title: 'Release-Handoff',
+      summary:
+        'Eine secret-sichere Freigabeakte: Stack-Reihenfolge, Migrationen, Commands, Preview, Stopp. Kein Merge und kein Apply.',
+      facts: [
+        fact(
+          'handoff_document',
+          'Handoff-Dokument ist eingecheckt und entspricht dem Renderer',
+          handoffFile && handoff.present && handoff.matchesRenderer ? 'PASS' : 'BLOCKED',
+          handoffFile && handoff.present && handoff.matchesRenderer
+            ? `${KFZ_RELEASE_HANDOFF_HEADLINE}. ${KFZ_RELEASE_HANDOFF_DOC} ist vorhanden und deckungsgleich mit dem lokalen Vertrag.`
+            : 'docs/kfz-release-handoff.md fehlt oder weicht vom Renderer ab.',
+          [DOC_RELEASE_HANDOFF, ROUTE_READINESS],
+        ),
+        fact(
+          'handoff_migration_order',
+          'Handoff-Migrationen entsprechen der eingecheckten Reihenfolge',
+          handoff.migrationsMatch ? 'PASS' : 'BLOCKED',
+          handoff.migrationsMatch
+            ? 'Die vier SQL-Dateien stehen im Handoff in Timestamp-Reihenfolge und existieren im Repository.'
+            : 'Handoff-Migrationen weichen von den eingecheckten SQL-Dateien ab.',
+          [
+            DOC_RELEASE_HANDOFF,
+            ...KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => migrationRef(entry.file)),
+          ],
+        ),
+        fact(
+          'handoff_routes',
+          'Handoff-Routen entsprechen den eingecheckten Seiten',
+          handoff.routesMatch ? 'PASS' : 'BLOCKED',
+          handoff.routesMatch
+            ? '/kfz, /app/inbox, /app/inbox/kfz-document, /app/kfz-analytics, /app/kfz-readiness, POST /api/inbound/kfz, POST /api/inbound/kfz-analytics.'
+            : 'Handoff-Routen weichen von den eingecheckten Dateien ab.',
+          [
+            DOC_RELEASE_HANDOFF,
+            ROUTE_LANDING,
+            ROUTE_INBOX,
+            ROUTE_DOCUMENT_REVIEW,
+            ROUTE_ANALYTICS,
+            ROUTE_READINESS,
+            ROUTE_INTAKE_API,
+            ROUTE_ANALYTICS_API,
+          ],
+        ),
+        fact(
+          'handoff_owner_release',
+          'Merge, Apply und Production-Deploy',
+          'OWNER_INPUT',
+          `${KFZ_RELEASE_HANDOFF_DISCLAIMER} Stack: ${handoff.stackPrNumbers.map((number) => `#${number}`).join(' → ')}.`,
+          [DOC_RELEASE_HANDOFF, DOC_LOCAL_TEST],
+        ),
+      ],
+    },
+    {
       id: 'production_unknowns',
       title: 'Nur in Production unbekannt',
       summary: 'Diese Punkte können lokale Fixtures nicht beweisen. Kein PASS aus dieser Seite.',
@@ -817,6 +890,7 @@ export function evaluateKfzLaunchReadiness(input: {
       env: envSnapshot,
       files,
       items,
+      handoff,
     },
     processEnv,
   )

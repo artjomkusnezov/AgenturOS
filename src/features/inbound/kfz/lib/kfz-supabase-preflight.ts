@@ -57,6 +57,8 @@ export const KFZ_SUPABASE_SERVICE_ROLE_ALLOWLIST = [
   'src/features/inbound/kfz/bin/run-kfz-supabase-preflight.ts',
   'src/features/inbound/kfz/kfz-launch-readiness.smoke.test.ts',
   'src/features/inbound/kfz/kfz-supabase-preflight.smoke.test.ts',
+  'src/features/inbound/kfz/lib/kfz-release-handoff.ts',
+  'src/features/inbound/kfz/kfz-release-handoff.smoke.test.ts',
 ] as const
 
 const SECRET_NAME_PATTERN = /SECRET|SERVICE_ROLE|TOKEN|PASSWORD|PRIVATE_KEY|_KEY$/i
