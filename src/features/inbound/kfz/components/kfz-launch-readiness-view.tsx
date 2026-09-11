@@ -376,30 +376,28 @@ function HandoffCard({ handoff }: { handoff: KfzReleaseHandoffSurface }) {
       </p>
       <p className={`mt-3 ${aosTextCaptionClassName}`}>
         Dokument:{' '}
-        <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-800">
+        <span className="break-all font-mono text-xs text-zinc-800">
           {handoff.documentPath}
-        </code>
+        </span>
       </p>
       <p
-        className={`mt-2 text-sm leading-relaxed text-zinc-700`}
+        className={`mt-2 text-sm leading-relaxed text-zinc-800`}
         data-kfz-release-handoff-stack="true"
       >
         Merge-first: {handoff.stackPrNumbers.map((number) => `#${number}`).join(' → ')}
       </p>
       <ul className="mt-2 space-y-1" data-kfz-release-handoff-migrations="true">
         {handoff.migrationFiles.map((file) => (
-          <li key={file}>
-            <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] text-zinc-800">
-              {file}
-            </code>
+          <li key={file} className="break-all font-mono text-xs text-zinc-800">
+            {file}
           </li>
         ))}
       </ul>
-      <p className={`mt-3 ${aosTextCaptionClassName}`}>
+      <p className={`mt-3 text-xs leading-relaxed text-zinc-700`}>
         Automatisiert:{' '}
         {handoff.automatedCommands.map((command) => command).join(' · ')}
       </p>
-      <p className={`mt-2 ${aosTextCaptionClassName}`}>
+      <p className={`mt-2 text-xs leading-relaxed text-zinc-700`}>
         Owner-only: {handoff.ownerStepIds.join(', ')}. Stopp:{' '}
         {handoff.stopConditionIds.join(', ')}.
       </p>
