@@ -3,16 +3,23 @@ import {
   kfzAnalyticsStepLabel,
   KFZ_ANALYTICS_STEP_IDS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
+import {
+  buildKfzAnalyticsPeriodComparison,
+  collectKfzAnalyticsSessionFacts,
+  compareKfzAnalyticsSessionsBy,
+  kfzAnalyticsAggregateRate,
+  kfzAnalyticsEventInRange,
+  kfzAnalyticsRatesHidden,
+  resolveKfzAnalyticsPreviousRange,
+} from '@/features/inbound/kfz/lib/kfz-analytics-compare'
 import { kfzAnalyticsReferrerCategoryLabel } from '@/features/inbound/kfz/lib/kfz-analytics-referrer'
 import {
-  deriveKfzAnalyticsSessionFacts,
   kfzAnalyticsDashboardFiltersAreActive,
   kfzAnalyticsTrafficSourceLabel,
   KFZ_ANALYTICS_PERIODS,
   resolveKfzAnalyticsDashboardFilters,
   resolveKfzAnalyticsPeriod,
   sessionMatchesKfzAnalyticsFilters,
-  type KfzAnalyticsSessionFacts,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { KFZ_ANALYTICS_ABANDON_AFTER_MS } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import {
@@ -36,16 +43,6 @@ import { KFZ_ANALYTICS_UNKNOWN_ID } from '@/features/inbound/kfz/types/kfz-analy
 
 export { KFZ_ANALYTICS_PERIODS, resolveKfzAnalyticsPeriod }
 
-function inRange(iso: string, from: string | null, to: string): boolean {
-  if (iso > to) {
-    return false
-  }
-  if (from && iso < from) {
-    return false
-  }
-  return true
-}
-
 function median(values: number[]): number | null {
   if (values.length === 0) {
     return null
@@ -65,13 +62,6 @@ function average(values: number[]): number | null {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
 }
 
-function ratio(numerator: number, denominator: number): number | null {
-  if (denominator <= 0) {
-    return null
-  }
-  return numerator / denominator
-}
-
 function countMapToRows(
   counts: Map<string, number>,
   labelFor: (id: string) => string,
@@ -79,29 +69,6 @@ function countMapToRows(
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([id, count]) => ({ id, label: labelFor(id), count }))
-}
-
-function latestByKey(events: KfzAnalyticsRecord[]): Map<string, KfzAnalyticsRecord> {
-  const latest = new Map<string, KfzAnalyticsRecord>()
-  for (const event of events) {
-    const current = latest.get(event.eventKey)
-    if (!current || event.occurredAt >= current.occurredAt) {
-      latest.set(event.eventKey, event)
-    }
-  }
-  return latest
-}
-
-function groupEventsBySession(
-  events: readonly KfzAnalyticsRecord[],
-): Map<string, KfzAnalyticsRecord[]> {
-  const bySession = new Map<string, KfzAnalyticsRecord[]>()
-  for (const event of events) {
-    const list = bySession.get(event.sessionId) ?? []
-    list.push(event)
-    bySession.set(event.sessionId, list)
-  }
-  return bySession
 }
 
 export function aggregateKfzAnalyticsDashboard(
@@ -134,21 +101,25 @@ export function aggregateKfzAnalyticsDashboard(
   const filters: KfzAnalyticsDashboardFilters = resolved.filters
   const from = resolved.from
   const to = resolved.to
+  const previousRange = resolveKfzAnalyticsPreviousRange(filters, { from, to })
 
-  const ranged = events.filter((event) => inRange(event.occurredAt, from, to))
-  const latest = [...latestByKey(ranged).values()]
-  const bySession = groupEventsBySession(latest)
-  const sessions: KfzAnalyticsSessionFacts[] = []
-  for (const [sessionId, sessionEvents] of bySession) {
-    sessions.push(
-      deriveKfzAnalyticsSessionFacts(sessionId, sessionEvents, {
+  const sessions = collectKfzAnalyticsSessionFacts(events, {
+    nowMs: input.nowMs,
+    abandonAfterMs,
+    from,
+    to,
+  })
+  const matched = sessions.filter((facts) => sessionMatchesKfzAnalyticsFilters(facts, filters))
+  const previousSessions = previousRange
+    ? collectKfzAnalyticsSessionFacts(events, {
         nowMs: input.nowMs,
         abandonAfterMs,
-      }),
-    )
-  }
-
-  const matched = sessions.filter((facts) => sessionMatchesKfzAnalyticsFilters(facts, filters))
+        from: previousRange.from,
+        to: previousRange.to,
+      }).filter((facts) => sessionMatchesKfzAnalyticsFilters(facts, filters))
+    : null
+  const ranged = events.filter((event) => kfzAnalyticsEventInRange(event.occurredAt, from, to))
+  const uniqueEventCount = new Set(ranged.map((event) => event.eventKey)).size
 
   let visits = 0
   let funnelStarts = 0
@@ -297,7 +268,7 @@ export function aggregateKfzAnalyticsDashboard(
       reached: reachedCount,
       completed: completedCount,
       dropOff: dropOffCount,
-      dropOffRate: reachedCount > 0 ? dropOffCount / reachedCount : null,
+      dropOffRate: kfzAnalyticsAggregateRate(dropOffCount, reachedCount, reachedCount),
       averageActiveMs: average(times),
       medianActiveMs: median(times),
     }
@@ -318,7 +289,8 @@ export function aggregateKfzAnalyticsDashboard(
     })
     .sort((a, b) => b.count - a.count || a.id.localeCompare(b.id))
 
-  const empty = latest.length === 0 || matched.length === 0
+  const empty = uniqueEventCount === 0 || matched.length === 0
+  const ratesHidden = kfzAnalyticsRatesHidden(matched.length)
 
   return {
     periodId: filters.periodId,
@@ -331,9 +303,10 @@ export function aggregateKfzAnalyticsDashboard(
     visits,
     funnelStarts,
     submissions,
-    conversionRate: ratio(submissions, visits),
-    startRate: ratio(funnelStarts, visits),
-    submitFromStartRate: ratio(submissions, funnelStarts),
+    conversionRate: kfzAnalyticsAggregateRate(submissions, visits, matched.length),
+    startRate: kfzAnalyticsAggregateRate(funnelStarts, visits, matched.length),
+    submitFromStartRate: kfzAnalyticsAggregateRate(submissions, funnelStarts, matched.length),
+    ratesHidden,
     trafficSources: countMapToRows(trafficSources, kfzAnalyticsTrafficSourceLabel),
     referrerCategories: countMapToRows(referrerCategories, (id) =>
       id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsReferrerCategoryLabel(id),
@@ -341,6 +314,14 @@ export function aggregateKfzAnalyticsDashboard(
     campaigns: countMapToRows(campaigns, (id) => id),
     branches: countMapToRows(branches, (id) =>
       id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsBranchLabel(id),
+    ),
+    sourceComparisons: compareKfzAnalyticsSessionsBy(matched, 'source'),
+    referrerComparisons: compareKfzAnalyticsSessionsBy(matched, 'referrer'),
+    branchComparisons: compareKfzAnalyticsSessionsBy(matched, 'branch'),
+    periodComparison: buildKfzAnalyticsPeriodComparison(
+      matched,
+      previousSessions,
+      previousRange,
     ),
     steps,
     transitions,
@@ -358,9 +339,9 @@ export function aggregateKfzAnalyticsDashboard(
     matchedSessionIds: matched.map((facts) => facts.sessionId),
     dataQuality: summarizeKfzAnalyticsDataQuality({
       events: ranged,
-      uniqueEventCount: latest.length,
+      uniqueEventCount,
       sessions,
-      empty: latest.length === 0,
+      empty: uniqueEventCount === 0,
     }),
   }
 }

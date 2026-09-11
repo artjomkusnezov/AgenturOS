@@ -12,7 +12,10 @@ import {
   buildKfzAnalyticsDashboardHref,
   KFZ_ANALYTICS_DEFAULT_FILTERS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
-import { KFZ_ANALYTICS_FIXTURE_ALL } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
+import {
+  KFZ_ANALYTICS_FIXTURE_COMPARISON,
+  KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW,
+} from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import type {
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsRecord,
@@ -66,9 +69,9 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
     startTransition(async () => {
       await recordKfzAnalyticsPreviewAction({
         consent: 'granted',
-        events: KFZ_ANALYTICS_FIXTURE_ALL,
+        events: [...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW],
       })
-      setEvents(KFZ_ANALYTICS_FIXTURE_ALL)
+      setEvents([...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW])
     })
   }
 

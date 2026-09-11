@@ -263,3 +263,88 @@ export const KFZ_ANALYTICS_FIXTURE_ALL: KfzAnalyticsRecord[] = [
   ...KFZ_ANALYTICS_FIXTURE_BOUNCE,
   ...KFZ_ANALYTICS_FIXTURE_RETRY_SUCCESS,
 ]
+
+const T_PREVIOUS = '2026-09-01T10:00:00.000Z'
+
+export const KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS =
+  '01010101-0101-4101-8101-010101010101'
+
+/** Same anonymous shape in the previous 7-day window for period comparison. */
+export const KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW: KfzAnalyticsRecord[] = [
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS, 'landing_view', T_PREVIOUS, {
+    activeMs: 11_000,
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS, 'traffic_source', T_PREVIOUS, {
+    trafficSource: 'direct',
+    referrerCategory: 'direct',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS, 'funnel_start', T_PREVIOUS, {
+    branchId: 'first_car',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS, 'initial_branch_selected', T_PREVIOUS, {
+    branchId: 'first_car',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS, 'step_view', T_PREVIOUS, {
+    stepId: 'branch',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_PREVIOUS, 'submit_succeeded', T_PREVIOUS, {
+    activeMs: 11_000,
+  }),
+]
+
+function numberedSessionId(index: number): string {
+  return `aa000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`
+}
+
+export function cloneKfzAnalyticsSession(
+  events: readonly KfzAnalyticsRecord[],
+  sessionId: string,
+  occurredAtShiftMs = 0,
+): KfzAnalyticsRecord[] {
+  return events.map((entry) => {
+    const occurredAt = new Date(Date.parse(entry.occurredAt) + occurredAtShiftMs).toISOString()
+    return {
+      ...entry,
+      sessionId,
+      occurredAt,
+      eventKey: entry.eventKey.replace(entry.sessionId, sessionId),
+      properties: { ...entry.properties },
+    }
+  })
+}
+
+/**
+ * Five-plus sessions per coarse source and selected branch so aggregate
+ * conversion math is visible without exposing a single session.
+ */
+export function buildKfzAnalyticsComparisonFixture(): KfzAnalyticsRecord[] {
+  const events: KfzAnalyticsRecord[] = []
+  for (let index = 0; index < 5; index += 1) {
+    events.push(
+      ...cloneKfzAnalyticsSession(
+        KFZ_ANALYTICS_FIXTURE_COMPLETED,
+        numberedSessionId(index + 1),
+        index * 60_000,
+      ),
+    )
+    events.push(
+      ...cloneKfzAnalyticsSession(
+        KFZ_ANALYTICS_FIXTURE_ABANDONED_MID,
+        numberedSessionId(index + 11),
+        index * 60_000,
+      ),
+    )
+  }
+  events.push(
+    ...cloneKfzAnalyticsSession(
+      KFZ_ANALYTICS_FIXTURE_RETRY_SUCCESS,
+      numberedSessionId(21),
+    ),
+  )
+  events.push(
+    ...cloneKfzAnalyticsSession(KFZ_ANALYTICS_FIXTURE_BOUNCE, numberedSessionId(22)),
+  )
+  return events
+}
+
+export const KFZ_ANALYTICS_FIXTURE_COMPARISON = buildKfzAnalyticsComparisonFixture()

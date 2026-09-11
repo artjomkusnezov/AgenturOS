@@ -2,6 +2,7 @@
 
 import { getCurrentUserAgency } from '@/features/agency/repositories/agency-repository'
 import { aggregateKfzAnalyticsDashboard } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
+import { resolveKfzAnalyticsPreviousRange } from '@/features/inbound/kfz/lib/kfz-analytics-compare'
 import { resolveKfzAnalyticsDashboardFilters } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import {
   classifyKfzAnalyticsDashboardFailure,
@@ -39,9 +40,10 @@ export async function loadKfzAnalyticsDashboardAction(
 
     const nowMs = Date.now()
     const resolved = resolveKfzAnalyticsDashboardFilters(query, nowMs)
+    const previous = resolveKfzAnalyticsPreviousRange(resolved.filters, resolved)
     const store = await createAuthenticatedKfzAnalyticsStore(agency.agency.id)
     const events = await store.listEvents({
-      from: resolved.from,
+      from: previous?.from ?? resolved.from,
       to: resolved.to,
     })
     return {
