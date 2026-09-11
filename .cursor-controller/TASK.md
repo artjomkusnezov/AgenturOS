@@ -1,28 +1,25 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-9908
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-13c0
 
 ## Title
-AGENTUROS — KFZ LAUNCH READINESS CHECK
+AGENTUROS — KFZ AGGREGATE PERFORMANCE VIEW
 
 ## Goal
-Make the existing Kfz readiness screen give the owner one simple, secret-safe answer about whether questionnaire, persistence, private documents, inbox review and analytics are configured for launch.
+Extend the existing privacy-safe Kfz analytics review with useful period, source and branch comparisons so the owner can see where visits become inquiries without exposing individual sessions or personal data.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-9908 (PR #50). No merge or main/master write.
-- Improve the existing /app/kfz-readiness screen and checks, not a parallel system.
-- Check names/presence only for required public configuration, migrations, private bucket/policies, submission persistence, inbox item creation, authorized document review and metadata-only analytics.
-- Never read, print or return secret values, form answers, personal data, filenames, object keys or document contents.
-- Show clear READY / BLOCKED / UNKNOWN results with one concrete safe next action per failed check.
-- Preserve all six Kfz branches, questionnaire, consent, analytics guardrails, private storage, inbox and review routes.
-- Use synthetic/test-only probes; do not submit customer data or mutate production.
-- Add deterministic tests for configured, missing, partial, unauthorized and unavailable states plus secret redaction.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-13c0 (PR #51). No merge or main/master write.
+- Improve the existing /app/kfz-analytics view and aggregation path, not a parallel dashboard.
+- Add deterministic period presets and aggregate comparisons for coarse source/referrer category, selected branch, visits, starts, reached step, stop point, transitions, timing and submissions.
+- Show conversion and drop-off only for aggregates; small/empty groups must remain honest and must not expose row-level sessions.
+- If export already exists, keep it aggregate-only; otherwise do not add a new export.
+- Never record or display names, contacts, answers, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
+- Preserve consent/data-quality guardrails, all six Kfz branches, questionnaire, private storage, inbox and authorized review.
+- Add deterministic tests for date boundaries, filters, aggregate math, empty/small groups and forbidden-field redaction.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check desktop and mobile locally/test-only; inspect Vercel Preview read-only if available. No deploy or environment mutation.
+- Browser-check desktop and mobile locally/test-only with synthetic fixtures; inspect Vercel Preview read-only if available. No deploy or environment mutation.
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-a6270c7f-af9f-449b-a371-a2f17ca4796d
-CONTROLLER_STARTED_AT: 2026-09-11T03:46:53Z
