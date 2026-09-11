@@ -129,3 +129,9 @@ export function clearKfzAnalyticsSessionId(
 ): void {
   storage?.removeItem(KFZ_ANALYTICS_SESSION_STORAGE_KEY)
 }
+
+export function withdrawKfzAnalyticsConsent(
+  storage: KfzAnalyticsConsentStorage | null | undefined,
+): void {
+  writeKfzAnalyticsConsent(storage, 'declined')
+}

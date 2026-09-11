@@ -2,13 +2,16 @@ import { dashboardSurfaceClassName } from '@/features/dashboard/lib/dashboard-su
 import { KfzAnalyticsDashboardFiltersBar } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-filters'
 import { KFZ_ANALYTICS_PRIVACY_NOTES } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import {
+  kfzAnalyticsQualityStateCopy,
   kfzAnalyticsReviewStateCopy,
+  resolveKfzAnalyticsDataQualityState,
   resolveKfzAnalyticsReviewStatus,
 } from '@/features/inbound/kfz/lib/kfz-analytics-review-state'
 import type {
   KfzAnalyticsCountRow,
   KfzAnalyticsDashboard,
   KfzAnalyticsDashboardFilters,
+  KfzAnalyticsDataQuality,
   KfzAnalyticsRecord,
   KfzAnalyticsReviewStatus,
   KfzAnalyticsTransitionRow,
@@ -101,6 +104,8 @@ export function KfzAnalyticsDashboardView({
         onChange={onFiltersChange}
         defaultPeriodId={defaultPeriodId}
       />
+
+      <KfzAnalyticsDataQualityCard quality={dashboard.dataQuality} />
 
       {dashboard.empty ? (
         <div
@@ -352,6 +357,67 @@ export function KfzAnalyticsReviewStateView({
   )
 }
 
+function formatQualityCount(value: number, available: boolean): string {
+  if (!available) {
+    return '—'
+  }
+  return formatCount(value)
+}
+
+export function KfzAnalyticsDataQualityCard({
+  quality,
+}: {
+  quality: KfzAnalyticsDataQuality
+}) {
+  const copy = kfzAnalyticsQualityStateCopy(quality)
+  const rows = [
+    { id: 'duplicates', label: 'Duplikate ignoriert', value: quality.duplicateEvents },
+    {
+      id: 'invalid-transitions',
+      label: 'Ungültige Übergänge ignoriert',
+      value: quality.invalidTransitions,
+    },
+    { id: 'rejected-timings', label: 'Verworfene Zeiten', value: quality.rejectedTimings },
+    {
+      id: 'missing-metadata',
+      label: 'Fehlende Sitzungsangaben',
+      value: quality.missingSessionMetadata,
+    },
+    {
+      id: 'malformed-source',
+      label: 'Ungültige Herkunftskategorien',
+      value: quality.malformedSourceCategories,
+    },
+    {
+      id: 'incomplete-sessions',
+      label: 'Unvollständige Sitzungen',
+      value: quality.incompleteSessions,
+    },
+  ] as const
+
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+      data-kfz-analytics-quality="true"
+      data-kfz-analytics-quality-status={quality.status}
+      data-kfz-analytics-quality-available={quality.available ? 'true' : 'false'}
+    >
+      <h3 className="text-sm font-semibold text-zinc-900">{copy.title}</h3>
+      <p className="mt-1 text-xs leading-relaxed text-zinc-500">{copy.body}</p>
+      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+        {rows.map((row) => (
+          <div key={row.id} data-kfz-analytics-quality-row={row.id}>
+            <dt className="text-zinc-500">{row.label}</dt>
+            <dd className="mt-0.5 font-semibold text-zinc-900">
+              {formatQualityCount(row.value, quality.available)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
 export function KfzAnalyticsReviewScreen({
   status,
   dashboard,
@@ -376,6 +442,7 @@ export function KfzAnalyticsReviewScreen({
   })
 
   if (resolved === 'unavailable' || resolved === 'configuration_missing') {
+    const quality = resolveKfzAnalyticsDataQualityState({ loadStatus: resolved })
     return (
       <div className="space-y-5" data-kfz-analytics-dashboard="true">
         <div>
@@ -387,6 +454,7 @@ export function KfzAnalyticsReviewScreen({
           </h2>
         </div>
         <KfzAnalyticsReviewStateView status={resolved} />
+        <KfzAnalyticsDataQualityCard quality={quality} />
       </div>
     )
   }

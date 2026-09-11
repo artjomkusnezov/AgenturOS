@@ -8,6 +8,7 @@ import {
   KFZ_ANALYTICS_BRANCH_IDS,
   KFZ_ANALYTICS_STEP_IDS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
+import { KFZ_ANALYTICS_ACTIVE_MS_CAP } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import type {
   KfzAnalyticsBranchFilter,
   KfzAnalyticsDashboardFilters,
@@ -446,13 +447,18 @@ export function deriveKfzAnalyticsSessionFacts(
   const siteCandidates = sessionEvents
     .filter(
       (event) =>
-        (event.eventName === 'landing_view' ||
-          event.eventName === 'submit_started' ||
-          event.eventName === 'submit_succeeded' ||
-          event.eventName === 'funnel_abandoned') &&
-        typeof event.properties.activeMs === 'number',
+        event.eventName === 'landing_view' ||
+        event.eventName === 'submit_started' ||
+        event.eventName === 'submit_succeeded' ||
+        event.eventName === 'funnel_abandoned',
     )
-    .map((event) => event.properties.activeMs as number)
+    .map((event) => event.properties.activeMs)
+    .filter((value): value is number => {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+        return false
+      }
+      return value <= KFZ_ANALYTICS_ACTIVE_MS_CAP
+    })
   const siteActiveMs = siteCandidates.length > 0 ? Math.max(...siteCandidates) : null
 
   const branchEvent = sessionEvents.find(

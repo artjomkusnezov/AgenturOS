@@ -95,7 +95,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function looksLikeForbiddenKey(key: string): boolean {
+export function looksLikeForbiddenAnalyticsKey(key: string): boolean {
   const lowered = key.toLowerCase()
   return FORBIDDEN_KEY_FRAGMENTS.some((fragment) => lowered.includes(fragment))
 }
@@ -125,7 +125,10 @@ function sanitizeActiveMs(value: unknown): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return undefined
   }
-  return Math.min(Math.round(value), KFZ_ANALYTICS_ACTIVE_MS_CAP)
+  if (value > KFZ_ANALYTICS_ACTIVE_MS_CAP) {
+    return undefined
+  }
+  return Math.round(value)
 }
 
 export function redactKfzAnalyticsProperties(
@@ -138,7 +141,7 @@ export function redactKfzAnalyticsProperties(
   const properties: KfzAnalyticsProperties = {}
 
   for (const [key, value] of Object.entries(raw)) {
-    if (looksLikeForbiddenKey(key) && !isKfzAnalyticsPropertyKey(key)) {
+    if (looksLikeForbiddenAnalyticsKey(key) && !isKfzAnalyticsPropertyKey(key)) {
       continue
     }
     if (!isKfzAnalyticsPropertyKey(key)) {

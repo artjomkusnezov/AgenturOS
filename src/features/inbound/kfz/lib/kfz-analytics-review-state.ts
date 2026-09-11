@@ -1,5 +1,13 @@
 import { SupabasePublicConfigError } from '@/lib/supabase/public-config'
-import type { KfzAnalyticsReviewStatus } from '@/features/inbound/kfz/types/kfz-analytics'
+import {
+  emptyKfzAnalyticsDataQuality,
+  kfzAnalyticsDataQualityCopy,
+  unavailableKfzAnalyticsDataQuality,
+} from '@/features/inbound/kfz/lib/kfz-analytics-quality'
+import type {
+  KfzAnalyticsDataQuality,
+  KfzAnalyticsReviewStatus,
+} from '@/features/inbound/kfz/types/kfz-analytics'
 
 export const KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR =
   'Die Kfz-Messung ist nicht konfiguriert. Umgebungswerte werden nicht angezeigt.' as const
@@ -84,4 +92,28 @@ export function reviewCopyLeaksEnvironment(text: string): boolean {
     /https?:\/\/[^\s]+supabase/i.test(text) ||
     /KEY=|SECRET=|TOKEN=/i.test(text)
   )
+}
+
+export function resolveKfzAnalyticsDataQualityState(input: {
+  loadStatus?: 'ready' | 'unavailable' | 'configuration_missing'
+  dataQuality?: KfzAnalyticsDataQuality
+  empty?: boolean
+}): KfzAnalyticsDataQuality {
+  if (input.loadStatus === 'configuration_missing') {
+    return unavailableKfzAnalyticsDataQuality('configuration_missing')
+  }
+  if (input.loadStatus === 'unavailable') {
+    return unavailableKfzAnalyticsDataQuality('unavailable')
+  }
+  if (input.dataQuality) {
+    return input.dataQuality
+  }
+  return emptyKfzAnalyticsDataQuality(input.empty ? 'empty' : 'ready')
+}
+
+export function kfzAnalyticsQualityStateCopy(quality: KfzAnalyticsDataQuality): {
+  title: string
+  body: string
+} {
+  return kfzAnalyticsDataQualityCopy(quality)
 }
