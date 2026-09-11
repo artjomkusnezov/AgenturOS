@@ -2,6 +2,8 @@
  * Factual Kfz launch-readiness checklist. Not a production approval.
  */
 
+import type { KfzReleaseHandoffSurface } from '@/features/inbound/kfz/types/kfz-release-handoff'
+
 export const KFZ_LAUNCH_READINESS_STATUSES = [
   'PASS',
   'BLOCKED',
@@ -128,4 +130,5 @@ export type KfzLaunchReadinessReport = {
   env: readonly KfzLaunchEnvPresence[]
   files: readonly KfzLaunchFilePresence[]
   items: readonly KfzLaunchReadinessItem[]
+  handoff: KfzReleaseHandoffSurface
 }

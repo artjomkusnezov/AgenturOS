@@ -124,6 +124,10 @@ describe('kfz launch readiness evaluation', () => {
     const migrationChain = facts.find((fact) => fact.id === 'migration_chain_dry_run')
     assert.equal(migrationChain?.status, 'PASS')
     assert.match(migrationChain?.detail ?? '', /In-Memory/)
+    assert.equal(report.items.some((item) => item.id === 'release_handoff'), true)
+    const handoffDocument = facts.find((fact) => fact.id === 'handoff_document')
+    assert.equal(handoffDocument?.status, 'PASS')
+    assert.equal(report.handoff.status, 'PASS')
     assert.equal(report.items.some((item) => item.id === 'normalized_inbox'), true)
     assert.equal(report.items.some((item) => item.id === 'manual_review'), true)
     assert.equal(report.items.some((item) => item.id === 'analytics'), true)
@@ -291,6 +295,7 @@ describe('kfz launch readiness surface', () => {
     assert.match(view, /\/app\/kfz-analytics/)
     assert.match(view, /aosTextPageTitleClassName/)
     assert.match(view, /data-kfz-supabase-owner-checklist/)
+    assert.match(view, /data-kfz-release-handoff/)
     assert.match(view, /preflight:kfz-supabase/)
     assert.doesNotMatch(view, /Meta Pixel|gtag\(|facebook\.com\/tr/)
 

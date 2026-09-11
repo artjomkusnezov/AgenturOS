@@ -5,6 +5,7 @@ import {
   KFZ_LAUNCH_READINESS_DISCLAIMER,
   KFZ_LAUNCH_READINESS_HEADLINE,
 } from '@/features/inbound/kfz/lib/kfz-launch-readiness'
+import { KFZ_RELEASE_HANDOFF_HEADLINE } from '@/features/inbound/kfz/types/kfz-release-handoff'
 import { KFZ_SUPABASE_OWNER_CHECKLIST } from '@/features/inbound/kfz/lib/kfz-supabase-preflight'
 import type {
   KfzLaunchCheck,
@@ -15,6 +16,7 @@ import type {
   KfzLaunchReadinessReport,
   KfzLaunchReadinessStatus,
 } from '@/features/inbound/kfz/types/kfz-launch-readiness'
+import type { KfzReleaseHandoffSurface } from '@/features/inbound/kfz/types/kfz-release-handoff'
 import {
   aosAlertErrorClassName,
   aosAlertSuccessClassName,
@@ -230,6 +232,14 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
         )}
       </section>
 
+      <section
+        className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+        data-kfz-release-handoff="true"
+        data-kfz-release-handoff-status={report.handoff.status}
+      >
+        <HandoffCard handoff={report.handoff} />
+      </section>
+
       <div
         className="grid grid-cols-3 gap-3"
         data-kfz-readiness-owner-counts="true"
@@ -347,6 +357,50 @@ export function KfzLaunchReadinessView({ report }: KfzLaunchReadinessViewProps) 
       {report.items.map((item) => (
         <ItemCard key={item.id} item={item} />
       ))}
+    </div>
+  )
+}
+
+function HandoffCard({ handoff }: { handoff: KfzReleaseHandoffSurface }) {
+  return (
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h3 className="text-base font-semibold text-zinc-900">
+          {KFZ_RELEASE_HANDOFF_HEADLINE}
+        </h3>
+        <StatusBadge status={handoff.status} />
+      </div>
+      <p className={`mt-1 ${aosTextMetaClassName}`}>
+        Merge-first Stack, eingecheckte SQL-Reihenfolge, Commands und Stopp-Bedingungen.
+        Keine Secret-Werte. Merge, Apply und Deploy bleiben Owner.
+      </p>
+      <p className={`mt-3 ${aosTextCaptionClassName}`}>
+        Dokument:{' '}
+        <span className="break-all font-mono text-xs text-zinc-800">
+          {handoff.documentPath}
+        </span>
+      </p>
+      <p
+        className={`mt-2 text-sm leading-relaxed text-zinc-800`}
+        data-kfz-release-handoff-stack="true"
+      >
+        Merge-first: {handoff.stackPrNumbers.map((number) => `#${number}`).join(' → ')}
+      </p>
+      <ul className="mt-2 space-y-1" data-kfz-release-handoff-migrations="true">
+        {handoff.migrationFiles.map((file) => (
+          <li key={file} className="break-all font-mono text-xs text-zinc-800">
+            {file}
+          </li>
+        ))}
+      </ul>
+      <p className={`mt-3 text-xs leading-relaxed text-zinc-700`}>
+        Automatisiert:{' '}
+        {handoff.automatedCommands.map((command) => command).join(' · ')}
+      </p>
+      <p className={`mt-2 text-xs leading-relaxed text-zinc-700`}>
+        Owner-only: {handoff.ownerStepIds.join(', ')}. Stopp:{' '}
+        {handoff.stopConditionIds.join(', ')}.
+      </p>
     </div>
   )
 }
