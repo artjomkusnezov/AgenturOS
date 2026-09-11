@@ -1,5 +1,9 @@
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 
+import {
+  isKfzAnalyticsDuplicateKeyError,
+  kfzAnalyticsRecordPassesPersistenceContract,
+} from '@/features/inbound/kfz/lib/kfz-analytics-persistence-contract'
 import { sanitizeKfzAnalyticsRecord } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
 import type {
   KfzAnalyticsRecord,
@@ -60,7 +64,7 @@ export function createMemoryKfzAnalyticsStore(
     async insertEvent(record) {
       const nowIso = record.occurredAt
       const sanitized = sanitizeKfzAnalyticsRecord(record, nowIso)
-      if (!sanitized) {
+      if (!sanitized || !kfzAnalyticsRecordPassesPersistenceContract(sanitized)) {
         return { inserted: false, record }
       }
       const index = events.findIndex((entry) => entry.eventKey === sanitized.eventKey)
@@ -102,7 +106,7 @@ async function insertWithClient(
   record: KfzAnalyticsRecord,
 ): Promise<{ inserted: boolean; record: KfzAnalyticsRecord }> {
   const sanitized = sanitizeKfzAnalyticsRecord(record, record.occurredAt)
-  if (!sanitized) {
+  if (!sanitized || !kfzAnalyticsRecordPassesPersistenceContract(sanitized)) {
     return { inserted: false, record }
   }
 
@@ -145,7 +149,7 @@ async function insertWithClient(
   })
 
   if (error) {
-    if (error.message.includes('kfz_funnel_analytics_events_agency_event_key_uidx')) {
+    if (isKfzAnalyticsDuplicateKeyError(error)) {
       return { inserted: false, record: sanitized }
     }
     throw error

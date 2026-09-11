@@ -83,6 +83,10 @@ export const KFZ_LAUNCH_REQUIRED_MIGRATIONS = [
     file: 'supabase/migrations/20260910120000_kfz_inbound_documents_bucket.sql',
     purpose: 'kfz-inbound-documents private bucket',
   },
+  {
+    file: 'supabase/migrations/20260911120000_kfz_funnel_analytics_persistence_contract.sql',
+    purpose: 'kfz_funnel_analytics_events persistence allow-list and RLS',
+  },
 ] as const
 
 export const KFZ_LAUNCH_REQUIRED_FILES = [
@@ -98,6 +102,7 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbox/lib/present-kfz-website-inbox.ts',
   'src/features/inbox/lib/kfz-inbox-manual-triage.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts',
+  'src/features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   'src/features/inbound/kfz/lib/kfz-document-storage.ts',
   'src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts',
@@ -638,7 +643,7 @@ export function evaluateKfzLaunchReadiness(input: {
           'Pflicht-Migrationen sind im Repository',
           migrationsPresent ? 'PASS' : 'BLOCKED',
           migrationsPresent
-            ? '20260906120000_inbox_website_channel_source.sql, 20260909140000_kfz_funnel_analytics_events.sql und 20260910120000_kfz_inbound_documents_bucket.sql sind eingecheckt. Apply auf Preview/Production ist das nicht.'
+            ? '20260906120000_inbox_website_channel_source.sql, 20260909140000_kfz_funnel_analytics_events.sql, 20260910120000_kfz_inbound_documents_bucket.sql und 20260911120000_kfz_funnel_analytics_persistence_contract.sql sind eingecheckt. Apply auf Preview/Production ist das nicht.'
             : 'Mindestens eine Kfz-Pflichtmigration fehlt im Repository.',
           KFZ_LAUNCH_REQUIRED_MIGRATIONS.map((entry) => migrationRef(entry.file)),
         ),

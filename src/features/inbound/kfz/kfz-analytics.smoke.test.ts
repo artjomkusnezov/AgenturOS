@@ -1422,6 +1422,7 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-review-state.ts',
       'features/inbound/kfz/lib/kfz-analytics-quality.ts',
       'features/inbound/kfz/lib/kfz-analytics-compare.ts',
+      'features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
     const source = files.map((relative) => readSrc(relative)).join('\n')
@@ -1453,9 +1454,18 @@ describe('kfz analytics source hygiene', () => {
       path.join(process.cwd(), 'supabase/migrations/20260909140000_kfz_funnel_analytics_events.sql'),
       'utf8',
     )
+    const contract = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        'supabase/migrations/20260911120000_kfz_funnel_analytics_persistence_contract.sql',
+      ),
+      'utf8',
+    )
     assert.match(sql, /create table public\.kfz_funnel_analytics_events/)
     assert.match(sql, /landing_view/)
     assert.match(sql, /enable row level security/)
     assert.match(sql, /No customer answers/)
+    assert.match(contract, /kfz_funnel_analytics_properties_are_allowed/)
+    assert.match(contract, /revoke all on table public\.kfz_funnel_analytics_events from anon/)
   })
 })

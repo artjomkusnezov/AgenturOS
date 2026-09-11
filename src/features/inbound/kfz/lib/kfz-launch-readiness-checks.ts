@@ -448,13 +448,14 @@ export function evaluateKfzLaunchOwnerChecks(input: {
       'Eingecheckte Pflicht-Migrationen',
       input.migrationsPresent ? 'READY' : 'BLOCKED',
       input.migrationsPresent
-        ? 'Website-Inbox, Analytics-Events und privater Dokument-Bucket sind als SQL-Dateien im Repository. Apply bleibt Owner.'
+        ? 'Website-Inbox, Analytics-Events, Analytics-Persistenzvertrag und privater Dokument-Bucket sind als SQL-Dateien im Repository. Apply bleibt Owner.'
         : 'Mindestens eine Kfz-Pflichtmigration fehlt im Repository.',
-      'Die drei eingecheckten SQL-Dateien im Repository behalten. Apply auf Preview/Production bleibt Owner — dieser Check wendet nichts an.',
+      'Die eingecheckten SQL-Dateien im Repository behalten. Apply auf Preview/Production bleibt Owner — dieser Check wendet nichts an.',
       [
         migrationRef('supabase/migrations/20260906120000_inbox_website_channel_source.sql'),
         migrationRef('supabase/migrations/20260909140000_kfz_funnel_analytics_events.sql'),
         migrationRef('supabase/migrations/20260910120000_kfz_inbound_documents_bucket.sql'),
+        migrationRef('supabase/migrations/20260911120000_kfz_funnel_analytics_persistence_contract.sql'),
       ],
     ),
     check(
