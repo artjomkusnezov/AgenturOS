@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-75b0
 
 ## Title
@@ -23,3 +23,6 @@ Make the existing Kfz funnel analytics useful and safely reviewable: sources and
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-37dd582f-6274-44ba-a545-a6ddee02f417
+CONTROLLER_STARTED_AT: 2026-09-11T01:21:37Z
