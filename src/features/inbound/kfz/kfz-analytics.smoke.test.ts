@@ -541,10 +541,12 @@ describe('kfz analytics review states', () => {
     )
 
     const config = classifyKfzAnalyticsDashboardFailure(new SupabasePublicConfigError())
+    assert.equal(config.ok, false)
     assert.equal(config.status, 'configuration_missing')
     assert.equal(config.error, KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR)
 
     const unavailable = classifyKfzAnalyticsDashboardFailure(new Error('relation missing'))
+    assert.equal(unavailable.ok, false)
     assert.equal(unavailable.status, 'unavailable')
     assert.equal(unavailable.error, KFZ_ANALYTICS_UNAVAILABLE_ERROR)
     assert.equal(unavailable.error.includes('relation'), false)

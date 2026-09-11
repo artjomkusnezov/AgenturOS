@@ -15,16 +15,19 @@ export const KFZ_ANALYTICS_CONFIGURATION_MISSING_TITLE =
 export const KFZ_ANALYTICS_UNAVAILABLE_TITLE = 'Messdaten nicht verfügbar' as const
 
 export function classifyKfzAnalyticsDashboardFailure(error: unknown): {
+  ok: false
   status: Extract<KfzAnalyticsReviewStatus, 'unavailable' | 'configuration_missing'>
   error: string
 } {
   if (error instanceof SupabasePublicConfigError) {
     return {
+      ok: false,
       status: 'configuration_missing',
       error: KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR,
     }
   }
   return {
+    ok: false,
     status: 'unavailable',
     error: KFZ_ANALYTICS_UNAVAILABLE_ERROR,
   }
