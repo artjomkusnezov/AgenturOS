@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-8bd0
 
 ## Title
@@ -23,3 +23,6 @@ Create one precise, secret-safe release handoff for the stacked Kfz work: depend
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-d2e62650-f5cb-4df7-87d0-ec261866b19c
+CONTROLLER_STARTED_AT: 2026-09-11T07:39:55Z
