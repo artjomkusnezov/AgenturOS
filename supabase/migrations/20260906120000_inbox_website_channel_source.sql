@@ -1,5 +1,5 @@
 -- AgenturOS Kfz Gate 2 repair: allow provider-neutral website channel/source.
--- Additive only: existing allowed values remain; no columns dropped or weakened.
+-- Additive only. Safe to re-run. Existing allowed values remain; no columns dropped or weakened.
 
 alter table public.inbox_items drop constraint if exists inbox_items_source_valid;
 

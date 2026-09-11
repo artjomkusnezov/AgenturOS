@@ -55,7 +55,7 @@ describe('kfz analytics persistence schema contract', () => {
     const foundation = readMigration(KFZ_ANALYTICS_FOUNDATION_MIGRATION)
     const contract = readMigration(KFZ_ANALYTICS_PERSISTENCE_CONTRACT_MIGRATION)
 
-    assert.match(foundation, /create table public\.kfz_funnel_analytics_events/)
+    assert.match(foundation, /create table if not exists public\.kfz_funnel_analytics_events/)
     assert.match(contract, /Additive persistence contract/)
     assert.match(contract, /already-created/)
     assert.doesNotMatch(contract, /create table public\.kfz_funnel_analytics_events/)
