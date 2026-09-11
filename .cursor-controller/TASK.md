@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-9908
 
 ## Title
@@ -23,3 +23,6 @@ Make the existing Kfz readiness screen give the owner one simple, secret-safe an
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-a6270c7f-af9f-449b-a371-a2f17ca4796d
+CONTROLLER_STARTED_AT: 2026-09-11T03:46:53Z
