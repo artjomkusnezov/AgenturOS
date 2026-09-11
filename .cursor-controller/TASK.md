@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-9bc0
 
 ## Title
@@ -22,3 +22,6 @@ Create one safe, deterministic release-candidate acceptance path from public /kf
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer contact, Meta/WhatsApp API, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-fe63919b-b89b-46c0-acf0-8e83f8fb0280
+CONTROLLER_STARTED_AT: 2026-09-11T00:16:39Z
