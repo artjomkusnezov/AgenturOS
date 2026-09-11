@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-4e4f
 
 ## Title
@@ -22,3 +22,6 @@ Prove the complete Kfz Supabase migration chain works safely on clean and legacy
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-cc349a19-d38f-4077-882b-0e924e6c715f
+CONTROLLER_STARTED_AT: 2026-09-11T06:51:55Z
