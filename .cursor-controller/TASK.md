@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-ee86
 
 ## Title
@@ -24,3 +24,6 @@ Make privacy-safe Kfz funnel analytics failures visible and safely recoverable w
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-c46ded3e-2c5c-4b05-97c6-f215993665bf
+CONTROLLER_STARTED_AT: 2026-09-11T08:33:45Z
