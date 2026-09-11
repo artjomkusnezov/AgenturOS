@@ -87,6 +87,7 @@ export const KFZ_LAUNCH_REQUIRED_FILES = [
   'src/features/inbound/kfz/lib/kfz-analytics-ingest.ts',
   'src/features/inbound/kfz/lib/kfz-analytics-privacy-boundary.ts',
   'src/features/inbound/kfz/lib/kfz-document-storage.ts',
+  'src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts',
   'src/app/app/inbox/kfz-document/route.ts',
   'src/features/inbound/kfz/lib/kfz-supabase-preflight.ts',
   'src/features/inbound/kfz/lib/kfz-supabase-persist-env.ts',
@@ -339,6 +340,10 @@ export function evaluateKfzLaunchReadiness(input: {
     'src/features/inbound/kfz/lib/kfz-document-storage.ts',
   )
   const documentReviewFile = filePresent(files, 'src/app/app/inbox/kfz-document/route.ts')
+  const releaseCandidateFile = filePresent(
+    files,
+    'src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts',
+  )
   const supabasePreflightFile = filePresent(
     files,
     'src/features/inbound/kfz/lib/kfz-supabase-preflight.ts',
@@ -462,7 +467,7 @@ export function evaluateKfzLaunchReadiness(input: {
           'Lokaler Submit-/Retry-Vertrag ist eingecheckt',
           submitSessionFile && intakeApiFile ? 'PASS' : 'BLOCKED',
           submitSessionFile && intakeApiFile
-            ? 'kfz-landing-submit-session.ts und POST /api/inbound/kfz sind vorhanden. Local-Memory-Beweis liegt im Acceptance-Test. Production-Persistenz ist das nicht.'
+            ? 'kfz-landing-submit-session.ts und POST /api/inbound/kfz sind vorhanden. Local-Memory-Beweis liegt im Acceptance-Test und im test-only Release-Candidate-Harness. Production-Persistenz ist das nicht.'
             : 'Submit-Session oder Intake-Route fehlt.',
           [
             ROUTE_LANDING,
@@ -483,6 +488,22 @@ export function evaluateKfzLaunchReadiness(input: {
             envRef('INBOUND_KFZ_AGENCY_ID'),
             envRef('INBOUND_KFZ_ACTOR_USER_ID'),
             DOC_ENV_EXAMPLE,
+            DOC_LOCAL_TEST,
+          ],
+        ),
+        fact(
+          'release_candidate_acceptance',
+          'Test-only Release-Candidate-Annahme ist eingecheckt',
+          releaseCandidateFile ? 'PASS' : 'BLOCKED',
+          releaseCandidateFile
+            ? 'kfz-release-candidate-acceptance.ts läuft nur lokal: /kfz → Submit → exact-once Retry → ein Inbox-Item → autorisierte Prüfung → anonyme/fremde Ablehnung. Keine Production-Behauptung.'
+            : 'Der test-only Release-Candidate-Harness fehlt.',
+          [
+            ROUTE_LANDING,
+            ROUTE_INTAKE_API,
+            ROUTE_INBOX,
+            ROUTE_DOCUMENT_REVIEW,
+            codeRef('src/features/inbound/kfz/lib/kfz-release-candidate-acceptance.ts'),
             DOC_LOCAL_TEST,
           ],
         ),

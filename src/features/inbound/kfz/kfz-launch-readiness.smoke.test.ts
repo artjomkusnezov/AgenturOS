@@ -87,6 +87,8 @@ describe('kfz launch readiness evaluation', () => {
     assert.equal(report.items.some((item) => item.id === 'six_branches'), true)
     assert.equal(report.items.some((item) => item.id === 'contact_consent_validation'), true)
     assert.equal(report.items.some((item) => item.id === 'submit_retry_idempotency'), true)
+    const releaseCandidate = facts.find((fact) => fact.id === 'release_candidate_acceptance')
+    assert.equal(releaseCandidate?.status, 'PASS')
     assert.equal(report.items.some((item) => item.id === 'normalized_inbox'), true)
     assert.equal(report.items.some((item) => item.id === 'manual_review'), true)
     assert.equal(report.items.some((item) => item.id === 'analytics'), true)
