@@ -1,28 +1,26 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-75b0
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-32b5
 
 ## Title
-AGENTUROS — PRIVACY-SAFE KFZ FUNNEL ANALYTICS REVIEW
+AGENTUROS — KFZ ANALYTICS CONSENT AND DATA-QUALITY GUARDRAILS
 
 ## Goal
-Make the existing Kfz funnel analytics useful and safely reviewable: sources and transitions, visits, selected branch, reached step, stop point, site/step timing and submission, without collecting answers or personal data.
+Harden the existing privacy-safe Kfz funnel analytics so consent state, duplicate events, invalid transitions and incomplete sessions produce trustworthy aggregates without collecting answers or personal data.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-75b0 (PR #48). No merge or main/master write.
-- Improve the existing analytics implementation and review screen, not a parallel analytics system.
-- Cover source/referrer category, visit, selected branch, reached step, stop point, time on site and per step, transitions and submission.
-- Store and display metadata only. Never record form answers, names, contact data, filenames, document contents, object keys, free text, full URLs/query strings, secrets or identifiers that can expose a person.
-- Make repeat/retry events idempotent where applicable and keep useful aggregate counts deterministic.
-- Provide clear empty, unavailable and configuration-missing states without printing environment values.
-- Preserve all six Kfz branches, questionnaire, consent, private storage, inbox and authorized document review.
-- Add deterministic tests proving allowed fields and rejecting/redacting forbidden payload fields.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-32b5 (PR #49). No merge or main/master write.
+- Extend the existing analytics path and review screen, not a parallel system.
+- Verify no analytics event persists before consent; withdrawal stops future collection and does not expose or reconstruct form answers.
+- Detect or safely ignore duplicate submissions, impossible step transitions, negative/extreme timings, missing session metadata and malformed referrer/source categories.
+- Keep aggregates deterministic and show a small metadata-only data-quality summary with clear empty/unavailable/configuration-missing states.
+- Allow only coarse source/referrer categories, visit, branch, reached step, stop point, site/step timing, transitions and submission.
+- Never record names, contacts, answers, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
+- Preserve all six Kfz branches, questionnaire, consent UI, private storage, inbox and authorized document review.
+- Add deterministic tests for consent lifecycle, deduplication, invalid transition/timing rejection and forbidden-field redaction.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check desktop and mobile locally/test-only with synthetic data; inspect Vercel Preview read-only if available. No deploy or environment mutation.
+- Browser-check desktop and mobile locally/test-only with synthetic fixtures; inspect Vercel Preview read-only if available. No deploy or environment mutation.
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-37dd582f-6274-44ba-a545-a6ddee02f417
-CONTROLLER_STARTED_AT: 2026-09-11T01:21:37Z
