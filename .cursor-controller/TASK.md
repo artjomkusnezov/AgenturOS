@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-c46d
 
 ## Title
@@ -23,3 +23,6 @@ Verify and harden the existing Supabase persistence contract for privacy-safe Kf
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy or mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-97d1116c-fa7a-4ba7-8d33-ed4888cd5df6
+CONTROLLER_STARTED_AT: 2026-09-11T05:50:28Z
