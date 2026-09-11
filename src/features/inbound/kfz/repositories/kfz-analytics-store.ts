@@ -1,11 +1,17 @@
 import { createClient as createSupabaseJsClient } from '@supabase/supabase-js'
 
 import {
+  addKfzAnalyticsHealthFacts,
+  emptyKfzAnalyticsHealthSnapshot,
+} from '@/features/inbound/kfz/lib/kfz-analytics-health'
+import {
   isKfzAnalyticsDuplicateKeyError,
   kfzAnalyticsRecordPassesPersistenceContract,
 } from '@/features/inbound/kfz/lib/kfz-analytics-persistence-contract'
 import { sanitizeKfzAnalyticsRecord } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
 import type {
+  KfzAnalyticsHealthFacts,
+  KfzAnalyticsHealthSnapshot,
   KfzAnalyticsRecord,
   KfzAnalyticsStore,
 } from '@/features/inbound/kfz/types/kfz-analytics'
@@ -56,11 +62,16 @@ function rowToRecord(row: AnalyticsRow, nowIso: string): KfzAnalyticsRecord | nu
 
 export function createMemoryKfzAnalyticsStore(
   seed: KfzAnalyticsRecord[] = [],
-): KfzAnalyticsStore & { events: KfzAnalyticsRecord[] } {
+): KfzAnalyticsStore & {
+  events: KfzAnalyticsRecord[]
+  health: KfzAnalyticsHealthSnapshot
+} {
   const events = [...seed]
+  const health: KfzAnalyticsHealthSnapshot = emptyKfzAnalyticsHealthSnapshot(false)
 
   return {
     events,
+    health,
     async insertEvent(record) {
       const nowIso = record.occurredAt
       const sanitized = sanitizeKfzAnalyticsRecord(record, nowIso)
@@ -85,6 +96,16 @@ export function createMemoryKfzAnalyticsStore(
         }
         return true
       })
+    },
+    async readHealthFacts() {
+      return {
+        available: health.available,
+        facts: { ...health.facts },
+      }
+    },
+    addHealthFacts(facts: KfzAnalyticsHealthFacts) {
+      health.available = true
+      health.facts = addKfzAnalyticsHealthFacts(health.facts, facts)
     },
   }
 }
@@ -203,6 +224,10 @@ export function createServiceRoleKfzAnalyticsStore(agencyId: string): KfzAnalyti
         .map((row) => rowToRecord(row as AnalyticsRow, nowIso))
         .filter((row): row is KfzAnalyticsRecord => row !== null)
     },
+    async readHealthFacts() {
+      return emptyKfzAnalyticsHealthSnapshot(false)
+    },
+    addHealthFacts() {},
   }
 }
 
@@ -246,5 +271,9 @@ export async function createAuthenticatedKfzAnalyticsStore(
         .map((row) => rowToRecord(row as AnalyticsRow, nowIso))
         .filter((row): row is KfzAnalyticsRecord => row !== null)
     },
+    async readHealthFacts() {
+      return emptyKfzAnalyticsHealthSnapshot(false)
+    },
+    addHealthFacts() {},
   }
 }

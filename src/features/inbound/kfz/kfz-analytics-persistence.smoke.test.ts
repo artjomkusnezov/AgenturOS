@@ -233,6 +233,196 @@ describe('kfz analytics persistence retry', () => {
   })
 })
 
+describe('kfz analytics persistence health and bounded retry', () => {
+  function wrapStore(
+    inner: ReturnType<typeof createMemoryKfzAnalyticsStore>,
+    insertEvent: (record: Parameters<typeof inner.insertEvent>[0]) => ReturnType<typeof inner.insertEvent>,
+  ) {
+    return {
+      events: inner.events,
+      health: inner.health,
+      insertEvent,
+      listEvents: inner.listEvents.bind(inner),
+      readHealthFacts: inner.readHealthFacts.bind(inner),
+      addHealthFacts: inner.addHealthFacts.bind(inner),
+    }
+  }
+
+  it('retries a transient persist failure and accepts the event once', async () => {
+    const inner = createMemoryKfzAnalyticsStore()
+    let attempts = 0
+    const store = wrapStore(inner, async (record) => {
+      attempts += 1
+      if (attempts === 1) {
+        throw { code: '40001', message: 'serialization failure' }
+      }
+      return inner.insertEvent(record)
+    })
+
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      nowIso: NOW,
+      store,
+      events: [
+        {
+          eventName: 'landing_view',
+          sessionId: SESSION,
+          occurredAt: NOW,
+          properties: { activeMs: 800 },
+        },
+      ],
+    })
+
+    assert.equal(attempts, 2)
+    assert.equal(ingested.accepted, 1)
+    assert.equal(ingested.health.retryRecovered, 1)
+    assert.equal(ingested.health.transientFailed, 0)
+    assert.equal(ingested.health.accepted, 1)
+    assert.equal((await store.listEvents()).length, 1)
+    assert.equal(ingested.quality.retryRecovered, 1)
+  })
+
+  it('counts exhausted transient failures without duplicating the row', async () => {
+    const inner = createMemoryKfzAnalyticsStore()
+    let attempts = 0
+    const store = wrapStore(inner, async () => {
+      attempts += 1
+      throw { code: '57014', message: 'timeout' }
+    })
+
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      nowIso: NOW,
+      store,
+      events: [
+        {
+          eventName: 'traffic_source',
+          sessionId: SESSION,
+          occurredAt: NOW,
+          properties: { trafficSource: 'direct', referrerCategory: 'direct' },
+        },
+      ],
+    })
+
+    assert.equal(attempts, 3)
+    assert.equal(ingested.accepted, 0)
+    assert.equal(ingested.dropped, 1)
+    assert.equal(ingested.health.transientFailed, 1)
+    assert.equal(ingested.health.accepted, 0)
+    assert.equal((await store.listEvents()).length, 0)
+  })
+
+  it('treats a recovered duplicate key after a transient write as one stored event', async () => {
+    const inner = createMemoryKfzAnalyticsStore()
+    const payload = {
+      eventName: 'landing_view' as const,
+      sessionId: SESSION,
+      occurredAt: NOW,
+      properties: { activeMs: 500 },
+    }
+    await inner.insertEvent({
+      ...payload,
+      eventKey: `${SESSION}:landing_view`,
+    })
+    let attempts = 0
+    const store = wrapStore(inner, async (record) => {
+      attempts += 1
+      if (attempts === 1) {
+        throw { message: 'fetch failed' }
+      }
+      return inner.insertEvent(record)
+    })
+
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      nowIso: NOW,
+      store,
+      events: [payload],
+    })
+
+    assert.equal(ingested.accepted, 1)
+    assert.equal(ingested.health.retryRecovered, 1)
+    assert.equal(ingested.health.duplicates, 0)
+    assert.equal((await store.listEvents()).length, 1)
+  })
+
+  it('rejects invalid events permanently without retrying persist', async () => {
+    const inner = createMemoryKfzAnalyticsStore()
+    let attempts = 0
+    const store = wrapStore(inner, async (record) => {
+      attempts += 1
+      return inner.insertEvent(record)
+    })
+
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      nowIso: NOW,
+      store,
+      events: [
+        {
+          eventName: 'custom_tracker',
+          sessionId: SESSION,
+          occurredAt: NOW,
+          properties: {
+            fullName: 'Max Mustermann',
+            email: 'max@example.com',
+            filename: 'schein.pdf',
+            objectKey: 'kfz/agency/item/schein.pdf',
+            url: 'https://evil.example/?q=1',
+          },
+        },
+      ],
+    })
+
+    assert.equal(attempts, 0)
+    assert.equal(ingested.accepted, 0)
+    assert.equal(ingested.health.rejected, 1)
+    assert.equal(ingested.health.transientFailed, 0)
+    assert.equal((await store.listEvents()).length, 0)
+    const serialized = JSON.stringify(ingested)
+    assert.equal(serialized.includes('Mustermann'), false)
+    assert.equal(serialized.includes('schein.pdf'), false)
+    assert.equal(serialized.includes('evil.example'), false)
+  })
+
+  it('does not retry after consent is withdrawn', async () => {
+    const inner = createMemoryKfzAnalyticsStore()
+    let attempts = 0
+    let consent: 'granted' | 'declined' = 'granted'
+    const store = wrapStore(inner, async () => {
+      attempts += 1
+      consent = 'declined'
+      throw { code: '40001', message: 'serialization failure' }
+    })
+
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      nowIso: NOW,
+      store,
+      readConsent: () => consent,
+      events: [
+        {
+          eventName: 'submit_succeeded',
+          sessionId: SESSION,
+          occurredAt: NOW,
+          properties: {
+            activeMs: 1200,
+            fullName: 'Erika Musterfrau',
+            answers: { intent: 'switch_car' },
+          },
+        },
+      ],
+    })
+
+    assert.equal(attempts, 1)
+    assert.equal(ingested.accepted, 0)
+    assert.equal(ingested.quality.consentBlocked, 1)
+    assert.equal(ingested.health.transientFailed, 0)
+    assert.equal((await store.listEvents()).length, 0)
+    assert.equal(JSON.stringify(ingested).includes('Musterfrau'), false)
+  })
+})
+
 describe('kfz analytics persistence RLS and derived fields', () => {
   it('documents server-side review and keeps consent/quality off the table', () => {
     const sql = fs.readFileSync(

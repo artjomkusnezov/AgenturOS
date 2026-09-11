@@ -11,8 +11,13 @@ import {
   looksLikeForbiddenAnalyticsKey,
 } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
 import type { KfzAnalyticsSessionFacts } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
+import {
+  emptyKfzAnalyticsHealthFacts,
+  resolveKfzAnalyticsHealthStatus,
+} from '@/features/inbound/kfz/lib/kfz-analytics-health'
 import type {
   KfzAnalyticsDataQuality,
+  KfzAnalyticsHealthSnapshot,
   KfzAnalyticsIngestQuality,
   KfzAnalyticsRecord,
   KfzAnalyticsReviewStatus,
@@ -126,7 +131,11 @@ export function classifyKfzAnalyticsActiveMs(value: unknown): {
 export function emptyKfzAnalyticsIngestQuality(): KfzAnalyticsIngestQuality {
   return {
     consentBlocked: 0,
+    accepted: 0,
+    rejected: 0,
     duplicates: 0,
+    transientFailed: 0,
+    retryRecovered: 0,
     invalidTransitions: 0,
     rejectedTimings: 0,
     missingSessionMetadata: 0,
@@ -138,11 +147,18 @@ export function emptyKfzAnalyticsIngestQuality(): KfzAnalyticsIngestQuality {
 export function emptyKfzAnalyticsDataQuality(
   status: KfzAnalyticsReviewStatus = 'empty',
 ): KfzAnalyticsDataQuality {
+  const loadStatus =
+    status === 'unavailable' || status === 'configuration_missing' ? status : 'ready'
   return {
     available: status === 'ready' || status === 'empty',
     status,
+    healthStatus: resolveKfzAnalyticsHealthStatus({ loadStatus }),
+    ingestHealthAvailable: false,
     acceptedEvents: 0,
+    rejectedEvents: 0,
     duplicateEvents: 0,
+    transientFailedEvents: 0,
+    retryRecoveredEvents: 0,
     invalidTransitions: 0,
     rejectedTimings: 0,
     missingSessionMetadata: 0,
@@ -157,6 +173,8 @@ export function unavailableKfzAnalyticsDataQuality(
   return {
     ...emptyKfzAnalyticsDataQuality(status),
     available: false,
+    healthStatus: resolveKfzAnalyticsHealthStatus({ loadStatus: status }),
+    ingestHealthAvailable: false,
   }
 }
 
@@ -327,6 +345,7 @@ export function summarizeKfzAnalyticsDataQuality(input: {
   uniqueEventCount: number
   sessions: readonly KfzAnalyticsSessionFacts[]
   empty: boolean
+  ingestHealth?: KfzAnalyticsHealthSnapshot | null
 }): KfzAnalyticsDataQuality {
   let invalidTransitions = 0
   let rejectedTimings = 0
@@ -350,15 +369,31 @@ export function summarizeKfzAnalyticsDataQuality(input: {
 
   const missingSessionMetadata = input.sessions.filter(sessionHasMissingMetadata).length
   const incompleteSessions = input.sessions.filter(sessionIsIncomplete).length
-  const duplicateEvents = Math.max(0, input.events.length - input.uniqueEventCount)
+  const derivedDuplicates = Math.max(0, input.events.length - input.uniqueEventCount)
+  const ingest = input.ingestHealth?.available
+    ? input.ingestHealth.facts
+    : emptyKfzAnalyticsHealthFacts()
+  const ingestHealthAvailable = input.ingestHealth?.available === true
+  const duplicateEvents = ingestHealthAvailable ? ingest.duplicates : derivedDuplicates
   const empty = input.empty
   const status: KfzAnalyticsReviewStatus = empty ? 'empty' : 'ready'
 
   return {
     available: true,
     status,
+    healthStatus: resolveKfzAnalyticsHealthStatus({
+      loadStatus: 'ready',
+      facts: ingestHealthAvailable
+        ? ingest
+        : { ...emptyKfzAnalyticsHealthFacts(), accepted: input.uniqueEventCount },
+      ingestAvailable: ingestHealthAvailable,
+    }),
+    ingestHealthAvailable,
     acceptedEvents: input.uniqueEventCount,
+    rejectedEvents: ingestHealthAvailable ? ingest.rejected : 0,
     duplicateEvents,
+    transientFailedEvents: ingestHealthAvailable ? ingest.transientFailed : 0,
+    retryRecoveredEvents: ingestHealthAvailable ? ingest.retryRecovered : 0,
     invalidTransitions,
     rejectedTimings,
     missingSessionMetadata,
@@ -386,11 +421,11 @@ export function kfzAnalyticsDataQualityCopy(quality: KfzAnalyticsDataQuality): {
   if (quality.status === 'empty') {
     return {
       title: 'Datenqualität',
-      body: 'Keine anonymen Ereignisse in dieser Auswahl. Duplikate, ungültige Übergänge und Zeiten werden nicht hochgerechnet.',
+      body: 'Keine anonymen Ereignisse in dieser Auswahl. Duplikate, Ablehnungen, vorübergehende Fehler und Zeiten werden nicht hochgerechnet.',
     }
   }
   return {
     title: 'Datenqualität',
-    body: 'Nur Metadaten: Duplikate, unmögliche Übergänge, verworfene Zeiten, fehlende Sitzungsangaben und grobe Herkunft. Keine Antworten, keine Kontakte.',
+    body: 'Nur Metadaten: akzeptiert, abgelehnt, doppelt, vorübergehend fehlgeschlagen, unmögliche Übergänge, verworfene Zeiten. Keine Antworten, keine Kontakte.',
   }
 }

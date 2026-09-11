@@ -68,13 +68,17 @@ export const KFZ_ANALYTICS_PERSISTED_METADATA = [
 ] as const
 
 /**
- * Consent is a write gate. Data-quality counters are derived at review.
- * Neither is stored as a customer or free-text column.
+ * Consent is a write gate. Data-quality and ingest-health counters are derived
+ * at ingest/review. Neither is stored as a customer or free-text column.
  */
 export const KFZ_ANALYTICS_DERIVED_REVIEW_FIELDS = [
   'consent',
   'acceptedEvents',
+  'rejectedEvents',
   'duplicateEvents',
+  'transientFailedEvents',
+  'retryRecoveredEvents',
+  'healthStatus',
   'invalidTransitions',
   'rejectedTimings',
   'missingSessionMetadata',

@@ -46,6 +46,7 @@ export async function loadKfzAnalyticsDashboardAction(
       from: previous?.from ?? resolved.from,
       to: resolved.to,
     })
+    const ingestHealth = await store.readHealthFacts()
     return {
       ok: true,
       status: 'ready',
@@ -53,6 +54,7 @@ export async function loadKfzAnalyticsDashboardAction(
         nowMs,
         query,
         periodId: resolved.filters.periodId,
+        ingestHealth,
       }),
     }
   } catch (error) {

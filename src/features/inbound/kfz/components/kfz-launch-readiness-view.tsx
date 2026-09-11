@@ -155,8 +155,11 @@ function LaunchCheckRow({ entry }: { entry: KfzLaunchCheck }) {
   return (
     <div
       className="border-t border-zinc-100 py-3 first:border-t-0 first:pt-0 last:pb-0"
-      data-kfz-launch-check={entry.id}
-      data-kfz-readiness-owner-status={entry.status}
+        data-kfz-launch-check={entry.id}
+        data-kfz-readiness-owner-status={entry.status}
+        {...(entry.id === 'analytics'
+          ? { 'data-kfz-analytics-health': entry.status }
+          : {})}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="text-sm font-semibold text-zinc-900">{entry.label}</p>

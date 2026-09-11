@@ -7,6 +7,7 @@ import {
   resolveKfzAnalyticsDataQualityState,
   resolveKfzAnalyticsReviewStatus,
 } from '@/features/inbound/kfz/lib/kfz-analytics-review-state'
+import { kfzAnalyticsHealthCopy } from '@/features/inbound/kfz/lib/kfz-analytics-health'
 import { formatKfzAnalyticsDisplayDate, isoToKfzAnalyticsDate } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import {
   KFZ_ANALYTICS_MIN_RATE_GROUP,
@@ -81,8 +82,9 @@ export function KfzAnalyticsDashboardView({
       data-kfz-analytics-dashboard="true"
       data-kfz-analytics-state={dashboard.empty ? 'empty' : 'ready'}
       data-kfz-analytics-filter-active={dashboard.filterActive ? 'true' : 'false'}
-      data-kfz-analytics-rates-hidden={dashboard.ratesHidden ? 'true' : 'false'}
-    >
+        data-kfz-analytics-rates-hidden={dashboard.ratesHidden ? 'true' : 'false'}
+        data-kfz-analytics-health={dashboard.dataQuality.healthStatus}
+      >
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
           Intern · Kfz-Funnel
@@ -110,6 +112,7 @@ export function KfzAnalyticsDashboardView({
         defaultPeriodId={defaultPeriodId}
       />
 
+      <KfzAnalyticsHealthCard quality={dashboard.dataQuality} />
       <KfzAnalyticsDataQualityCard quality={dashboard.dataQuality} />
 
       {dashboard.empty ? (
@@ -384,6 +387,32 @@ function formatQualityCount(value: number, available: boolean): string {
   return formatCount(value)
 }
 
+export function KfzAnalyticsHealthCard({
+  quality,
+}: {
+  quality: KfzAnalyticsDataQuality
+}) {
+  const copy = kfzAnalyticsHealthCopy(quality.healthStatus)
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+      data-kfz-analytics-health="true"
+      data-kfz-analytics-health-status={quality.healthStatus}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-zinc-900">{copy.title}</h3>
+        <span
+          className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-zinc-800"
+          data-kfz-analytics-health-badge={quality.healthStatus}
+        >
+          {quality.healthStatus}
+        </span>
+      </div>
+      <p className="mt-1 text-xs leading-relaxed text-zinc-500">{copy.body}</p>
+    </section>
+  )
+}
+
 export function KfzAnalyticsDataQualityCard({
   quality,
 }: {
@@ -391,27 +420,65 @@ export function KfzAnalyticsDataQualityCard({
 }) {
   const copy = kfzAnalyticsQualityStateCopy(quality)
   const rows = [
-    { id: 'duplicates', label: 'Duplikate ignoriert', value: quality.duplicateEvents },
+    {
+      id: 'accepted',
+      label: 'Akzeptierte Ereignisse',
+      value: quality.acceptedEvents,
+      available: quality.available,
+    },
+    {
+      id: 'rejected',
+      label: 'Abgelehnt',
+      value: quality.rejectedEvents,
+      available: quality.available && quality.ingestHealthAvailable,
+    },
+    {
+      id: 'duplicates',
+      label: 'Duplikate ignoriert',
+      value: quality.duplicateEvents,
+      available: quality.available,
+    },
+    {
+      id: 'transient-failed',
+      label: 'Vorübergehend fehlgeschlagen',
+      value: quality.transientFailedEvents,
+      available: quality.available && quality.ingestHealthAvailable,
+    },
+    {
+      id: 'retry-recovered',
+      label: 'Nach Retry übernommen',
+      value: quality.retryRecoveredEvents,
+      available: quality.available && quality.ingestHealthAvailable,
+    },
     {
       id: 'invalid-transitions',
       label: 'Ungültige Übergänge ignoriert',
       value: quality.invalidTransitions,
+      available: quality.available,
     },
-    { id: 'rejected-timings', label: 'Verworfene Zeiten', value: quality.rejectedTimings },
+    {
+      id: 'rejected-timings',
+      label: 'Verworfene Zeiten',
+      value: quality.rejectedTimings,
+      available: quality.available,
+    },
     {
       id: 'missing-metadata',
       label: 'Fehlende Sitzungsangaben',
       value: quality.missingSessionMetadata,
+      available: quality.available,
     },
     {
       id: 'malformed-source',
       label: 'Ungültige Herkunftskategorien',
       value: quality.malformedSourceCategories,
+      available: quality.available,
     },
     {
       id: 'incomplete-sessions',
       label: 'Unvollständige Sitzungen',
       value: quality.incompleteSessions,
+      available: quality.available,
     },
   ] as const
 
@@ -421,6 +488,7 @@ export function KfzAnalyticsDataQualityCard({
       data-kfz-analytics-quality="true"
       data-kfz-analytics-quality-status={quality.status}
       data-kfz-analytics-quality-available={quality.available ? 'true' : 'false'}
+      data-kfz-analytics-health-status={quality.healthStatus}
     >
       <h3 className="text-sm font-semibold text-zinc-900">{copy.title}</h3>
       <p className="mt-1 text-xs leading-relaxed text-zinc-500">{copy.body}</p>
@@ -429,7 +497,7 @@ export function KfzAnalyticsDataQualityCard({
           <div key={row.id} data-kfz-analytics-quality-row={row.id}>
             <dt className="text-zinc-500">{row.label}</dt>
             <dd className="mt-0.5 font-semibold text-zinc-900">
-              {formatQualityCount(row.value, quality.available)}
+              {formatQualityCount(row.value, row.available)}
             </dd>
           </div>
         ))}
@@ -464,7 +532,7 @@ export function KfzAnalyticsReviewScreen({
   if (resolved === 'unavailable' || resolved === 'configuration_missing') {
     const quality = resolveKfzAnalyticsDataQualityState({ loadStatus: resolved })
     return (
-      <div className="space-y-5" data-kfz-analytics-dashboard="true">
+      <div className="space-y-5" data-kfz-analytics-dashboard="true" data-kfz-analytics-health={quality.healthStatus}>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
             Intern · Kfz-Funnel
@@ -474,6 +542,7 @@ export function KfzAnalyticsReviewScreen({
           </h2>
         </div>
         <KfzAnalyticsReviewStateView status={resolved} />
+        <KfzAnalyticsHealthCard quality={quality} />
         <KfzAnalyticsDataQualityCard quality={quality} />
       </div>
     )

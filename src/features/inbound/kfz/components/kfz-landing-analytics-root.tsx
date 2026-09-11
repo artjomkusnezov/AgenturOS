@@ -15,6 +15,10 @@ import {
   type KfzAnalyticsController,
 } from '@/features/inbound/kfz/lib/kfz-analytics-session'
 import type { KfzLandingAttribution } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
+import {
+  isKfzAnalyticsRetryableSendStatus,
+  sendKfzAnalyticsRecordsWithRetry,
+} from '@/features/inbound/kfz/lib/kfz-analytics-health'
 import type { KfzAnalyticsRecord } from '@/features/inbound/kfz/types/kfz-analytics'
 
 export type KfzLandingAnalyticsPort = {
@@ -53,34 +57,60 @@ export function getNoopKfzLandingAnalytics(): KfzLandingAnalyticsPort {
 
 type TransportMode = 'production' | 'preview' | 'memory'
 
-async function sendRecords(
-  mode: TransportMode,
+async function postKfzAnalyticsRecords(
   consent: 'granted' | 'declined' | 'unknown',
-  records: KfzAnalyticsRecord[],
+  records: readonly KfzAnalyticsRecord[],
 ) {
-  if (consent !== 'granted' || records.length === 0) {
-    return
-  }
-  if (mode === 'memory') {
-    return
-  }
-  if (mode === 'preview') {
-    await recordKfzAnalyticsPreviewAction({ consent, events: records })
-    return
-  }
   const body = JSON.stringify({ consent, events: records })
-  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-    const blob = new Blob([body], { type: 'application/json' })
-    const queued = navigator.sendBeacon('/api/inbound/kfz-analytics', blob)
-    if (queued) {
-      return
-    }
-  }
-  await fetch('/api/inbound/kfz-analytics', {
+  const response = await fetch('/api/inbound/kfz-analytics', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,
     keepalive: true,
+  })
+  if (isKfzAnalyticsRetryableSendStatus(response.status)) {
+    throw new Error(`analytics persist ${response.status}`)
+  }
+}
+
+async function sendRecords(
+  mode: TransportMode,
+  records: KfzAnalyticsRecord[],
+  readConsent: () => 'granted' | 'declined' | 'unknown',
+) {
+  if (records.length === 0) {
+    return
+  }
+  await sendKfzAnalyticsRecordsWithRetry({
+    consent: readConsent,
+    records,
+    send: async (nextConsent, nextRecords) => {
+      if (nextConsent !== 'granted' || nextRecords.length === 0) {
+        return
+      }
+      if (mode === 'memory') {
+        return
+      }
+      if (mode === 'preview') {
+        await recordKfzAnalyticsPreviewAction({
+          consent: nextConsent,
+          events: [...nextRecords],
+        })
+        return
+      }
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+          const blob = new Blob([JSON.stringify({ consent: nextConsent, events: nextRecords })], {
+            type: 'application/json',
+          })
+          const queued = navigator.sendBeacon('/api/inbound/kfz-analytics', blob)
+          if (queued) {
+            return
+          }
+        }
+      }
+      await postKfzAnalyticsRecords(nextConsent, nextRecords)
+    },
   })
 }
 
@@ -157,7 +187,7 @@ export function KfzLandingAnalyticsRoot({
   )
   const flush = useCallback(
     (records: KfzAnalyticsRecord[]) => {
-      void sendRecords(mode, controller.getConsent(), records)
+      void sendRecords(mode, records, () => controller.getConsent())
     },
     [controller, mode],
   )
