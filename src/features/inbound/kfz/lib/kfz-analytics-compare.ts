@@ -12,7 +12,6 @@ import {
   kfzAnalyticsTrafficSourceLabel,
   KFZ_ANALYTICS_PERIODS,
   KFZ_ANALYTICS_UNKNOWN_LABEL,
-  sessionMatchesKfzAnalyticsFilters,
   type KfzAnalyticsSessionFacts,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import {
