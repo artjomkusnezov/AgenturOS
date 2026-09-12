@@ -5,6 +5,7 @@ import {
   kfzAnalyticsDropOffFilterOptions,
   kfzAnalyticsStepFilterOptions,
   kfzAnalyticsTrafficSourceFilterOptions,
+  KFZ_ANALYTICS_DECISION_PERIODS,
   KFZ_ANALYTICS_MAX_RANGE_DAYS,
   KFZ_ANALYTICS_PERIODS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
@@ -78,8 +79,9 @@ export function KfzAnalyticsDashboardFiltersBar({
         <div>
           <h3 className="text-sm font-semibold text-zinc-900">Faktische Aufschlüsselung</h3>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Nur allow-listed Ereignisse. Leere oder unbekannte Werte bleiben unbekannt.
-            Zeitraum höchstens {KFZ_ANALYTICS_MAX_RANGE_DAYS} Tage.
+            7/30/90-Tage-Fenster aus vorhandenen Zeitstempeln. Leere oder unbekannte
+            Werte bleiben unbekannt. Eigenes Kalenderfenster höchstens{' '}
+            {KFZ_ANALYTICS_MAX_RANGE_DAYS} Tage.
           </p>
         </div>
         <button
@@ -98,11 +100,15 @@ export function KfzAnalyticsDashboardFiltersBar({
       >
         {KFZ_ANALYTICS_PERIODS.map((period) => {
           const active = period.id === filters.periodId
+          const decisionPeriod = (KFZ_ANALYTICS_DECISION_PERIODS as readonly string[]).includes(
+            period.id,
+          )
           return (
             <button
               key={period.id}
               type="button"
               data-kfz-analytics-period-option={period.id}
+              data-kfz-analytics-decision-period={decisionPeriod ? 'true' : 'false'}
               onClick={() => setPeriod(period.id)}
               className={`min-h-11 rounded-full px-3.5 text-sm font-medium ${
                 active

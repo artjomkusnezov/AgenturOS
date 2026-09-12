@@ -428,3 +428,77 @@ export function buildKfzAnalyticsSourceBranchFixture(): KfzAnalyticsRecord[] {
 
 export const KFZ_ANALYTICS_FIXTURE_SOURCE_BRANCH =
   buildKfzAnalyticsSourceBranchFixture()
+
+function shiftFromFixtureT0(iso: string): number {
+  return Date.parse(iso) - Date.parse(T0)
+}
+
+/**
+ * Anonymous sessions spread across 7/30/90-day windows so the authorized
+ * decision view can compare coarse source × selected branch without inventing
+ * dates or personal data.
+ */
+export function buildKfzAnalyticsDecisionPeriodFixture(): KfzAnalyticsRecord[] {
+  const windows: ReadonlyArray<{
+    template: readonly KfzAnalyticsRecord[]
+    at: string
+    start: number
+    count: number
+  }> = [
+    {
+      template: KFZ_ANALYTICS_FIXTURE_COMPLETED,
+      at: '2026-09-09T08:00:00.000Z',
+      start: 71,
+      count: 5,
+    },
+    {
+      template: KFZ_ANALYTICS_FIXTURE_ORGANIC,
+      at: '2026-08-20T10:00:00.000Z',
+      start: 81,
+      count: 5,
+    },
+    {
+      template: KFZ_ANALYTICS_FIXTURE_REFERRAL,
+      at: '2026-07-01T10:00:00.000Z',
+      start: 91,
+      count: 5,
+    },
+    {
+      template: KFZ_ANALYTICS_FIXTURE_ABANDONED_MID,
+      at: '2026-05-01T10:00:00.000Z',
+      start: 101,
+      count: 5,
+    },
+  ]
+  const events: KfzAnalyticsRecord[] = []
+  for (const window of windows) {
+    const shift = shiftFromFixtureT0(window.at)
+    for (let index = 0; index < window.count; index += 1) {
+      events.push(
+        ...cloneKfzAnalyticsSession(
+          window.template,
+          numberedSessionId(window.start + index),
+          shift + index * 60_000,
+        ),
+      )
+    }
+  }
+  events.push(
+    ...cloneKfzAnalyticsSession(
+      KFZ_ANALYTICS_FIXTURE_RETRY_SUCCESS,
+      numberedSessionId(111),
+      shiftFromFixtureT0('2026-09-09T09:00:00.000Z'),
+    ),
+  )
+  events.push(
+    ...cloneKfzAnalyticsSession(
+      KFZ_ANALYTICS_FIXTURE_UNKNOWN,
+      numberedSessionId(112),
+      shiftFromFixtureT0('2026-09-09T09:30:00.000Z'),
+    ),
+  )
+  return events
+}
+
+export const KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS =
+  buildKfzAnalyticsDecisionPeriodFixture()

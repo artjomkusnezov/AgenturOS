@@ -12,10 +12,7 @@ import {
   buildKfzAnalyticsDashboardHref,
   KFZ_ANALYTICS_DEFAULT_FILTERS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
-import {
-  KFZ_ANALYTICS_FIXTURE_COMPARISON,
-  KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW,
-} from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
+import { KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import { emptyKfzAnalyticsHealthFacts } from '@/features/inbound/kfz/lib/kfz-analytics-health'
 import type {
   KfzAnalyticsDashboardFilters,
@@ -76,9 +73,9 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
     startTransition(async () => {
       const result = await recordKfzAnalyticsPreviewAction({
         consent: 'granted',
-        events: [...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW],
+        events: [...KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS],
       })
-      setEvents([...KFZ_ANALYTICS_FIXTURE_COMPARISON, ...KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW])
+      setEvents([...KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS])
       setHealth(result.health)
     })
   }

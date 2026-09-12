@@ -37,8 +37,11 @@ export const KFZ_ANALYTICS_PERIODS: ReadonlyArray<{
   { id: '24h', label: '24 Stunden', durationMs: 24 * 60 * 60 * 1000 },
   { id: '7d', label: '7 Tage', durationMs: 7 * 24 * 60 * 60 * 1000 },
   { id: '30d', label: '30 Tage', durationMs: 30 * 24 * 60 * 60 * 1000 },
+  { id: '90d', label: '90 Tage', durationMs: 90 * 24 * 60 * 60 * 1000 },
   { id: 'all', label: 'Gesamt', durationMs: null },
 ]
+
+export const KFZ_ANALYTICS_DECISION_PERIODS = ['7d', '30d', '90d'] as const
 
 export function resolveKfzAnalyticsPeriod(
   periodId: KfzAnalyticsPeriodId,
@@ -56,7 +59,7 @@ export const KFZ_ANALYTICS_MAX_RANGE_DAYS = 31
 export const KFZ_ANALYTICS_UNKNOWN_LABEL = 'Unbekannt'
 
 const CALENDAR_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
-const PRESET_PERIODS = new Set<KfzAnalyticsPeriodId>(['24h', '7d', '30d', 'all'])
+const PRESET_PERIODS = new Set<KfzAnalyticsPeriodId>(['24h', '7d', '30d', '90d', 'all'])
 
 export const KFZ_ANALYTICS_DEFAULT_FILTERS: KfzAnalyticsDashboardFilters = {
   periodId: '7d',
