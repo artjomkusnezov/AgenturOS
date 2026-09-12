@@ -305,6 +305,34 @@ export type KfzAnalyticsDashboardLoadResult =
       error: string
     }
 
+export type KfzAnalyticsDecisionExportRow = {
+  period: string
+  from: string
+  to: string
+  group: string
+  visits: number
+  reached: string
+  stop: string
+  medianSiteMs: string
+  medianStepMs: string
+  submissions: number
+  conversion: string
+}
+
+export type KfzAnalyticsDecisionExport = {
+  filename: string
+  csv: string
+  rows: KfzAnalyticsDecisionExportRow[]
+}
+
+export type KfzAnalyticsDecisionExportResult =
+  | { ok: true; status: 'ready'; filename: string; csv: string; rowCount: number }
+  | {
+      ok: false
+      status: 'unavailable' | 'configuration_missing'
+      error: string
+    }
+
 export type KfzAnalyticsStore = {
   insertEvent: (
     record: KfzAnalyticsRecord,

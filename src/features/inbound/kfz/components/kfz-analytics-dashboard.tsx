@@ -1,5 +1,6 @@
 import { dashboardSurfaceClassName } from '@/features/dashboard/lib/dashboard-surface'
 import { KfzAnalyticsDashboardFiltersBar } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-filters'
+import { KfzAnalyticsDecisionExportButton } from '@/features/inbound/kfz/components/kfz-analytics-decision-export-button'
 import { KFZ_ANALYTICS_PRIVACY_NOTES } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import {
   kfzAnalyticsQualityStateCopy,
@@ -60,6 +61,7 @@ type KfzAnalyticsDashboardViewProps = {
   defaultPeriodId?: Exclude<KfzAnalyticsDashboardFilters['periodId'], 'custom'>
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
+  exportAuthorized?: boolean
 }
 
 export function KfzAnalyticsDashboardView({
@@ -69,6 +71,7 @@ export function KfzAnalyticsDashboardView({
   defaultPeriodId = '7d',
   events,
   inspector = false,
+  exportAuthorized = false,
 }: KfzAnalyticsDashboardViewProps) {
   const activeFilters = filters ?? dashboard.filters
   const funnelMax = maxCount(dashboard.steps)
@@ -197,9 +200,11 @@ export function KfzAnalyticsDashboardView({
         testId="coarse-source"
       />
       <KfzAnalyticsDecisionView
+        dashboard={dashboard}
         rows={dashboard.sourceBranchComparisons}
         empty={dashboard.empty}
         filterActive={dashboard.filterActive}
+        exportAuthorized={exportAuthorized}
       />
       <ComparisonTable
         title="Vergleich nach Referrer-Kategorie"
@@ -525,6 +530,7 @@ export function KfzAnalyticsReviewScreen({
   defaultPeriodId = '7d',
   events,
   inspector = false,
+  exportAuthorized = false,
 }: {
   status: KfzAnalyticsReviewStatus
   dashboard?: KfzAnalyticsDashboard
@@ -533,6 +539,7 @@ export function KfzAnalyticsReviewScreen({
   defaultPeriodId?: Exclude<KfzAnalyticsDashboardFilters['periodId'], 'custom'>
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
+  exportAuthorized?: boolean
 }) {
   const resolved = resolveKfzAnalyticsReviewStatus({
     loadStatus:
@@ -571,6 +578,7 @@ export function KfzAnalyticsReviewScreen({
       defaultPeriodId={defaultPeriodId}
       events={events}
       inspector={inspector}
+      exportAuthorized={exportAuthorized}
     />
   )
 }
@@ -636,13 +644,17 @@ function suppressedLabel(): string {
 }
 
 function KfzAnalyticsDecisionView({
+  dashboard,
   rows,
   empty,
   filterActive,
+  exportAuthorized,
 }: {
+  dashboard: KfzAnalyticsDashboard
   rows: KfzAnalyticsComparisonRow[]
   empty: boolean
   filterActive: boolean
+  exportAuthorized: boolean
 }) {
   const emptyCopy = filterActive
     ? 'Die Filter treffen auf keine anonymen Sitzungen zu. Es wird nichts hochgerechnet und keine Herkunft erfunden.'
@@ -655,15 +667,24 @@ function KfzAnalyticsDecisionView({
       data-kfz-analytics-comparisons="source-branch"
       data-kfz-analytics-decision-empty={empty || rows.length === 0 ? 'true' : 'false'}
     >
-      <h3 className="text-sm font-semibold text-zinc-900">
-        Herkunft × Einstieg
-      </h3>
-      <p className="mt-1 text-xs text-zinc-500">
-        Grobe Herkunft und gewählter Zweig: Besuche, erreichter Schritt,
-        Stopppunkt, Median Seite/Schritt und versendete Anfragen. Abschlussquote
-        erst ab {KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen — kleine Gruppen bleiben
-        ausgeblendet.
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-900">
+            Herkunft × Einstieg
+          </h3>
+          <p className="mt-1 text-xs text-zinc-500">
+            Grobe Herkunft und gewählter Zweig: Besuche, erreichter Schritt,
+            Stopppunkt, Median Seite/Schritt und versendete Anfragen. Abschlussquote
+            erst ab {KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen — kleine Gruppen bleiben
+            ausgeblendet. Der Export enthält dieselbe Auswahl, ohne Sitzungen,
+            Antworten oder Kontakte.
+          </p>
+        </div>
+        <KfzAnalyticsDecisionExportButton
+          dashboard={dashboard}
+          authorized={exportAuthorized}
+        />
+      </div>
       {rows.length === 0 ? (
         <p
           className="mt-3 text-sm text-zinc-500"

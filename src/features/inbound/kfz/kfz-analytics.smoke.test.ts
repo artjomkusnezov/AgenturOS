@@ -10,6 +10,13 @@ import { describe, it } from 'node:test'
 
 import { aggregateKfzAnalyticsDashboard } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
 import {
+  authorizeKfzAnalyticsDecisionExport,
+  buildKfzAnalyticsDecisionExport,
+  KFZ_ANALYTICS_DECISION_EXPORT_HEADERS,
+  KFZ_ANALYTICS_EXPORT_SUPPRESSED,
+  neutralizeKfzAnalyticsCsvFormula,
+} from '@/features/inbound/kfz/lib/kfz-analytics-export'
+import {
   KFZ_ANALYTICS_MIN_RATE_GROUP,
   resolveKfzAnalyticsPreviousRange,
 } from '@/features/inbound/kfz/lib/kfz-analytics-compare'
@@ -2132,6 +2139,266 @@ describe('kfz analytics campaign decision view', () => {
   })
 })
 
+function parseDecisionExportCsv(csv: string): string[][] {
+  const text = csv.startsWith('\uFEFF') ? csv.slice(1) : csv
+  return text
+    .replace(/\n$/, '')
+    .split('\n')
+    .map((line) => {
+      const cells: string[] = []
+      let current = ''
+      let quoted = false
+      for (let index = 0; index < line.length; index += 1) {
+        const char = line[index]!
+        if (quoted) {
+          if (char === '"' && line[index + 1] === '"') {
+            current += '"'
+            index += 1
+            continue
+          }
+          if (char === '"') {
+            quoted = false
+            continue
+          }
+          current += char
+          continue
+        }
+        if (char === '"') {
+          quoted = true
+          continue
+        }
+        if (char === ';') {
+          cells.push(current)
+          current = ''
+          continue
+        }
+        current += char
+      }
+      cells.push(current)
+      return cells
+    })
+}
+
+describe('kfz analytics privacy-safe decision export', () => {
+  const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
+
+  it('refuses unauthorized or unconfigured export and keeps csv absent', () => {
+    const unavailable = authorizeKfzAnalyticsDecisionExport({
+      ok: false,
+      status: 'unavailable',
+      error: KFZ_ANALYTICS_UNAVAILABLE_ERROR,
+    })
+    assert.equal(unavailable.ok, false)
+    assert.equal(unavailable.status, 'unavailable')
+    assert.equal(unavailable.error, KFZ_ANALYTICS_UNAVAILABLE_ERROR)
+    assert.equal('csv' in unavailable, false)
+    assert.equal('filename' in unavailable, false)
+
+    const missing = authorizeKfzAnalyticsDecisionExport({
+      ok: false,
+      status: 'configuration_missing',
+      error: KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR,
+    })
+    assert.equal(missing.ok, false)
+    assert.equal(missing.status, 'configuration_missing')
+    assert.equal('csv' in missing, false)
+
+    const actionSource = readSrc('features/inbound/kfz/actions/export-kfz-analytics-decision.ts')
+    assert.match(actionSource, /loadKfzAnalyticsDashboardAction/)
+    assert.match(actionSource, /authorizeKfzAnalyticsDecisionExport/)
+    assert.doesNotMatch(actionSource, /createMemoryKfzAnalyticsStore|createServiceRoleKfzAnalyticsStore/)
+    assert.doesNotMatch(actionSource, /sessionId|answers|email|phone/)
+
+    const loadSource = readSrc('features/inbound/kfz/actions/load-kfz-analytics-dashboard.ts')
+    assert.match(loadSource, /getCurrentUserAgency/)
+  })
+
+  it('exports only the selected period source × branch rows', () => {
+    const sevenDash = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+    })
+    const thirtyDash = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '30d',
+      nowMs,
+    })
+    const ninetyDash = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '90d',
+      nowMs,
+    })
+    const filtered = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+      query: { branch: 'upload_documents' },
+    })
+
+    const seven = buildKfzAnalyticsDecisionExport(sevenDash)
+    const thirty = buildKfzAnalyticsDecisionExport(thirtyDash)
+    const ninety = buildKfzAnalyticsDecisionExport(ninetyDash)
+    const branchOnly = buildKfzAnalyticsDecisionExport(filtered)
+
+    assert.equal(seven.filename, 'kfz-herkunft-einstieg-7d.csv')
+    assert.equal(thirty.filename, 'kfz-herkunft-einstieg-30d.csv')
+    assert.equal(ninety.filename, 'kfz-herkunft-einstieg-90d.csv')
+    assert.equal(seven.rows.length, sevenDash.sourceBranchComparisons.length)
+    assert.equal(thirty.rows.length, thirtyDash.sourceBranchComparisons.length)
+    assert.equal(ninety.rows.length, ninetyDash.sourceBranchComparisons.length)
+    assert.notEqual(seven.csv, thirty.csv)
+    assert.notEqual(thirty.csv, ninety.csv)
+
+    const sevenGroups = seven.rows.map((row) => row.group)
+    assert.equal(sevenGroups.some((label) => label.includes('Organisch')), false)
+    assert.equal(sevenGroups.some((label) => label.includes('Verweis')), false)
+    assert.equal(thirty.rows.some((row) => row.group.includes('Organisch')), true)
+    assert.equal(thirty.rows.some((row) => row.group.includes('Verweis')), false)
+    assert.equal(ninety.rows.some((row) => row.group.includes('Verweis')), true)
+    assert.equal(ninety.rows.some((row) => row.group.includes('Bestehendes Auto')), false)
+
+    assert.equal(branchOnly.rows.length, 1)
+    assert.match(branchOnly.rows[0]!.group, /Bezahlt/)
+    assert.equal(branchOnly.rows[0]!.visits, 5)
+    assert.equal(branchOnly.rows.every((row) => row.period === '7 Tage'), true)
+    assert.equal(branchOnly.rows[0]!.from, filtered.from)
+    assert.equal(branchOnly.rows[0]!.to, filtered.to)
+  })
+
+  it('applies the same minimum-group suppression and omits hidden details', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+    })
+    const exported = buildKfzAnalyticsDecisionExport(dashboard)
+    const paidEvb = dashboard.sourceBranchComparisons.find((row) => row.id === 'paid:evb')
+    assert.ok(paidEvb)
+    assert.equal(paidEvb.ratesHidden, true)
+
+    const evbExport = exported.rows.find((row) => row.group.includes('eVB'))
+    assert.ok(evbExport)
+    assert.equal(evbExport.visits, 1)
+    assert.equal(evbExport.submissions, 1)
+    assert.equal(evbExport.reached, '')
+    assert.equal(evbExport.stop, '')
+    assert.equal(evbExport.medianSiteMs, '')
+    assert.equal(evbExport.medianStepMs, '')
+    assert.equal(evbExport.conversion, KFZ_ANALYTICS_EXPORT_SUPPRESSED)
+
+    const paidUpload = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'paid:upload_documents',
+    )
+    assert.ok(paidUpload)
+    const uploadExport = exported.rows.find((row) => row.group.includes('Unterlagen'))
+    assert.ok(uploadExport)
+    assert.equal(uploadExport.reached, paidUpload.topReachedStepLabel)
+    assert.equal(uploadExport.medianSiteMs, String(paidUpload.medianActiveMs))
+    assert.equal(uploadExport.conversion, '100.0 %')
+
+    const poisoned = buildKfzAnalyticsDecisionExport({
+      ...dashboard,
+      sourceBranchComparisons: dashboard.sourceBranchComparisons.map((row) =>
+        row.ratesHidden
+          ? {
+              ...row,
+              conversionRate: 0.99,
+              topReachedStepLabel: 'Geheimschritt',
+              topDropOffStepLabel: 'Geheimstopp',
+              topReachedStepId: 'contact',
+              topDropOffStepId: 'contact',
+              medianActiveMs: 999_001,
+              medianStepActiveMs: 888_002,
+            }
+          : row,
+      ),
+    })
+    assert.doesNotMatch(poisoned.csv, /Geheimschritt|Geheimstopp|999001|888002|99\.0 %/)
+    assert.match(poisoned.csv, /Zu klein \(<5\)/)
+  })
+
+  it('never writes forbidden identifiers and neutralizes formula injection', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '90d',
+      nowMs,
+    })
+    const exported = buildKfzAnalyticsDecisionExport(dashboard)
+    assert.equal(exported.csv.startsWith('\uFEFF'), true)
+    assert.deepEqual(parseDecisionExportCsv(exported.csv)[0], [
+      ...KFZ_ANALYTICS_DECISION_EXPORT_HEADERS,
+    ])
+    assert.doesNotMatch(
+      exported.csv,
+      /sessionId|eventKey|matchedSessionIds|Mustermann|max@example.com|\+49170|schein\.pdf|Golf|objectKey|queryString|user-agent|Bearer|service_role/i,
+    )
+    assert.doesNotMatch(exported.csv, /https?:\/\/|filename|freeText|aaaaaaaa-aaaa/i)
+    assert.doesNotMatch(exported.csv, /sf_class|Selbstbeteiligung|1\.000 €/)
+    assert.ok(exported.rows.every((row) => !('sessionId' in row)))
+    assert.ok(!exported.csv.includes(KFZ_ANALYTICS_FIXTURE_SESSION_A))
+
+    assert.equal(neutralizeKfzAnalyticsCsvFormula('=1+2'), "'=1+2")
+    assert.equal(neutralizeKfzAnalyticsCsvFormula('+SUM(A1)'), "'+SUM(A1)")
+    assert.equal(neutralizeKfzAnalyticsCsvFormula('@cmd'), "'@cmd")
+    assert.equal(neutralizeKfzAnalyticsCsvFormula('-1+1'), "'-1+1")
+    assert.equal(neutralizeKfzAnalyticsCsvFormula('Bezahlt · Unterlagen'), 'Bezahlt · Unterlagen')
+
+    const injected = buildKfzAnalyticsDecisionExport({
+      ...dashboard,
+      sourceBranchComparisons: [
+        {
+          ...dashboard.sourceBranchComparisons[0]!,
+          label: '=HYPERLINK("http://evil.example")',
+          ratesHidden: false,
+        },
+      ],
+    })
+    assert.match(injected.csv, /'=HYPERLINK/)
+    assert.doesNotMatch(injected.csv, /^[=+\-@]/m)
+    const injectedRow = parseDecisionExportCsv(injected.csv)[1]
+    assert.ok(injectedRow)
+    assert.equal(injectedRow[3]?.startsWith("'="), true)
+  })
+
+  it('keeps empty and unknown states honest and repeat downloads identical', () => {
+    const emptyDash = aggregateKfzAnalyticsDashboard(
+      KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS.filter(
+        (event) => event.occurredAt < '2026-06-01T00:00:00.000Z',
+      ),
+      { periodId: '7d', nowMs },
+    )
+    const empty = buildKfzAnalyticsDecisionExport(emptyDash)
+    const emptyAgain = buildKfzAnalyticsDecisionExport(emptyDash)
+    assert.equal(emptyDash.empty, true)
+    assert.equal(empty.rows.length, 0)
+    assert.equal(empty.csv, emptyAgain.csv)
+    assert.equal(empty.filename, emptyAgain.filename)
+    const emptyLines = parseDecisionExportCsv(empty.csv)
+    assert.equal(emptyLines.length, 1)
+    assert.deepEqual(emptyLines[0], [...KFZ_ANALYTICS_DECISION_EXPORT_HEADERS])
+    assert.doesNotMatch(empty.csv, /Bezahlt|Organisch|Direkt|Verweis/)
+
+    const unknownDash = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+    })
+    const unknown = buildKfzAnalyticsDecisionExport(unknownDash)
+    assert.equal(unknown.rows.some((row) => row.group.includes('Unbekannt')), true)
+    const first = buildKfzAnalyticsDecisionExport(unknownDash)
+    const second = buildKfzAnalyticsDecisionExport(unknownDash)
+    assert.equal(first.csv, second.csv)
+    assert.equal(first.filename, second.filename)
+    assert.deepEqual(first.rows, second.rows)
+
+    const allowed = authorizeKfzAnalyticsDecisionExport({
+      ok: true,
+      status: 'ready',
+      dashboard: unknownDash,
+    })
+    assert.equal(allowed.ok, true)
+    if (allowed.ok) {
+      assert.equal(allowed.csv, first.csv)
+      assert.equal(allowed.filename, first.filename)
+      assert.equal(allowed.rowCount, first.rows.length)
+    }
+  })
+})
+
 describe('kfz analytics source hygiene', () => {
   it('keeps first-party modules free of cookies, pixels and paid analytics', () => {
     const files = [
@@ -2151,6 +2418,9 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-compare.ts',
       'features/inbound/kfz/lib/kfz-analytics-traffic-source.ts',
       'features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
+      'features/inbound/kfz/lib/kfz-analytics-export.ts',
+      'features/inbound/kfz/actions/export-kfz-analytics-decision.ts',
+      'features/inbound/kfz/components/kfz-analytics-decision-export-button.tsx',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
     const source = files.map((relative) => readSrc(relative)).join('\n')
@@ -2181,6 +2451,9 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /grobe Herkunft/)
     assert.match(source, /90 Tage/)
     assert.match(source, /Kampagnen-Entscheidung/)
+    assert.match(source, /data-kfz-analytics-export/)
+    assert.match(source, /Auswahl als CSV/)
+    assert.match(source, /loadKfzAnalyticsDashboardAction/)
   })
 
   it('adds a checked-in migration for anonymous analytics events', () => {

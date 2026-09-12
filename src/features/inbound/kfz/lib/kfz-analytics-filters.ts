@@ -301,6 +301,20 @@ export function kfzAnalyticsDashboardFiltersAreActive(
   )
 }
 
+export function buildKfzAnalyticsDashboardQuery(
+  filters: KfzAnalyticsDashboardFilters,
+): KfzAnalyticsDashboardQuery {
+  return {
+    period: filters.periodId,
+    from: filters.fromDate ?? undefined,
+    to: filters.toDate ?? undefined,
+    source: filters.trafficSource,
+    branch: filters.branchId,
+    step: filters.reachedStepId,
+    drop: filters.dropOffStepId,
+  }
+}
+
 export function buildKfzAnalyticsDashboardHref(
   filters: KfzAnalyticsDashboardFilters,
   pathname = '/app/kfz-analytics',
