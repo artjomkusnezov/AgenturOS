@@ -1,29 +1,26 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-ee86
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-b715
 
 ## Title
-AGENTUROS — KFZ ANALYTICS FAILURE VISIBILITY AND SAFE RETRY
+AGENTUROS — KFZ SOURCE ATTRIBUTION INTEGRITY
 
 ## Goal
-Make privacy-safe Kfz funnel analytics failures visible and safely recoverable without losing or duplicating approved metadata, and without storing answers or personal data.
+Make Kfz funnel source attribution reliable across entry, navigation, reload and submission while storing only approved coarse analytics metadata and never customer answers or personal data.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-ee86 (PR #55). No merge or main/master write.
-- Extend the existing analytics ingestion and authorized aggregate review; do not create a parallel analytics store.
-- Add aggregate health facts for accepted, rejected, duplicate and transiently failed events, using approved metadata only.
-- Provide bounded, idempotent retry behavior for transient persistence failures; the existing event key must prevent duplicates.
-- Never persist or display answers, names, contacts, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
-- Consent remains a hard write gate; revoked or absent consent must not queue or retry events.
-- Surface a concise authorized health state on the existing Kfz analytics/readiness UI, with honest READY/BLOCKED/UNKNOWN states and no secret values.
-- Preserve all six Kfz branches, questionnaire, private document flow, inbox and authorized review.
-- Add deterministic tests for transient failure, retry success, duplicate conflict, permanent rejection, consent withdrawal and sanitized aggregates.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-b715 (PR #56). No merge or main/master write.
+- Extend the existing Kfz analytics pipeline and authorized aggregate review; do not create a parallel store.
+- Preserve the first approved coarse source category and campaign identifiers already allowed by the schema across landing, branch selection, step transitions, reload and submission.
+- Categorize direct, referral, organic and paid entries using existing approved fields only. Never store full URLs, query strings, free text or referrer details.
+- Prevent later internal navigation, retries or duplicate events from overwriting the original attribution.
+- Consent remains a hard gate; without consent nothing is queued, persisted or retried.
+- Add authorized aggregate comparison by coarse source and selected Kfz branch with existing small-group protection.
+- Preserve all six branches, questionnaire, private document flow, inbox, readiness and safe retry behavior.
+- Add deterministic tests for direct/referral/paid/organic entry, reload, cross-route navigation, duplicate retry, consent withdrawal and forbidden-field stripping.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check local desktop/mobile analytics and readiness with synthetic anonymous fixtures; inspect Preview read-only if available.
+- Browser-check local desktop/mobile with synthetic anonymous fixtures; inspect Preview read-only if available.
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-c46ded3e-2c5c-4b05-97c6-f215993665bf
-CONTROLLER_STARTED_AT: 2026-09-11T08:33:45Z
