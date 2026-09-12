@@ -25,7 +25,12 @@ import {
   isKfzAnalyticsBackTransitionAllowed,
   isKfzAnalyticsForwardTransitionAllowed,
 } from '@/features/inbound/kfz/lib/kfz-analytics-quality'
-import { sanitizeKfzAnalyticsTrafficSource } from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
+import {
+  clearKfzAnalyticsFirstSource,
+  resolveKfzAnalyticsFirstSource,
+  sanitizeKfzAnalyticsTrafficSource,
+  type KfzAnalyticsTrafficSnapshot,
+} from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
 import type {
   KfzAnalyticsConsentState,
   KfzAnalyticsErrorCategory,
@@ -82,6 +87,12 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
   let submitted = false
   let abandoned = false
   let lastStepId: string | null = null
+  let firstSource: KfzAnalyticsTrafficSnapshot = resolveKfzAnalyticsFirstSource({
+    storage,
+    consent,
+    attribution: options.attribution,
+    referrer: options.referrer,
+  })
 
   function persistEmitted() {
     writeEmittedKeys(storage, emitted)
@@ -169,17 +180,19 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
     if (landing) {
       records.push(landing)
     }
-    const traffic = sanitizeKfzAnalyticsTrafficSource(
-      options.attribution,
-      options.referrer,
-    )
+    firstSource = resolveKfzAnalyticsFirstSource({
+      storage,
+      consent,
+      attribution: options.attribution,
+      referrer: options.referrer,
+    })
     const source = emit('traffic_source', {
-      trafficSource: traffic.trafficSource,
-      ...(traffic.referrerCategory
-        ? { referrerCategory: traffic.referrerCategory }
+      trafficSource: firstSource.trafficSource,
+      ...(firstSource.referrerCategory
+        ? { referrerCategory: firstSource.referrerCategory }
         : {}),
-      ...(traffic.utmSource ? { utmSource: traffic.utmSource } : {}),
-      ...(traffic.utmCampaign ? { utmCampaign: traffic.utmCampaign } : {}),
+      ...(firstSource.utmSource ? { utmSource: firstSource.utmSource } : {}),
+      ...(firstSource.utmCampaign ? { utmCampaign: firstSource.utmCampaign } : {}),
     })
     if (source) {
       records.push(source)
@@ -194,6 +207,9 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
     getSessionId(): string | null {
       return sessionId
     },
+    getFirstSource(): KfzAnalyticsTrafficSnapshot {
+      return firstSource
+    },
     setConsent(next: Exclude<KfzAnalyticsConsentState, 'unknown'>): KfzAnalyticsRecord[] {
       writeKfzAnalyticsConsent(storage, next)
       consent = next
@@ -201,6 +217,11 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
         sessionId = null
         emitted = new Set()
         storage.removeItem(KFZ_ANALYTICS_EMITTED_STORAGE_KEY)
+        clearKfzAnalyticsFirstSource(storage)
+        firstSource = sanitizeKfzAnalyticsTrafficSource(
+          options.attribution,
+          options.referrer,
+        )
         timing = emptyKfzAnalyticsTiming()
         return []
       }
@@ -209,6 +230,12 @@ export function createKfzAnalyticsController(options: KfzAnalyticsControllerOpti
         consent,
         options.randomUuid,
       )
+      firstSource = resolveKfzAnalyticsFirstSource({
+        storage,
+        consent,
+        attribution: options.attribution,
+        referrer: options.referrer,
+      })
       return recordLandingView()
     },
     recordLandingView,

@@ -4,6 +4,7 @@ import {
   addKfzAnalyticsHealthFacts,
   emptyKfzAnalyticsHealthSnapshot,
 } from '@/features/inbound/kfz/lib/kfz-analytics-health'
+import { lockKfzAnalyticsFirstTouchProperties } from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
 import {
   isKfzAnalyticsDuplicateKeyError,
   kfzAnalyticsRecordPassesPersistenceContract,
@@ -33,17 +34,23 @@ function mergeActiveMs(
   const currentMs = current.properties.activeMs ?? 0
   const incomingMs = incoming.properties.activeMs ?? 0
   if (incomingMs <= currentMs && incoming.occurredAt <= current.occurredAt) {
-    return current
+    return {
+      ...current,
+      properties: lockKfzAnalyticsFirstTouchProperties(
+        current.properties,
+        current.properties,
+      ),
+    }
   }
   return {
     ...current,
     occurredAt:
       incoming.occurredAt > current.occurredAt ? incoming.occurredAt : current.occurredAt,
-    properties: {
+    properties: lockKfzAnalyticsFirstTouchProperties(current.properties, {
       ...current.properties,
       ...incoming.properties,
       activeMs: Math.max(currentMs, incomingMs),
-    },
+    }),
   }
 }
 

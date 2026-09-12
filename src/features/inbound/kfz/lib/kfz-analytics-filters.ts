@@ -9,8 +9,10 @@ import {
   KFZ_ANALYTICS_STEP_IDS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
 import { KFZ_ANALYTICS_ACTIVE_MS_CAP } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
+import { classifyKfzAnalyticsCoarseSource } from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
 import type {
   KfzAnalyticsBranchFilter,
+  KfzAnalyticsCoarseSource,
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsDashboardQuery,
   KfzAnalyticsDropOffFilter,
@@ -74,8 +76,10 @@ export type KfzAnalyticsSessionFacts = {
   submitted: boolean
   abandoned: boolean
   trafficSource: KfzAnalyticsTrafficSource | typeof KFZ_ANALYTICS_UNKNOWN_ID
+  coarseSource: KfzAnalyticsCoarseSource | typeof KFZ_ANALYTICS_UNKNOWN_ID
   referrerCategory: KfzAnalyticsReferrerCategory | typeof KFZ_ANALYTICS_UNKNOWN_ID
   utmCampaign: string | null
+  utmSource: string | null
   branchId: string | typeof KFZ_ANALYTICS_UNKNOWN_ID | null
   reachedStepIds: Set<string>
   dropOffStepId: string | typeof KFZ_ANALYTICS_UNKNOWN_ID | null
@@ -433,7 +437,10 @@ export function deriveKfzAnalyticsSessionFacts(
     Number.isFinite(lastMs) && input.nowMs - lastMs >= input.abandonAfterMs
   const abandoned = !submitted && (names.has('funnel_abandoned') || timedOut)
 
-  const trafficEvent = sessionEvents.find((event) => event.eventName === 'traffic_source')
+  const trafficEvent = [...sessionEvents]
+    .filter((event) => event.eventName === 'traffic_source')
+    .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.eventKey.localeCompare(b.eventKey))
+    .at(0)
   const trafficSource = isKfzAnalyticsTrafficSource(trafficEvent?.properties.trafficSource)
     ? trafficEvent.properties.trafficSource
     : KFZ_ANALYTICS_UNKNOWN_ID
@@ -443,6 +450,24 @@ export function deriveKfzAnalyticsSessionFacts(
     ? trafficEvent.properties.referrerCategory
     : KFZ_ANALYTICS_UNKNOWN_ID
   const utmCampaign = trafficEvent?.properties.utmCampaign ?? null
+  const utmSource = trafficEvent?.properties.utmSource ?? null
+  const hasApprovedSource =
+    isKfzAnalyticsTrafficSource(trafficEvent?.properties.trafficSource) ||
+    isKfzAnalyticsReferrerCategory(trafficEvent?.properties.referrerCategory) ||
+    Boolean(utmSource) ||
+    Boolean(utmCampaign)
+  const coarseSource = hasApprovedSource
+    ? classifyKfzAnalyticsCoarseSource({
+        trafficSource: isKfzAnalyticsTrafficSource(trafficSource)
+          ? trafficSource
+          : 'direct',
+        utmSource,
+        utmCampaign,
+        referrerCategory: isKfzAnalyticsReferrerCategory(referrerCategory)
+          ? referrerCategory
+          : null,
+      })
+    : KFZ_ANALYTICS_UNKNOWN_ID
 
   const siteCandidates = sessionEvents
     .filter(
@@ -505,8 +530,10 @@ export function deriveKfzAnalyticsSessionFacts(
     submitted,
     abandoned,
     trafficSource,
+    coarseSource,
     referrerCategory,
     utmCampaign,
+    utmSource,
     branchId,
     reachedStepIds,
     dropOffStepId,

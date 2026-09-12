@@ -220,6 +220,10 @@ export const KFZ_ANALYTICS_FIXTURE_SESSION_G =
   'abababab-abab-4aba-8aba-abababababab'
 export const KFZ_ANALYTICS_FIXTURE_SESSION_H =
   '12121212-1212-4121-8121-121212121212'
+export const KFZ_ANALYTICS_FIXTURE_SESSION_I =
+  '13131313-1313-4131-8131-131313131313'
+export const KFZ_ANALYTICS_FIXTURE_SESSION_J =
+  '14141414-1414-4141-8141-141414141414'
 
 const T_RECENT = '2026-09-09T11:50:00.000Z'
 
@@ -348,3 +352,79 @@ export function buildKfzAnalyticsComparisonFixture(): KfzAnalyticsRecord[] {
 }
 
 export const KFZ_ANALYTICS_FIXTURE_COMPARISON = buildKfzAnalyticsComparisonFixture()
+
+/** Organic search entry that completes first-car. No UTM tokens. */
+export const KFZ_ANALYTICS_FIXTURE_ORGANIC: KfzAnalyticsRecord[] = [
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_I, 'landing_view', T0, { activeMs: 14_000 }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_I, 'traffic_source', T0, {
+    trafficSource: 'direct',
+    referrerCategory: 'search',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_I, 'funnel_start', T1, {
+    branchId: 'first_car',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_I, 'initial_branch_selected', T1, {
+    branchId: 'first_car',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_I, 'step_view', T1, { stepId: 'branch' }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_I, 'submit_succeeded', T3, { activeMs: 14_000 }),
+]
+
+/** Referral/social entry that completes additional-car. No UTM tokens. */
+export const KFZ_ANALYTICS_FIXTURE_REFERRAL: KfzAnalyticsRecord[] = [
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_J, 'landing_view', T0, { activeMs: 16_000 }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_J, 'traffic_source', T0, {
+    trafficSource: 'direct',
+    referrerCategory: 'other',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_J, 'funnel_start', T1, {
+    branchId: 'additional_car',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_J, 'initial_branch_selected', T1, {
+    branchId: 'additional_car',
+  }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_J, 'step_view', T1, { stepId: 'branch' }),
+  event(KFZ_ANALYTICS_FIXTURE_SESSION_J, 'submit_succeeded', T3, { activeMs: 16_000 }),
+]
+
+/**
+ * Five-plus sessions for each coarse source × selected branch so authorized
+ * review can show rates without exposing a single session.
+ */
+export function buildKfzAnalyticsSourceBranchFixture(): KfzAnalyticsRecord[] {
+  const events: KfzAnalyticsRecord[] = []
+  for (let index = 0; index < 5; index += 1) {
+    events.push(
+      ...cloneKfzAnalyticsSession(
+        KFZ_ANALYTICS_FIXTURE_COMPLETED,
+        numberedSessionId(index + 31),
+        index * 60_000,
+      ),
+    )
+    events.push(
+      ...cloneKfzAnalyticsSession(
+        KFZ_ANALYTICS_FIXTURE_ORGANIC,
+        numberedSessionId(index + 41),
+        index * 60_000,
+      ),
+    )
+    events.push(
+      ...cloneKfzAnalyticsSession(
+        KFZ_ANALYTICS_FIXTURE_REFERRAL,
+        numberedSessionId(index + 51),
+        index * 60_000,
+      ),
+    )
+    events.push(
+      ...cloneKfzAnalyticsSession(
+        KFZ_ANALYTICS_FIXTURE_ABANDONED_MID,
+        numberedSessionId(index + 61),
+        index * 60_000,
+      ),
+    )
+  }
+  return events
+}
+
+export const KFZ_ANALYTICS_FIXTURE_SOURCE_BRANCH =
+  buildKfzAnalyticsSourceBranchFixture()
