@@ -1,29 +1,25 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-c51e
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-ffd2
 
 ## Title
-AGENTUROS — KFZ CAMPAIGN DECISION VIEW
+AGENTUROS — PRIVACY-SAFE KFZ AGGREGATE EXPORT
 
 ## Goal
-Turn the existing privacy-safe Kfz funnel aggregates into one concise operator decision view showing which coarse sources and entry branches produce visits, progress, drop-offs and submissions without exposing individuals or customer answers.
+Let an authorized operator export the existing Kfz campaign decision view for weekly review as a safe aggregate file, without exposing sessions, answers or personal data.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-c51e (PR #57). No merge or main/master write.
-- Extend the existing authorized Kfz analytics screen; do not create another analytics store or dashboard.
-- For approved aggregate metadata only, compare coarse source and selected branch by visits, reached step, main stop point, median site/step time and submitted applications.
-- Show conversion rates only where the existing small-group threshold permits; otherwise show a privacy-safe suppressed state.
-- Keep first-touch attribution immutable across filters, reload, retries and internal navigation.
-- Provide clear 7/30/90-day filters using existing timestamps and honest empty/unknown states.
-- Never store or display answers, names, contacts, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
-- Consent remains a hard write gate. Preserve all six Kfz branches, questionnaire, private documents, inbox, readiness, safe retries and attribution integrity.
-- Add deterministic tests for source×branch aggregation, reached/stop steps, timing, submission, small groups, empty periods and forbidden-field stripping.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-ffd2 (PR #58). No merge or main/master write.
+- Extend the existing authorized Kfz analytics screen and existing aggregate query; do not create another store or dashboard.
+- Export only the currently selected allowed period and aggregate source×branch rows: visits, reached/stop summaries where threshold permits, aggregate timing, submissions and conversion.
+- Apply the existing minimum-group suppression identically in UI and export. Suppressed details must remain absent, not merely hidden by formatting.
+- Never export event/session identifiers, answers, names, contacts, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
+- Make CSV safe for spreadsheet opening: stable UTF-8 headings, deterministic ordering, formula-injection neutralization and honest empty/unknown states.
+- Keep consent write gates, first-touch attribution and all six Kfz flows unchanged.
+- Add deterministic tests for authorization, filters, suppression, forbidden fields, formula injection, empty data and repeat download.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check local desktop/mobile with synthetic anonymous fixtures for 7/30/90 days; inspect Preview read-only if available.
+- Browser-check local desktop/mobile with synthetic anonymous fixtures for 7/30/90 days and inspect downloaded CSV contents; inspect Preview read-only if available.
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-04776485-7827-479d-8412-7c2606b5fd08
-CONTROLLER_STARTED_AT: 2026-09-12T06:45:27Z
