@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-b715
 
 ## Title
@@ -24,3 +24,6 @@ Make Kfz funnel source attribution reliable across entry, navigation, reload and
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-3d17f4f6-305a-496c-a12a-d1d45cdd4921
+CONTROLLER_STARTED_AT: 2026-09-12T05:56:53Z
