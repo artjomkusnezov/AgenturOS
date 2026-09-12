@@ -98,7 +98,7 @@ export type KfzAnalyticsRecord = {
   properties: KfzAnalyticsProperties
 }
 
-export type KfzAnalyticsPeriodId = '24h' | '7d' | '30d' | 'all' | 'custom'
+export type KfzAnalyticsPeriodId = '24h' | '7d' | '30d' | '90d' | 'all' | 'custom'
 
 export const KFZ_ANALYTICS_FILTER_ALL = 'all' as const
 export const KFZ_ANALYTICS_UNKNOWN_ID = 'unknown' as const
@@ -164,6 +164,7 @@ export type KfzAnalyticsComparisonRow = {
   dropOffRate: number | null
   averageActiveMs: number | null
   medianActiveMs: number | null
+  medianStepActiveMs: number | null
   topReachedStepId: string | null
   topReachedStepLabel: string | null
   topDropOffStepId: string | null

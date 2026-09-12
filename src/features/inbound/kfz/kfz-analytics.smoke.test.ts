@@ -27,6 +27,7 @@ import {
 import {
   KFZ_ANALYTICS_FIXTURE_ALL,
   KFZ_ANALYTICS_FIXTURE_COMPARISON,
+  KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS,
   KFZ_ANALYTICS_FIXTURE_ORGANIC,
   KFZ_ANALYTICS_FIXTURE_OTHER_DAY,
   KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW,
@@ -39,6 +40,7 @@ import {
 import {
   buildKfzAnalyticsDashboardHref,
   describeKfzAnalyticsTimeRange,
+  KFZ_ANALYTICS_DECISION_PERIODS,
   KFZ_ANALYTICS_MAX_RANGE_DAYS,
   parseKfzAnalyticsCalendarDate,
   resolveKfzAnalyticsDashboardFilters,
@@ -1047,6 +1049,17 @@ describe('kfz analytics dashboard filters', () => {
       '/app/kfz-analytics?period=30d&source=direct&branch=evb&step=contact',
     )
 
+    const ninety = buildKfzAnalyticsDashboardHref({
+      periodId: '90d',
+      fromDate: null,
+      toDate: null,
+      trafficSource: 'all',
+      branchId: 'all',
+      reachedStepId: 'all',
+      dropOffStepId: 'all',
+    })
+    assert.equal(ninety, '/app/kfz-analytics?period=90d')
+
     const custom = buildKfzAnalyticsDashboardHref({
       periodId: 'custom',
       fromDate: '2026-09-01',
@@ -1126,6 +1139,12 @@ describe('kfz analytics aggregate comparisons', () => {
     assert.ok(customPrevious)
     assert.equal(customPrevious.from, '2026-09-08T00:00:00.000Z')
     assert.equal(customPrevious.to, '2026-09-08T23:59:59.999Z')
+
+    const rolling90 = resolveKfzAnalyticsDashboardFilters({ period: '90d' }, nowMs)
+    assert.equal(rolling90.filters.periodId, '90d')
+    assert.equal(rolling90.from, '2026-06-11T12:00:00.000Z')
+    assert.equal(rolling90.to, '2026-09-09T12:00:00.000Z')
+    assert.deepEqual([...KFZ_ANALYTICS_DECISION_PERIODS], ['7d', '30d', '90d'])
 
     const all = resolveKfzAnalyticsDashboardFilters({ period: 'all' }, nowMs)
     assert.equal(resolveKfzAnalyticsPreviousRange(all.filters, all), null)
@@ -1217,6 +1236,9 @@ describe('kfz analytics aggregate comparisons', () => {
     assert.equal(paidUpload.visits, 5)
     assert.equal(paidUpload.ratesHidden, false)
     assert.equal(paidUpload.conversionRate, 1)
+    assert.equal(paidUpload.topReachedStepId, 'documents')
+    assert.equal(paidUpload.medianActiveMs, 56_000)
+    assert.equal(paidUpload.medianStepActiveMs, 15_000)
     const paidEvb = dashboard.sourceBranchComparisons.find((row) => row.id === 'paid:evb')
     assert.ok(paidEvb)
     assert.equal(paidEvb.sessions, 1)
@@ -1915,6 +1937,201 @@ describe('kfz analytics source attribution integrity', () => {
   })
 })
 
+describe('kfz analytics campaign decision view', () => {
+  const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
+
+  it('aggregates source × branch visits, reached/stop, timing and submissions', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: 'all',
+      nowMs,
+    })
+
+    assert.equal(dashboard.empty, false)
+    assert.equal(dashboard.visits, 22)
+    assert.equal(dashboard.submissions, 16)
+
+    const paidUpload = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'paid:upload_documents',
+    )
+    assert.ok(paidUpload)
+    assert.match(paidUpload.label, /Bezahlt/)
+    assert.equal(paidUpload.visits, 5)
+    assert.equal(paidUpload.submissions, 5)
+    assert.equal(paidUpload.ratesHidden, false)
+    assert.equal(paidUpload.conversionRate, 1)
+    assert.equal(paidUpload.topReachedStepId, 'documents')
+    assert.equal(paidUpload.topReachedStepLabel, 'Unterlagen')
+    assert.equal(paidUpload.topDropOffStepId, null)
+    assert.equal(paidUpload.medianActiveMs, 56_000)
+    assert.equal(paidUpload.medianStepActiveMs, 15_000)
+
+    const organicFirst = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'organic:first_car',
+    )
+    assert.ok(organicFirst)
+    assert.equal(organicFirst.visits, 5)
+    assert.equal(organicFirst.submissions, 5)
+    assert.equal(organicFirst.conversionRate, 1)
+    assert.equal(organicFirst.topReachedStepId, 'branch')
+    assert.equal(organicFirst.medianActiveMs, 14_000)
+    assert.equal(organicFirst.medianStepActiveMs, null)
+
+    const referralExtra = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'referral:additional_car',
+    )
+    assert.ok(referralExtra)
+    assert.equal(referralExtra.visits, 5)
+    assert.equal(referralExtra.submissions, 5)
+    assert.equal(referralExtra.topReachedStepId, 'branch')
+
+    const directSwitch = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'direct:switch_car',
+    )
+    assert.ok(directSwitch)
+    assert.equal(directSwitch.visits, 5)
+    assert.equal(directSwitch.submissions, 0)
+    assert.equal(directSwitch.conversionRate, 0)
+    assert.equal(directSwitch.topReachedStepId, 'usage')
+    assert.equal(directSwitch.topDropOffStepId, 'usage')
+    assert.equal(directSwitch.medianActiveMs, 62_000)
+    assert.equal(directSwitch.medianStepActiveMs, 9_500)
+  })
+
+  it('hides conversion and identifying timing for small source × branch groups', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+    })
+
+    assert.equal(dashboard.visits, 7)
+    assert.equal(dashboard.submissions, 6)
+    assert.equal(dashboard.ratesHidden, false)
+
+    const paidEvb = dashboard.sourceBranchComparisons.find((row) => row.id === 'paid:evb')
+    assert.ok(paidEvb)
+    assert.equal(paidEvb.visits, 1)
+    assert.equal(paidEvb.submissions, 1)
+    assert.equal(paidEvb.ratesHidden, true)
+    assert.equal(paidEvb.conversionRate, null)
+    assert.equal(paidEvb.topReachedStepId, null)
+    assert.equal(paidEvb.topDropOffStepId, null)
+    assert.equal(paidEvb.medianActiveMs, null)
+    assert.equal(paidEvb.medianStepActiveMs, null)
+
+    const unknown = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'unknown:unknown',
+    )
+    assert.ok(unknown)
+    assert.equal(unknown.visits, 1)
+    assert.equal(unknown.submissions, 0)
+    assert.equal(unknown.ratesHidden, true)
+    assert.equal(unknown.conversionRate, null)
+    assert.match(unknown.label, /Unbekannt/)
+  })
+
+  it('keeps 7/30/90-day windows honest and empty periods empty', () => {
+    const seven = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+    })
+    assert.equal(seven.periodId, '7d')
+    assert.equal(seven.from, '2026-09-02T12:00:00.000Z')
+    assert.equal(seven.visits, 7)
+    assert.equal(
+      seven.sourceBranchComparisons.some((row) => row.id === 'organic:first_car'),
+      false,
+    )
+    assert.equal(
+      seven.sourceBranchComparisons.some((row) => row.id === 'referral:additional_car'),
+      false,
+    )
+    assert.equal(
+      seven.sourceBranchComparisons.some((row) => row.id === 'direct:switch_car'),
+      false,
+    )
+
+    const thirty = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '30d',
+      nowMs,
+    })
+    assert.equal(thirty.periodId, '30d')
+    assert.equal(thirty.from, '2026-08-10T12:00:00.000Z')
+    assert.equal(thirty.visits, 12)
+    assert.ok(thirty.sourceBranchComparisons.some((row) => row.id === 'organic:first_car'))
+    assert.equal(
+      thirty.sourceBranchComparisons.some((row) => row.id === 'referral:additional_car'),
+      false,
+    )
+
+    const ninety = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '90d',
+      nowMs,
+    })
+    assert.equal(ninety.periodId, '90d')
+    assert.equal(ninety.from, '2026-06-11T12:00:00.000Z')
+    assert.equal(ninety.visits, 17)
+    assert.ok(ninety.sourceBranchComparisons.some((row) => row.id === 'referral:additional_car'))
+    assert.equal(
+      ninety.sourceBranchComparisons.some((row) => row.id === 'direct:switch_car'),
+      false,
+    )
+
+    const emptySeven = aggregateKfzAnalyticsDashboard(
+      KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS.filter(
+        (event) => event.occurredAt < '2026-06-01T00:00:00.000Z',
+      ),
+      {
+        periodId: '7d',
+        nowMs,
+      },
+    )
+    assert.equal(emptySeven.empty, true)
+    assert.equal(emptySeven.visits, 0)
+    assert.equal(emptySeven.submissions, 0)
+    assert.equal(emptySeven.conversionRate, null)
+    assert.equal(emptySeven.sourceBranchComparisons.length, 0)
+    assert.equal(emptySeven.filterActive, false)
+
+    const emptyFiltered = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+      query: { source: 'campaign', branch: 'no_documents' },
+    })
+    assert.equal(emptyFiltered.empty, true)
+    assert.equal(emptyFiltered.filterActive, true)
+    assert.equal(emptyFiltered.sourceBranchComparisons.length, 0)
+    assert.equal(emptyFiltered.visits, 0)
+  })
+
+  it('strips forbidden fields from decision aggregates and keeps first-touch locked', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '90d',
+      nowMs,
+    })
+    const serialized = JSON.stringify({
+      sourceBranch: dashboard.sourceBranchComparisons,
+      coarse: dashboard.coarseSourceComparisons,
+    })
+    assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
+    assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)
+    assert.doesNotMatch(serialized, /user-agent|https?:\/\/|filename|objectKey|freeText|queryString/i)
+    assert.doesNotMatch(serialized, /sessionId|aaaaaaaa-aaaa|email|phone/)
+    assert.ok(dashboard.sourceBranchComparisons.every((row) => !('sessionId' in row)))
+
+    const paidAfterFilter = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS, {
+      periodId: '7d',
+      nowMs,
+      query: { branch: 'upload_documents' },
+    })
+    assert.equal(paidAfterFilter.sourceBranchComparisons[0]?.id, 'paid:upload_documents')
+    assert.equal(paidAfterFilter.sourceBranchComparisons[0]?.visits, 5)
+    assert.equal(
+      JSON.stringify(paidAfterFilter.sourceBranchComparisons).includes('instagram'),
+      false,
+    )
+  })
+})
+
 describe('kfz analytics source hygiene', () => {
   it('keeps first-party modules free of cookies, pixels and paid analytics', () => {
     const files = [
@@ -1957,10 +2174,13 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /data-kfz-analytics-quality/)
     assert.match(source, /data-kfz-analytics-health/)
     assert.match(source, /data-kfz-analytics-comparisons/)
+    assert.match(source, /data-kfz-analytics-decision/)
     assert.match(source, /data-kfz-analytics-consent-withdraw/)
     assert.match(source, /Referrer-Kategorie/)
     assert.match(source, /first-source/)
     assert.match(source, /grobe Herkunft/)
+    assert.match(source, /90 Tage/)
+    assert.match(source, /Kampagnen-Entscheidung/)
   })
 
   it('adds a checked-in migration for anonymous analytics events', () => {

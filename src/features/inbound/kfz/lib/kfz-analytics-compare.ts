@@ -218,6 +218,22 @@ function stepLabelOrUnknown(id: string | null): string | null {
   return kfzAnalyticsStepLabel(id)
 }
 
+function collectStepActiveMs(factsList: readonly KfzAnalyticsSessionFacts[]): number[] {
+  const times: number[] = []
+  for (const facts of factsList) {
+    for (const event of facts.events) {
+      if (event.eventName !== 'step_view') {
+        continue
+      }
+      const timing = classifyKfzAnalyticsActiveMs(event.properties.activeMs)
+      if (timing.activeMs != null) {
+        times.push(timing.activeMs)
+      }
+    }
+  }
+  return times
+}
+
 export function summarizeKfzAnalyticsComparisonGroup(
   factsList: readonly KfzAnalyticsSessionFacts[],
   input: { id: string; label: string },
@@ -273,6 +289,7 @@ export function summarizeKfzAnalyticsComparisonGroup(
     dropOffRate: kfzAnalyticsAggregateRate(abandoned, sessions, sessions),
     averageActiveMs: ratesHidden ? null : average(siteTimes),
     medianActiveMs: ratesHidden ? null : median(siteTimes),
+    medianStepActiveMs: ratesHidden ? null : median(collectStepActiveMs(factsList)),
     topReachedStepId: topReached,
     topReachedStepLabel: stepLabelOrUnknown(topReached),
     topDropOffStepId: topDropOff,

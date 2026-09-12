@@ -57,7 +57,7 @@ type KfzAnalyticsDashboardViewProps = {
   dashboard: KfzAnalyticsDashboard
   filters?: KfzAnalyticsDashboardFilters
   onFiltersChange?: (filters: KfzAnalyticsDashboardFilters) => void
-  defaultPeriodId?: '24h' | '7d' | '30d' | 'all'
+  defaultPeriodId?: Exclude<KfzAnalyticsDashboardFilters['periodId'], 'custom'>
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
 }
@@ -90,12 +90,12 @@ export function KfzAnalyticsDashboardView({
           Intern · Kfz-Funnel
         </p>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-          Messung der Kfz-Strecke
+          Kampagnen-Entscheidung
         </h2>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-600">
-          Interne Prüfung anonymer Metadaten: Herkunft, Besuch, gewählter Weg,
-          erreichter Schritt, Stopppunkt, Zeit, Übergänge und Versand. Keine
-          Formularantworten, Kontaktdaten oder Dateiinhalte.
+          Welche grobe Herkunft und welcher Einstieg bringen Besuche, Fortschritt,
+          Abbrüche und Anfragen. Nur anonyme Aggregate — keine Antworten,
+          Kontakte oder Dateiinhalte.
         </p>
         <p
           className="mt-2 text-xs text-zinc-500"
@@ -196,11 +196,10 @@ export function KfzAnalyticsDashboardView({
         rows={dashboard.coarseSourceComparisons}
         testId="coarse-source"
       />
-      <ComparisonTable
-        title="Vergleich nach grober Herkunft und Einstieg"
-        empty="Keine Herkunft-plus-Zweig-Gruppen. Kleine Gruppen bleiben ohne Quote."
+      <KfzAnalyticsDecisionView
         rows={dashboard.sourceBranchComparisons}
-        testId="source-branch"
+        empty={dashboard.empty}
+        filterActive={dashboard.filterActive}
       />
       <ComparisonTable
         title="Vergleich nach Referrer-Kategorie"
@@ -531,7 +530,7 @@ export function KfzAnalyticsReviewScreen({
   dashboard?: KfzAnalyticsDashboard
   filters?: KfzAnalyticsDashboardFilters
   onFiltersChange?: (filters: KfzAnalyticsDashboardFilters) => void
-  defaultPeriodId?: '24h' | '7d' | '30d' | 'all'
+  defaultPeriodId?: Exclude<KfzAnalyticsDashboardFilters['periodId'], 'custom'>
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
 }) {
@@ -550,7 +549,7 @@ export function KfzAnalyticsReviewScreen({
             Intern · Kfz-Funnel
           </p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-            Messung der Kfz-Strecke
+            Kampagnen-Entscheidung
           </h2>
         </div>
         <KfzAnalyticsReviewStateView status={resolved} />
@@ -632,6 +631,124 @@ function ComparisonMetric({
   )
 }
 
+function suppressedLabel(): string {
+  return `Zu klein (<${KFZ_ANALYTICS_MIN_RATE_GROUP})`
+}
+
+function KfzAnalyticsDecisionView({
+  rows,
+  empty,
+  filterActive,
+}: {
+  rows: KfzAnalyticsComparisonRow[]
+  empty: boolean
+  filterActive: boolean
+}) {
+  const emptyCopy = filterActive
+    ? 'Die Filter treffen auf keine anonymen Sitzungen zu. Es wird nichts hochgerechnet und keine Herkunft erfunden.'
+    : 'In diesem Zeitraum liegen keine anonymen Ereignisse vor. Es wird nichts hochgerechnet und keine Herkunft erfunden.'
+
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+      data-kfz-analytics-decision="true"
+      data-kfz-analytics-comparisons="source-branch"
+      data-kfz-analytics-decision-empty={empty || rows.length === 0 ? 'true' : 'false'}
+    >
+      <h3 className="text-sm font-semibold text-zinc-900">
+        Herkunft × Einstieg
+      </h3>
+      <p className="mt-1 text-xs text-zinc-500">
+        Grobe Herkunft und gewählter Zweig: Besuche, erreichter Schritt,
+        Stopppunkt, Median Seite/Schritt und versendete Anfragen. Abschlussquote
+        erst ab {KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen — kleine Gruppen bleiben
+        ausgeblendet.
+      </p>
+      {rows.length === 0 ? (
+        <p
+          className="mt-3 text-sm text-zinc-500"
+          data-kfz-analytics-decision-empty-copy="true"
+        >
+          {emptyCopy}
+        </p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-[760px] w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-[11px] uppercase tracking-wide text-zinc-500">
+                <th className="py-2 pr-3 font-medium">Gruppe</th>
+                <th className="py-2 pr-3 font-medium">Besuche</th>
+                <th className="py-2 pr-3 font-medium">Erreicht</th>
+                <th className="py-2 pr-3 font-medium">Stopp</th>
+                <th className="py-2 pr-3 font-medium">Median Seite</th>
+                <th className="py-2 pr-3 font-medium">Median Schritt</th>
+                <th className="py-2 pr-3 font-medium">Anfragen</th>
+                <th className="py-2 font-medium">Abschluss</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-zinc-100 last:border-0"
+                  data-kfz-analytics-comparison-row={row.id}
+                  data-kfz-analytics-decision-row={row.id}
+                  data-kfz-analytics-rates-hidden={row.ratesHidden ? 'true' : 'false'}
+                >
+                  <td className="py-2.5 pr-3 font-medium text-zinc-800">{row.label}</td>
+                  <td
+                    className="py-2.5 pr-3 text-zinc-700"
+                    data-kfz-analytics-decision-metric="visits"
+                  >
+                    {formatCount(row.visits)}
+                  </td>
+                  <td
+                    className="py-2.5 pr-3 text-zinc-600"
+                    data-kfz-analytics-decision-metric="reached"
+                  >
+                    {row.topReachedStepLabel ?? '—'}
+                  </td>
+                  <td
+                    className="py-2.5 pr-3 text-zinc-600"
+                    data-kfz-analytics-decision-metric="stop"
+                  >
+                    {row.topDropOffStepLabel ?? '—'}
+                  </td>
+                  <td
+                    className="py-2.5 pr-3 text-zinc-700"
+                    data-kfz-analytics-decision-metric="site-median"
+                  >
+                    {formatActiveMs(row.medianActiveMs)}
+                  </td>
+                  <td
+                    className="py-2.5 pr-3 text-zinc-700"
+                    data-kfz-analytics-decision-metric="step-median"
+                  >
+                    {formatActiveMs(row.medianStepActiveMs)}
+                  </td>
+                  <td
+                    className="py-2.5 pr-3 text-zinc-700"
+                    data-kfz-analytics-decision-metric="submissions"
+                  >
+                    {formatCount(row.submissions)}
+                  </td>
+                  <td
+                    className="py-2.5 text-zinc-700"
+                    data-kfz-analytics-decision-metric="conversion"
+                    data-kfz-analytics-suppressed={row.ratesHidden ? 'true' : 'false'}
+                  >
+                    {row.ratesHidden ? suppressedLabel() : formatRate(row.conversionRate)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function ComparisonTable({
   title,
   empty,
@@ -670,7 +787,7 @@ function ComparisonTable({
                 <th className="py-2 pr-3 font-medium">Schritt</th>
                 <th className="py-2 pr-3 font-medium">Stopp</th>
                 <th className="py-2 pr-3 font-medium">Übergänge</th>
-                <th className="py-2 font-medium">Zeit Ø</th>
+                <th className="py-2 font-medium">Median</th>
               </tr>
             </thead>
             <tbody>
@@ -698,7 +815,7 @@ function ComparisonTable({
                   <td className="py-2.5 pr-3 text-zinc-700">
                     {row.transitionCount == null ? '—' : formatCount(row.transitionCount)}
                   </td>
-                  <td className="py-2.5 text-zinc-700">{formatActiveMs(row.averageActiveMs)}</td>
+                  <td className="py-2.5 text-zinc-700">{formatActiveMs(row.medianActiveMs)}</td>
                 </tr>
               ))}
             </tbody>
