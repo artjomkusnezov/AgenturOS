@@ -191,6 +191,18 @@ export function KfzAnalyticsDashboardView({
         testId="source"
       />
       <ComparisonTable
+        title="Vergleich nach grober Herkunft"
+        empty="Keine grobe Herkunft. Nur Direkt, Verweis, Organisch oder Bezahlt aus allow-listed Feldern."
+        rows={dashboard.coarseSourceComparisons}
+        testId="coarse-source"
+      />
+      <ComparisonTable
+        title="Vergleich nach grober Herkunft und Einstieg"
+        empty="Keine Herkunft-plus-Zweig-Gruppen. Kleine Gruppen bleiben ohne Quote."
+        rows={dashboard.sourceBranchComparisons}
+        testId="source-branch"
+      />
+      <ComparisonTable
         title="Vergleich nach Referrer-Kategorie"
         empty="Keine Referrer-Kategorie. Volle URLs werden nicht gespeichert."
         rows={dashboard.referrerComparisons}

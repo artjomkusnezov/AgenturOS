@@ -267,12 +267,19 @@ export function sanitizeKfzAnalyticsRecord(
       ? input.occurredAt
       : nowIso
 
+  const canonicalKey = buildKfzAnalyticsEventKey(
+    input.sessionId,
+    input.eventName,
+    properties,
+  )
   const eventKey =
-    typeof input.eventKey === 'string' &&
-    input.eventKey.startsWith(`${input.sessionId}:`) &&
-    input.eventKey.length <= 180
-      ? input.eventKey
-      : buildKfzAnalyticsEventKey(input.sessionId, input.eventName, properties)
+    input.eventName === 'traffic_source'
+      ? canonicalKey
+      : typeof input.eventKey === 'string' &&
+          input.eventKey.startsWith(`${input.sessionId}:`) &&
+          input.eventKey.length <= 180
+        ? input.eventKey
+        : canonicalKey
 
   return {
     eventName: input.eventName,

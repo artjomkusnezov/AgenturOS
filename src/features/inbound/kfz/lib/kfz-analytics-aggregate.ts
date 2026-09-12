@@ -318,6 +318,8 @@ export function aggregateKfzAnalyticsDashboard(
       id === KFZ_ANALYTICS_UNKNOWN_ID ? 'Unbekannt' : kfzAnalyticsBranchLabel(id),
     ),
     sourceComparisons: compareKfzAnalyticsSessionsBy(matched, 'source'),
+    coarseSourceComparisons: compareKfzAnalyticsSessionsBy(matched, 'coarseSource'),
+    sourceBranchComparisons: compareKfzAnalyticsSessionsBy(matched, 'sourceBranch'),
     referrerComparisons: compareKfzAnalyticsSessionsBy(matched, 'referrer'),
     branchComparisons: compareKfzAnalyticsSessionsBy(matched, 'branch'),
     periodComparison: buildKfzAnalyticsPeriodComparison(

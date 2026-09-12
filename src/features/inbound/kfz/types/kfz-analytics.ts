@@ -24,6 +24,16 @@ export const KFZ_ANALYTICS_TRAFFIC_SOURCES = [
 export type KfzAnalyticsTrafficSource =
   (typeof KFZ_ANALYTICS_TRAFFIC_SOURCES)[number]
 
+/** Derived review categories. Not a persisted property — computed from approved fields. */
+export const KFZ_ANALYTICS_COARSE_SOURCES = [
+  'direct',
+  'referral',
+  'organic',
+  'paid',
+] as const
+
+export type KfzAnalyticsCoarseSource = (typeof KFZ_ANALYTICS_COARSE_SOURCES)[number]
+
 export const KFZ_ANALYTICS_REFERRER_CATEGORIES = [
   'direct',
   'search',
@@ -266,6 +276,8 @@ export type KfzAnalyticsDashboard = {
   campaigns: KfzAnalyticsCountRow[]
   branches: KfzAnalyticsCountRow[]
   sourceComparisons: KfzAnalyticsComparisonRow[]
+  coarseSourceComparisons: KfzAnalyticsComparisonRow[]
+  sourceBranchComparisons: KfzAnalyticsComparisonRow[]
   referrerComparisons: KfzAnalyticsComparisonRow[]
   branchComparisons: KfzAnalyticsComparisonRow[]
   periodComparison: KfzAnalyticsPeriodComparison

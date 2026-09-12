@@ -22,7 +22,8 @@
  *   phone, email, licence plate, vehicle data, file names, object keys, answers,
  *   personal data, free text, IP, user agent, secrets and full URLs/query
  *   strings/referrers are dropped before persist. Only a coarse referrer
- *   category may be stored.
+ *   category and allow-listed campaign tokens may be stored. The first
+ *   approved source snapshot is locked for the session after consent.
  * - Transient persist failures may retry a bounded number of times. The event
  *   key prevents duplicates. Revoked or absent consent never queues or retries.
  * - No Google Analytics, Meta Pixel, Matomo cloud, paid analytics vendor,
@@ -46,6 +47,9 @@ export const KFZ_ANALYTICS_SESSION_STORAGE_KEY =
 
 export const KFZ_ANALYTICS_EMITTED_STORAGE_KEY =
   `${KFZ_ANALYTICS_STORAGE_PREFIX}.emitted.v1` as const
+
+export const KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY =
+  `${KFZ_ANALYTICS_STORAGE_PREFIX}.first-source.v1` as const
 
 export const KFZ_ANALYTICS_TIMING_STORAGE_KEY =
   `${KFZ_ANALYTICS_STORAGE_PREFIX}.timing.v1` as const

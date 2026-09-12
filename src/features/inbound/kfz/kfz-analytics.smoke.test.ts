@@ -27,10 +27,13 @@ import {
 import {
   KFZ_ANALYTICS_FIXTURE_ALL,
   KFZ_ANALYTICS_FIXTURE_COMPARISON,
+  KFZ_ANALYTICS_FIXTURE_ORGANIC,
   KFZ_ANALYTICS_FIXTURE_OTHER_DAY,
   KFZ_ANALYTICS_FIXTURE_PREVIOUS_WINDOW,
   KFZ_ANALYTICS_FIXTURE_QUALITY_DIRTY,
+  KFZ_ANALYTICS_FIXTURE_REFERRAL,
   KFZ_ANALYTICS_FIXTURE_SESSION_A,
+  KFZ_ANALYTICS_FIXTURE_SOURCE_BRANCH,
   KFZ_ANALYTICS_FIXTURE_UNKNOWN,
 } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import {
@@ -72,7 +75,11 @@ import {
   isKfzAnalyticsForwardTransitionAllowed,
   unavailableKfzAnalyticsDataQuality,
 } from '@/features/inbound/kfz/lib/kfz-analytics-quality'
-import { sanitizeKfzAnalyticsTrafficSource } from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
+import { KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
+import {
+  classifyKfzAnalyticsCoarseSource,
+  sanitizeKfzAnalyticsTrafficSource,
+} from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
 import { KFZ_ANALYTICS_PROPERTY_KEYS } from '@/features/inbound/kfz/types/kfz-analytics'
 import { createMemoryKfzAnalyticsStore } from '@/features/inbound/kfz/repositories/kfz-analytics-store'
 import { SupabasePublicConfigError } from '@/lib/supabase/public-config'
@@ -797,6 +804,8 @@ describe('kfz analytics dashboard aggregation', () => {
     assert.equal(empty.submitFromStartRate, null)
     assert.equal(empty.ratesHidden, true)
     assert.equal(empty.sourceComparisons.length, 0)
+    assert.equal(empty.coarseSourceComparisons.length, 0)
+    assert.equal(empty.sourceBranchComparisons.length, 0)
     assert.equal(empty.referrerComparisons.length, 0)
     assert.equal(empty.branchComparisons.length, 0)
     assert.equal(empty.periodComparison.current.visits, 0)
@@ -1191,6 +1200,28 @@ describe('kfz analytics aggregate comparisons', () => {
 
     const emptyGroup = dashboard.branchComparisons.find((row) => row.id === 'additional_car')
     assert.equal(emptyGroup, undefined)
+
+    const paid = dashboard.coarseSourceComparisons.find((row) => row.id === 'paid')
+    assert.ok(paid)
+    assert.equal(paid.visits, 6)
+    assert.equal(paid.submissions, 6)
+    assert.equal(paid.ratesHidden, false)
+    const coarseDirect = dashboard.coarseSourceComparisons.find((row) => row.id === 'direct')
+    assert.ok(coarseDirect)
+    assert.equal(coarseDirect.visits, 6)
+    assert.equal(coarseDirect.submissions, 0)
+    const paidUpload = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'paid:upload_documents',
+    )
+    assert.ok(paidUpload)
+    assert.equal(paidUpload.visits, 5)
+    assert.equal(paidUpload.ratesHidden, false)
+    assert.equal(paidUpload.conversionRate, 1)
+    const paidEvb = dashboard.sourceBranchComparisons.find((row) => row.id === 'paid:evb')
+    assert.ok(paidEvb)
+    assert.equal(paidEvb.sessions, 1)
+    assert.equal(paidEvb.ratesHidden, true)
+    assert.equal(paidEvb.conversionRate, null)
   })
 
   it('keeps empty and filtered small groups honest and does not invent matches', () => {
@@ -1201,6 +1232,8 @@ describe('kfz analytics aggregate comparisons', () => {
     assert.equal(empty.periodComparison.available, false)
     assert.equal(empty.periodComparison.previous, null)
     assert.equal(empty.sourceComparisons.length, 0)
+    assert.equal(empty.coarseSourceComparisons.length, 0)
+    assert.equal(empty.sourceBranchComparisons.length, 0)
     assert.equal(empty.conversionRate, null)
 
     const filtered = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_COMPARISON, {
@@ -1225,6 +1258,8 @@ describe('kfz analytics aggregate comparisons', () => {
     })
     assert.equal(none.empty, true)
     assert.equal(none.sourceComparisons.length, 0)
+    assert.equal(none.coarseSourceComparisons.length, 0)
+    assert.equal(none.sourceBranchComparisons.length, 0)
     assert.equal(none.branchComparisons.length, 0)
     assert.equal(none.conversionRate, null)
   })
@@ -1266,6 +1301,8 @@ describe('kfz analytics aggregate comparisons', () => {
     )
     const serialized = JSON.stringify({
       sourceComparisons: dashboard.sourceComparisons,
+      coarseSourceComparisons: dashboard.coarseSourceComparisons,
+      sourceBranchComparisons: dashboard.sourceBranchComparisons,
       referrerComparisons: dashboard.referrerComparisons,
       branchComparisons: dashboard.branchComparisons,
       periodComparison: dashboard.periodComparison,
@@ -1495,6 +1532,389 @@ describe('kfz analytics quality guardrails', () => {
   })
 })
 
+describe('kfz analytics source attribution integrity', () => {
+  const nowMs = Date.parse('2026-09-09T12:00:00.000Z')
+
+  it('categorizes direct, referral, organic and paid from approved fields only', () => {
+    const direct = sanitizeKfzAnalyticsTrafficSource({}, null)
+    assert.deepEqual(direct, {
+      trafficSource: 'direct',
+      utmSource: null,
+      utmCampaign: null,
+      referrerCategory: 'direct',
+    })
+    assert.equal(classifyKfzAnalyticsCoarseSource(direct), 'direct')
+
+    const organic = sanitizeKfzAnalyticsTrafficSource(
+      {},
+      'https://www.google.de/search?q=kfz+osnabrueck+max@example.com',
+    )
+    assert.equal(organic.trafficSource, 'direct')
+    assert.equal(organic.referrerCategory, 'search')
+    assert.equal(organic.utmSource, null)
+    assert.equal(classifyKfzAnalyticsCoarseSource(organic), 'organic')
+    assert.equal(JSON.stringify(organic).includes('google.de'), false)
+    assert.equal(JSON.stringify(organic).includes('max@'), false)
+
+    const referral = sanitizeKfzAnalyticsTrafficSource({}, 'https://partner.example/ref?phone=+49170')
+    assert.equal(referral.trafficSource, 'direct')
+    assert.equal(referral.referrerCategory, 'other')
+    assert.equal(classifyKfzAnalyticsCoarseSource(referral), 'referral')
+    assert.equal(JSON.stringify(referral).includes('partner.example'), false)
+    assert.equal(JSON.stringify(referral).includes('+49170'), false)
+
+    const socialReferral = sanitizeKfzAnalyticsTrafficSource({}, 'https://instagram.com/p/abc')
+    assert.equal(classifyKfzAnalyticsCoarseSource(socialReferral), 'referral')
+
+    const paid = sanitizeKfzAnalyticsTrafficSource({
+      utmSource: 'google',
+      utmCampaign: 'kfz-check',
+    }, 'https://www.google.de/aclk?sa=L')
+    assert.equal(paid.trafficSource, 'utm')
+    assert.equal(paid.utmSource, 'google')
+    assert.equal(paid.utmCampaign, 'kfz-check')
+    assert.equal(paid.referrerCategory, 'search')
+    assert.equal(classifyKfzAnalyticsCoarseSource(paid), 'paid')
+    assert.equal(JSON.stringify(paid).includes('aclk'), false)
+  })
+
+  it('preserves the first approved source across landing, branch, steps, reload and submit', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const storage = createMemoryKfzAnalyticsConsentStorage()
+    const landing = createKfzAnalyticsController({
+      storage,
+      attribution: { utmSource: 'google', utmCampaign: 'kfz-check' },
+      referrer: 'https://www.google.de/search?q=kfz',
+      randomUuid: () => SESSION,
+    })
+    const first = [
+      ...landing.setConsent('granted'),
+      ...landing.recordStepView('branch'),
+      ...landing.recordFunnelStart('switch_car'),
+      ...landing.recordStepCompleted('branch'),
+      ...landing.recordStepView('registration'),
+    ]
+    await ingestKfzAnalyticsEvents({ consent: 'granted', events: first, store })
+
+    const reloaded = createKfzAnalyticsController({
+      storage,
+      attribution: {},
+      referrer: 'https://artkus.de/kfz',
+      randomUuid: () => SESSION,
+    })
+    const afterReload = [
+      ...reloaded.recordLandingView(),
+      ...reloaded.recordStepView('vehicle'),
+      ...reloaded.recordStepView('contact'),
+      ...reloaded.recordSubmitStarted(),
+      ...reloaded.recordSubmitSucceeded(),
+    ]
+    await ingestKfzAnalyticsEvents({ consent: 'granted', events: afterReload, store })
+
+    const stored = await store.listEvents()
+    const sources = stored.filter((event) => event.eventName === 'traffic_source')
+    assert.equal(sources.length, 1)
+    assert.equal(sources[0]?.properties.trafficSource, 'utm')
+    assert.equal(sources[0]?.properties.utmSource, 'google')
+    assert.equal(sources[0]?.properties.utmCampaign, 'kfz-check')
+    assert.equal(sources[0]?.properties.referrerCategory, 'search')
+    assert.equal(reloaded.getFirstSource().trafficSource, 'utm')
+    assert.equal(reloaded.getFirstSource().utmCampaign, 'kfz-check')
+    assert.equal(classifyKfzAnalyticsCoarseSource(reloaded.getFirstSource()), 'paid')
+    assert.ok(stored.some((event) => event.eventName === 'funnel_start'))
+    assert.ok(stored.some((event) => event.eventName === 'submit_succeeded'))
+    const serialized = JSON.stringify(stored)
+    assert.equal(serialized.includes('google.de'), false)
+    assert.equal(serialized.includes('artkus.de/kfz'), false)
+  })
+
+  it('does not overwrite first-touch after internal cross-route navigation', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const storage = createMemoryKfzAnalyticsConsentStorage()
+    const organicEntry = createKfzAnalyticsController({
+      storage,
+      attribution: {},
+      referrer: 'https://www.bing.com/search?q=versicherung',
+      randomUuid: () => SESSION,
+    })
+    await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: organicEntry.setConsent('granted'),
+      store,
+    })
+
+    const internalRoute = createKfzAnalyticsController({
+      storage,
+      attribution: { utmSource: 'newsletter', utmCampaign: 'wechsel' },
+      referrer: 'https://localhost/kfz?branch=evb',
+      randomUuid: () => SESSION,
+    })
+    const navigated = [
+      ...internalRoute.recordLandingView(),
+      ...internalRoute.recordFunnelStart('evb'),
+      ...internalRoute.recordStepView('branch'),
+    ]
+    await ingestKfzAnalyticsEvents({ consent: 'granted', events: navigated, store })
+
+    const sources = (await store.listEvents()).filter(
+      (event) => event.eventName === 'traffic_source',
+    )
+    assert.equal(sources.length, 1)
+    assert.equal(sources[0]?.properties.trafficSource, 'direct')
+    assert.equal(sources[0]?.properties.referrerCategory, 'search')
+    assert.equal(sources[0]?.properties.utmSource, undefined)
+    assert.equal(sources[0]?.properties.utmCampaign, undefined)
+    assert.equal(classifyKfzAnalyticsCoarseSource(internalRoute.getFirstSource()), 'organic')
+    assert.equal(JSON.stringify(sources).includes('localhost'), false)
+    assert.equal(JSON.stringify(sources).includes('branch=evb'), false)
+  })
+
+  it('keeps the original attribution on duplicate retry and crafted event keys', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const first = {
+      eventName: 'traffic_source' as const,
+      eventKey: `${SESSION}:traffic_source`,
+      sessionId: SESSION,
+      occurredAt: '2026-09-09T08:00:00.000Z',
+      properties: {
+        trafficSource: 'utm' as const,
+        referrerCategory: 'social' as const,
+        utmSource: 'instagram',
+        utmCampaign: 'wechsel',
+      },
+    }
+    const retry = {
+      eventName: 'traffic_source' as const,
+      eventKey: `${SESSION}:traffic_source:overwrite`,
+      sessionId: SESSION,
+      occurredAt: '2026-09-09T08:10:00.000Z',
+      properties: {
+        trafficSource: 'direct' as const,
+        referrerCategory: 'internal' as const,
+        utmSource: 'newsletter',
+        utmCampaign: 'evb',
+        url: 'https://evil.example/?email=max@example.com',
+        query: '?utm_source=steal',
+        referrer: 'https://evil.example/ref',
+      },
+    }
+    const firstIngest = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: [first],
+      store,
+    })
+    assert.equal(firstIngest.accepted, 1)
+    const retryIngest = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: [retry],
+      store,
+    })
+    assert.equal(retryIngest.accepted, 0)
+    assert.ok(retryIngest.quality.duplicates + retryIngest.quality.redactedForbiddenFields >= 1)
+
+    const stored = await store.listEvents()
+    const sources = stored.filter((event) => event.eventName === 'traffic_source')
+    assert.equal(sources.length, 1)
+    assert.equal(sources[0]?.eventKey, `${SESSION}:traffic_source`)
+    assert.equal(sources[0]?.properties.trafficSource, 'utm')
+    assert.equal(sources[0]?.properties.utmSource, 'instagram')
+    assert.equal(sources[0]?.properties.utmCampaign, 'wechsel')
+    assert.equal(sources[0]?.properties.referrerCategory, 'social')
+    const serialized = JSON.stringify(stored)
+    assert.equal(serialized.includes('evil.example'), false)
+    assert.equal(serialized.includes('max@example.com'), false)
+  })
+
+  it('does not queue, persist or retry source metadata after consent withdrawal', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const storage = createMemoryKfzAnalyticsConsentStorage()
+    const controller = createKfzAnalyticsController({
+      storage,
+      attribution: { utmSource: 'google', utmCampaign: 'kfz-check' },
+      referrer: 'https://www.google.de/',
+      randomUuid: () => SESSION,
+    })
+    const granted = controller.setConsent('granted')
+    await ingestKfzAnalyticsEvents({ consent: 'granted', events: granted, store })
+    assert.ok(storage.getItem(KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY))
+
+    controller.setConsent('declined')
+    assert.equal(controller.getConsent(), 'declined')
+    assert.equal(controller.getSessionId(), null)
+    assert.equal(storage.getItem(KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY), null)
+    assert.deepEqual(controller.recordLandingView(), [])
+    assert.deepEqual(controller.recordFunnelStart('first_car'), [])
+    assert.deepEqual(controller.recordSubmitSucceeded(), [])
+
+    const afterDecline = await ingestKfzAnalyticsEvents({
+      consent: 'declined',
+      events: [
+        {
+          eventName: 'traffic_source',
+          sessionId: SESSION,
+          properties: {
+            trafficSource: 'utm',
+            url: 'https://kfz.artkus.de/?email=max@example.com',
+          },
+        },
+      ],
+      store,
+    })
+    assert.equal(afterDecline.accepted, 0)
+    assert.equal(afterDecline.quality.consentBlocked, 1)
+
+    const next = createKfzAnalyticsController({
+      storage,
+      attribution: {},
+      referrer: null,
+      randomUuid: () => '22222222-2222-4222-8222-222222222222',
+    })
+    const fresh = next.setConsent('granted')
+    const source = fresh.find((event) => event.eventName === 'traffic_source')
+    assert.equal(source?.properties.trafficSource, 'direct')
+    assert.equal(source?.properties.utmSource, undefined)
+    assert.equal(source?.sessionId, '22222222-2222-4222-8222-222222222222')
+  })
+
+  it('strips forbidden URLs, query strings, referrers and answers from source events', async () => {
+    const store = createMemoryKfzAnalyticsStore()
+    const ingested = await ingestKfzAnalyticsEvents({
+      consent: 'granted',
+      events: [
+        {
+          eventName: 'traffic_source',
+          sessionId: SESSION,
+          occurredAt: '2026-09-09T08:00:00.000Z',
+          properties: {
+            trafficSource: 'utm',
+            referrerCategory: 'search',
+            utmSource: 'google',
+            utmCampaign: 'kfz-check',
+            url: 'https://kfz.artkus.de/kfz?email=max@example.com&utm_source=google',
+            href: 'https://evil.example/ref?name=Mustermann',
+            query: '?utm_source=google&phone=+491701234567',
+            referrer: 'https://google.com/search?q=Max+Mustermann',
+            answers: { intent: 'switch_car', sf_class_haftpflicht: '8' },
+            fullName: 'Erika Musterfrau',
+            filename: 'schein.pdf',
+          },
+        },
+      ],
+      store,
+    })
+    assert.equal(ingested.accepted, 1)
+    assert.ok(ingested.quality.redactedForbiddenFields >= 6)
+    const stored = ingested.records[0]
+    assert.ok(stored)
+    assert.deepEqual(stored.properties, {
+      trafficSource: 'utm',
+      referrerCategory: 'search',
+      utmSource: 'google',
+      utmCampaign: 'kfz-check',
+    })
+    const serialized = JSON.stringify(stored)
+    for (const leak of [
+      'kfz.artkus.de',
+      'evil.example',
+      'max@example.com',
+      '+491701234567',
+      'Mustermann',
+      'Musterfrau',
+      'schein.pdf',
+      'sf_class',
+      'https://',
+    ]) {
+      assert.equal(serialized.includes(leak), false, `leaked ${leak}`)
+    }
+  })
+
+  it('does not persist first-source or events before consent', () => {
+    const storage = createMemoryKfzAnalyticsConsentStorage()
+    const controller = createKfzAnalyticsController({
+      storage,
+      attribution: { utmSource: 'google', utmCampaign: 'kfz-check' },
+      referrer: 'https://www.google.de/search?q=secret',
+    })
+    assert.equal(controller.getConsent(), 'unknown')
+    assert.equal(controller.recordLandingView().length, 0)
+    assert.equal(storage.getItem(KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY), null)
+    assert.equal(JSON.stringify(storage.data).includes('google.de'), false)
+    assert.equal(JSON.stringify(storage.data).includes('secret'), false)
+    assert.equal(classifyKfzAnalyticsCoarseSource(controller.getFirstSource()), 'paid')
+  })
+
+  it('compares coarse source and selected branch with small-group protection', () => {
+    const dashboard = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_SOURCE_BRANCH, {
+      periodId: 'all',
+      nowMs,
+    })
+    assert.equal(dashboard.visits, 20)
+    assert.equal(dashboard.funnelStarts, 20)
+    assert.equal(dashboard.ratesHidden, false)
+
+    for (const id of ['paid', 'organic', 'referral', 'direct'] as const) {
+      const row = dashboard.coarseSourceComparisons.find((entry) => entry.id === id)
+      assert.ok(row, id)
+      assert.equal(row.visits, 5)
+      assert.equal(row.ratesHidden, false)
+    }
+
+    const paidUpload = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'paid:upload_documents',
+    )
+    assert.ok(paidUpload)
+    assert.equal(paidUpload.visits, 5)
+    assert.equal(paidUpload.submissions, 5)
+    assert.equal(paidUpload.conversionRate, 1)
+    assert.match(paidUpload.label, /Bezahlt/)
+
+    const organicFirst = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'organic:first_car',
+    )
+    assert.ok(organicFirst)
+    assert.equal(organicFirst.visits, 5)
+    assert.equal(organicFirst.submissions, 5)
+    assert.equal(organicFirst.ratesHidden, false)
+
+    const referralExtra = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'referral:additional_car',
+    )
+    assert.ok(referralExtra)
+    assert.equal(referralExtra.visits, 5)
+    assert.equal(referralExtra.submissions, 5)
+
+    const directSwitch = dashboard.sourceBranchComparisons.find(
+      (row) => row.id === 'direct:switch_car',
+    )
+    assert.ok(directSwitch)
+    assert.equal(directSwitch.visits, 5)
+    assert.equal(directSwitch.submissions, 0)
+    assert.equal(directSwitch.dropOffRate, 1)
+
+    const organic = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_ORGANIC, {
+      periodId: 'all',
+      nowMs,
+    })
+    assert.equal(organic.coarseSourceComparisons[0]?.id, 'organic')
+    assert.equal(organic.sourceBranchComparisons[0]?.id, 'organic:first_car')
+    assert.equal(organic.sourceBranchComparisons[0]?.ratesHidden, true)
+    assert.equal(organic.sourceBranchComparisons[0]?.conversionRate, null)
+
+    const referral = aggregateKfzAnalyticsDashboard(KFZ_ANALYTICS_FIXTURE_REFERRAL, {
+      periodId: 'all',
+      nowMs,
+    })
+    assert.equal(referral.coarseSourceComparisons[0]?.id, 'referral')
+    assert.equal(referral.sourceBranchComparisons[0]?.ratesHidden, true)
+
+    const serialized = JSON.stringify({
+      coarse: dashboard.coarseSourceComparisons,
+      sourceBranch: dashboard.sourceBranchComparisons,
+    })
+    assert.doesNotMatch(serialized, /Mustermann|@|https?:\/\/|filename|sessionId/)
+  })
+})
+
 describe('kfz analytics source hygiene', () => {
   it('keeps first-party modules free of cookies, pixels and paid analytics', () => {
     const files = [
@@ -1512,6 +1932,7 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-quality.ts',
       'features/inbound/kfz/lib/kfz-analytics-health.ts',
       'features/inbound/kfz/lib/kfz-analytics-compare.ts',
+      'features/inbound/kfz/lib/kfz-analytics-traffic-source.ts',
       'features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
@@ -1538,6 +1959,8 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /data-kfz-analytics-comparisons/)
     assert.match(source, /data-kfz-analytics-consent-withdraw/)
     assert.match(source, /Referrer-Kategorie/)
+    assert.match(source, /first-source/)
+    assert.match(source, /grobe Herkunft/)
   })
 
   it('adds a checked-in migration for anonymous analytics events', () => {

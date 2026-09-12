@@ -1,6 +1,7 @@
 import {
   KFZ_ANALYTICS_CONSENT_STORAGE_KEY,
   KFZ_ANALYTICS_CONSENT_VERSION,
+  KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY,
   KFZ_ANALYTICS_SESSION_STORAGE_KEY,
 } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import { isKfzAnalyticsSessionId } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
@@ -74,6 +75,36 @@ export function readKfzAnalyticsConsent(
   }
 }
 
+const pendingFirstSource = new WeakMap<KfzAnalyticsConsentStorage, unknown>()
+
+export function readPendingKfzAnalyticsFirstSource(
+  storage: KfzAnalyticsConsentStorage | null | undefined,
+): unknown {
+  if (!storage) {
+    return null
+  }
+  return pendingFirstSource.get(storage) ?? null
+}
+
+export function writePendingKfzAnalyticsFirstSource(
+  storage: KfzAnalyticsConsentStorage | null | undefined,
+  snapshot: unknown,
+): void {
+  if (!storage) {
+    return
+  }
+  pendingFirstSource.set(storage, snapshot)
+}
+
+export function clearPendingKfzAnalyticsFirstSource(
+  storage: KfzAnalyticsConsentStorage | null | undefined,
+): void {
+  if (!storage) {
+    return
+  }
+  pendingFirstSource.delete(storage)
+}
+
 export function writeKfzAnalyticsConsent(
   storage: KfzAnalyticsConsentStorage | null | undefined,
   state: Exclude<KfzAnalyticsConsentState, 'unknown'>,
@@ -88,6 +119,8 @@ export function writeKfzAnalyticsConsent(
   storage.setItem(KFZ_ANALYTICS_CONSENT_STORAGE_KEY, JSON.stringify(snapshot))
   if (state === 'declined') {
     storage.removeItem(KFZ_ANALYTICS_SESSION_STORAGE_KEY)
+    storage.removeItem(KFZ_ANALYTICS_FIRST_SOURCE_STORAGE_KEY)
+    pendingFirstSource.delete(storage)
   }
 }
 

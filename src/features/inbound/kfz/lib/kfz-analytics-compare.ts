@@ -15,6 +15,10 @@ import {
   type KfzAnalyticsSessionFacts,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import {
+  kfzAnalyticsCoarseSourceLabel,
+  kfzAnalyticsSourceBranchComparisonId,
+} from '@/features/inbound/kfz/lib/kfz-analytics-traffic-source'
+import {
   classifyKfzAnalyticsActiveMs,
   isKfzAnalyticsTransitionAllowed,
   recordHasInvalidTransition,
@@ -279,7 +283,7 @@ export function summarizeKfzAnalyticsComparisonGroup(
 
 export function compareKfzAnalyticsSessionsBy(
   factsList: readonly KfzAnalyticsSessionFacts[],
-  kind: 'source' | 'referrer' | 'branch',
+  kind: 'source' | 'referrer' | 'branch' | 'coarseSource' | 'sourceBranch',
 ): KfzAnalyticsComparisonRow[] {
   const groups = new Map<string, KfzAnalyticsSessionFacts[]>()
   for (const facts of factsList) {
@@ -288,7 +292,14 @@ export function compareKfzAnalyticsSessionsBy(
         ? facts.trafficSource
         : kind === 'referrer'
           ? facts.referrerCategory
-          : (facts.branchId ?? KFZ_ANALYTICS_UNKNOWN_ID)
+          : kind === 'coarseSource'
+            ? facts.coarseSource
+            : kind === 'sourceBranch'
+              ? kfzAnalyticsSourceBranchComparisonId(
+                  facts.coarseSource,
+                  facts.branchId,
+                )
+              : (facts.branchId ?? KFZ_ANALYTICS_UNKNOWN_ID)
     const list = groups.get(id) ?? []
     list.push(facts)
     groups.set(id, list)
@@ -302,6 +313,18 @@ export function compareKfzAnalyticsSessionsBy(
       return id === KFZ_ANALYTICS_UNKNOWN_ID
         ? KFZ_ANALYTICS_UNKNOWN_LABEL
         : referrerLabelFromCategory(id)
+    }
+    if (kind === 'coarseSource') {
+      return kfzAnalyticsCoarseSourceLabel(id)
+    }
+    if (kind === 'sourceBranch') {
+      const [coarseId, branchPart] = id.split(':')
+      const branchId = branchPart || KFZ_ANALYTICS_UNKNOWN_ID
+      const branchLabel =
+        branchId === KFZ_ANALYTICS_UNKNOWN_ID
+          ? KFZ_ANALYTICS_UNKNOWN_LABEL
+          : kfzAnalyticsBranchLabel(branchId)
+      return `${kfzAnalyticsCoarseSourceLabel(coarseId ?? KFZ_ANALYTICS_UNKNOWN_ID)} · ${branchLabel}`
     }
     return id === KFZ_ANALYTICS_UNKNOWN_ID ? KFZ_ANALYTICS_UNKNOWN_LABEL : kfzAnalyticsBranchLabel(id)
   }
