@@ -3,6 +3,7 @@ import {
   kfzAnalyticsStepLabel,
   KFZ_ANALYTICS_STEP_IDS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
+import { buildKfzAnalyticsBottleneckSummary } from '@/features/inbound/kfz/lib/kfz-analytics-bottleneck'
 import {
   buildKfzAnalyticsPeriodComparison,
   buildKfzAnalyticsPeriodTrend,
@@ -313,6 +314,10 @@ export function aggregateKfzAnalyticsDashboard(
     currentSourceBranch: sourceBranchComparisons,
     previousSourceBranch,
   })
+  const bottleneck = buildKfzAnalyticsBottleneckSummary({
+    periodId: filters.periodId,
+    facts: matched,
+  })
 
   return {
     periodId: filters.periodId,
@@ -344,6 +349,7 @@ export function aggregateKfzAnalyticsDashboard(
     branchComparisons: compareKfzAnalyticsSessionsBy(matched, 'branch'),
     periodComparison,
     periodTrend,
+    bottleneck,
     steps,
     transitions,
     dropOffs: countMapToRows(dropOffs, (id) =>

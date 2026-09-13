@@ -1,6 +1,8 @@
+import { kfzAnalyticsBottleneckFactCount } from '@/features/inbound/kfz/lib/kfz-analytics-bottleneck'
 import { isoToKfzAnalyticsDate } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import { looksLikeForbiddenAnalyticsKey } from '@/features/inbound/kfz/lib/kfz-analytics-redact'
 import type {
+  KfzAnalyticsBottleneckGroup,
   KfzAnalyticsComparisonRow,
   KfzAnalyticsDashboard,
   KfzAnalyticsDashboardLoadResult,
@@ -36,6 +38,10 @@ export const KFZ_ANALYTICS_DECISION_EXPORT_HEADERS = [
   'delta_median_seite_ms',
   'vor_median_schritt_ms',
   'delta_median_schritt_ms',
+  'erreicht_anzahl',
+  'stopp_anzahl',
+  'uebergang',
+  'uebergang_anzahl',
 ] as const
 
 export const KFZ_ANALYTICS_DECISION_EXPORT_FORBIDDEN_TOKENS = [
@@ -125,6 +131,36 @@ export function formatKfzAnalyticsDecisionExportRate(
 
 export function formatKfzAnalyticsExportCountDelta(value: number | null): string {
   return value == null ? '' : String(value)
+}
+
+export function visibleKfzAnalyticsBottleneckExport(
+  group: KfzAnalyticsBottleneckGroup | null | undefined,
+  comparison: KfzAnalyticsComparisonRow | null | undefined,
+): {
+  reachedCount: string
+  stopCount: string
+  transitionLabel: string
+  transitionCount: string
+} {
+  if (!group || group.ratesHidden || comparison?.ratesHidden) {
+    return {
+      reachedCount: '',
+      stopCount: '',
+      transitionLabel: '',
+      transitionCount: '',
+    }
+  }
+
+  const reachedCount = kfzAnalyticsBottleneckFactCount(group.reached, comparison?.topReachedStepId)
+  const stopCount = kfzAnalyticsBottleneckFactCount(group.stops, comparison?.topDropOffStepId)
+  const topTransition = group.transitions[0]
+
+  return {
+    reachedCount: reachedCount == null ? '' : String(reachedCount),
+    stopCount: stopCount == null ? '' : String(stopCount),
+    transitionLabel: topTransition?.label ?? '',
+    transitionCount: topTransition == null ? '' : String(topTransition.count),
+  }
 }
 
 export function visibleKfzAnalyticsPeriodTrendExport(
@@ -252,10 +288,19 @@ export function buildKfzAnalyticsDecisionExport(
       ? dashboard.periodTrend.sourceBranch.map((row) => [row.id, row])
       : [],
   )
+  const bottleneckById = new Map(
+    dashboard.bottleneck.available
+      ? dashboard.bottleneck.sourceBranch.map((row) => [row.id, row])
+      : [],
+  )
 
   for (const row of dashboard.sourceBranchComparisons) {
     const visible = visibleKfzAnalyticsDecisionMetrics(row)
     const trend = visibleKfzAnalyticsPeriodTrendExport(trendById.get(row.id) ?? null)
+    const bottleneck = visibleKfzAnalyticsBottleneckExport(
+      bottleneckById.get(row.id) ?? null,
+      row,
+    )
     lines.push(
       [
         csvCell(period),
@@ -281,6 +326,10 @@ export function buildKfzAnalyticsDecisionExport(
         csvCell(trend.medianSiteDelta),
         csvCell(trend.medianStepPrevious),
         csvCell(trend.medianStepDelta),
+        csvCell(bottleneck.reachedCount),
+        csvCell(bottleneck.stopCount),
+        csvCell(bottleneck.transitionLabel, 'text'),
+        csvCell(bottleneck.transitionCount),
       ].join(','),
     )
   }

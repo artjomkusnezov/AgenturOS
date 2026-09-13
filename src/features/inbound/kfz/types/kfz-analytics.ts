@@ -230,6 +230,33 @@ export type KfzAnalyticsPeriodTrend = {
   sourceBranch: KfzAnalyticsPeriodTrendRow[]
 }
 
+/** Rolling windows that may show a reached / stop / transition summary. */
+export const KFZ_ANALYTICS_BOTTLENECK_PERIODS = KFZ_ANALYTICS_TREND_PERIODS
+
+export type KfzAnalyticsBottleneckPeriodId = KfzAnalyticsTrendPeriodId
+
+export type KfzAnalyticsBottleneckFactRow = {
+  id: string
+  label: string
+  count: number
+}
+
+export type KfzAnalyticsBottleneckGroup = {
+  id: string
+  label: string
+  sessions: number
+  ratesHidden: boolean
+  reached: KfzAnalyticsBottleneckFactRow[]
+  stops: KfzAnalyticsBottleneckFactRow[]
+  transitions: KfzAnalyticsBottleneckFactRow[]
+}
+
+export type KfzAnalyticsBottleneckSummary = {
+  available: boolean
+  overall: KfzAnalyticsBottleneckGroup | null
+  sourceBranch: KfzAnalyticsBottleneckGroup[]
+}
+
 export type KfzAnalyticsTransitionRow = {
   id: string
   fromStepId: string
@@ -333,6 +360,7 @@ export type KfzAnalyticsDashboard = {
   branchComparisons: KfzAnalyticsComparisonRow[]
   periodComparison: KfzAnalyticsPeriodComparison
   periodTrend: KfzAnalyticsPeriodTrend
+  bottleneck: KfzAnalyticsBottleneckSummary
   steps: KfzAnalyticsStepFunnelRow[]
   transitions: KfzAnalyticsTransitionRow[]
   dropOffs: KfzAnalyticsCountRow[]

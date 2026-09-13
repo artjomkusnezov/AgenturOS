@@ -68,8 +68,8 @@ export function KfzAnalyticsDecisionExportButton({
         {isPending ? 'Exportiert …' : 'Aggregat exportieren'}
       </button>
       <p className="max-w-xs text-[11px] leading-relaxed text-zinc-500">
-        Nur die aktuelle Auswahl als CSV. Vorperiode nur mit derselben
-        Unterdrückung. Keine Sitzungen, Antworten oder Kontakte.
+        Nur die aktuelle Auswahl als CSV. Vorperiode und Stopp-Zählungen nur
+        mit derselben Unterdrückung. Keine Sitzungen, Antworten oder Kontakte.
       </p>
       {error ? (
         <p className="text-[11px] text-red-700" data-kfz-analytics-export-error="true">

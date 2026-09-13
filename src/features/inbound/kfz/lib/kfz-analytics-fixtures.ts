@@ -622,3 +622,73 @@ export function buildKfzAnalyticsPeriodTrendFixture(input: {
 
   return events
 }
+
+export const KFZ_ANALYTICS_BOTTLENECK_SCENARIOS = [
+  'complete',
+  'stopped',
+  'suppressed',
+  'unknown',
+  'empty',
+] as const
+
+export type KfzAnalyticsBottleneckScenario =
+  (typeof KFZ_ANALYTICS_BOTTLENECK_SCENARIOS)[number]
+
+const BOTTLENECK_SESSION_START = 401
+
+/**
+ * Anonymous current-window sessions for 7/30/90-day stop summaries.
+ * Complete, stopped, small-group, unknown and empty — no answers or contacts.
+ */
+export function buildKfzAnalyticsBottleneckFixture(input: {
+  nowMs: number
+  periodId: KfzAnalyticsTrendPeriodId
+  scenario: KfzAnalyticsBottleneckScenario
+}): KfzAnalyticsRecord[] {
+  if (input.scenario === 'empty') {
+    return []
+  }
+
+  const currentRange = resolveKfzAnalyticsPeriod(input.periodId, input.nowMs)
+  if (!currentRange.from) {
+    return []
+  }
+
+  const currentAt = trendWindowAnchor(currentRange.from)
+  const events: KfzAnalyticsRecord[] = []
+  const start = BOTTLENECK_SESSION_START
+
+  if (input.scenario === 'complete') {
+    pushClonedSessions(events, KFZ_ANALYTICS_FIXTURE_COMPLETED, {
+      at: currentAt,
+      start,
+      count: 5,
+    })
+    return events
+  }
+
+  if (input.scenario === 'stopped') {
+    pushClonedSessions(events, KFZ_ANALYTICS_FIXTURE_ABANDONED_MID, {
+      at: currentAt,
+      start,
+      count: 5,
+    })
+    return events
+  }
+
+  if (input.scenario === 'suppressed') {
+    pushClonedSessions(events, KFZ_ANALYTICS_FIXTURE_COMPLETED, {
+      at: currentAt,
+      start,
+      count: 3,
+    })
+    return events
+  }
+
+  pushClonedSessions(events, KFZ_ANALYTICS_FIXTURE_UNKNOWN, {
+    at: currentAt,
+    start,
+    count: 1,
+  })
+  return events
+}

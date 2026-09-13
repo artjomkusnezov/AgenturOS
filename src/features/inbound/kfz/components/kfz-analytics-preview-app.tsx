@@ -13,9 +13,12 @@ import {
   KFZ_ANALYTICS_DEFAULT_FILTERS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import {
+  buildKfzAnalyticsBottleneckFixture,
   buildKfzAnalyticsPeriodTrendFixture,
+  KFZ_ANALYTICS_BOTTLENECK_SCENARIOS,
   KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS,
   KFZ_ANALYTICS_PERIOD_TREND_SCENARIOS,
+  type KfzAnalyticsBottleneckScenario,
   type KfzAnalyticsPeriodTrendScenario,
 } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import { emptyKfzAnalyticsHealthFacts } from '@/features/inbound/kfz/lib/kfz-analytics-health'
@@ -48,6 +51,8 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
   const [trendScenario, setTrendScenario] = useState<KfzAnalyticsPeriodTrendScenario | null>(
     null,
   )
+  const [bottleneckScenario, setBottleneckScenario] =
+    useState<KfzAnalyticsBottleneckScenario | null>(null)
   const [isPending, startTransition] = useTransition()
   const [nowMs] = useState(() => Date.now())
 
@@ -63,6 +68,18 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
     return buildKfzAnalyticsPeriodTrendFixture({
       nowMs,
       periodId: trendPeriod,
+      scenario,
+    })
+  }
+
+  function eventsForBottleneck(
+    scenario: KfzAnalyticsBottleneckScenario,
+    periodId: string,
+  ): KfzAnalyticsRecord[] {
+    const bottleneckPeriod = isTrendPeriod(periodId) ? periodId : '7d'
+    return buildKfzAnalyticsBottleneckFixture({
+      nowMs,
+      periodId: bottleneckPeriod,
       scenario,
     })
   }
@@ -88,11 +105,19 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
   )
 
   function applyFilters(next: KfzAnalyticsDashboardFilters) {
-    const rebuild =
+    const rebuildTrend =
       trendScenario != null &&
       isTrendPeriod(next.periodId) &&
       next.periodId !== filters.periodId
-    const nextEvents = rebuild ? eventsForTrend(trendScenario, next.periodId) : null
+    const rebuildBottleneck =
+      bottleneckScenario != null &&
+      isTrendPeriod(next.periodId) &&
+      next.periodId !== filters.periodId
+    const nextEvents = rebuildTrend
+      ? eventsForTrend(trendScenario, next.periodId)
+      : rebuildBottleneck && bottleneckScenario
+        ? eventsForBottleneck(bottleneckScenario, next.periodId)
+        : null
     if (nextEvents) {
       setEvents(nextEvents)
     }
@@ -110,6 +135,7 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
         events: [...KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS],
       })
       setTrendScenario(null)
+      setBottleneckScenario(null)
       setEvents([...KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS])
       setHealth(result.health)
     })
@@ -124,6 +150,29 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
         events,
       })
       setTrendScenario(scenario)
+      setBottleneckScenario(null)
+      setFilters({
+        ...filters,
+        periodId,
+        fromDate: null,
+        toDate: null,
+      })
+      setEvents(events)
+      setHealth(result.health)
+      setReviewStatus('ready')
+    })
+  }
+
+  function seedBottleneck(scenario: KfzAnalyticsBottleneckScenario) {
+    const periodId = isTrendPeriod(filters.periodId) ? filters.periodId : '7d'
+    const events = eventsForBottleneck(scenario, periodId)
+    startTransition(async () => {
+      const result = await recordKfzAnalyticsPreviewAction({
+        consent: 'granted',
+        events,
+      })
+      setBottleneckScenario(scenario)
+      setTrendScenario(null)
       setFilters({
         ...filters,
         periodId,
@@ -142,6 +191,14 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
     equal: 'Gleich',
     suppressed: 'Unterdrückt',
     empty: 'Trend leer',
+  }
+
+  const bottleneckLabels: Record<KfzAnalyticsBottleneckScenario, string> = {
+    complete: 'Fertig',
+    stopped: 'Gestoppt',
+    suppressed: 'Stopp klein',
+    unknown: 'Unbekannt',
+    empty: 'Stopp leer',
   }
 
   return (
@@ -170,6 +227,20 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
             onClick={() => seedTrend(scenario)}
           >
             {trendLabels[scenario]}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2" data-kfz-analytics-bottleneck-scenarios="true">
+        {KFZ_ANALYTICS_BOTTLENECK_SCENARIOS.map((scenario) => (
+          <button
+            key={scenario}
+            type="button"
+            className="min-h-11 rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800"
+            data-kfz-analytics-bottleneck-scenario={scenario}
+            disabled={isPending}
+            onClick={() => seedBottleneck(scenario)}
+          >
+            {bottleneckLabels[scenario]}
           </button>
         ))}
       </div>

@@ -18,6 +18,9 @@ import {
   type KfzAnalyticsDashboard,
   type KfzAnalyticsDashboardFilters,
   type KfzAnalyticsDataQuality,
+  type KfzAnalyticsBottleneckFactRow,
+  type KfzAnalyticsBottleneckGroup,
+  type KfzAnalyticsBottleneckSummary,
   type KfzAnalyticsPeriodComparison,
   type KfzAnalyticsPeriodTrend,
   type KfzAnalyticsPeriodTrendRow,
@@ -260,6 +263,11 @@ export function KfzAnalyticsDashboardView({
         empty={dashboard.empty}
         filterActive={dashboard.filterActive}
         exportMode={exportMode}
+      />
+      <KfzAnalyticsBottleneckView
+        summary={dashboard.bottleneck}
+        empty={dashboard.empty}
+        filterActive={dashboard.filterActive}
       />
       <ComparisonTable
         title="Vergleich nach Referrer-Kategorie"
@@ -823,6 +831,123 @@ function KfzAnalyticsDecisionView({
         </div>
       )}
       <PeriodTrendTable trend={trend} />
+    </section>
+  )
+}
+
+function BottleneckFactList({
+  title,
+  rows,
+  testId,
+  empty,
+}: {
+  title: string
+  rows: KfzAnalyticsBottleneckFactRow[]
+  testId: string
+  empty: string
+}) {
+  return (
+    <div data-kfz-analytics-bottleneck-facts={testId}>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">{title}</p>
+      {rows.length === 0 ? (
+        <p className="mt-1 text-sm text-zinc-500">{empty}</p>
+      ) : (
+        <ul className="mt-1 space-y-1">
+          {rows.map((row) => (
+            <li
+              key={row.id}
+              className="flex justify-between gap-3 text-sm"
+              data-kfz-analytics-bottleneck-fact={row.id}
+            >
+              <span className="text-zinc-800">{row.label}</span>
+              <span className="shrink-0 text-zinc-500">{formatCount(row.count)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function BottleneckGroupCard({ group }: { group: KfzAnalyticsBottleneckGroup }) {
+  return (
+    <div
+      className="rounded-lg bg-zinc-50 px-3 py-3"
+      data-kfz-analytics-bottleneck-group={group.id}
+      data-kfz-analytics-bottleneck-suppressed={group.ratesHidden ? 'true' : 'false'}
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-semibold text-zinc-900">{group.label}</p>
+        <p className="text-[11px] text-zinc-500">{formatCount(group.sessions)} Sitzungen</p>
+      </div>
+      {group.ratesHidden ? (
+        <p className="mt-2 text-sm text-zinc-500">{suppressedLabel()}</p>
+      ) : (
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <BottleneckFactList
+            title="Erreicht"
+            rows={group.reached}
+            testId="reached"
+            empty="Kein erreichter Schritt in dieser Gruppe."
+          />
+          <BottleneckFactList
+            title="Stopp"
+            rows={group.stops}
+            testId="stop"
+            empty="Kein Stopppunkt in dieser Gruppe."
+          />
+          <BottleneckFactList
+            title="Übergang"
+            rows={group.transitions}
+            testId="transition"
+            empty="Kein erlaubter Übergang in dieser Gruppe."
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function KfzAnalyticsBottleneckView({
+  summary,
+  empty,
+  filterActive,
+}: {
+  summary: KfzAnalyticsBottleneckSummary
+  empty: boolean
+  filterActive: boolean
+}) {
+  const emptyCopy = filterActive
+    ? 'Die Filter treffen auf keine anonymen Sitzungen zu. Es wird nichts hochgerechnet und kein Stopppunkt erfunden.'
+    : 'In diesem Zeitraum liegen keine anonymen Ereignisse vor. Es wird nichts hochgerechnet und kein Stopppunkt erfunden.'
+
+  return (
+    <section
+      className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
+      data-kfz-analytics-bottleneck="true"
+      data-kfz-analytics-bottleneck-available={summary.available ? 'true' : 'false'}
+      data-kfz-analytics-bottleneck-empty={empty || (summary.available && (summary.overall?.sessions ?? 0) === 0) ? 'true' : 'false'}
+    >
+      <h3 className="text-sm font-semibold text-zinc-900">
+        Erreicht, Stopp und Übergang
+      </h3>
+      <p className="mt-1 text-xs text-zinc-500">
+        {summary.available
+          ? `Zählungen im gewählten 7-/30-/90-Tage-Fenster, gesamt und nach Herkunft × Einstieg. Unterdrückte, fehlende oder unvollständige Angaben bleiben leer — nicht null. Keine Ursache, keine Prognose, keine Empfehlung.`
+          : 'Nur 7, 30 oder 90 Tage haben diese Zusammenfassung. Für Gesamt, 24 Stunden oder ein eigenes Fenster wird kein Stopppunkt erfunden.'}
+      </p>
+      {!summary.available ? null : empty || (summary.overall?.sessions ?? 0) === 0 ? (
+        <p className="mt-3 text-sm text-zinc-500" data-kfz-analytics-bottleneck-empty-copy="true">
+          {emptyCopy}
+        </p>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {summary.overall ? <BottleneckGroupCard group={summary.overall} /> : null}
+          {summary.sourceBranch.map((group) => (
+            <BottleneckGroupCard key={group.id} group={group} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

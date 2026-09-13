@@ -1338,6 +1338,7 @@ describe('kfz analytics aggregate comparisons', () => {
       branchComparisons: dashboard.branchComparisons,
       periodComparison: dashboard.periodComparison,
       periodTrend: dashboard.periodTrend,
+      bottleneck: dashboard.bottleneck,
     })
     assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
     assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)
@@ -2122,6 +2123,7 @@ describe('kfz analytics campaign decision view', () => {
       sourceBranch: dashboard.sourceBranchComparisons,
       coarse: dashboard.coarseSourceComparisons,
       periodTrend: dashboard.periodTrend,
+      bottleneck: dashboard.bottleneck,
     })
     assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
     assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)
@@ -2160,6 +2162,7 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-quality.ts',
       'features/inbound/kfz/lib/kfz-analytics-health.ts',
       'features/inbound/kfz/lib/kfz-analytics-compare.ts',
+      'features/inbound/kfz/lib/kfz-analytics-bottleneck.ts',
       'features/inbound/kfz/lib/kfz-analytics-traffic-source.ts',
       'features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
       'features/inbound/kfz/lib/kfz-analytics-export.ts',
@@ -2189,6 +2192,7 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /data-kfz-analytics-health/)
     assert.match(source, /data-kfz-analytics-comparisons/)
     assert.match(source, /data-kfz-analytics-decision/)
+    assert.match(source, /data-kfz-analytics-bottleneck/)
     assert.match(source, /data-kfz-analytics-export/)
     assert.match(source, /data-kfz-analytics-consent-withdraw/)
     assert.match(source, /Referrer-Kategorie/)
