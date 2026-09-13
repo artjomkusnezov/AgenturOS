@@ -26,10 +26,7 @@ import {
   buildKfzAnalyticsPeriodTrendFixture,
   KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
-import {
-  KFZ_ANALYTICS_DEFAULT_FILTERS,
-  resolveKfzAnalyticsDashboardFilters,
-} from '@/features/inbound/kfz/lib/kfz-analytics-filters'
+import { resolveKfzAnalyticsDashboardFilters } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
 import {
   KFZ_ANALYTICS_CONFIGURATION_MISSING_ERROR,
   KFZ_ANALYTICS_UNAVAILABLE_ERROR,
