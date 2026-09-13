@@ -1,4 +1,9 @@
-import type { KfzAnalyticsRecord } from '@/features/inbound/kfz/types/kfz-analytics'
+import { resolveKfzAnalyticsPreviousRange } from '@/features/inbound/kfz/lib/kfz-analytics-compare'
+import { KFZ_ANALYTICS_DEFAULT_FILTERS, resolveKfzAnalyticsPeriod } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
+import type {
+  KfzAnalyticsRecord,
+  KfzAnalyticsTrendPeriodId,
+} from '@/features/inbound/kfz/types/kfz-analytics'
 
 const T0 = '2026-09-09T08:00:00.000Z'
 const T1 = '2026-09-09T08:02:00.000Z'
@@ -502,3 +507,118 @@ export function buildKfzAnalyticsDecisionPeriodFixture(): KfzAnalyticsRecord[] {
 
 export const KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS =
   buildKfzAnalyticsDecisionPeriodFixture()
+
+export const KFZ_ANALYTICS_PERIOD_TREND_SCENARIOS = [
+  'improving',
+  'declining',
+  'equal',
+  'suppressed',
+  'empty',
+] as const
+
+export type KfzAnalyticsPeriodTrendScenario =
+  (typeof KFZ_ANALYTICS_PERIOD_TREND_SCENARIOS)[number]
+
+const TREND_SESSION_START = 201
+
+function withoutSubmitEvents(
+  events: readonly KfzAnalyticsRecord[],
+): KfzAnalyticsRecord[] {
+  return events.filter(
+    (entry) => entry.eventName !== 'submit_started' && entry.eventName !== 'submit_succeeded',
+  )
+}
+
+function pushClonedSessions(
+  target: KfzAnalyticsRecord[],
+  template: readonly KfzAnalyticsRecord[],
+  input: { at: string; start: number; count: number },
+) {
+  const shift = Date.parse(input.at) - Date.parse(T0)
+  for (let index = 0; index < input.count; index += 1) {
+    target.push(
+      ...cloneKfzAnalyticsSession(
+        template,
+        numberedSessionId(input.start + index),
+        shift + index * 60_000,
+      ),
+    )
+  }
+}
+
+function trendWindowAnchor(iso: string): string {
+  return new Date(Date.parse(iso) + 60 * 60 * 1000).toISOString()
+}
+
+/**
+ * Anonymous current vs previous sessions for 7/30/90-day trend review.
+ * Counts and timestamps only — no answers, contacts or filenames.
+ */
+export function buildKfzAnalyticsPeriodTrendFixture(input: {
+  nowMs: number
+  periodId: KfzAnalyticsTrendPeriodId
+  scenario: KfzAnalyticsPeriodTrendScenario
+}): KfzAnalyticsRecord[] {
+  if (input.scenario === 'empty') {
+    return []
+  }
+
+  const currentRange = resolveKfzAnalyticsPeriod(input.periodId, input.nowMs)
+  const previousRange = resolveKfzAnalyticsPreviousRange(
+    { ...KFZ_ANALYTICS_DEFAULT_FILTERS, periodId: input.periodId },
+    currentRange,
+  )
+  if (!currentRange.from || !previousRange) {
+    return []
+  }
+
+  const currentAt = trendWindowAnchor(currentRange.from)
+  const previousAt = trendWindowAnchor(previousRange.from)
+  const completed = KFZ_ANALYTICS_FIXTURE_COMPLETED
+  const startedOnly = withoutSubmitEvents(completed)
+  const events: KfzAnalyticsRecord[] = []
+  let nextId = TREND_SESSION_START
+
+  const counts = {
+    improving: { previousSubmitted: 2, previousStarted: 3, currentSubmitted: 6, currentStarted: 2 },
+    declining: { previousSubmitted: 6, previousStarted: 2, currentSubmitted: 2, currentStarted: 3 },
+    equal: { previousSubmitted: 5, previousStarted: 0, currentSubmitted: 5, currentStarted: 0 },
+    suppressed: { previousSubmitted: 2, previousStarted: 0, currentSubmitted: 3, currentStarted: 0 },
+  } as const
+  const mix = counts[input.scenario]
+
+  pushClonedSessions(events, completed, {
+    at: previousAt,
+    start: nextId,
+    count: mix.previousSubmitted,
+  })
+  nextId += mix.previousSubmitted
+  pushClonedSessions(events, startedOnly, {
+    at: previousAt,
+    start: nextId,
+    count: mix.previousStarted,
+  })
+  nextId += mix.previousStarted
+  pushClonedSessions(events, completed, {
+    at: currentAt,
+    start: nextId,
+    count: mix.currentSubmitted,
+  })
+  nextId += mix.currentSubmitted
+  pushClonedSessions(events, startedOnly, {
+    at: currentAt,
+    start: nextId,
+    count: mix.currentStarted,
+  })
+  nextId += mix.currentStarted
+
+  if (input.scenario !== 'suppressed') {
+    pushClonedSessions(events, KFZ_ANALYTICS_FIXTURE_UNKNOWN, {
+      at: currentAt,
+      start: nextId,
+      count: 1,
+    })
+  }
+
+  return events
+}

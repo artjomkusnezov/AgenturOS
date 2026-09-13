@@ -28,10 +28,17 @@ import type {
   KfzAnalyticsComparisonRow,
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsPeriodComparison,
+  KfzAnalyticsPeriodTrend,
+  KfzAnalyticsPeriodTrendRow,
   KfzAnalyticsRecord,
+  KfzAnalyticsTrendDelta,
+  KfzAnalyticsTrendDirection,
+  KfzAnalyticsTrendLabels,
+  KfzAnalyticsTrendPeriodId,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 import {
   KFZ_ANALYTICS_MIN_RATE_GROUP,
+  KFZ_ANALYTICS_TREND_PERIODS,
   KFZ_ANALYTICS_UNKNOWN_ID,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 
@@ -416,6 +423,190 @@ export function buildKfzAnalyticsPeriodComparison(
     previous: summarizeKfzAnalyticsComparisonGroup(previousFacts ?? [], {
       id: 'previous',
       label: 'Vorheriger Zeitraum',
+    }),
+  }
+}
+
+export function isKfzAnalyticsTrendPeriod(
+  periodId: string,
+): periodId is KfzAnalyticsTrendPeriodId {
+  return (KFZ_ANALYTICS_TREND_PERIODS as readonly string[]).includes(periodId)
+}
+
+export function resolveKfzAnalyticsTrendRange(
+  filters: KfzAnalyticsDashboardFilters,
+  range: { from: string | null; to: string },
+): { from: string; to: string } | null {
+  if (!isKfzAnalyticsTrendPeriod(filters.periodId)) {
+    return null
+  }
+  return resolveKfzAnalyticsPreviousRange(filters, range)
+}
+
+export function emptyKfzAnalyticsPeriodTrend(): KfzAnalyticsPeriodTrend {
+  return {
+    available: false,
+    previousFrom: null,
+    previousTo: null,
+    overall: null,
+    sourceBranch: [],
+  }
+}
+
+function trendDirection(delta: number): Exclude<KfzAnalyticsTrendDirection, 'unknown'> {
+  if (delta > 0) {
+    return 'up'
+  }
+  if (delta < 0) {
+    return 'down'
+  }
+  return 'equal'
+}
+
+function countTrend(
+  current: number,
+  previous: number | null,
+  presentInPrevious: boolean,
+): KfzAnalyticsTrendDelta {
+  if (!presentInPrevious || previous == null) {
+    return {
+      current,
+      previous: null,
+      delta: null,
+      direction: 'unknown',
+    }
+  }
+  const delta = current - previous
+  return {
+    current,
+    previous,
+    delta,
+    direction: trendDirection(delta),
+  }
+}
+
+function optionalTrend(
+  current: number | null,
+  previous: number | null,
+  currentHidden: boolean,
+  previousHidden: boolean,
+  presentInPrevious: boolean,
+): KfzAnalyticsTrendDelta {
+  const currentValue = currentHidden ? null : current
+  const previousValue = !presentInPrevious || previousHidden ? null : previous
+  if (
+    !presentInPrevious ||
+    currentHidden ||
+    previousHidden ||
+    currentValue == null ||
+    previousValue == null
+  ) {
+    return {
+      current: currentValue,
+      previous: previousValue,
+      delta: null,
+      direction: 'unknown',
+    }
+  }
+  const delta = currentValue - previousValue
+  return {
+    current: currentValue,
+    previous: previousValue,
+    delta,
+    direction: trendDirection(delta),
+  }
+}
+
+function labelPair(
+  current: string | null,
+  previous: string | null,
+  currentHidden: boolean,
+  previousHidden: boolean,
+  presentInPrevious: boolean,
+): KfzAnalyticsTrendLabels {
+  return {
+    current: currentHidden ? null : current,
+    previous: !presentInPrevious || previousHidden ? null : previous,
+  }
+}
+
+export function buildKfzAnalyticsPeriodTrendRow(
+  current: KfzAnalyticsComparisonRow,
+  previous: KfzAnalyticsComparisonRow | null,
+  presentInPrevious: boolean,
+): KfzAnalyticsPeriodTrendRow {
+  const previousHidden = !presentInPrevious || previous == null ? true : previous.ratesHidden
+  return {
+    id: current.id,
+    label: current.label,
+    presentInPrevious,
+    currentRatesHidden: current.ratesHidden,
+    previousRatesHidden: previousHidden,
+    visits: countTrend(current.visits, previous?.visits ?? null, presentInPrevious),
+    submissions: countTrend(
+      current.submissions,
+      previous?.submissions ?? null,
+      presentInPrevious,
+    ),
+    conversion: optionalTrend(
+      current.conversionRate,
+      previous?.conversionRate ?? null,
+      current.ratesHidden,
+      previousHidden,
+      presentInPrevious,
+    ),
+    medianSiteMs: optionalTrend(
+      current.medianActiveMs,
+      previous?.medianActiveMs ?? null,
+      current.ratesHidden,
+      previousHidden,
+      presentInPrevious,
+    ),
+    medianStepMs: optionalTrend(
+      current.medianStepActiveMs,
+      previous?.medianStepActiveMs ?? null,
+      current.ratesHidden,
+      previousHidden,
+      presentInPrevious,
+    ),
+    reached: labelPair(
+      current.topReachedStepLabel,
+      previous?.topReachedStepLabel ?? null,
+      current.ratesHidden,
+      previousHidden,
+      presentInPrevious,
+    ),
+    stop: labelPair(
+      current.topDropOffStepLabel,
+      previous?.topDropOffStepLabel ?? null,
+      current.ratesHidden,
+      previousHidden,
+      presentInPrevious,
+    ),
+  }
+}
+
+export function buildKfzAnalyticsPeriodTrend(input: {
+  periodId: string
+  previousRange: { from: string; to: string } | null
+  current: KfzAnalyticsComparisonRow
+  previous: KfzAnalyticsComparisonRow | null
+  currentSourceBranch: readonly KfzAnalyticsComparisonRow[]
+  previousSourceBranch: readonly KfzAnalyticsComparisonRow[]
+}): KfzAnalyticsPeriodTrend {
+  if (!isKfzAnalyticsTrendPeriod(input.periodId) || !input.previousRange || !input.previous) {
+    return emptyKfzAnalyticsPeriodTrend()
+  }
+
+  const previousById = new Map(input.previousSourceBranch.map((row) => [row.id, row]))
+  return {
+    available: true,
+    previousFrom: input.previousRange.from,
+    previousTo: input.previousRange.to,
+    overall: buildKfzAnalyticsPeriodTrendRow(input.current, input.previous, true),
+    sourceBranch: input.currentSourceBranch.map((row) => {
+      const previous = previousById.get(row.id) ?? null
+      return buildKfzAnalyticsPeriodTrendRow(row, previous, previous != null)
     }),
   }
 }
