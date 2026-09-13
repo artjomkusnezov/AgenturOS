@@ -23,6 +23,7 @@ export function KfzAnalyticsDashboardApp({
       dashboard={dashboard}
       filters={filters}
       defaultPeriodId="7d"
+      exportMode="authorized"
       onFiltersChange={(next) => {
         router.push(buildKfzAnalyticsDashboardHref(next))
       }}
