@@ -1,28 +1,26 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/agenturos-controller-task-ffd2
+STATUS: READY
+STARTING_REF: cursor/agenturos-controller-task-ea23
 
 ## Title
-AGENTUROS — PRIVACY-SAFE KFZ AGGREGATE EXPORT
+AGENTUROS — PRIVACY-SAFE KFZ PERIOD TREND COMPARISON
 
 ## Goal
-Let an authorized operator export the existing Kfz campaign decision view for weekly review as a safe aggregate file, without exposing sessions, answers or personal data.
+Help an authorized operator see whether the safe Kfz funnel is improving by comparing the selected aggregate period with the immediately preceding equal period, without exposing sessions, answers or personal data.
 
 ## Required work
-- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-ffd2 (PR #58). No merge or main/master write.
-- Extend the existing authorized Kfz analytics screen and existing aggregate query; do not create another store or dashboard.
-- Export only the currently selected allowed period and aggregate source×branch rows: visits, reached/stop summaries where threshold permits, aggregate timing, submissions and conversion.
-- Apply the existing minimum-group suppression identically in UI and export. Suppressed details must remain absent, not merely hidden by formatting.
-- Never export event/session identifiers, answers, names, contacts, filenames, object keys, free text, full URLs/query strings, secrets or personal identifiers.
-- Make CSV safe for spreadsheet opening: stable UTF-8 headings, deterministic ordering, formula-injection neutralization and honest empty/unknown states.
-- Keep consent write gates, first-touch attribution and all six Kfz flows unchanged.
-- Add deterministic tests for authorization, filters, suppression, forbidden fields, formula injection, empty data and repeat download.
+- Work only on one new Cursor-created branch from cursor/agenturos-controller-task-ea23 (PR #59). No merge or main/master write.
+- Extend the existing authorized Kfz analytics screen and aggregate query; do not create another store or dashboard.
+- For 7/30/90 days, compare the current period with the preceding equal-length period using only allowed aggregates: visits, submissions, conversion, reached/stop summaries and aggregate timing.
+- Reuse the existing source×branch categories and minimum-group suppression. A suppressed or incomplete comparison must remain absent/unknown, never inferred.
+- Show absolute values and honest deltas; avoid causal claims, forecasts, recommendations or invented attribution.
+- CSV export may include comparison aggregates only if identical privacy/suppression/formula protections are applied.
+- Never expose event/session identifiers, answers, names, contacts, filenames, object keys, free text, URLs/query strings, secrets or personal identifiers.
+- Keep consent gates, first-touch attribution, six Kfz flows and existing exports unchanged.
+- Add deterministic tests for date boundaries, equal periods, zero denominators, suppression, unknowns, authorization, forbidden fields and stable export.
 - Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build; publish exact counts/routes.
-- Browser-check local desktop/mobile with synthetic anonymous fixtures for 7/30/90 days and inspect downloaded CSV contents; inspect Preview read-only if available.
+- Browser-check local desktop/mobile with synthetic anonymous fixtures for improving, declining, equal, suppressed and empty 7/30/90-day comparisons; inspect CSV if extended. Preview read-only only if available.
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
-
-CONTROLLER_AGENT_ID: bc-600649e2-fe2d-42ba-96dc-30b6af124046
-CONTROLLER_STARTED_AT: 2026-09-13T05:55:53Z
