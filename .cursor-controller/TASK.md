@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-2d45
 
 ## Title
@@ -24,3 +24,6 @@ Help an authorized operator identify where aggregate Kfz journeys stop in the se
 
 ## Safety
 Cursor-created branch only. No merge, auto-merge, production deploy/database mutation, secret changes/reads, customer data/contact, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git.
+
+CONTROLLER_AGENT_ID: bc-5618fe4b-9095-4f94-9e68-60f8d9f3f38d
+CONTROLLER_STARTED_AT: 2026-09-13T12:59:09Z
