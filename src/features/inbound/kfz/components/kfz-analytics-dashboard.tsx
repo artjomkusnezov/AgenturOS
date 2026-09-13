@@ -1,5 +1,7 @@
 import { dashboardSurfaceClassName } from '@/features/dashboard/lib/dashboard-surface'
 import { KfzAnalyticsDashboardFiltersBar } from '@/features/inbound/kfz/components/kfz-analytics-dashboard-filters'
+import { KfzAnalyticsDecisionExportButton } from '@/features/inbound/kfz/components/kfz-analytics-decision-export-button'
+import { visibleKfzAnalyticsDecisionMetrics } from '@/features/inbound/kfz/lib/kfz-analytics-export'
 import { KFZ_ANALYTICS_PRIVACY_NOTES } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import {
   kfzAnalyticsQualityStateCopy,
@@ -60,6 +62,7 @@ type KfzAnalyticsDashboardViewProps = {
   defaultPeriodId?: Exclude<KfzAnalyticsDashboardFilters['periodId'], 'custom'>
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
+  exportMode?: 'local' | 'authorized'
 }
 
 export function KfzAnalyticsDashboardView({
@@ -69,6 +72,7 @@ export function KfzAnalyticsDashboardView({
   defaultPeriodId = '7d',
   events,
   inspector = false,
+  exportMode = 'local',
 }: KfzAnalyticsDashboardViewProps) {
   const activeFilters = filters ?? dashboard.filters
   const funnelMax = maxCount(dashboard.steps)
@@ -197,9 +201,11 @@ export function KfzAnalyticsDashboardView({
         testId="coarse-source"
       />
       <KfzAnalyticsDecisionView
+        dashboard={dashboard}
         rows={dashboard.sourceBranchComparisons}
         empty={dashboard.empty}
         filterActive={dashboard.filterActive}
+        exportMode={exportMode}
       />
       <ComparisonTable
         title="Vergleich nach Referrer-Kategorie"
@@ -525,6 +531,7 @@ export function KfzAnalyticsReviewScreen({
   defaultPeriodId = '7d',
   events,
   inspector = false,
+  exportMode = 'local',
 }: {
   status: KfzAnalyticsReviewStatus
   dashboard?: KfzAnalyticsDashboard
@@ -533,6 +540,7 @@ export function KfzAnalyticsReviewScreen({
   defaultPeriodId?: Exclude<KfzAnalyticsDashboardFilters['periodId'], 'custom'>
   events?: KfzAnalyticsRecord[]
   inspector?: boolean
+  exportMode?: 'local' | 'authorized'
 }) {
   const resolved = resolveKfzAnalyticsReviewStatus({
     loadStatus:
@@ -571,6 +579,7 @@ export function KfzAnalyticsReviewScreen({
       defaultPeriodId={defaultPeriodId}
       events={events}
       inspector={inspector}
+      exportMode={exportMode}
     />
   )
 }
@@ -636,13 +645,17 @@ function suppressedLabel(): string {
 }
 
 function KfzAnalyticsDecisionView({
+  dashboard,
   rows,
   empty,
   filterActive,
+  exportMode,
 }: {
+  dashboard: KfzAnalyticsDashboard
   rows: KfzAnalyticsComparisonRow[]
   empty: boolean
   filterActive: boolean
+  exportMode: 'local' | 'authorized'
 }) {
   const emptyCopy = filterActive
     ? 'Die Filter treffen auf keine anonymen Sitzungen zu. Es wird nichts hochgerechnet und keine Herkunft erfunden.'
@@ -655,15 +668,20 @@ function KfzAnalyticsDecisionView({
       data-kfz-analytics-comparisons="source-branch"
       data-kfz-analytics-decision-empty={empty || rows.length === 0 ? 'true' : 'false'}
     >
-      <h3 className="text-sm font-semibold text-zinc-900">
-        Herkunft × Einstieg
-      </h3>
-      <p className="mt-1 text-xs text-zinc-500">
-        Grobe Herkunft und gewählter Zweig: Besuche, erreichter Schritt,
-        Stopppunkt, Median Seite/Schritt und versendete Anfragen. Abschlussquote
-        erst ab {KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen — kleine Gruppen bleiben
-        ausgeblendet.
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-900">
+            Herkunft × Einstieg
+          </h3>
+          <p className="mt-1 text-xs text-zinc-500">
+            Grobe Herkunft und gewählter Zweig: Besuche, erreichter Schritt,
+            Stopppunkt, Median Seite/Schritt und versendete Anfragen. Abschlussquote
+            erst ab {KFZ_ANALYTICS_MIN_RATE_GROUP} Sitzungen — kleine Gruppen bleiben
+            ausgeblendet.
+          </p>
+        </div>
+        <KfzAnalyticsDecisionExportButton dashboard={dashboard} mode={exportMode} />
+      </div>
       {rows.length === 0 ? (
         <p
           className="mt-3 text-sm text-zinc-500"
@@ -687,60 +705,63 @@ function KfzAnalyticsDecisionView({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {rows.map((row) => {
+                const visible = visibleKfzAnalyticsDecisionMetrics(row)
+                return (
                 <tr
                   key={row.id}
                   className="border-b border-zinc-100 last:border-0"
                   data-kfz-analytics-comparison-row={row.id}
                   data-kfz-analytics-decision-row={row.id}
-                  data-kfz-analytics-rates-hidden={row.ratesHidden ? 'true' : 'false'}
+                  data-kfz-analytics-rates-hidden={visible.ratesHidden ? 'true' : 'false'}
                 >
                   <td className="py-2.5 pr-3 font-medium text-zinc-800">{row.label}</td>
                   <td
                     className="py-2.5 pr-3 text-zinc-700"
                     data-kfz-analytics-decision-metric="visits"
                   >
-                    {formatCount(row.visits)}
+                    {formatCount(visible.visits)}
                   </td>
                   <td
                     className="py-2.5 pr-3 text-zinc-600"
                     data-kfz-analytics-decision-metric="reached"
                   >
-                    {row.topReachedStepLabel ?? '—'}
+                    {visible.reachedLabel ?? '—'}
                   </td>
                   <td
                     className="py-2.5 pr-3 text-zinc-600"
                     data-kfz-analytics-decision-metric="stop"
                   >
-                    {row.topDropOffStepLabel ?? '—'}
+                    {visible.stopLabel ?? '—'}
                   </td>
                   <td
                     className="py-2.5 pr-3 text-zinc-700"
                     data-kfz-analytics-decision-metric="site-median"
                   >
-                    {formatActiveMs(row.medianActiveMs)}
+                    {formatActiveMs(visible.medianSiteMs)}
                   </td>
                   <td
                     className="py-2.5 pr-3 text-zinc-700"
                     data-kfz-analytics-decision-metric="step-median"
                   >
-                    {formatActiveMs(row.medianStepActiveMs)}
+                    {formatActiveMs(visible.medianStepMs)}
                   </td>
                   <td
                     className="py-2.5 pr-3 text-zinc-700"
                     data-kfz-analytics-decision-metric="submissions"
                   >
-                    {formatCount(row.submissions)}
+                    {formatCount(visible.submissions)}
                   </td>
                   <td
                     className="py-2.5 text-zinc-700"
                     data-kfz-analytics-decision-metric="conversion"
-                    data-kfz-analytics-suppressed={row.ratesHidden ? 'true' : 'false'}
+                    data-kfz-analytics-suppressed={visible.ratesHidden ? 'true' : 'false'}
                   >
-                    {row.ratesHidden ? suppressedLabel() : formatRate(row.conversionRate)}
+                    {visible.ratesHidden ? suppressedLabel() : formatRate(visible.conversionRate)}
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>

@@ -2151,6 +2151,9 @@ describe('kfz analytics source hygiene', () => {
       'features/inbound/kfz/lib/kfz-analytics-compare.ts',
       'features/inbound/kfz/lib/kfz-analytics-traffic-source.ts',
       'features/inbound/kfz/lib/kfz-analytics-persistence-contract.ts',
+      'features/inbound/kfz/lib/kfz-analytics-export.ts',
+      'features/inbound/kfz/components/kfz-analytics-decision-export-button.tsx',
+      'features/inbound/kfz/actions/export-kfz-analytics-decision.ts',
       'app/api/inbound/kfz-analytics/route.ts',
     ]
     const source = files.map((relative) => readSrc(relative)).join('\n')
@@ -2175,6 +2178,7 @@ describe('kfz analytics source hygiene', () => {
     assert.match(source, /data-kfz-analytics-health/)
     assert.match(source, /data-kfz-analytics-comparisons/)
     assert.match(source, /data-kfz-analytics-decision/)
+    assert.match(source, /data-kfz-analytics-export/)
     assert.match(source, /data-kfz-analytics-consent-withdraw/)
     assert.match(source, /Referrer-Kategorie/)
     assert.match(source, /first-source/)
