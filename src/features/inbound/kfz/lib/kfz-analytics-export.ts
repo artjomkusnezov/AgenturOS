@@ -4,6 +4,8 @@ import type {
   KfzAnalyticsComparisonRow,
   KfzAnalyticsDashboard,
   KfzAnalyticsDashboardLoadResult,
+  KfzAnalyticsPeriodTrendRow,
+  KfzAnalyticsTrendDelta,
 } from '@/features/inbound/kfz/types/kfz-analytics'
 import { KFZ_ANALYTICS_UNAVAILABLE_ERROR } from '@/features/inbound/kfz/lib/kfz-analytics-review-state'
 
@@ -22,6 +24,18 @@ export const KFZ_ANALYTICS_DECISION_EXPORT_HEADERS = [
   'median_schritt_ms',
   'anfragen',
   'abschluss',
+  'vor_besuche',
+  'delta_besuche',
+  'vor_anfragen',
+  'delta_anfragen',
+  'vor_abschluss',
+  'delta_abschluss',
+  'vor_erreicht',
+  'vor_stopp',
+  'vor_median_seite_ms',
+  'delta_median_seite_ms',
+  'vor_median_schritt_ms',
+  'delta_median_schritt_ms',
 ] as const
 
 export const KFZ_ANALYTICS_DECISION_EXPORT_FORBIDDEN_TOKENS = [
@@ -109,6 +123,62 @@ export function formatKfzAnalyticsDecisionExportRate(
   return (rate * 100).toFixed(1)
 }
 
+export function formatKfzAnalyticsExportCountDelta(value: number | null): string {
+  return value == null ? '' : String(value)
+}
+
+export function visibleKfzAnalyticsPeriodTrendExport(
+  row: KfzAnalyticsPeriodTrendRow | null,
+): {
+  visitsPrevious: string
+  visitsDelta: string
+  submissionsPrevious: string
+  submissionsDelta: string
+  conversionPrevious: string
+  conversionDelta: string
+  reachedPrevious: string
+  stopPrevious: string
+  medianSitePrevious: string
+  medianSiteDelta: string
+  medianStepPrevious: string
+  medianStepDelta: string
+} {
+  if (!row) {
+    return {
+      visitsPrevious: '',
+      visitsDelta: '',
+      submissionsPrevious: '',
+      submissionsDelta: '',
+      conversionPrevious: '',
+      conversionDelta: '',
+      reachedPrevious: '',
+      stopPrevious: '',
+      medianSitePrevious: '',
+      medianSiteDelta: '',
+      medianStepPrevious: '',
+      medianStepDelta: '',
+    }
+  }
+
+  const countCell = (delta: KfzAnalyticsTrendDelta, field: 'previous' | 'delta') =>
+    formatKfzAnalyticsExportCountDelta(delta[field])
+
+  return {
+    visitsPrevious: countCell(row.visits, 'previous'),
+    visitsDelta: countCell(row.visits, 'delta'),
+    submissionsPrevious: countCell(row.submissions, 'previous'),
+    submissionsDelta: countCell(row.submissions, 'delta'),
+    conversionPrevious: formatKfzAnalyticsDecisionExportRate(row.conversion.previous),
+    conversionDelta: formatKfzAnalyticsDecisionExportRate(row.conversion.delta),
+    reachedPrevious: row.reached.previous ?? '',
+    stopPrevious: row.stop.previous ?? '',
+    medianSitePrevious: row.medianSiteMs.previous == null ? '' : String(row.medianSiteMs.previous),
+    medianSiteDelta: row.medianSiteMs.delta == null ? '' : String(row.medianSiteMs.delta),
+    medianStepPrevious: row.medianStepMs.previous == null ? '' : String(row.medianStepMs.previous),
+    medianStepDelta: row.medianStepMs.delta == null ? '' : String(row.medianStepMs.delta),
+  }
+}
+
 export function sanitizeKfzAnalyticsExportText(value: string): string {
   const trimmed = value.trim()
   if (!trimmed) {
@@ -177,9 +247,15 @@ export function buildKfzAnalyticsDecisionExport(
   const from = isoToKfzAnalyticsDate(dashboard.from) ?? ''
   const to = isoToKfzAnalyticsDate(dashboard.to) ?? ''
   const lines = [KFZ_ANALYTICS_DECISION_EXPORT_HEADERS.map((header) => csvCell(header)).join(',')]
+  const trendById = new Map(
+    dashboard.periodTrend.available
+      ? dashboard.periodTrend.sourceBranch.map((row) => [row.id, row])
+      : [],
+  )
 
   for (const row of dashboard.sourceBranchComparisons) {
     const visible = visibleKfzAnalyticsDecisionMetrics(row)
+    const trend = visibleKfzAnalyticsPeriodTrendExport(trendById.get(row.id) ?? null)
     lines.push(
       [
         csvCell(period),
@@ -193,6 +269,18 @@ export function buildKfzAnalyticsDecisionExport(
         csvCell(formatMs(visible.medianStepMs)),
         csvCell(visible.submissions),
         csvCell(formatKfzAnalyticsDecisionExportRate(visible.conversionRate)),
+        csvCell(trend.visitsPrevious),
+        csvCell(trend.visitsDelta),
+        csvCell(trend.submissionsPrevious),
+        csvCell(trend.submissionsDelta),
+        csvCell(trend.conversionPrevious),
+        csvCell(trend.conversionDelta),
+        csvCell(trend.reachedPrevious, 'text'),
+        csvCell(trend.stopPrevious, 'text'),
+        csvCell(trend.medianSitePrevious),
+        csvCell(trend.medianSiteDelta),
+        csvCell(trend.medianStepPrevious),
+        csvCell(trend.medianStepDelta),
       ].join(','),
     )
   }

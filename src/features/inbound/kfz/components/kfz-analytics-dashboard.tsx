@@ -19,7 +19,10 @@ import {
   type KfzAnalyticsDashboardFilters,
   type KfzAnalyticsDataQuality,
   type KfzAnalyticsPeriodComparison,
+  type KfzAnalyticsPeriodTrend,
+  type KfzAnalyticsPeriodTrendRow,
   type KfzAnalyticsRecord,
+  type KfzAnalyticsTrendDelta,
   type KfzAnalyticsReviewStatus,
   type KfzAnalyticsTransitionRow,
 } from '@/features/inbound/kfz/types/kfz-analytics'
@@ -49,6 +52,53 @@ function formatRate(rate: number | null): string {
 
 function formatCount(value: number): string {
   return new Intl.NumberFormat('de-DE').format(value)
+}
+
+function formatSignedCount(value: number): string {
+  if (value === 0) {
+    return '0'
+  }
+  const sign = value > 0 ? '+' : '−'
+  return `${sign}${formatCount(Math.abs(value))}`
+}
+
+function formatTrendDelta(
+  delta: KfzAnalyticsTrendDelta,
+  kind: 'count' | 'rate' | 'ms',
+): string {
+  if (delta.delta == null || delta.direction === 'unknown') {
+    return '—'
+  }
+  if (kind === 'rate') {
+    const points = delta.delta * 100
+    const formatted = `${points > 0 ? '+' : ''}${points.toFixed(1)} Pp`
+    return formatted
+  }
+  if (kind === 'ms') {
+    if (delta.delta === 0) {
+      return '0'
+    }
+    const sign = delta.delta > 0 ? '+' : '−'
+    return `${sign}${formatActiveMs(Math.abs(delta.delta))}`
+  }
+  return formatSignedCount(delta.delta)
+}
+
+function formatTrendPrevious(delta: KfzAnalyticsTrendDelta, kind: 'count' | 'rate' | 'ms'): string {
+  if (delta.previous == null) {
+    return '—'
+  }
+  if (kind === 'rate') {
+    return formatRate(delta.previous)
+  }
+  if (kind === 'ms') {
+    return formatActiveMs(delta.previous)
+  }
+  return formatCount(delta.previous)
+}
+
+function formatTrendLabel(value: string | null): string {
+  return value ?? '—'
 }
 
 function maxCount(rows: Array<{ count?: number; reached?: number }>): number {
@@ -186,7 +236,10 @@ export function KfzAnalyticsDashboardView({
         />
       </div>
 
-      <PeriodComparisonCard comparison={dashboard.periodComparison} />
+      <PeriodComparisonCard
+        comparison={dashboard.periodComparison}
+        trend={dashboard.periodTrend}
+      />
 
       <ComparisonTable
         title="Vergleich nach Herkunft"
@@ -203,6 +256,7 @@ export function KfzAnalyticsDashboardView({
       <KfzAnalyticsDecisionView
         dashboard={dashboard}
         rows={dashboard.sourceBranchComparisons}
+        trend={dashboard.periodTrend}
         empty={dashboard.empty}
         filterActive={dashboard.filterActive}
         exportMode={exportMode}
@@ -647,12 +701,14 @@ function suppressedLabel(): string {
 function KfzAnalyticsDecisionView({
   dashboard,
   rows,
+  trend,
   empty,
   filterActive,
   exportMode,
 }: {
   dashboard: KfzAnalyticsDashboard
   rows: KfzAnalyticsComparisonRow[]
+  trend: KfzAnalyticsPeriodTrend
   empty: boolean
   filterActive: boolean
   exportMode: 'local' | 'authorized'
@@ -766,7 +822,129 @@ function KfzAnalyticsDecisionView({
           </table>
         </div>
       )}
+      <PeriodTrendTable trend={trend} />
     </section>
+  )
+}
+
+function PeriodTrendTable({ trend }: { trend: KfzAnalyticsPeriodTrend }) {
+  return (
+    <div
+      className="mt-5"
+      data-kfz-analytics-period-trend={trend.available ? 'true' : 'false'}
+      data-kfz-analytics-period-trend-count={String(trend.sourceBranch.length)}
+    >
+      <h4 className="text-sm font-semibold text-zinc-900">
+        Vergleich zur Vorperiode
+      </h4>
+      <p className="mt-1 text-xs text-zinc-500">
+        {trend.available
+          ? `Gleich langes Fenster UTC ${formatComparisonDate(trend.previousFrom)} – ${formatComparisonDate(trend.previousTo)}. Absolute Werte und Differenz. Keine Ursache, keine Prognose, keine Empfehlung.`
+          : 'Nur 7, 30 oder 90 Tage haben eine Vorperiode. Für Gesamt, 24 Stunden oder ein eigenes Fenster wird kein Vergleich erfunden.'}
+      </p>
+      {!trend.available ? null : trend.sourceBranch.length === 0 ? (
+        <p
+          className="mt-3 text-sm text-zinc-500"
+          data-kfz-analytics-period-trend-empty="true"
+        >
+          Keine Herkunft×Einstieg-Gruppe in diesem Fenster. Es wird nichts
+          hochgerechnet.
+        </p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-[860px] w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 text-[11px] uppercase tracking-wide text-zinc-500">
+                <th className="py-2 pr-3 font-medium">Gruppe</th>
+                <th className="py-2 pr-3 font-medium">Besuche</th>
+                <th className="py-2 pr-3 font-medium">Anfragen</th>
+                <th className="py-2 pr-3 font-medium">Abschluss</th>
+                <th className="py-2 pr-3 font-medium">Erreicht</th>
+                <th className="py-2 pr-3 font-medium">Stopp</th>
+                <th className="py-2 font-medium">Median Seite</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trend.sourceBranch.map((row) => (
+                <PeriodTrendRowView key={row.id} row={row} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PeriodTrendRowView({ row }: { row: KfzAnalyticsPeriodTrendRow }) {
+  return (
+    <tr
+      className="border-b border-zinc-100 last:border-0"
+      data-kfz-analytics-trend-row={row.id}
+      data-kfz-analytics-trend-complete={row.presentInPrevious ? 'true' : 'false'}
+      data-kfz-analytics-trend-suppressed={
+        row.currentRatesHidden || row.previousRatesHidden ? 'true' : 'false'
+      }
+    >
+      <td className="py-2.5 pr-3 font-medium text-zinc-800">{row.label}</td>
+      <TrendMetricCell metric={row.visits} kind="count" testId="visits" />
+      <TrendMetricCell metric={row.submissions} kind="count" testId="submissions" />
+      <TrendMetricCell metric={row.conversion} kind="rate" testId="conversion" />
+      <td
+        className="py-2.5 pr-3 text-zinc-600"
+        data-kfz-analytics-trend-metric="reached"
+        data-kfz-analytics-trend-direction="unknown"
+      >
+        <p>{formatTrendLabel(row.reached.current)}</p>
+        <p className="text-[11px] font-normal text-zinc-500">
+          vorher {formatTrendLabel(row.reached.previous)}
+        </p>
+      </td>
+      <td
+        className="py-2.5 pr-3 text-zinc-600"
+        data-kfz-analytics-trend-metric="stop"
+        data-kfz-analytics-trend-direction="unknown"
+      >
+        <p>{formatTrendLabel(row.stop.current)}</p>
+        <p className="text-[11px] font-normal text-zinc-500">
+          vorher {formatTrendLabel(row.stop.previous)}
+        </p>
+      </td>
+      <TrendMetricCell metric={row.medianSiteMs} kind="ms" testId="site-median" last />
+    </tr>
+  )
+}
+
+function TrendMetricCell({
+  metric,
+  kind,
+  testId,
+  last = false,
+}: {
+  metric: KfzAnalyticsTrendDelta
+  kind: 'count' | 'rate' | 'ms'
+  testId: string
+  last?: boolean
+}) {
+  return (
+    <td
+      className={last ? 'py-2.5 text-zinc-700' : 'py-2.5 pr-3 text-zinc-700'}
+      data-kfz-analytics-trend-metric={testId}
+      data-kfz-analytics-trend-direction={metric.direction}
+    >
+      <p>
+        {kind === 'count'
+          ? metric.current == null
+            ? '—'
+            : formatCount(metric.current)
+          : kind === 'rate'
+            ? formatRate(metric.current)
+            : formatActiveMs(metric.current)}
+      </p>
+      <p className="text-[11px] font-normal text-zinc-500">
+        vorher {formatTrendPrevious(metric, kind)} · {formatTrendDelta(metric, kind)}
+      </p>
+    </td>
   )
 }
 
@@ -849,25 +1027,31 @@ function ComparisonTable({
 
 function PeriodComparisonCard({
   comparison,
+  trend,
 }: {
   comparison: KfzAnalyticsPeriodComparison
+  trend: KfzAnalyticsPeriodTrend
 }) {
   const rows = [comparison.current]
   if (comparison.previous) {
     rows.push(comparison.previous)
   }
+  const overall = trend.overall
 
   return (
     <section
       className={`${dashboardSurfaceClassName} px-4 py-4 sm:px-5`}
       data-kfz-analytics-comparisons="period"
       data-kfz-analytics-period-comparison={comparison.available ? 'true' : 'false'}
+      data-kfz-analytics-period-trend-overall={trend.available ? 'true' : 'false'}
     >
       <h3 className="text-sm font-semibold text-zinc-900">Vergleich zum vorherigen Zeitraum</h3>
       <p className="mt-1 text-xs text-zinc-500">
-        {comparison.available
-          ? `Vorheriges Fenster UTC ${formatComparisonDate(comparison.previousFrom)} – ${formatComparisonDate(comparison.previousTo)}. Gleiche Filter, keine einzelnen Sitzungen.`
-          : 'Bei „Gesamt“ gibt es keinen Vorzeitraum. Es wird kein Fenster erfunden.'}
+        {trend.available
+          ? `Vorheriges gleich langes Fenster UTC ${formatComparisonDate(trend.previousFrom)} – ${formatComparisonDate(trend.previousTo)}. Absolute Werte und ehrliche Differenz. Keine Ursache, keine Prognose, keine Empfehlung.`
+          : comparison.available
+            ? `Vorheriges Fenster UTC ${formatComparisonDate(comparison.previousFrom)} – ${formatComparisonDate(comparison.previousTo)}. Trendvergleiche nur für 7/30/90 Tage.`
+            : 'Bei „Gesamt“ gibt es keinen Vorzeitraum. Es wird kein Fenster erfunden.'}
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {rows.map((row) => (
@@ -881,11 +1065,6 @@ function PeriodComparisonCard({
             <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               <ComparisonMetric label="Besuche" value={formatCount(row.visits)} testId="visits" />
               <ComparisonMetric
-                label="Starts"
-                value={formatCount(row.funnelStarts)}
-                testId="starts"
-              />
-              <ComparisonMetric
                 label="Anfragen"
                 value={formatCount(row.submissions)}
                 testId="submissions"
@@ -896,19 +1075,47 @@ function PeriodComparisonCard({
                 testId="conversion"
               />
               <ComparisonMetric
-                label="Abbruch"
-                value={row.ratesHidden ? '—' : formatRate(row.dropOffRate)}
-                testId="dropoff"
+                label="Erreicht"
+                value={row.ratesHidden ? '—' : (row.topReachedStepLabel ?? '—')}
+                testId="reached"
               />
               <ComparisonMetric
-                label="Zeit Ø"
-                value={formatActiveMs(row.averageActiveMs)}
+                label="Stopp"
+                value={row.ratesHidden ? '—' : (row.topDropOffStepLabel ?? '—')}
+                testId="stop"
+              />
+              <ComparisonMetric
+                label="Median Seite"
+                value={formatActiveMs(row.medianActiveMs)}
                 testId="timing"
               />
             </dl>
           </div>
         ))}
       </div>
+      {overall ? (
+        <dl
+          className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"
+          data-kfz-analytics-trend-row="current"
+          data-kfz-analytics-trend-complete={overall.presentInPrevious ? 'true' : 'false'}
+        >
+          <ComparisonMetric
+            label="Besuche Δ"
+            value={`${formatTrendPrevious(overall.visits, 'count')} · ${formatTrendDelta(overall.visits, 'count')}`}
+            testId="trend-visits"
+          />
+          <ComparisonMetric
+            label="Anfragen Δ"
+            value={`${formatTrendPrevious(overall.submissions, 'count')} · ${formatTrendDelta(overall.submissions, 'count')}`}
+            testId="trend-submissions"
+          />
+          <ComparisonMetric
+            label="Abschluss Δ"
+            value={`${formatTrendPrevious(overall.conversion, 'rate')} · ${formatTrendDelta(overall.conversion, 'rate')}`}
+            testId="trend-conversion"
+          />
+        </dl>
+      ) : null}
     </section>
   )
 }

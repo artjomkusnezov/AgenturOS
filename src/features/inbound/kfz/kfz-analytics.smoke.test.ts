@@ -1307,6 +1307,15 @@ describe('kfz analytics aggregate comparisons', () => {
     assert.equal(dashboard.periodComparison.previous.ratesHidden, true)
     assert.equal(dashboard.periodComparison.previous.conversionRate, null)
     assert.equal(dashboard.periodComparison.previous.topReachedStepId, null)
+    assert.equal(dashboard.periodTrend.available, true)
+    assert.equal(dashboard.periodTrend.previousFrom, '2026-08-26T12:00:00.000Z')
+    assert.ok(dashboard.periodTrend.overall)
+    assert.equal(dashboard.periodTrend.overall.visits.current, 4)
+    assert.equal(dashboard.periodTrend.overall.visits.previous, 1)
+    assert.equal(dashboard.periodTrend.overall.visits.delta, 3)
+    assert.equal(dashboard.periodTrend.overall.visits.direction, 'up')
+    assert.equal(dashboard.periodTrend.overall.conversion.delta, null)
+    assert.equal(dashboard.periodTrend.overall.conversion.direction, 'unknown')
 
     const otherDay = aggregateKfzAnalyticsDashboard(
       [...events, ...KFZ_ANALYTICS_FIXTURE_OTHER_DAY],
@@ -1328,6 +1337,7 @@ describe('kfz analytics aggregate comparisons', () => {
       referrerComparisons: dashboard.referrerComparisons,
       branchComparisons: dashboard.branchComparisons,
       periodComparison: dashboard.periodComparison,
+      periodTrend: dashboard.periodTrend,
     })
     assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
     assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)
@@ -2111,6 +2121,7 @@ describe('kfz analytics campaign decision view', () => {
     const serialized = JSON.stringify({
       sourceBranch: dashboard.sourceBranchComparisons,
       coarse: dashboard.coarseSourceComparisons,
+      periodTrend: dashboard.periodTrend,
     })
     assert.doesNotMatch(serialized, /Mustermann|max@example.com|\+49170|OS-AB|schein\.pdf|Golf/i)
     assert.doesNotMatch(serialized, /sf_class|Selbstbeteiligung|1\.000 €/)

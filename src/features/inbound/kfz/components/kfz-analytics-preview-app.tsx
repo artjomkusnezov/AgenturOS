@@ -12,14 +12,21 @@ import {
   buildKfzAnalyticsDashboardHref,
   KFZ_ANALYTICS_DEFAULT_FILTERS,
 } from '@/features/inbound/kfz/lib/kfz-analytics-filters'
-import { KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS } from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
+import {
+  buildKfzAnalyticsPeriodTrendFixture,
+  KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS,
+  KFZ_ANALYTICS_PERIOD_TREND_SCENARIOS,
+  type KfzAnalyticsPeriodTrendScenario,
+} from '@/features/inbound/kfz/lib/kfz-analytics-fixtures'
 import { emptyKfzAnalyticsHealthFacts } from '@/features/inbound/kfz/lib/kfz-analytics-health'
 import type {
   KfzAnalyticsDashboardFilters,
   KfzAnalyticsHealthFacts,
   KfzAnalyticsRecord,
   KfzAnalyticsReviewStatus,
+  KfzAnalyticsTrendPeriodId,
 } from '@/features/inbound/kfz/types/kfz-analytics'
+import { KFZ_ANALYTICS_TREND_PERIODS } from '@/features/inbound/kfz/types/kfz-analytics'
 
 type KfzAnalyticsPreviewAppProps = {
   initialEvents: KfzAnalyticsRecord[]
@@ -38,8 +45,27 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
     accepted: initialEvents.length,
   }))
   const [reviewStatus, setReviewStatus] = useState<KfzAnalyticsReviewStatus>('ready')
+  const [trendScenario, setTrendScenario] = useState<KfzAnalyticsPeriodTrendScenario | null>(
+    null,
+  )
   const [isPending, startTransition] = useTransition()
   const [nowMs] = useState(() => Date.now())
+
+  function isTrendPeriod(periodId: string): periodId is KfzAnalyticsTrendPeriodId {
+    return (KFZ_ANALYTICS_TREND_PERIODS as readonly string[]).includes(periodId)
+  }
+
+  function eventsForTrend(
+    scenario: KfzAnalyticsPeriodTrendScenario,
+    periodId: string,
+  ): KfzAnalyticsRecord[] {
+    const trendPeriod = isTrendPeriod(periodId) ? periodId : '7d'
+    return buildKfzAnalyticsPeriodTrendFixture({
+      nowMs,
+      periodId: trendPeriod,
+      scenario,
+    })
+  }
 
   const dashboard = useMemo(
     () =>
@@ -62,6 +88,14 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
   )
 
   function applyFilters(next: KfzAnalyticsDashboardFilters) {
+    const rebuild =
+      trendScenario != null &&
+      isTrendPeriod(next.periodId) &&
+      next.periodId !== filters.periodId
+    const nextEvents = rebuild ? eventsForTrend(trendScenario, next.periodId) : null
+    if (nextEvents) {
+      setEvents(nextEvents)
+    }
     setFilters(next)
     if (typeof window !== 'undefined') {
       const href = buildKfzAnalyticsDashboardHref(next, '/dev/kfz-analytics')
@@ -75,9 +109,39 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
         consent: 'granted',
         events: [...KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS],
       })
+      setTrendScenario(null)
       setEvents([...KFZ_ANALYTICS_FIXTURE_DECISION_PERIODS])
       setHealth(result.health)
     })
+  }
+
+  function seedTrend(scenario: KfzAnalyticsPeriodTrendScenario) {
+    const periodId = isTrendPeriod(filters.periodId) ? filters.periodId : '7d'
+    const events = eventsForTrend(scenario, periodId)
+    startTransition(async () => {
+      const result = await recordKfzAnalyticsPreviewAction({
+        consent: 'granted',
+        events,
+      })
+      setTrendScenario(scenario)
+      setFilters({
+        ...filters,
+        periodId,
+        fromDate: null,
+        toDate: null,
+      })
+      setEvents(events)
+      setHealth(result.health)
+      setReviewStatus('ready')
+    })
+  }
+
+  const trendLabels: Record<KfzAnalyticsPeriodTrendScenario, string> = {
+    improving: 'Aktuell höher',
+    declining: 'Aktuell niedriger',
+    equal: 'Gleich',
+    suppressed: 'Unterdrückt',
+    empty: 'Trend leer',
   }
 
   return (
@@ -95,6 +159,20 @@ export function KfzAnalyticsPreviewApp({ initialEvents }: KfzAnalyticsPreviewApp
       >
         {isPending ? 'Lädt …' : 'Anonyme Beispielereignisse laden'}
       </button>
+      <div className="flex flex-wrap gap-2" data-kfz-analytics-trend-scenarios="true">
+        {KFZ_ANALYTICS_PERIOD_TREND_SCENARIOS.map((scenario) => (
+          <button
+            key={scenario}
+            type="button"
+            className="min-h-11 rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-800"
+            data-kfz-analytics-trend-scenario={scenario}
+            disabled={isPending}
+            onClick={() => seedTrend(scenario)}
+          >
+            {trendLabels[scenario]}
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap gap-2" data-kfz-analytics-preview-states="true">
         {(
           [

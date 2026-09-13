@@ -5,12 +5,14 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-analytics-allowlist'
 import {
   buildKfzAnalyticsPeriodComparison,
+  buildKfzAnalyticsPeriodTrend,
   collectKfzAnalyticsSessionFacts,
   compareKfzAnalyticsSessionsBy,
   kfzAnalyticsAggregateRate,
   kfzAnalyticsEventInRange,
   kfzAnalyticsRatesHidden,
   resolveKfzAnalyticsPreviousRange,
+  resolveKfzAnalyticsTrendRange,
 } from '@/features/inbound/kfz/lib/kfz-analytics-compare'
 import { kfzAnalyticsReferrerCategoryLabel } from '@/features/inbound/kfz/lib/kfz-analytics-referrer'
 import {
@@ -104,6 +106,7 @@ export function aggregateKfzAnalyticsDashboard(
   const from = resolved.from
   const to = resolved.to
   const previousRange = resolveKfzAnalyticsPreviousRange(filters, { from, to })
+  const trendRange = resolveKfzAnalyticsTrendRange(filters, { from, to })
 
   const sessions = collectKfzAnalyticsSessionFacts(events, {
     nowMs: input.nowMs,
@@ -293,6 +296,23 @@ export function aggregateKfzAnalyticsDashboard(
 
   const empty = uniqueEventCount === 0 || matched.length === 0
   const ratesHidden = kfzAnalyticsRatesHidden(matched.length)
+  const sourceBranchComparisons = compareKfzAnalyticsSessionsBy(matched, 'sourceBranch')
+  const previousSourceBranch = previousSessions
+    ? compareKfzAnalyticsSessionsBy(previousSessions, 'sourceBranch')
+    : []
+  const periodComparison = buildKfzAnalyticsPeriodComparison(
+    matched,
+    previousSessions,
+    previousRange,
+  )
+  const periodTrend = buildKfzAnalyticsPeriodTrend({
+    periodId: filters.periodId,
+    previousRange: trendRange,
+    current: periodComparison.current,
+    previous: periodComparison.previous,
+    currentSourceBranch: sourceBranchComparisons,
+    previousSourceBranch,
+  })
 
   return {
     periodId: filters.periodId,
@@ -319,14 +339,11 @@ export function aggregateKfzAnalyticsDashboard(
     ),
     sourceComparisons: compareKfzAnalyticsSessionsBy(matched, 'source'),
     coarseSourceComparisons: compareKfzAnalyticsSessionsBy(matched, 'coarseSource'),
-    sourceBranchComparisons: compareKfzAnalyticsSessionsBy(matched, 'sourceBranch'),
+    sourceBranchComparisons,
     referrerComparisons: compareKfzAnalyticsSessionsBy(matched, 'referrer'),
     branchComparisons: compareKfzAnalyticsSessionsBy(matched, 'branch'),
-    periodComparison: buildKfzAnalyticsPeriodComparison(
-      matched,
-      previousSessions,
-      previousRange,
-    ),
+    periodComparison,
+    periodTrend,
     steps,
     transitions,
     dropOffs: countMapToRows(dropOffs, (id) =>

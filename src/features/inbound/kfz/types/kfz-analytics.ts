@@ -180,6 +180,56 @@ export type KfzAnalyticsPeriodComparison = {
   previous: KfzAnalyticsComparisonRow | null
 }
 
+/** Rolling windows that may be compared with an immediately preceding equal period. */
+export const KFZ_ANALYTICS_TREND_PERIODS = ['7d', '30d', '90d'] as const
+
+export type KfzAnalyticsTrendPeriodId = (typeof KFZ_ANALYTICS_TREND_PERIODS)[number]
+
+export const KFZ_ANALYTICS_TREND_DIRECTIONS = [
+  'up',
+  'down',
+  'equal',
+  'unknown',
+] as const
+
+export type KfzAnalyticsTrendDirection =
+  (typeof KFZ_ANALYTICS_TREND_DIRECTIONS)[number]
+
+export type KfzAnalyticsTrendDelta = {
+  current: number | null
+  previous: number | null
+  delta: number | null
+  direction: KfzAnalyticsTrendDirection
+}
+
+export type KfzAnalyticsTrendLabels = {
+  current: string | null
+  previous: string | null
+}
+
+export type KfzAnalyticsPeriodTrendRow = {
+  id: string
+  label: string
+  presentInPrevious: boolean
+  currentRatesHidden: boolean
+  previousRatesHidden: boolean
+  visits: KfzAnalyticsTrendDelta
+  submissions: KfzAnalyticsTrendDelta
+  conversion: KfzAnalyticsTrendDelta
+  medianSiteMs: KfzAnalyticsTrendDelta
+  medianStepMs: KfzAnalyticsTrendDelta
+  reached: KfzAnalyticsTrendLabels
+  stop: KfzAnalyticsTrendLabels
+}
+
+export type KfzAnalyticsPeriodTrend = {
+  available: boolean
+  previousFrom: string | null
+  previousTo: string | null
+  overall: KfzAnalyticsPeriodTrendRow | null
+  sourceBranch: KfzAnalyticsPeriodTrendRow[]
+}
+
 export type KfzAnalyticsTransitionRow = {
   id: string
   fromStepId: string
@@ -282,6 +332,7 @@ export type KfzAnalyticsDashboard = {
   referrerComparisons: KfzAnalyticsComparisonRow[]
   branchComparisons: KfzAnalyticsComparisonRow[]
   periodComparison: KfzAnalyticsPeriodComparison
+  periodTrend: KfzAnalyticsPeriodTrend
   steps: KfzAnalyticsStepFunnelRow[]
   transitions: KfzAnalyticsTransitionRow[]
   dropOffs: KfzAnalyticsCountRow[]
