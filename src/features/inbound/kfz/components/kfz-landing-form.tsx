@@ -23,6 +23,10 @@ import {
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import {
+  getSessionKfzLandingFirstAttributionStorage,
+  resolveKfzLandingFirstAttribution,
+} from '@/features/inbound/kfz/lib/kfz-landing-first-attribution'
+import {
   createKfzLandingDraftController,
   emptyKfzLandingDraftValues,
   getSessionKfzLandingDraftStorage,
@@ -195,6 +199,13 @@ export function KfzLandingForm({
   const submitStatus = kfzLandingSubmitStatus(phase)
   const submitStatusLabel = kfzLandingSubmitStatusLabel(phase)
 
+  function lockedAttribution(): KfzLandingAttribution {
+    return resolveKfzLandingFirstAttribution(
+      getSessionKfzLandingFirstAttributionStorage(),
+      attribution,
+    )
+  }
+
   function persistDraft(next: {
     screenId?: string
     values?: KfzLandingFormValues
@@ -208,6 +219,7 @@ export function KfzLandingForm({
     const nextScreenId = next.screenId ?? screenId
     const nextDocuments = next.documents ?? documents
     const nextNotice = next.notice === undefined ? documentReselectNotice : next.notice
+    lockedAttribution()
     draftController.write({
       submissionId,
       screenId: nextScreenId,
@@ -441,7 +453,7 @@ export function KfzLandingForm({
           phase: 'idle',
           inFlight: false,
           prepared,
-          attribution,
+          attribution: lockedAttribution(),
           submit: submitInquiry,
           timeoutMs: submitTimeoutMs,
         })
