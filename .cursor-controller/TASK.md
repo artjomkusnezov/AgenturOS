@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/kfz-launch-merge-5f6f
 
 ## Title
@@ -118,3 +118,6 @@ Do not start another product task after this task.
 
 ## Safety
 Cursor-created branch only. No master write, merge, auto-merge, production deploy/database mutation, secret value reads/changes, customer contact/data, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git unless a later explicit owner authorization specifically permits the relevant production action.
+
+CONTROLLER_AGENT_ID: bc-d932f206-2f10-4dfd-b683-329cf37f2012
+CONTROLLER_STARTED_AT: 2026-09-14T23:10:10Z
