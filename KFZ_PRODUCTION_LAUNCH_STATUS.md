@@ -1,7 +1,7 @@
 STATUS: BLOCKED
 PUBLIC URL: kfz.artkus.de (intended; not live). Local production-equivalent smoke: http://127.0.0.1:3000/kfz
 PR: #63 (launch-readiness delta onto PR #62). Master merge vehicle remains #62 only. Do not merge #61 or older stacked PRs.
-COMMIT: 5bf2f3c21bba9cbf6cc1cec4603868fbbcaa5a3d
+COMMIT: 925baf3c06c8eebca7c2a249a41e608ef5a046dc
 TESTS: npm run test:inbound 428/428 pass; npx tsc --noEmit pass; npm run lint pass; npm run build pass (/kfz, /app/inbox, /app/inbox/kfz-document in route table); npm run preflight:kfz-supabase contract ok, persist names missing in this process (expected).
 DESKTOP PASS/FAIL: PASS
 MOBILE PASS/FAIL: PASS (390×844)
