@@ -135,6 +135,41 @@ describe('kfz review summary and missing-information checklist', () => {
     assert.equal(labelKfzMissingCount(0), 'Angaben vollständig')
   })
 
+  it('surfaces persisted UTM on submitted facts without inventing empty tokens', () => {
+    const item = kfzInboxItem({
+      reason: 'Wechsel Kfz-Versicherung',
+      preferredChannel: 'phone',
+      phone: '+491701234567',
+      email: null,
+      location: { postalCode: '49525', city: 'Lengerich' },
+      vehicle: { make: 'VW', model: 'Golf', year: '2019' },
+    })
+    item.inbound_metadata = {
+      ...(item.inbound_metadata as Record<string, unknown>),
+      acquisition: {
+        family: 'website',
+        product: 'kfz',
+        source: 'kfz.artkus.de',
+        campaign: 'kfz-check',
+        utmSource: 'google',
+        utmMedium: 'cpc',
+        utmCampaign: 'kfz-check',
+      },
+    } as Json
+
+    const review = presentKfzWebsiteInboxItem(item)
+    assert.ok(review)
+    assert.ok(
+      review.submittedFacts.some((fact) => fact.id === 'utm_source' && fact.value === 'google'),
+    )
+    assert.ok(
+      review.submittedFacts.some(
+        (fact) => fact.id === 'utm_campaign' && fact.value === 'kfz-check',
+      ),
+    )
+    assert.ok(!review.submittedFacts.some((fact) => fact.id === 'utm_term'))
+  })
+
   it('presents submitted facts, missing checklist and no status mutation', () => {
     const item = kfzInboxItem({
       reason: 'Preischeck Kfz-Versicherung',

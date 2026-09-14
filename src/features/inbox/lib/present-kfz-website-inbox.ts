@@ -266,9 +266,27 @@ export function buildKfzListSummary(input: {
   return input.vehicle ? `${request} · ${input.vehicle}` : request
 }
 
+function pushAttributionFact(
+  facts: KfzSubmittedFact[],
+  id: string,
+  label: string,
+  value: string | null,
+) {
+  if (!value) {
+    return
+  }
+  facts.push({ id, label, value })
+}
+
 function buildSubmittedFacts(input: {
   sourceLabel: string
   acquisitionSource: string | null
+  campaign: string | null
+  utmSource: string | null
+  utmMedium: string | null
+  utmCampaign: string | null
+  utmTerm: string | null
+  utmContent: string | null
   classification?: string | null
   customerName: string
   location: string | null
@@ -289,6 +307,13 @@ function buildSubmittedFacts(input: {
         : input.sourceLabel,
     },
   ]
+
+  pushAttributionFact(facts, 'campaign', 'Kampagne', input.campaign)
+  pushAttributionFact(facts, 'utm_source', 'UTM-Quelle', input.utmSource)
+  pushAttributionFact(facts, 'utm_medium', 'UTM-Medium', input.utmMedium)
+  pushAttributionFact(facts, 'utm_campaign', 'UTM-Kampagne', input.utmCampaign)
+  pushAttributionFact(facts, 'utm_term', 'UTM-Begriff', input.utmTerm)
+  pushAttributionFact(facts, 'utm_content', 'UTM-Inhalt', input.utmContent)
 
   if (input.classification) {
     facts.push({
@@ -556,6 +581,12 @@ export function presentKfzWebsiteInboxItem(
   })
   const urgencyNote = detectUrgencyNote(reason, contextNotes)
   const acquisitionSource = websiteItem ? asNullableString(acquisition?.source) : null
+  const campaign = websiteItem ? asNullableString(acquisition?.campaign) : null
+  const utmSource = websiteItem ? asNullableString(acquisition?.utmSource) : null
+  const utmMedium = websiteItem ? asNullableString(acquisition?.utmMedium) : null
+  const utmCampaign = websiteItem ? asNullableString(acquisition?.utmCampaign) : null
+  const utmTerm = websiteItem ? asNullableString(acquisition?.utmTerm) : null
+  const utmContent = websiteItem ? asNullableString(acquisition?.utmContent) : null
   const documents = readSubmittedDocuments(
     meta,
     item.id,
@@ -565,6 +596,12 @@ export function presentKfzWebsiteInboxItem(
   const submittedFacts = buildSubmittedFacts({
     sourceLabel,
     acquisitionSource,
+    campaign,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmTerm,
+    utmContent,
     classification,
     customerName,
     location: locationLabel,

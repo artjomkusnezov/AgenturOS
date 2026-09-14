@@ -11,6 +11,10 @@ import {
   KFZ_LANDING_SOURCE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
+  createMemoryKfzLandingFirstAttributionStorage,
+  resolveKfzLandingFirstAttribution,
+} from '@/features/inbound/kfz/lib/kfz-landing-first-attribution'
+import {
   beginKfzLandingSubmit,
   canStartKfzLandingSubmit,
   createKfzLandingSubmissionId,
@@ -188,6 +192,57 @@ describe('kfz landing payload mapping', () => {
     assert.equal(attr.utmSource, 'meta')
     assert.equal(attr.utmCampaign, 'kfz-autumn')
     assert.equal(attr.utmMedium, null)
+  })
+})
+
+describe('kfz landing first-touch attribution', () => {
+  it('locks the first UTM and keeps it after a later empty query', () => {
+    const storage = createMemoryKfzLandingFirstAttributionStorage()
+    const first = readKfzLandingAttributionFromSearchParams(
+      new URLSearchParams('utm_source=google&utm_campaign=kfz-check'),
+    )
+    const locked = resolveKfzLandingFirstAttribution(storage, first)
+    const later = resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(new URLSearchParams()),
+    )
+
+    assert.equal(locked.utmSource, 'google')
+    assert.equal(locked.utmCampaign, 'kfz-check')
+    assert.equal(later.utmSource, 'google')
+    assert.equal(later.utmCampaign, 'kfz-check')
+    assert.equal(later.utmMedium, null)
+  })
+
+  it('does not replace first-touch with a later different UTM', () => {
+    const storage = createMemoryKfzLandingFirstAttributionStorage()
+    resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(
+        new URLSearchParams('utm_source=google&utm_campaign=kfz-check'),
+      ),
+    )
+    const replaced = resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(
+        new URLSearchParams('utm_source=meta&utm_campaign=other'),
+      ),
+    )
+
+    assert.equal(replaced.utmSource, 'google')
+    assert.equal(replaced.utmCampaign, 'kfz-check')
+  })
+
+  it('does not invent attribution when the funnel had no UTM', () => {
+    const storage = createMemoryKfzLandingFirstAttributionStorage()
+    const empty = resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(new URLSearchParams('foo=bar')),
+    )
+
+    assert.equal(empty.utmSource, null)
+    assert.equal(empty.utmCampaign, null)
+    assert.equal(empty.campaign, null)
   })
 })
 
