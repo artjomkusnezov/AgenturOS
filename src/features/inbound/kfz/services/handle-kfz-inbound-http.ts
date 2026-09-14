@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import {
   formatKfzConfigError,
   listMissingInboundKfzEnvFields,
+  KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
 } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
@@ -47,7 +48,7 @@ export async function handleKfzInboundHttpRequest(
     return {
       ok: false,
       status: 503,
-      body: { error: formatKfzConfigError(missing), code: 'config_missing' },
+      body: { error: formatKfzConfigError(), code: 'config_missing' },
     }
   }
 
@@ -64,7 +65,7 @@ export async function handleKfzInboundHttpRequest(
       ok: false,
       status: 503,
       body: {
-        error: 'Kfz-Inbound ist nicht konfiguriert (Supabase Service Role).',
+        error: KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
         code: 'store_unavailable',
       },
     }

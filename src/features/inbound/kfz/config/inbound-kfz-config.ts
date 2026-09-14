@@ -43,11 +43,11 @@ export function listMissingInboundKfzEnvFields(): KfzConfigMissingField[] {
   return missing
 }
 
-export function formatKfzConfigError(missing: KfzConfigMissingField[]): string {
-  if (missing.length === 0) {
-    return 'Kfz-Inbound ist nicht konfiguriert.'
-  }
-  return `Kfz-Inbound ist nicht konfiguriert (${missing.join(', ')} fehlt).`
+export const KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR =
+  'Die Anfrage konnte gerade nicht gespeichert werden. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.' as const
+
+export function formatKfzConfigError(): string {
+  return KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR
 }
 
 /**

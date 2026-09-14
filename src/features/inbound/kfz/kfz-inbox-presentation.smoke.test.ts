@@ -17,6 +17,7 @@ import {
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import {
   buildKfzLandingPayload,
+  readKfzLandingAttributionFromSearchParams,
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
@@ -91,11 +92,13 @@ function landingRequest(payload: unknown, secret = SECRET): Request {
 async function submitLandingToInbox(
   values: KfzLandingFormValues,
   submissionId: string,
+  attribution?: Parameters<typeof buildKfzLandingPayload>[0]['attribution'],
 ): Promise<InboxItem> {
   const built = buildKfzLandingPayload({
     values,
     submissionId,
     consentTimestamp: '2026-09-07T12:00:00.000Z',
+    attribution,
   })
   assert.equal(built.ok, true)
   if (!built.ok) {
@@ -170,6 +173,53 @@ describe('kfz landing → HTTP → inbox presentation', () => {
       assert.equal(item.channel, 'website')
       assert.equal(item.source, 'website')
       assert.deepEqual(review.documents, [])
+    })
+  })
+
+  it('surfaces persisted UTM and campaign on the authenticated review facts', async () => {
+    await withKfzEnv(async () => {
+      const attribution = readKfzLandingAttributionFromSearchParams(
+        new URLSearchParams(
+          'utm_source=google&utm_medium=cpc&utm_campaign=kfz-check&campaign=kfz-check',
+        ),
+      )
+      const item = await submitLandingToInbox(
+        baseValues(),
+        'lp-inbox-review-utm',
+        attribution,
+      )
+      const review = presentKfzWebsiteInboxItem(item)
+      const meta = item.inbound_metadata as {
+        acquisition?: Record<string, unknown>
+      }
+
+      assert.ok(review)
+      assert.equal(meta.acquisition?.utmSource, 'google')
+      assert.equal(meta.acquisition?.utmMedium, 'cpc')
+      assert.equal(meta.acquisition?.utmCampaign, 'kfz-check')
+      assert.equal(meta.acquisition?.campaign, 'kfz-check')
+      assert.ok(
+        review.submittedFacts.some(
+          (fact) => fact.id === 'utm_source' && fact.value === 'google',
+        ),
+      )
+      assert.ok(
+        review.submittedFacts.some(
+          (fact) => fact.id === 'utm_medium' && fact.value === 'cpc',
+        ),
+      )
+      assert.ok(
+        review.submittedFacts.some(
+          (fact) => fact.id === 'utm_campaign' && fact.value === 'kfz-check',
+        ),
+      )
+      assert.ok(
+        review.submittedFacts.some(
+          (fact) => fact.id === 'campaign' && fact.value === 'kfz-check',
+        ),
+      )
+      assert.ok(!review.submittedFacts.some((fact) => fact.id === 'utm_term'))
+      assert.ok(!review.submittedFacts.some((fact) => fact.id === 'utm_content'))
     })
   })
 

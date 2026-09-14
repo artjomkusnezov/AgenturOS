@@ -11,6 +11,10 @@ import {
   KFZ_LANDING_SOURCE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
+  createMemoryKfzLandingFirstAttributionStorage,
+  resolveKfzLandingFirstAttribution,
+} from '@/features/inbound/kfz/lib/kfz-landing-first-attribution'
+import {
   beginKfzLandingSubmit,
   canStartKfzLandingSubmit,
   createKfzLandingSubmissionId,
@@ -22,6 +26,10 @@ import {
 import { normalizeInternationalPhone } from '@/features/inbound/kfz/lib/normalize-phone'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { validatePublicKfzInquiry } from '@/features/inbound/kfz/lib/validate-public-kfz-inquiry'
+import {
+  formatKfzConfigError,
+  KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
+} from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
@@ -188,6 +196,63 @@ describe('kfz landing payload mapping', () => {
     assert.equal(attr.utmSource, 'meta')
     assert.equal(attr.utmCampaign, 'kfz-autumn')
     assert.equal(attr.utmMedium, null)
+  })
+
+  it('does not put environment names into the public submit error', () => {
+    const error = formatKfzConfigError()
+    assert.equal(error, KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR)
+    assert.doesNotMatch(error, /INBOUND_|SUPABASE_|Kfz-Inbound|fehlt/)
+  })
+})
+
+describe('kfz landing first-touch attribution', () => {
+  it('locks the first UTM and keeps it after a later empty query', () => {
+    const storage = createMemoryKfzLandingFirstAttributionStorage()
+    const first = readKfzLandingAttributionFromSearchParams(
+      new URLSearchParams('utm_source=google&utm_campaign=kfz-check'),
+    )
+    const locked = resolveKfzLandingFirstAttribution(storage, first)
+    const later = resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(new URLSearchParams()),
+    )
+
+    assert.equal(locked.utmSource, 'google')
+    assert.equal(locked.utmCampaign, 'kfz-check')
+    assert.equal(later.utmSource, 'google')
+    assert.equal(later.utmCampaign, 'kfz-check')
+    assert.equal(later.utmMedium, null)
+  })
+
+  it('does not replace first-touch with a later different UTM', () => {
+    const storage = createMemoryKfzLandingFirstAttributionStorage()
+    resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(
+        new URLSearchParams('utm_source=google&utm_campaign=kfz-check'),
+      ),
+    )
+    const replaced = resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(
+        new URLSearchParams('utm_source=meta&utm_campaign=other'),
+      ),
+    )
+
+    assert.equal(replaced.utmSource, 'google')
+    assert.equal(replaced.utmCampaign, 'kfz-check')
+  })
+
+  it('does not invent attribution when the funnel had no UTM', () => {
+    const storage = createMemoryKfzLandingFirstAttributionStorage()
+    const empty = resolveKfzLandingFirstAttribution(
+      storage,
+      readKfzLandingAttributionFromSearchParams(new URLSearchParams('foo=bar')),
+    )
+
+    assert.equal(empty.utmSource, null)
+    assert.equal(empty.utmCampaign, null)
+    assert.equal(empty.campaign, null)
   })
 })
 
@@ -461,6 +526,7 @@ describe('kfz landing → shared HTTP handler (production entry)', () => {
       }
       assert.equal(result.status, 503)
       assert.equal(result.body.code, 'config_missing')
+      assert.doesNotMatch(result.body.error, /INBOUND_|SUPABASE_|Kfz-Inbound/)
       assert.equal(store.items.length, 0)
     } finally {
       if (prev.agency === undefined) delete process.env.INBOUND_KFZ_AGENCY_ID

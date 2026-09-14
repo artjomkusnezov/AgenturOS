@@ -31,6 +31,7 @@ import {
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import {
   buildKfzLandingPayload,
+  type KfzLandingAttribution,
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
@@ -114,11 +115,13 @@ function landingRequest(payload: unknown, secret = SECRET): Request {
 async function submitLandingToInbox(
   values: KfzLandingFormValues,
   submissionId: string,
+  attribution?: KfzLandingAttribution,
 ): Promise<InboxItem> {
   const built = buildKfzLandingPayload({
     values,
     submissionId,
     consentTimestamp: '2026-09-07T12:00:00.000Z',
+    attribution,
   })
   assert.equal(built.ok, true)
   if (!built.ok) {
@@ -174,7 +177,11 @@ describe('authenticated Kfz inbox / dashboard route', () => {
 
   it('opens a normalized inbound record on /app/inbox with the one-screen review workspace', async () => {
     await withKfzEnv(async () => {
-      const item = await submitLandingToInbox(baseValues(), 'lp-auth-inbox-open')
+      const item = await submitLandingToInbox(baseValues(), 'lp-auth-inbox-open', {
+        utmSource: 'google',
+        utmMedium: 'cpc',
+        utmCampaign: 'kfz-check',
+      })
       const view = presentAuthenticatedKfzInbox({
         unprocessedItems: [item],
         processedItems: [],
@@ -214,6 +221,14 @@ describe('authenticated Kfz inbox / dashboard route', () => {
       assert.equal(workspace.queuePhase, 'needs_review')
       assert.equal(workspace.queuePhaseLabel, KFZ_WORK_QUEUE_PHASE_LABELS.needs_review)
       assert.ok(workspace.facts.length > 0)
+      assert.ok(
+        workspace.facts.some((fact) => fact.id === 'utm_source' && fact.value === 'google'),
+      )
+      assert.ok(
+        workspace.facts.some(
+          (fact) => fact.id === 'utm_campaign' && fact.value === 'kfz-check',
+        ),
+      )
       assert.ok(workspace.missingInformationChecklist.length > 0)
       assert.equal(workspace.sections.facts, true)
       assert.equal(workspace.sections.missingInformation, true)

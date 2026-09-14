@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, it } from 'node:test'
 
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
+import { KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import type { KfzLandingFormValues } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import {
   clearKfzLandingDraft,
@@ -292,7 +293,7 @@ describe('kfz landing retain after failure', () => {
       prepared,
       submit: async () => ({
         ok: false,
-        error: 'Kfz-Inbound ist nicht konfiguriert (INBOUND_KFZ_INTAKE_SECRET fehlt).',
+        error: KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
         code: 'config_missing',
         retryable: true,
       }),
@@ -309,7 +310,10 @@ describe('kfz landing retain after failure', () => {
     assert.equal(retained.documents[0]?.filename, 'schein.jpg')
     assert.equal(retained.previews['doc-schein'], 'blob:kfz-preview-schein')
     assert.equal(JSON.stringify(retained).includes('data:'), false)
-    assert.doesNotMatch(failed.result && !failed.result.ok ? failed.result.error : '', /gespeichert|hochgeladen/i)
+    assert.doesNotMatch(
+      failed.result && !failed.result.ok ? failed.result.error : '',
+      /ist angekommen|wurde gespeichert|hochgeladen/i,
+    )
   })
 
   it('does not claim success when intake configuration is missing', async () => {
@@ -334,6 +338,7 @@ describe('kfz landing retain after failure', () => {
       assert.equal(result.result?.ok, false)
       if (result.result && !result.result.ok) {
         assert.equal(result.result.code, 'config_missing')
+        assert.doesNotMatch(result.result.error, /INBOUND_|SUPABASE_|Kfz-Inbound/)
       }
       assert.equal(store.items.length, 0)
     } finally {
