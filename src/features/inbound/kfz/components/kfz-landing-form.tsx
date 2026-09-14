@@ -42,7 +42,6 @@ import {
 import {
   KFZ_LANDING_CONFIRMATION_BODY,
   KFZ_LANDING_CONFIRMATION_TITLE,
-  KFZ_LANDING_CONSENT_VERSION,
   KFZ_LANDING_CONTACT_EMAIL,
   KFZ_LANDING_CONTACT_PHONE,
   KFZ_LANDING_CONTACT_PHONE_E164,
@@ -866,7 +865,6 @@ export function KfzLandingForm({
                 Ihre Angaben verwenden wir ausschließlich zur Bearbeitung Ihrer Anfrage.
                 Unterlagen bleiben optional und werden nur benötigt, wenn sie die persönliche
                 Prüfung erleichtern. Artjom oder Vera prüft manuell — kein Sofortpreis.
-                Consent-Stand: {KFZ_LANDING_CONSENT_VERSION}.
               </p>
             </div>
           ) : null}

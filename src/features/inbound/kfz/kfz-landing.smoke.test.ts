@@ -26,6 +26,10 @@ import {
 import { normalizeInternationalPhone } from '@/features/inbound/kfz/lib/normalize-phone'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { validatePublicKfzInquiry } from '@/features/inbound/kfz/lib/validate-public-kfz-inquiry'
+import {
+  formatKfzConfigError,
+  KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
+} from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import { processKfzWebsiteInquiry } from '@/features/inbound/kfz/services/process-kfz-inquiry'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
@@ -192,6 +196,16 @@ describe('kfz landing payload mapping', () => {
     assert.equal(attr.utmSource, 'meta')
     assert.equal(attr.utmCampaign, 'kfz-autumn')
     assert.equal(attr.utmMedium, null)
+  })
+
+  it('does not put environment names into the public submit error', () => {
+    const error = formatKfzConfigError([
+      'INBOUND_KFZ_AGENCY_ID',
+      'INBOUND_KFZ_ACTOR_USER_ID',
+      'INBOUND_KFZ_INTAKE_SECRET',
+    ])
+    assert.equal(error, KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR)
+    assert.doesNotMatch(error, /INBOUND_|SUPABASE_|Kfz-Inbound|fehlt/)
   })
 })
 
@@ -516,6 +530,7 @@ describe('kfz landing → shared HTTP handler (production entry)', () => {
       }
       assert.equal(result.status, 503)
       assert.equal(result.body.code, 'config_missing')
+      assert.doesNotMatch(result.body.error, /INBOUND_|SUPABASE_|Kfz-Inbound/)
       assert.equal(store.items.length, 0)
     } finally {
       if (prev.agency === undefined) delete process.env.INBOUND_KFZ_AGENCY_ID

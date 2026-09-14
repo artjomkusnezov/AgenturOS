@@ -1,4 +1,4 @@
-import { getInboundKfzRuntimeConfig } from '@/features/inbound/kfz/config/inbound-kfz-config'
+import { getInboundKfzRuntimeConfig, KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { toInboundItemFromKfzInquiry } from '@/features/inbound/kfz/lib/kfz-adapter'
 import {
   cleanupKfzDocumentObjects,
@@ -49,7 +49,7 @@ export async function processKfzWebsiteInquiry(input: {
   if (!config) {
     return {
       success: false,
-      error: 'Kfz-Inbound ist nicht konfiguriert.',
+      error: KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
       status: 503,
       code: 'config_missing',
     }
@@ -115,7 +115,7 @@ export async function processKfzWebsiteInquiry(input: {
     if (!input.documentStore) {
       return {
         success: false,
-        error: 'Kfz-Inbound ist nicht konfiguriert (Dokumentablage).',
+        error: KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
         status: 503,
         code: 'store_unavailable',
       }
