@@ -199,11 +199,7 @@ describe('kfz landing payload mapping', () => {
   })
 
   it('does not put environment names into the public submit error', () => {
-    const error = formatKfzConfigError([
-      'INBOUND_KFZ_AGENCY_ID',
-      'INBOUND_KFZ_ACTOR_USER_ID',
-      'INBOUND_KFZ_INTAKE_SECRET',
-    ])
+    const error = formatKfzConfigError()
     assert.equal(error, KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR)
     assert.doesNotMatch(error, /INBOUND_|SUPABASE_|Kfz-Inbound|fehlt/)
   })

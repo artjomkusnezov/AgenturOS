@@ -83,7 +83,7 @@ export async function submitKfzLandingInquiryAction(
     logKfzInbound('landing_config_missing', { fields: missing.join(',') })
     return {
       ok: false,
-      error: formatKfzConfigError(missing),
+      error: formatKfzConfigError(),
       code: 'config_missing',
       retryable: true,
     }
