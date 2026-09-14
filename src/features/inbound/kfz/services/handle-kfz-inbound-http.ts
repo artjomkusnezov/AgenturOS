@@ -48,7 +48,7 @@ export async function handleKfzInboundHttpRequest(
     return {
       ok: false,
       status: 503,
-      body: { error: formatKfzConfigError(missing), code: 'config_missing' },
+      body: { error: formatKfzConfigError(), code: 'config_missing' },
     }
   }
 
