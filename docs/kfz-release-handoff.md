@@ -4,7 +4,7 @@ Kfz-Release-Handoff · Kette und Migrationen, ohne Secrets
 
 Keine Produktionsfreigabe. Dieses Handoff listet Merge-Reihenfolge, Migrationsdateien, Env-Namen, Prüfcommands und Owner-Schritte. Werte, Antworten, Dateinamen von Kunden, Object-Keys und Personenbezüge stehen nicht hier. Merge, Apply, Deploy und Production-Datenbank bleiben Owner.
 
-Branch: `cursor/agenturos-controller-task-ee86` from `cursor/agenturos-controller-task-8bd0` (PR #54).
+Branch: `cursor/kfz-launch-merge-5f6f` onto `master`. Contained stacked history through `cursor/agenturos-controller-task-8bd0` (PR #54).
 
 ## 1. Stacked PR dependency (merge-first)
 
@@ -86,7 +86,7 @@ Expected readiness checks (local contract, not production approval):
 
 ## 5. Owner-only steps (do not perform here)
 
-- merge-stack-in-order: Stacked PRs in merge-first order mergen (#22 → #54). Dieses Handoff merget nichts. PR #19 nicht als zweite Historie mergen.
+- merge-stack-in-order: Dieses Integrations-PR enthält die Kfz-Kette (#22 → #54 plus Nachfolger auf derselben Historie) und current master. Owner merget nur dieses PR in master. Stacked PRs nicht einzeln mergen. PR #19 nicht als zweite Historie mergen. Dieses Handoff merget nichts.
 - vercel-env-values: Im bestehenden Vercel-Projekt die Pflichtnamen setzen. Werte bleiben in Vercel und werden hier nicht angezeigt. Kein NEXT_PUBLIC_ für SUPABASE_SERVICE_ROLE_KEY oder INBOUND_KFZ_INTAKE_SECRET.
 - apply-migrations: Im bestehenden Supabase-Projekt die vier SQL-Dateien in Timestamp-Reihenfolge anwenden. Dieser Slice wendet nichts an. Kein neues Projekt, kein DROP.
 - confirm-private-bucket: Bucket-Name kfz-inbound-documents: public=false, keine anon/authenticated Policies, kein öffentlicher Link, kein Client-Upload.
@@ -103,7 +103,7 @@ Expected readiness checks (local contract, not production approval):
 
 ## 7. Rollback-safe stop conditions
 
-- out-of-order-merge: Stopp, wenn ein Stack-PR auf die falsche Base gemerged würde.
+- out-of-order-merge: Stopp, wenn stacked PRs einzeln oder auf die falsche Base gemerged würden. Dieses Integrations-PR ist der einzige master-Merge.
 - checks-failed: Stopp, wenn npm run test:inbound, npx tsc --noEmit, npm run lint oder npm run build fehlschlägt.
 - dry-run-failed: Stopp, wenn die In-Memory-Migrationskette nicht ok ist. Kein Remote-Apply.
 - public-bucket: Stopp, wenn die Bucket-Migration public=true setzt oder anon/authenticated Policies vergibt.

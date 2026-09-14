@@ -34,7 +34,7 @@ export {
 }
 
 export const KFZ_RELEASE_HANDOFF_BRANCH =
-  'cursor/agenturos-controller-task-ee86' as const
+  'cursor/kfz-launch-merge-5f6f' as const
 
 export const KFZ_RELEASE_HANDOFF_BASE_BRANCH =
   'cursor/agenturos-controller-task-8bd0' as const
@@ -355,7 +355,7 @@ export const KFZ_RELEASE_OWNER_STEPS: readonly KfzReleaseOwnerStep[] = [
   {
     id: 'merge-stack-in-order',
     label:
-      'Stacked PRs in merge-first order mergen (#22 → #54). Dieses Handoff merget nichts. PR #19 nicht als zweite Historie mergen.',
+      'Dieses Integrations-PR enthält die Kfz-Kette (#22 → #54 plus Nachfolger auf derselben Historie) und current master. Owner merget nur dieses PR in master. Stacked PRs nicht einzeln mergen. PR #19 nicht als zweite Historie mergen. Dieses Handoff merget nichts.',
   },
   {
     id: 'vercel-env-values',
@@ -415,7 +415,8 @@ export const KFZ_RELEASE_PREVIEW_CHECKS: readonly KfzReleasePreviewCheck[] = [
 export const KFZ_RELEASE_STOP_CONDITIONS: readonly KfzReleaseStopCondition[] = [
   {
     id: 'out-of-order-merge',
-    label: 'Stopp, wenn ein Stack-PR auf die falsche Base gemerged würde.',
+    label:
+      'Stopp, wenn stacked PRs einzeln oder auf die falsche Base gemerged würden. Dieses Integrations-PR ist der einzige master-Merge.',
   },
   {
     id: 'checks-failed',
@@ -571,7 +572,7 @@ export function renderKfzReleaseHandoffMarkdown(): string {
     '',
     KFZ_RELEASE_HANDOFF_DISCLAIMER,
     '',
-    `Branch: \`${KFZ_RELEASE_HANDOFF_BRANCH}\` from \`${KFZ_RELEASE_HANDOFF_BASE_BRANCH}\` (PR #${KFZ_RELEASE_HANDOFF_BASE_PR}).`,
+    `Branch: \`${KFZ_RELEASE_HANDOFF_BRANCH}\` onto \`master\`. Contained stacked history through \`${KFZ_RELEASE_HANDOFF_BASE_BRANCH}\` (PR #${KFZ_RELEASE_HANDOFF_BASE_PR}).`,
     '',
     '## 1. Stacked PR dependency (merge-first)',
     '',

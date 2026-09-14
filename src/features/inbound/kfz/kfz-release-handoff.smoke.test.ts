@@ -67,6 +67,19 @@ function isGitAncestor(sha: string, of: string = 'HEAD'): boolean {
   }
 }
 
+function gitHistoryIsShallow(): boolean {
+  try {
+    return (
+      execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+      }).trim() === 'true'
+    )
+  } catch {
+    return false
+  }
+}
+
 const HIDDEN_SECRET = 'handoff-secret-do-not-print'
 const HIDDEN_SERVICE_ROLE = 'handoff-service-role-do-not-print'
 const HIDDEN_URL = 'https://handoff-secret-host.example.supabase.co'
@@ -92,6 +105,11 @@ describe('kfz release handoff contract', () => {
       45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
     ])
 
+    assert.equal(
+      gitHistoryIsShallow(),
+      false,
+      'Kfz handoff ancestor checks need a full git checkout (CI fetch-depth: 0)',
+    )
     assert.equal(isGitAncestor(KFZ_RELEASE_STACK_BASE_SHA), true)
     for (let index = 0; index < KFZ_RELEASE_STACKED_PRS.length; index += 1) {
       const entry = KFZ_RELEASE_STACKED_PRS[index]
