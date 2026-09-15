@@ -23,6 +23,10 @@ import {
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import {
+  getSessionKfzLandingFirstAttributionStorage,
+  resolveKfzLandingFirstAttribution,
+} from '@/features/inbound/kfz/lib/kfz-landing-first-attribution'
+import {
   createKfzLandingDraftController,
   emptyKfzLandingDraftValues,
   getSessionKfzLandingDraftStorage,
@@ -38,7 +42,6 @@ import {
 import {
   KFZ_LANDING_CONFIRMATION_BODY,
   KFZ_LANDING_CONFIRMATION_TITLE,
-  KFZ_LANDING_CONSENT_VERSION,
   KFZ_LANDING_CONTACT_EMAIL,
   KFZ_LANDING_CONTACT_PHONE,
   KFZ_LANDING_CONTACT_PHONE_E164,
@@ -195,6 +198,13 @@ export function KfzLandingForm({
   const submitStatus = kfzLandingSubmitStatus(phase)
   const submitStatusLabel = kfzLandingSubmitStatusLabel(phase)
 
+  function lockedAttribution(): KfzLandingAttribution {
+    return resolveKfzLandingFirstAttribution(
+      getSessionKfzLandingFirstAttributionStorage(),
+      attribution,
+    )
+  }
+
   function persistDraft(next: {
     screenId?: string
     values?: KfzLandingFormValues
@@ -208,6 +218,7 @@ export function KfzLandingForm({
     const nextScreenId = next.screenId ?? screenId
     const nextDocuments = next.documents ?? documents
     const nextNotice = next.notice === undefined ? documentReselectNotice : next.notice
+    lockedAttribution()
     draftController.write({
       submissionId,
       screenId: nextScreenId,
@@ -441,7 +452,7 @@ export function KfzLandingForm({
           phase: 'idle',
           inFlight: false,
           prepared,
-          attribution,
+          attribution: lockedAttribution(),
           submit: submitInquiry,
           timeoutMs: submitTimeoutMs,
         })
@@ -854,7 +865,6 @@ export function KfzLandingForm({
                 Ihre Angaben verwenden wir ausschließlich zur Bearbeitung Ihrer Anfrage.
                 Unterlagen bleiben optional und werden nur benötigt, wenn sie die persönliche
                 Prüfung erleichtern. Artjom oder Vera prüft manuell — kein Sofortpreis.
-                Consent-Stand: {KFZ_LANDING_CONSENT_VERSION}.
               </p>
             </div>
           ) : null}

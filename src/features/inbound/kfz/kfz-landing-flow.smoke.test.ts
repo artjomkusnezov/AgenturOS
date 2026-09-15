@@ -549,6 +549,8 @@ describe('kfz landing approved redesign content', () => {
     assert.match(form, /createKfzLandingSubmissionId/)
     assert.match(form, /draftController/)
     assert.doesNotMatch(form, /href="\/datenschutz"/)
+    assert.doesNotMatch(form, /Consent-Stand/)
+    assert.doesNotMatch(form, /kfz-lp-2026-09-01/)
   })
 
   it('keeps the camera picker and says upload is optional', () => {

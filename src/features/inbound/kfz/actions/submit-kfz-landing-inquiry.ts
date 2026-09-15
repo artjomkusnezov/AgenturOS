@@ -6,6 +6,7 @@ import {
   formatKfzConfigError,
   getInboundKfzRuntimeConfig,
   listMissingInboundKfzEnvFields,
+  KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
 } from '@/features/inbound/kfz/config/inbound-kfz-config'
 import { readKfzInboundDocumentsFromFiles } from '@/features/inbound/kfz/lib/kfz-document-storage'
 import { logKfzInbound } from '@/features/inbound/kfz/lib/kfz-inbound-log'
@@ -82,7 +83,7 @@ export async function submitKfzLandingInquiryAction(
     logKfzInbound('landing_config_missing', { fields: missing.join(',') })
     return {
       ok: false,
-      error: formatKfzConfigError(missing),
+      error: formatKfzConfigError(),
       code: 'config_missing',
       retryable: true,
     }
@@ -92,7 +93,7 @@ export async function submitKfzLandingInquiryAction(
   if (!config) {
     return {
       ok: false,
-      error: 'Kfz-Inbound ist nicht konfiguriert.',
+      error: KFZ_PUBLIC_SUBMIT_UNAVAILABLE_ERROR,
       code: 'config_missing',
       retryable: true,
     }

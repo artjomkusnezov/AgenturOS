@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { KFZ_ANALYTICS_CONSENT_VERSION } from '@/features/inbound/kfz/lib/kfz-analytics-privacy-boundary'
 import type { KfzAnalyticsConsentState } from '@/features/inbound/kfz/types/kfz-analytics'
 
 type KfzAnalyticsConsentBannerProps = {
@@ -24,8 +23,7 @@ export function KfzAnalyticsConsentBanner({
         <p className="text-xs leading-relaxed text-zinc-500">
           {consent === 'granted'
             ? 'Nutzungsmessung aktiv (anonym, ohne Formularantworten).'
-            : 'Nutzungsmessung aus. Es werden keine Messereignisse gespeichert.'}{' '}
-          Stand: {KFZ_ANALYTICS_CONSENT_VERSION}.
+            : 'Nutzungsmessung aus. Es werden keine Messereignisse gespeichert.'}
         </p>
         {consent === 'granted' ? (
           <Button
@@ -54,11 +52,10 @@ export function KfzAnalyticsConsentBanner({
         Optional und nur nach Ihrer Wahl. Gemessen werden Besuche, grobe Herkunft
         und Referrer-Kategorie, gewählter Weg, Schritte, Übergänge, Abbrüche und
         aktive Zeit. Nicht gespeichert werden Formularantworten, Name, Telefon,
-        E-Mail, Kennzeichen, Fahrzeugdaten, Dateien, Object-Keys, freie Texte,
-        IP-Adresse oder volle URLs.
+        E-Mail, Kennzeichen, Fahrzeugdaten, Dateien, freie Texte oder
+        Internetadressen.
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
-        Technische Grenze für spätere rechtliche Prüfung — keine Rechtsaussage.
         Ohne Zustimmung wird nichts gemessen.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
