@@ -1,6 +1,6 @@
 # Cursor Cloud Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 
 ## Title
@@ -116,3 +116,6 @@ One Cursor-created branch and one PR with implementation, tests, exact browser e
 
 ## Definition of done
 An employee opening AgenturOS immediately sees the real count of open Kfz leads on the dashboard, can open Leads from the first child under Vorgänge, inspect a usable Kfz lead and its existing source/document facts, and work its minimal status without breaking Eingang or existing Vorgänge.
+
+CONTROLLER_AGENT_ID: bc-a8befae3-ff05-410d-a696-03d69aa86842
+CONTROLLER_STARTED_AT: 2026-09-15T13:36:36Z
