@@ -2,7 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from 'react'
 
-import { KFZ_DOCUMENT_PREVIEW_REVIEW_PATH } from '@/features/inbound/kfz/types/kfz-document-storage'
+import { KFZ_DOCUMENT_REVIEW_PATH } from '@/features/inbound/kfz/types/kfz-document-storage'
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace'
 import {
   applyPreviewLeadStatus,
@@ -37,7 +37,7 @@ export function LeadsPreviewApp({ selectedItemId, status }: LeadsPreviewAppProps
         selectedItemId,
         status,
         basePath: KFZ_LEADS_PREVIEW_PATH,
-        documentReviewBasePath: KFZ_DOCUMENT_PREVIEW_REVIEW_PATH,
+        documentReviewBasePath: KFZ_DOCUMENT_REVIEW_PATH,
         inboxHrefBase: '/dev/inbox',
         usesPreviewFixtures: true,
       }),
