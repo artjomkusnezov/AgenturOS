@@ -1,123 +1,118 @@
 # Cursor Cloud Task
 
-STATUS: STARTED
-STARTING_REF: cursor/kfz-launch-merge-5f6f
+STATUS: READY
+STARTING_REF: master
 
 ## Title
-AGENTUROS / KFZ — FINAL PRODUCTION LAUNCH READINESS
+AGENTUROS — LEADS WORKSPACE + DASHBOARD INTEGRATION V1
 
 ## Priority
-P0. Finish the existing Kfz launch. Do not build new AgenturOS features.
+P0. Make Kfz leads operationally visible in the employee UI. No unrelated AgenturOS work.
 
-## Source of truth
-Repository: artjomkusnezov/AgenturOS
-Integration PR: #62
-Branch/ref: cursor/kfz-launch-merge-5f6f
-PR #62 is the only Kfz integration PR to consider for master. Do not merge older stacked Kfz PRs separately.
+## Context
+Owner explicitly approved this task on 2026-09-15 after reviewing the current AgenturOS dashboard.
+Kfz production stack is already merged to master and the four required Kfz Supabase migrations have been applied by the owner-authorized launch workflow.
+
+## Product decision
+A Kfz website submission is first a Lead, not automatically a full Vorgang.
+Use the existing Kfz/inbox persistence as source of truth. Do NOT create a parallel CRM or duplicate customer/inquiry storage.
 
 ## Goal
-Bring the already-built Kfz stack to a proven production-launch handoff. The critical product path is:
-/kfz → persistence/Supabase → inbox_items → authenticated /app/inbox → usable Kfz inquiry → authorized private document.
+Create one obvious employee workflow for Kfz leads:
+public /kfz submission → existing persisted inquiry/inbox item → Leads workspace → qualify/work lead → existing AgenturOS workflow.
 
-The work is not done merely because automated tests pass. The remaining priority is to prove that a real employee can receive and work a Kfz inquiry in the production-equivalent path.
+## Required UI
 
-## Required work
+### 1. Left navigation
+Under "Vorgänge", add "Leads" as the FIRST child item, before Aufgaben.
+It must navigate to the real employee leads workspace.
+Keep existing navigation responsive and visually consistent.
 
-### 1. Final integration audit
-- Rebase/merge current master only if needed on the Cursor-created working branch; do not write master.
-- Verify PR #62 still contains the complete intended Kfz release stack and no required Kfz work exists only in older stacked PRs.
-- Verify /kfz public route, six entry branches, questionnaire, consent, submit/retry, idempotency, private documents, inbox creation/review, UTM/first-touch and privacy-safe analytics.
-- Fix only launch-blocking Kfz defects. No redesign and no unrelated features.
-- Run npm run test:inbound, npx tsc --noEmit, npm run lint, npm run build and relevant Kfz/Supabase preflight checks. Report exact results.
+Target order:
+Vorgänge
+- Leads
+- Aufgaben
+- Angebote
+- Schäden
+- Wiedervorlagen
+- existing remaining children
 
-### 2. Prove the employee inbox experience
-Audit the real authenticated /app/inbox, not only /dev/inbox.
-A Kfz inquiry must expose enough existing data for an employee to process it without database/dev tools, including where already captured: customer/contact, selected Kfz branch, vehicle/questionnaire information, coverage/start/history/damage information, missing information, uploaded documents, notes/task/status where already supported, and operational source/UTM where intended.
-If launch-critical stored information is not visible, make the minimum presentation fix. Do not create a new CRM.
+### 2. Dashboard KPI
+Replace the top KPI card "LETZTE INFORMATION" with "OFFENE LEADS".
+Show a real count derived from existing persisted Kfz lead/inbox facts, never a demo number.
+Click opens Leads.
+If zero, show a useful zero state, not fake content.
 
-### 3. Remove dev-only proof assumptions
-Inventory every launch proof that previously depended on /dev/inbox, /dev/kfz-readiness, /dev/kfz-document, mocks, synthetic-only persistence or local-only assumptions.
-For each record: production equivalent, proven YES/NO, blocker.
-A /dev route is not accepted as production launch proof.
+The top KPI row should read conceptually:
+Neue Eingänge | Braucht Aufmerksamkeit | Aktive Vorgänge | Offene Leads
 
-### 4. Production configuration contract
-Verify the exact required migrations and order. Expected set:
-- 20260906120000_inbox_website_channel_source.sql
-- 20260909140000_kfz_funnel_analytics_events.sql
-- 20260910120000_kfz_inbound_documents_bucket.sql
-- 20260911120000_kfz_funnel_analytics_persistence_contract.sql
-Confirm completeness from code; do not guess.
-List every required Vercel production/preview environment variable by NAME ONLY, with purpose, required/optional, scope, and a verification method that never exposes secret values.
-Do not read or print secret values and do not add paid services.
+### 3. Leads workspace
+Create /app/leads (or the repository's canonical equivalent).
+Reuse existing Kfz inquiry/inbox data. No second lead database unless absolutely required by an existing schema contract.
 
-### 5. Minimize owner-only work
-For every action that genuinely requires owner credentials/approval, provide an exact click-by-click checklist: where to go, what to set/apply, what not to expose, how to verify, and what success looks like. Target less than 10–15 minutes of owner work. Do not ask the owner to inspect code.
+Each lead should expose the operational facts already captured and safe for the employee:
+- received time
+- lead status
+- Kfz branch/intent
+- customer/contact
+- vehicle/questionnaire summary
+- coverage/start/history/damage facts where captured
+- missing information
+- document presence/access through the existing authorized private-document path
+- source + UTM/first-touch where stored
 
-### 6. Merge/deploy gate
-Do not merge, deploy, mutate production DB, or change secrets without explicit authorization available to this run.
-Prepare a single gate:
-PR #62 MERGEABLE
-CI GREEN
-MIGRATIONS READY
-ENV NAMES KNOWN
-OWNER ACTION REQUIRED
-SAFE TO MERGE
-SAFE TO DEPLOY AFTER CONFIG
-All YES/NO with evidence.
-Do not merge PR #61 or older stacked PRs separately.
+Do not expose raw JSON as the normal UI.
 
-### 7. Production smoke plan/evidence
-If production execution is explicitly authorized and credentials are available, perform ONE clearly synthetic Kfz submission through public /kfz and verify:
-- success confirmation;
-- exactly one persisted inquiry;
-- exactly one relevant inbox item;
-- authenticated employee sees and opens it in /app/inbox;
-- operational Kfz/contact details are usable;
-- synthetic private document is accessible only through authorized path and no public bucket URL is exposed;
-- UTM/first-touch persists;
-- privacy-safe analytics contains no questionnaire answers, names, email, phone or other PII.
-Use the safest supported proof for retry/idempotency; do not intentionally damage production.
-If production execution is not authorized/possible, stop at the gate and provide the exact one-shot smoke procedure instead of pretending it passed.
+### 4. Minimal lead lifecycle
+Implement the smallest useful lifecycle compatible with existing storage:
+Neu → Kontaktiert → Termin/Angebot → Gewonnen / Verloren.
+If existing status infrastructure can represent this, reuse it.
+If persistence genuinely needs an additive migration, create it on the Cursor branch and document it; DO NOT apply production migrations in this task.
+Do not invent scoring, automation, outbound messages, Meta API, WhatsApp API or CRM duplication.
 
-### 8. Desktop/mobile launch smoke
-Browser-check production-equivalent /kfz on desktop and about 390x844 mobile: landing, all six entries, questionnaire, validation, consent, submit and confirmation. Fix launch blockers only.
-Verify no dev/test copy, placeholders, broken images/dead CTAs, internal terminology or broken legal/privacy links.
+### 5. Relationship to Eingang/Vorgang
+A new Kfz submission may still exist in Eingang as today, but Leads must be the dedicated work surface.
+Do not silently create a Vorgang just because a lead exists.
+Where an existing supported action can promote/link the inquiry to a Vorgang/task/offer, reuse it. Otherwise show a truthful next action without inventing backend semantics.
 
-### 9. Marketing handoff only
-Do not implement Meta Ads.
-Document the stable successful-submit point/event suitable for a future Meta Lead conversion and verify UTM/first-touch survives the funnel. Do not add Pixel/CAPI unless already present and explicitly in scope. No PII in funnel analytics.
+### 6. Browser proof
+Use a synthetic/local or preview-safe Kfz lead.
+Prove on desktop and about 390x844:
+- Leads appears under Vorgänge as first child
+- Offene Leads replaces Letzte Information and count is real
+- KPI click opens Leads
+- Leads list opens a Kfz lead
+- captured Kfz/contact/source facts are readable
+- private document path remains authorized
+- status change persists after reload if implemented
+- Eingang and existing Vorgänge remain functional
 
-### 10. Controller cleanup
-This task supersedes the stale privacy-safe Kfz bottleneck-summary task. Do not continue analytics merely because the old TASK.md said STARTED. Preserve valid completed analytics code, but the sole priority is Kfz production launch readiness.
+No feature is considered available without browser evidence.
 
-## Required final artifact
-Create/update KFZ_PRODUCTION_LAUNCH_STATUS.md containing only:
-STATUS: READY / BLOCKED / LIVE
-PUBLIC URL
-PR
-COMMIT
-TESTS
-DESKTOP PASS/FAIL
-MOBILE PASS/FAIL
-SUPABASE MIGRATIONS APPLIED/PENDING
-PRODUCTION ENV READY/PENDING (names only; never values)
-REAL /KFZ SUBMISSION PASS/FAIL/NOT YET AUTHORIZED
-REAL /APP/INBOX PASS/FAIL/NOT YET AUTHORIZED
-PRIVATE DOCUMENT PASS/FAIL/NOT YET AUTHORIZED
-UTM PASS/FAIL
-DUPLICATE PROTECTION PASS/FAIL
-PRIVACY PASS/FAIL
-BLOCKERS
-OWNER ACTIONS
-NEXT ACTION: exactly one next action
+## Tests / quality
+Run the full relevant suite including at minimum:
+- npm run test:inbound
+- npx tsc --noEmit
+- npm run lint
+- npm run build
+- new deterministic tests for lead selection/count/status/navigation
+Report exact numbers/results.
+
+## Non-goals / safety
+- No Meta Ads implementation
+- No WhatsApp API
+- No auto-replies
+- No unrelated AgenturOS features
+- No new CRM/customer master
+- No production deploy
+- No production DB mutation
+- No secrets
+- No master/main write
+- No force push
+- Do not weaken Kfz privacy, RLS, private storage or analytics protections
+
+## Deliverable
+One Cursor-created branch and one PR with implementation, tests, exact browser evidence and a concise migration note if an additive migration is required.
 
 ## Definition of done
-Kfz is DONE only when public /kfz works, a synthetic production customer can submit, the inquiry persists, the employee sees exactly one usable Kfz inquiry in authenticated /app/inbox, private documents remain authorized, UTM is retained, retry does not duplicate, privacy-safe analytics contains no PII, and desktop/mobile smoke passes.
-If owner authorization/config is the only blocker, report STATUS: BLOCKED with the smallest possible owner checklist.
-Do not start another product task after this task.
-
-## Safety
-Cursor-created branch only. No master write, merge, auto-merge, production deploy/database mutation, secret value reads/changes, customer contact/data, Meta/WhatsApp API, auto-replies, paid services, force push or destructive git unless a later explicit owner authorization specifically permits the relevant production action.
-
-CONTROLLER_AGENT_ID: bc-d932f206-2f10-4dfd-b683-329cf37f2012
-CONTROLLER_STARTED_AT: 2026-09-14T23:10:10Z
+An employee opening AgenturOS immediately sees the real count of open Kfz leads on the dashboard, can open Leads from the first child under Vorgänge, inspect a usable Kfz lead and its existing source/document facts, and work its minimal status without breaking Eingang or existing Vorgänge.
