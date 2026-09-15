@@ -18,6 +18,7 @@ type AppSidebarProps = {
   className?: string
   caseViews?: AppCaseViewNavItem[]
   badgeCounts?: NavigationBadgeCounts
+  resolveHref?: (href: string) => string
 }
 
 export function AppSidebar({
@@ -26,6 +27,7 @@ export function AppSidebar({
   className = '',
   caseViews = [],
   badgeCounts,
+  resolveHref,
 }: AppSidebarProps) {
   return (
     <aside className={`${aosAppSidebarClassName} ${className}`}>
@@ -37,7 +39,11 @@ export function AppSidebar({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3">
-        <AppNavigation caseViews={caseViews} badgeCounts={badgeCounts} />
+        <AppNavigation
+          caseViews={caseViews}
+          badgeCounts={badgeCounts}
+          resolveHref={resolveHref}
+        />
       </div>
 
       <div className={`${aosSidebarUserClassName} aos-sidebar-user-card`}>

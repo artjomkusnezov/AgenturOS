@@ -7,6 +7,7 @@ import { AppNavIconGlyph } from '@/components/app/app-icons'
 import { NavigationBadge } from '@/components/app/navigation-badge'
 import {
   appNavigationGroups,
+  buildVorgaengeChildNavItems,
   isCaseViewNavActive,
   isNavItemActive,
   type AppCaseViewNavItem,
@@ -33,6 +34,8 @@ type AppNavigationProps = {
   id?: string
   caseViews?: AppCaseViewNavItem[]
   badgeCounts?: NavigationBadgeCounts
+  /** Preview-only: rewrite production /app hrefs onto a local surface. */
+  resolveHref?: (href: string) => string
 }
 
 function NavLink({
@@ -40,18 +43,21 @@ function NavLink({
   pathname,
   badgeCounts,
   onNavigate,
+  resolveHref,
 }: {
   item: AppNavItem
   pathname: string
   badgeCounts: NavigationBadgeCounts
   onNavigate?: () => void
+  resolveHref?: (href: string) => string
 }) {
-  const isActive = isNavItemActive(pathname, item.href)
+  const href = resolveHref ? resolveHref(item.href) : item.href
+  const isActive = isNavItemActive(pathname, href)
   const badge = getMainNavBadge(item.href, badgeCounts)
 
   return (
     <Link
-      href={item.href}
+      href={href}
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
       className={`${aosNavLinkClassName} w-full ${isActive ? aosNavLinkActiveClassName : 'hover:bg-zinc-50 hover:text-zinc-900'}`}
@@ -86,7 +92,10 @@ function CaseViewNavLink({
   badgeCounts: NavigationBadgeCounts
   onNavigate?: () => void
 }) {
-  const isActive = isCaseViewNavActive(pathname, searchParams, item.key)
+  const isActive =
+    item.key === 'leads'
+      ? pathname === item.href || pathname.startsWith(`${item.href}/`)
+      : isCaseViewNavActive(pathname, searchParams, item.key)
   const icon = resolveWorkspaceViewNavIcon(item.icon)
   const badge = getCaseViewNavBadge(item.key, item.name, badgeCounts)
 
@@ -117,10 +126,12 @@ export function AppNavigation({
   id,
   caseViews = [],
   badgeCounts,
+  resolveHref,
 }: AppNavigationProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const counts = badgeCounts ?? EMPTY_NAVIGATION_BADGE_COUNTS
+  const vorgaengeChildren = buildVorgaengeChildNavItems(caseViews, resolveHref)
 
   return (
     <nav id={id} aria-label="Hauptnavigation" className="flex flex-col gap-0.5">
@@ -135,9 +146,10 @@ export function AppNavigation({
                   pathname={pathname}
                   badgeCounts={counts}
                   onNavigate={onNavigate}
+                  resolveHref={resolveHref}
                 />
-                {item.href === '/app/cases' && caseViews.length > 0
-                  ? caseViews.map((view) => (
+                {item.href === '/app/cases'
+                  ? vorgaengeChildren.map((view) => (
                       <CaseViewNavLink
                         key={view.key}
                         item={view}

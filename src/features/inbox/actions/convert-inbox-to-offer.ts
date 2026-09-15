@@ -40,6 +40,7 @@ export async function convertInboxToOfferAction(
 
   revalidatePath('/app/inbox')
   revalidatePath('/app/cases')
+  revalidatePath('/app/leads')
 
   return {
     success: true,

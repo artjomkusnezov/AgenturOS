@@ -25,6 +25,7 @@ type MobileNavigationProps = {
   onOpenCapture: (trigger: HTMLButtonElement) => void
   caseViews?: AppCaseViewNavItem[]
   badgeCounts?: NavigationBadgeCounts
+  resolveHref?: (href: string) => string
 }
 
 export function MobileNavigation({
@@ -34,6 +35,7 @@ export function MobileNavigation({
   onOpenCapture,
   caseViews = [],
   badgeCounts,
+  resolveHref,
 }: MobileNavigationProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -107,7 +109,12 @@ export function MobileNavigation({
               onClose()
             }}
           />
-          <AppNavigation onNavigate={onClose} caseViews={caseViews} badgeCounts={badgeCounts} />
+          <AppNavigation
+            onNavigate={onClose}
+            caseViews={caseViews}
+            badgeCounts={badgeCounts}
+            resolveHref={resolveHref}
+          />
         </div>
 
         <div className={`${aosSidebarUserClassName} pb-[max(1rem,env(safe-area-inset-bottom))]`}>
