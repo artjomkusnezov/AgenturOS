@@ -39,7 +39,9 @@ type ListTasksFromCasesResult =
   | { success: true; openTasks: Task[]; completedTasks: Task[] }
   | RepositoryError
 
-type TaskFromCaseResult = { success: true; task: Task } | RepositoryError
+type TaskFromCaseResult =
+  | { success: true; task: Task; sourceInboxItemId: string | null }
+  | RepositoryError
 async function getAuthenticatedUserId(): Promise<
   { success: true; userId: string } | RepositoryError
 > {
@@ -272,6 +274,7 @@ export async function getTaskCaseBySourceTaskIdAsTask(
     return {
       success: true,
       task: mapCaseRecordToTask(caseRow, taskRow?.case_id ?? null),
+      sourceInboxItemId: caseRow.source_inbox_item_id,
     }
   } catch {
     return {

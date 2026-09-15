@@ -1,0 +1,83 @@
+'use client'
+
+import { Button } from '@/components/ui/button'
+import type { KfzAnalyticsConsentState } from '@/features/inbound/kfz/types/kfz-analytics'
+
+type KfzAnalyticsConsentBannerProps = {
+  consent: KfzAnalyticsConsentState
+  onGrant: () => void
+  onDecline: () => void
+}
+
+export function KfzAnalyticsConsentBanner({
+  consent,
+  onGrant,
+  onDecline,
+}: KfzAnalyticsConsentBannerProps) {
+  if (consent !== 'unknown') {
+    return (
+      <div
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        data-kfz-analytics-consent={consent}
+      >
+        <p className="text-xs leading-relaxed text-zinc-500">
+          {consent === 'granted'
+            ? 'Nutzungsmessung aktiv (anonym, ohne Formularantworten).'
+            : 'Nutzungsmessung aus. Es werden keine Messereignisse gespeichert.'}
+        </p>
+        {consent === 'granted' ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 self-start sm:self-auto"
+            data-kfz-analytics-consent-withdraw="true"
+            onClick={onDecline}
+          >
+            Messung beenden
+          </Button>
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="rounded-2xl border border-[#d7e0ea] bg-[#f7fafc] px-4 py-3"
+      data-kfz-analytics-consent="unknown"
+      role="region"
+      aria-label="Nutzungsmessung"
+    >
+      <p className="text-sm font-semibold text-zinc-900">Nutzung dieser Seite messen?</p>
+      <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">
+        Optional und nur nach Ihrer Wahl. Gemessen werden Besuche, grobe Herkunft
+        und Referrer-Kategorie, gewählter Weg, Schritte, Übergänge, Abbrüche und
+        aktive Zeit. Nicht gespeichert werden Formularantworten, Name, Telefon,
+        E-Mail, Kennzeichen, Fahrzeugdaten, Dateien, freie Texte oder
+        Internetadressen.
+      </p>
+      <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+        Ohne Zustimmung wird nichts gemessen.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <Button
+          type="button"
+          variant="secondary"
+          className="min-h-11"
+          data-kfz-analytics-consent-grant="true"
+          onClick={onGrant}
+        >
+          Messung erlauben
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11"
+          data-kfz-analytics-consent-decline="true"
+          onClick={onDecline}
+        >
+          Ablehnen
+        </Button>
+      </div>
+    </div>
+  )
+}

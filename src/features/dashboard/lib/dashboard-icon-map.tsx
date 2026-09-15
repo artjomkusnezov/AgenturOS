@@ -23,6 +23,10 @@ import {
   type DashboardAccent,
 } from '@/features/dashboard/components/dashboard-icons'
 import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
+import {
+  getManualCaptureOriginKindLabel,
+  readManualCaptureOriginKind,
+} from '@/features/inbound/manual/lib/manual-capture-origin'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 export type DashboardVisual = {
@@ -37,8 +41,7 @@ const ICON_KPI = 'h-5 w-5'
 const ICON_SM = 'h-3.5 w-3.5'
 
 /**
- * Vorbereitete Quellschlüssel. Nur `manual_text` und `universal_capture`
- * werden aktuell aus dem Datenmodell angezeigt.
+ * Vorbereitete Quellschlüssel für Inbox- und Dashboard-Anzeige.
  */
 export type PreparedInboxSourceKey =
   | InboxItem['source']
@@ -94,6 +97,11 @@ const PREPARED_INBOX_SOURCE_VISUALS: Record<PreparedInboxSourceKey, DashboardVis
     accent: 'green',
     icon: <DashboardIconMic className={ICON_LG} />,
   },
+  website: {
+    label: 'Website',
+    accent: 'orange',
+    icon: <DashboardIconFileText className={ICON_LG} />,
+  },
 }
 
 export function resolveInboxSourceVisual(source: InboxItem['source']): DashboardVisual {
@@ -110,6 +118,36 @@ export function resolveInboxSourceVisual(source: InboxItem['source']): Dashboard
     accent: 'neutral',
     icon: <DashboardIconInbox className={ICON_LG} />,
   }
+}
+
+export function resolveInboxItemSourceVisual(
+  item: Pick<InboxItem, 'source' | 'channel' | 'inbound_metadata'>,
+): DashboardVisual {
+  if (item.channel === 'manual' || item.source === 'manual_text') {
+    const originKind = readManualCaptureOriginKind(item.inbound_metadata)
+    if (originKind === 'phone_call') {
+      return {
+        ...PREPARED_INBOX_SOURCE_VISUALS.phone,
+        label: getManualCaptureOriginKindLabel(originKind),
+      }
+    }
+
+    if (originKind === 'pasted_email') {
+      return {
+        ...PREPARED_INBOX_SOURCE_VISUALS.email,
+        label: getManualCaptureOriginKindLabel(originKind),
+      }
+    }
+
+    if (originKind === 'personal_note') {
+      return {
+        ...PREPARED_INBOX_SOURCE_VISUALS.manual_text,
+        label: getManualCaptureOriginKindLabel(originKind),
+      }
+    }
+  }
+
+  return resolveInboxSourceVisual(item.source)
 }
 
 export function resolveActivityKindVisual(kind: TaskActivityKind): DashboardVisual {

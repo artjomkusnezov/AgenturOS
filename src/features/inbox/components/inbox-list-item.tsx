@@ -3,14 +3,17 @@
 import { useActionState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import { resolveInboxItemSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import type { DashboardAccent } from '@/features/dashboard/components/dashboard-icons'
 import { processInboxItemAction } from '@/features/inbox/actions/process-inbox-item'
 import { reopenInboxItemAction } from '@/features/inbox/actions/reopen-inbox-item'
-import { truncateInboxContentPreview } from '@/features/inbox/lib/format-inbox-content'
-import { getInboxSourceLabel } from '@/features/inbox/lib/inbox-source'
-import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
-import { formatInboxListDate, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
+import { InboxStatusChip } from '@/features/inbox/components/inbox-status-chip'
+import type { InboxWorkQueueFilter } from '@/features/inbox/lib/inbox-factual-work-queue'
+import { matchInboxItemSearch } from '@/features/inbox/lib/inbox-factual-search'
+import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
+import type { InboxSourceFilter } from '@/features/inbox/lib/inbox-source-filter'
+import type { KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
+import { isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import type { InboxItem, InboxItemMutationState } from '@/features/inbox/types/inbox-item'
 import {
   aosListRowClassName,
@@ -27,11 +30,38 @@ type InboxListItemProps = {
   item: InboxItem
   isSelected: boolean
   subdued?: boolean
+  linkedTaskId?: string | null
   onSelect: (itemId: string) => void
   memberNameMap?: Record<string, string>
+  phaseFilter?: KfzWorkQueueFilter
+  queueFilter?: InboxWorkQueueFilter
+  sourceFilter?: InboxSourceFilter
+  searchQuery?: string
+  hrefBasePath?: string | null
+  allowLocalFixtureFacts?: boolean
 }
 
 const initialState: InboxItemMutationState = {}
+
+function InboxSearchExcerpt({ excerpt, query }: { excerpt: string; query: string }) {
+  const needle = query.trim()
+  if (!needle) {
+    return excerpt
+  }
+
+  const at = excerpt.toLocaleLowerCase('de-DE').indexOf(needle.toLocaleLowerCase('de-DE'))
+  if (at < 0) {
+    return excerpt
+  }
+
+  return (
+    <>
+      {excerpt.slice(0, at)}
+      <mark>{excerpt.slice(at, at + needle.length)}</mark>
+      {excerpt.slice(at + needle.length)}
+    </>
+  )
+}
 
 const CHANNEL_ACCENT_CLASS: Record<DashboardAccent, string> = {
   blue: 'aos-inbox-channel--blue',
@@ -116,16 +146,31 @@ export function InboxListItem({
   item,
   isSelected,
   subdued = false,
+  linkedTaskId = null,
   onSelect,
-  memberNameMap = {},
+  phaseFilter = 'all',
+  queueFilter = 'all',
+  sourceFilter = 'all',
+  searchQuery = '',
+  hrefBasePath = null,
+  allowLocalFixtureFacts = false,
 }: InboxListItemProps) {
   const isUnprocessed = isInboxItemUnprocessed(item)
-  const creatorName = resolveInboxAttributionLabel(item, memberNameMap)
-  const sourceVisual = resolveInboxSourceVisual(item.source)
+  const sourceVisual = resolveInboxItemSourceVisual(item)
+  const card = presentUnifiedInboxCard(item, {
+    linkedTaskId,
+    phase: phaseFilter,
+    queue: queueFilter,
+    source: sourceFilter,
+    q: searchQuery,
+    basePath: hrefBasePath,
+    allowLocalFixtureFacts,
+  })
+  const searchHit = searchQuery ? matchInboxItemSearch(item, searchQuery) : null
 
   return (
     <div
-      className={`${aosListRowClassName} ${
+      className={`${aosListRowClassName} items-start py-2 ${
         isSelected
           ? aosListSelectedClassName
           : subdued
@@ -155,22 +200,71 @@ export function InboxListItem({
           <p
             className={`min-w-0 flex-1 truncate text-[13px] leading-snug font-medium ${aosWsTextPrimaryClassName}`}
           >
-            {truncateInboxContentPreview(item.content)}
+            {card.headline}
           </p>
-          {isUnprocessed ? <span className="aos-inbox-chip-new">Neu</span> : null}
+          <InboxStatusChip
+            label={card.workQueue.explicitStatusLabel}
+            kind={
+              card.workQueue.explicitStatus === 'handled'
+                ? 'handled'
+                : card.workQueue.explicitStatus === 'follow_up'
+                  ? 'gaps'
+                  : card.workQueue.explicitStatus === 'in_review'
+                    ? 'review'
+                    : 'new'
+            }
+          />
         </div>
 
         <p className={`mt-0.5 truncate text-[11px] leading-none ${aosWsTextMetaClassName}`}>
-          <span>{getInboxSourceLabel(item.source)}</span>
+          <span>{card.sourceLabel}</span>
           <span className="mx-1" aria-hidden="true">
             ·
           </span>
-          <span>{creatorName}</span>
+          <span>{card.workQueue.timeGroupLabel}</span>
           <span className="mx-1" aria-hidden="true">
             ·
           </span>
-          <span>{formatInboxListDate(item.created_at)}</span>
+          <span>{card.receivedAtLabel}</span>
         </p>
+        <div className="aos-inbox-queue-copy">
+          <p className="aos-inbox-queue-line">{card.customerContact}</p>
+          <p className="aos-inbox-queue-line">{card.requestSummary}</p>
+          <p className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+            <span
+              className={
+                card.workQueue.hasContactedHistoryEvent
+                  ? 'aos-inbox-chip-handled'
+                  : 'aos-inbox-chip-new'
+              }
+            >
+              {card.workQueue.contactedLabel}
+            </span>
+            {card.workQueue.missingInformation || card.missingCount > 0 ? (
+              <span className="aos-inbox-chip-gaps">{card.missingInformationLabel}</span>
+            ) : null}
+            {card.workQueue.preferredReplyChannelLabel ? (
+              <span className="aos-inbox-chip-review">
+                {card.workQueue.preferredReplyChannelLabel}
+              </span>
+            ) : null}
+          </p>
+          {searchHit ? (
+            <p className="aos-inbox-queue-line aos-inbox-search-match">
+              {searchHit.primaryMatch.fieldLabel}:{' '}
+              <InboxSearchExcerpt
+                excerpt={searchHit.primaryMatch.excerpt}
+                query={searchQuery}
+              />
+            </p>
+          ) : null}
+          <p className="aos-inbox-queue-line">
+            Letzte Aktion: {card.workQueue.lastHumanActionLabel}
+          </p>
+          {card.nextActionLabel ? (
+            <p className="aos-inbox-queue-next">{card.nextActionLabel}</p>
+          ) : null}
+        </div>
       </button>
     </div>
   )

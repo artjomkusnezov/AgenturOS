@@ -1,7 +1,10 @@
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
+import { getInboxAiProposal } from '@/features/ai-inbound/services/get-inbox-ai-proposal'
+import type { InboxAiProposal } from '@/features/ai-inbound/types'
 import { InboxWorkspace } from '@/features/inbox/components/inbox-workspace'
 import { enrichInboxAttachmentsWithMediaUrls } from '@/features/inbox/lib/enrich-inbox-attachments'
-import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
+import { parseInboxItemView } from '@/features/inbox/lib/inbox-item-view'
+import { presentAuthenticatedKfzInbox } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import {
   listFilesForInboxItem,
   listInboxItemsForCurrentUser,
@@ -11,11 +14,18 @@ import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-nam
 import { aosAlertErrorClassName } from '@/lib/design-system'
 
 type InboxPageProps = {
-  searchParams: Promise<{ item?: string }>
+  searchParams: Promise<{
+    item?: string
+    phase?: string
+    queue?: string
+    source?: string
+    q?: string
+    view?: string
+  }>
 }
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const { item } = await searchParams
+  const { item, phase, queue, source, q, view } = await searchParams
   const [result, membersResult] = await Promise.all([
     listInboxItemsForCurrentUser(),
     listCurrentAgencyMembers(),
@@ -33,19 +43,34 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     ? buildMemberNameMap(membersResult.members)
     : {}
 
+  const inboxView = presentAuthenticatedKfzInbox({
+    unprocessedItems: result.unprocessedItems,
+    processedItems: result.processedItems,
+    taskRelationsByItemId: result.taskRelationsByItemId,
+    selectedItemId: item,
+    phase,
+    queue,
+    source,
+    q,
+    view,
+  })
   const allItems = [...result.unprocessedItems, ...result.processedItems]
-  const selectedItemId =
-    item && isValidInboxItemId(item) && allItems.some((entry) => entry.id === item)
-      ? item
-      : null
+  const selectedItemId = inboxView.selectedItemId
 
   let attachments: InboxLinkedFile[] = []
+  let aiProposal: InboxAiProposal | null = null
 
   if (selectedItemId) {
+    const selectedItem = allItems.find((entry) => entry.id === selectedItemId) ?? null
     const attachmentsResult = await listFilesForInboxItem(selectedItemId)
 
     if (attachmentsResult.success) {
       attachments = await enrichInboxAttachmentsWithMediaUrls(attachmentsResult.files)
+    }
+
+    if (selectedItem) {
+      const proposalResult = await getInboxAiProposal(selectedItem)
+      aiProposal = proposalResult.proposal
     }
   }
 
@@ -55,8 +80,16 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       processedItems={result.processedItems}
       taskRelationsByItemId={result.taskRelationsByItemId}
       selectedItemId={selectedItemId}
+      phaseFilter={inboxView.phaseFilter}
+      queueFilter={inboxView.queueFilter}
+      sourceFilter={inboxView.sourceFilter}
+      searchQuery={inboxView.searchQuery}
+      itemView={parseInboxItemView(view)}
+      queueMeta={inboxView.metaLabel}
       attachments={attachments}
       memberNameMap={memberNameMap}
+      aiProposal={aiProposal}
+      enableManualCapture
     />
   )
 }

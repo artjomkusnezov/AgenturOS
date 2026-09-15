@@ -262,6 +262,7 @@ export async function CasesWorkspacePageContent({
               availableInformation: allInformation.filter(
                 (item) => !linkedInformationIds.has(item.id),
               ),
+              sourceInboxItemId: taskResult.sourceInboxItemId,
             }
 
             if (selectedFileId) {

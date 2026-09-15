@@ -22,6 +22,7 @@ export async function reopenInboxItemAction(
     return { error: result.error }
   }
 
+  revalidatePath('/app')
   revalidatePath('/app/inbox')
 
   return {

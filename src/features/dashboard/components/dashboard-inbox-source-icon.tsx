@@ -1,13 +1,13 @@
 import { DashboardAccentTile } from '@/features/dashboard/components/dashboard-icons'
-import { resolveInboxSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
+import { resolveInboxItemSourceVisual } from '@/features/dashboard/lib/dashboard-icon-map'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 
 type DashboardInboxSourceIconProps = {
-  source: InboxItem['source']
+  item: Pick<InboxItem, 'source' | 'channel' | 'inbound_metadata'>
 }
 
-export function DashboardInboxSourceIcon({ source }: DashboardInboxSourceIconProps) {
-  const visual = resolveInboxSourceVisual(source)
+export function DashboardInboxSourceIcon({ item }: DashboardInboxSourceIconProps) {
+  const visual = resolveInboxItemSourceVisual(item)
 
   return (
     <DashboardAccentTile label={visual.label} accent={visual.accent} size="md">

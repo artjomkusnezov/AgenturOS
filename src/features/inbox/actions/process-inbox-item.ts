@@ -22,6 +22,7 @@ export async function processInboxItemAction(
     return { error: result.error }
   }
 
+  revalidatePath('/app')
   revalidatePath('/app/inbox')
 
   return {

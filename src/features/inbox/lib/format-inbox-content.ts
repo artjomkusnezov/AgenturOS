@@ -1,3 +1,5 @@
+import type { InboxItem } from '@/features/inbox/types/inbox-item'
+
 const PREVIEW_MAX_LENGTH = 120
 
 export function truncateInboxContentPreview(content: string): string {
@@ -8,4 +10,16 @@ export function truncateInboxContentPreview(content: string): string {
   }
 
   return `${normalized.slice(0, PREVIEW_MAX_LENGTH).trimEnd()} …`
+}
+
+/** List/dashboard title: persisted title first, otherwise a content preview. */
+export function getInboxListTitle(
+  item: Pick<InboxItem, 'title' | 'content'>,
+): string {
+  const title = item.title?.trim()
+  if (title) {
+    return title
+  }
+
+  return truncateInboxContentPreview(item.content)
 }

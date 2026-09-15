@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 
 import { completeAuthenticatedSession } from '@/features/auth/services/complete-authenticated-session'
+import { getPublicSupabaseBootState } from '@/lib/supabase/public-config'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
+  const boot = getPublicSupabaseBootState()
+  if (!boot.ready) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   const type = searchParams.get('type')

@@ -20,6 +20,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Kfz release-handoff tests require stacked tip/introducing SHAs to be
+          # ancestors of HEAD. The default shallow clone cannot see that history.
+          fetch-depth: 0
           ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.ref || github.ref }}
 
       - name: Setup Node

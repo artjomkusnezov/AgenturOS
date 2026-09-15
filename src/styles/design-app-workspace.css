@@ -34,7 +34,7 @@
   /* Notebook: keep inbox list compact; detail takes remaining width */
   @media (min-width: 1024px) {
     .aos-cockpit-shell .aos-workspace-page:not(.aos-dashboard-zentrale) .aos-workspace-list-pane {
-      width: 17.5rem;
+      width: 20.5rem;
     }
   }
 
@@ -388,16 +388,299 @@
     border-color: rgb(255 255 255 / 0.08);
   }
 
-  .aos-inbox-chip-new {
+  .aos-inbox-chip-new,
+  .aos-inbox-chip-review,
+  .aos-inbox-chip-handled {
     display: inline-flex;
     align-items: center;
     padding: 0.05rem 0.35rem;
     border-radius: 0.25rem;
     font-size: 0.625rem;
     font-weight: 650;
+    flex-shrink: 0;
+  }
+
+  .aos-inbox-chip-new {
     background: rgb(56 189 248 / 0.16);
     color: #7dd3fc;
+  }
+
+  .aos-inbox-chip-review {
+    background: rgb(167 139 250 / 0.16);
+    color: #c4b5fd;
+  }
+
+  .aos-inbox-chip-handled {
+    background: rgb(255 255 255 / 0.06);
+    color: #94a3b8;
+  }
+
+  .aos-inbox-chip-gaps {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 650;
     flex-shrink: 0;
+    background: rgb(251 146 60 / 0.16);
+    color: #fdba74;
+  }
+
+  .aos-inbox-queue-copy {
+    margin-top: 0.35rem;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .aos-inbox-queue-line,
+  .aos-inbox-queue-next,
+  .aos-inbox-queue-urgency {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.6875rem;
+    line-height: 1.35;
+  }
+
+  .aos-inbox-queue-line {
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .aos-inbox-queue-urgency {
+    color: #fdba74;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .aos-inbox-queue-next {
+    color: var(--aos-cockpit-text-meta, #94a3b8);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .aos-kfz-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .aos-kfz-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .aos-kfz-check--present {
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+  }
+
+  .aos-kfz-check--missing {
+    color: var(--aos-cockpit-text-primary, #f4f4f5);
+    font-weight: 550;
+  }
+
+  .aos-kfz-channel-handoff {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.9rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(56 189 248 / 0.28);
+    background: rgb(56 189 248 / 0.08);
+  }
+
+  .aos-kfz-channel-name {
+    font-size: 1.125rem;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  .aos-kfz-channel-contact {
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .aos-kfz-copy-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .aos-inbox-duplicate {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(251 146 60 / 0.35);
+    background: rgb(251 146 60 / 0.08);
+  }
+
+  .aos-inbox-duplicate--related {
+    border-color: rgb(52 211 153 / 0.28);
+    background: rgb(52 211 153 / 0.08);
+  }
+
+  .aos-inbox-duplicate-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .aos-inbox-duplicate-matches {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 550;
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+  }
+
+  .aos-inbox-duplicate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .aos-inbox-duplicate-actions > * {
+    min-height: 2.75rem;
+  }
+
+  .aos-kfz-call-prep {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .aos-inbox-search {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0 0.15rem 0.25rem;
+  }
+
+  .aos-inbox-search-label {
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--aos-cockpit-text-meta, #94a3b8);
+  }
+
+  .aos-inbox-search-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .aos-inbox-search-input {
+    min-height: 2.75rem;
+    flex: 1;
+  }
+
+  .aos-inbox-search-clear {
+    flex-shrink: 0;
+    padding-inline: 0.85rem;
+  }
+
+  .aos-inbox-search-hint {
+    margin: 0;
+    font-size: 0.625rem;
+    line-height: 1.4;
+    color: var(--aos-cockpit-text-muted, #71717a);
+  }
+
+  .aos-inbox-search-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 0.25rem 0.25rem;
+  }
+
+  .aos-inbox-search-empty-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 650;
+    color: var(--aos-cockpit-text-primary, #f4f4f5);
+  }
+
+  .aos-inbox-search-empty-copy {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+  }
+
+  .aos-inbox-search-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .aos-inbox-search-match {
+    color: var(--aos-cockpit-text-secondary, #a1a1aa);
+    white-space: normal;
+  }
+
+  .aos-inbox-search-match mark {
+    background: rgb(56 189 248 / 0.22);
+    color: inherit;
+    border-radius: 0.2rem;
+    padding: 0 0.1rem;
+  }
+
+  .aos-inbox-phase-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0 0.15rem 0.15rem;
+  }
+
+  .aos-inbox-phase-caption {
+    width: 100%;
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--aos-cockpit-text-meta, #94a3b8);
+  }
+
+  .aos-inbox-phase-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
+    color: #94a3b8;
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+  }
+
+  .aos-inbox-phase-link--active {
+    border-color: rgb(56 189 248 / 0.28);
+    background: rgb(56 189 248 / 0.14);
+    color: #7dd3fc;
   }
 
   .aos-inbox-archive-toggle,

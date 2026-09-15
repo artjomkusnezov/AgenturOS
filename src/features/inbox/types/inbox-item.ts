@@ -13,6 +13,8 @@ export type InboxLinkedFile = {
 
 export type InboxItemFieldErrors = {
   content?: string
+  note?: string
+  draft?: string
 }
 
 export type InboxItemMutationState = {
@@ -25,6 +27,16 @@ export type InboxItemMutationState = {
   caseTypeKey?: string
   viewKey?: string
   promotionKind?: 'task' | 'offer' | 'claim'
+  noteKind?:
+    | 'start_review'
+    | 'internal_note'
+    | 'response_draft'
+    | 'prepare_reply'
+    | 'mark_contacted'
+    | 'mark_follow_up'
+    | 'duplicate_dismissed'
+    | 'related_marked'
+    | 'related_removed'
 }
 
 export type InboxItemInput = {

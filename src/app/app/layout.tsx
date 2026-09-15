@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation'
 
 import { AppShellWithNavSuspense } from '@/components/app/app-shell'
+import { SupabaseConfigurationError } from '@/components/supabase-configuration-error'
 import type { AppCaseViewNavItem } from '@/config/app-navigation'
 import { listCurrentAgencyMembers } from '@/features/agency/repositories/agency-repository'
 import { getCachedNavigationBadgeCounts } from '@/features/navigation/lib/get-cached-navigation-badge-counts'
 import { EMPTY_NAVIGATION_BADGE_COUNTS } from '@/features/navigation/types/navigation-badges'
 import { listNavigationWorkspaceViews } from '@/features/workspace-views/repositories/workspace-views-repository'
+import { getPublicSupabaseBootState } from '@/lib/supabase/public-config'
 import { createClient } from '@/lib/supabase/server'
 import { getDisplayName } from '@/lib/user/get-display-name'
 
@@ -14,6 +16,11 @@ export default async function AppLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const boot = getPublicSupabaseBootState()
+  if (!boot.ready) {
+    return <SupabaseConfigurationError missingNames={boot.missingNames} />
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
