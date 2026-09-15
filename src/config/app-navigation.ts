@@ -2,6 +2,7 @@ export type AppNavIcon =
   | 'overview'
   | 'inbox'
   | 'tasks'
+  | 'leads'
   | 'information'
   | 'contacts'
   | 'files'
@@ -112,25 +113,77 @@ export const appNavigation: AppNavItem[] = appNavigationGroups.flatMap(
   (group) => group.items,
 )
 
-export function isNavItemActive(pathname: string, href: string): boolean {
-  if (href === '/app') {
-    return pathname === '/app'
-  }
+export const LEADS_NAV_HREF = '/app/leads' as const
 
-  // /app/tasks is its own nav target (nested "Aufgaben"); never mark "Vorgänge" active there.
-  if (href === '/app/cases') {
-    if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
-      return false
-    }
-    return pathname === '/app/cases' || pathname.startsWith('/app/cases/')
-  }
+export const LEADS_NAV_ITEM: AppNavItem = {
+  title: 'Leads',
+  href: LEADS_NAV_HREF,
+  icon: 'leads',
+  description: 'Kfz-Anfragen qualifizieren und bearbeiten — ohne stillen Vorgang.',
+}
 
+export const LEADS_CASE_VIEW_NAV: AppCaseViewNavItem = {
+  key: 'leads',
+  name: 'Leads',
+  icon: 'leads',
+  href: LEADS_NAV_HREF,
+}
+
+function pathEqualsOrNested(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
+export function isLeadsPathname(pathname: string): boolean {
+  return pathEqualsOrNested(pathname, LEADS_NAV_HREF)
+}
+
+export function isTasksPathname(pathname: string): boolean {
+  return pathEqualsOrNested(pathname, '/app/tasks')
+}
+
+export function isOverviewNavHref(href: string): boolean {
+  return href === '/app'
+}
+
+/** Leads is always the first child under Vorgänge. Case views follow unchanged. */
+export function buildVorgaengeChildNavItems(
+  caseViews: AppCaseViewNavItem[],
+  resolveHref: (href: string) => string = (href) => href,
+): AppCaseViewNavItem[] {
+  const leads: AppCaseViewNavItem = {
+    ...LEADS_CASE_VIEW_NAV,
+    href: resolveHref(LEADS_NAV_HREF),
+  }
+  const rest = caseViews.filter((view) => view.key !== 'leads').map((view) => ({
+    ...view,
+    href: resolveHref(view.href),
+  }))
+  return [leads, ...rest]
+}
+
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (isOverviewNavHref(href)) {
+    return pathname === href
+  }
+
+  // Nested children under Vorgänge carry their own chrome — never the parent.
+  if (href === '/app/cases') {
+    if (isTasksPathname(pathname) || isLeadsPathname(pathname)) {
+      return false
+    }
+    return pathEqualsOrNested(pathname, '/app/cases')
+  }
+
+  return pathEqualsOrNested(pathname, href)
+}
+
 export function getNavItemByPathname(pathname: string): AppNavItem | undefined {
+  if (isLeadsPathname(pathname)) {
+    return LEADS_NAV_ITEM
+  }
+
   // Alias-Route: Seititel bleibt bei Vorgänge; Active State der Kind-View separat.
-  if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
+  if (isTasksPathname(pathname)) {
     return appNavigation.find((item) => item.href === '/app/cases')
   }
 
@@ -142,8 +195,12 @@ export function isCaseViewNavActive(
   _searchParams: URLSearchParams,
   viewKey: string,
 ): boolean {
+  if (isLeadsPathname(pathname)) {
+    return viewKey === 'leads'
+  }
+
   // Dedicated alias route: only nested "Aufgaben" carries the active chrome.
-  if (pathname === '/app/tasks' || pathname.startsWith('/app/tasks/')) {
+  if (isTasksPathname(pathname)) {
     return viewKey === 'tasks'
   }
 

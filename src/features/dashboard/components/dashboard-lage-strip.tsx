@@ -1,20 +1,27 @@
+import Link from 'next/link'
+
 import {
   DashboardIconAlert,
   DashboardIconBriefcase,
   DashboardIconInbox,
-  DashboardIconInfo,
+  DashboardIconTarget,
 } from '@/features/dashboard/components/dashboard-icons'
+import { KFZ_LEADS_HREF_BASE } from '@/features/leads/lib/present-kfz-leads'
 
 type DashboardLageStripProps = {
   inboxCount: number
   attentionCount: number
   activeCaseCount: number
+  openLeadsCount: number
+  leadsHref?: string
 }
 
 export function DashboardLageStrip({
   inboxCount,
   attentionCount,
   activeCaseCount,
+  openLeadsCount,
+  leadsHref = KFZ_LEADS_HREF_BASE,
 }: DashboardLageStripProps) {
   return (
     <section className="aos-cockpit-lage" aria-label="Die Lage heute">
@@ -55,16 +62,18 @@ export function DashboardLageStrip({
         <span className="aos-cockpit-lage-detail">Offen / in Arbeit</span>
       </article>
 
-      <article className="aos-cockpit-lage-slot aos-cockpit-lage-slot--cyan">
+      <Link href={leadsHref} className="aos-cockpit-lage-slot aos-cockpit-lage-slot--cyan">
         <div className="aos-cockpit-lage-top">
           <span className="aos-cockpit-lage-icon" aria-hidden="true">
-            <DashboardIconInfo className="h-[1.125rem] w-[1.125rem]" />
+            <DashboardIconTarget className="h-[1.125rem] w-[1.125rem]" />
           </span>
-          <span className="aos-cockpit-lage-label">Letzte Information</span>
+          <span className="aos-cockpit-lage-label">Offene Leads</span>
         </div>
-        <span className="aos-cockpit-lage-value aos-cockpit-lage-empty">–</span>
-        <span className="aos-cockpit-lage-detail">Noch keine Information verfügbar</span>
-      </article>
+        <span className="aos-cockpit-lage-value">{openLeadsCount}</span>
+        <span className="aos-cockpit-lage-detail">
+          {openLeadsCount === 0 ? 'Keine offenen Kfz-Leads' : 'Kfz-Anfragen zu qualifizieren'}
+        </span>
+      </Link>
     </section>
   )
 }

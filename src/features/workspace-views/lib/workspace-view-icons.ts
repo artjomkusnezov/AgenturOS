@@ -11,6 +11,7 @@ export type WorkspaceViewIconKey =
   | 'appointment'
   | 'contract'
   | 'general'
+  | 'leads'
 
 const WORKSPACE_VIEW_ICON_TO_NAV: Record<WorkspaceViewIconKey, AppNavIcon> = {
   tasks: 'tasks',
@@ -22,6 +23,7 @@ const WORKSPACE_VIEW_ICON_TO_NAV: Record<WorkspaceViewIconKey, AppNavIcon> = {
   appointment: 'activity',
   contract: 'information',
   general: 'tasks',
+  leads: 'leads',
 }
 
 export function resolveWorkspaceViewNavIcon(

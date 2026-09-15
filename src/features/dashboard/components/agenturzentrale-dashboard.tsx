@@ -40,6 +40,7 @@ import {
   resolveInboxLinkedTaskId,
   type KfzWorkQueueCounts,
 } from '@/features/inbox/lib/kfz-work-queue'
+import { KFZ_LEADS_HREF_BASE } from '@/features/leads/lib/present-kfz-leads'
 import { presentUnifiedInboxCard } from '@/features/inbox/lib/present-unified-inbox-card'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
 import type { DashboardDailyQuote } from '@/features/dashboard/lib/dashboard-daily-quote'
@@ -60,6 +61,8 @@ export type AgenturzentraleDashboardProps = {
   caseTypeCounts: DashboardCaseTypeCount[]
   recentlyUpdated: DashboardMyWorkCaseItem[]
   memberNameMap?: Record<string, string>
+  openLeadsCount: number
+  leadsHref?: string
 }
 
 const BUCKET_ORDER: AttentionBucket[] = ['overdue', 'today', 'soon', 'waiting']
@@ -125,10 +128,14 @@ function LageStrip({
   inboxCount,
   attentionCount,
   activeCaseCount,
+  openLeadsCount,
+  leadsHref,
 }: {
   inboxCount: number
   attentionCount: number
   activeCaseCount: number
+  openLeadsCount: number
+  leadsHref: string
 }) {
   return (
     <section className="az-lage" aria-label="Die Lage heute">
@@ -162,16 +169,18 @@ function LageStrip({
           <span className="az-lage-meta">Offen / in Arbeit</span>
         </div>
       </article>
-      <article className="az-lage-card az-lage-card--cyan">
+      <Link href={leadsHref} className="az-lage-card az-lage-card--cyan az-lage-card--link">
         <span className="az-lage-icon" aria-hidden="true">
-          <DashboardIconInfo className="az-glyph" />
+          <DashboardIconTarget className="az-glyph" />
         </span>
         <div className="az-lage-copy">
-          <span className="az-lage-label">Letzte Information</span>
-          <span className="az-lage-value az-lage-value--empty">–</span>
-          <span className="az-lage-meta">Noch keine Information verfügbar</span>
+          <span className="az-lage-label">Offene Leads</span>
+          <span className="az-lage-value">{openLeadsCount}</span>
+          <span className="az-lage-meta">
+            {openLeadsCount === 0 ? 'Keine offenen Kfz-Leads' : 'Kfz-Anfragen zu qualifizieren'}
+          </span>
         </div>
-      </article>
+      </Link>
     </section>
   )
 }
@@ -528,6 +537,8 @@ export function AgenturzentraleDashboard({
   caseTypeCounts,
   recentlyUpdated,
   memberNameMap = {},
+  openLeadsCount,
+  leadsHref = KFZ_LEADS_HREF_BASE,
 }: AgenturzentraleDashboardProps) {
   const safeInboxItems = Array.isArray(unprocessedInboxItems) ? unprocessedInboxItems : []
   const safeTaskRelations =
@@ -544,6 +555,7 @@ export function AgenturzentraleDashboard({
   const safeAttentionCount = sanitizeDashboardCount(attentionCount)
   const safeMyOpenTaskCount = sanitizeDashboardCount(myOpenTaskCount)
   const safeActiveCaseCount = sanitizeDashboardCount(activeCaseCount)
+  const safeOpenLeadsCount = sanitizeDashboardCount(openLeadsCount)
 
   const firstName = getFirstNameFromUser(user)
   const greeting = getTimeOfDayGreeting()
@@ -563,6 +575,8 @@ export function AgenturzentraleDashboard({
             inboxCount={unprocessedInboxCount}
             attentionCount={safeAttentionCount}
             activeCaseCount={safeActiveCaseCount}
+            openLeadsCount={safeOpenLeadsCount}
+            leadsHref={leadsHref}
           />
 
           <div className="az-workbench">

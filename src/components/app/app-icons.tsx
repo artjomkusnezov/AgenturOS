@@ -55,6 +55,21 @@ export function AppNavIconGlyph({
           <rect x="4" y="4" width="16" height="16" rx="2" />
         </svg>
       )
+    case 'leads':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="8" r="3.25" />
+          <path d="M5.5 19c.6-3.1 3.1-5 6.5-5s5.9 1.9 6.5 5" />
+          <path d="M17.5 4.5 19 6l2-2.5" />
+        </svg>
+      )
     case 'information':
       return (
         <svg
