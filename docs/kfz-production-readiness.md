@@ -13,7 +13,8 @@ Branch: `cursor/agenturos-controller-task-9aa2` onto `cursor/agenturos-controlle
 - Documents only via authorized `/app/inbox/kfz-document`. Anonymous 401, cross-item 404. No public object URL.
 - Explicit Übernahme as Aufgabe / Angebot / Schaden stays the existing promotion menu. No silent Vorgang.
 - First-party funnel analytics: allow-list + redaction. No answers, contact, filename, object key, or other PII in events, dashboard, or decision CSV. No Meta/WhatsApp API, no pixel secrets, no auto-reply.
-- Deterministic suite: `kfz-release-candidate-acceptance` walks `/kfz` → submit → inbox → Leads → status → document auth → analytics privacy.
+- Deterministic suite this run: `npm run test:inbound` **438/438 pass**; `npx tsc --noEmit` pass; `npm run lint` pass; `npm run build` pass (routes include `/kfz`, `/app/leads`, `/app/inbox`, `/app/inbox/kfz-document`, `/app/kfz-analytics`).
+- Harness `kfz-release-candidate-acceptance` walks `/kfz` → submit → inbox → Leads → status → document auth → analytics privacy. ProductionClaim remains false.
 
 ## Owner / deploy only (not done here)
 
@@ -60,6 +61,11 @@ Verify present/missing only: `npm run preflight:kfz-supabase`.
 8. Optional explicit Übernahme as Aufgabe or Angebot. Never automatic.
 
 `/dev/*` surfaces are not launch proof.
+
+## Local browser evidence this run
+
+- Desktop: public `/kfz` landing + six starts + questionnaire/upload form. Live `/kfz` submit blocked: no Supabase/intake env in this process (`Anfrage nicht gespeichert`). `/dev/kfz-landing` fail-then-retry into memory store. `/dev/leads` list/detail/status, `/dev/leads-dashboard` Offene Leads = 3, `/dev/inbox` same Kfz facts, `/dev/kfz-analytics` aggregate only. `/app/leads`, `/app/inbox`, `/app/kfz-analytics` show `Konfiguration unvollständig` (missing `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` names only).
+- ~390×844: headless Chrome screenshots of `/kfz`, `/dev/leads` (hamburger + list + detail + Zurück zur Liste), `/dev/leads-dashboard` KPI, `/dev/inbox`, `/dev/kfz-analytics`. Interactive computer-use device-mode could not be enabled; 390×844 still proven via Chrome `--window-size=390,844`.
 
 ## Out of scope / not activated
 
