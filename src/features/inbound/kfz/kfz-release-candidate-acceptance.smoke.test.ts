@@ -46,9 +46,13 @@ describe('kfz release-candidate acceptance harness', () => {
     assert.equal(report.scope, 'test_only_local_harness')
     assert.equal(report.productionClaim, false)
     assert.equal(report.ok, true)
-    assert.equal(report.inboxItemCount, 1)
+    assert.equal(report.inboxItemCount, 2)
     assert.equal(report.documentObjectCount, 1)
     assert.equal(report.exactOnce, true)
+    assert.equal(report.leadOpenCount, 1)
+    assert.equal(report.leadStatusPersisted, true)
+    assert.equal(report.createsVorgangAutomatically, false)
+    assert.equal(report.inboxCompatible, true)
     assert.equal(report.authorizedReviewStatus, 200)
     assert.equal(report.anonymousReviewStatus, 401)
     assert.equal(report.crossItemReviewStatus, 404)
@@ -67,6 +71,13 @@ describe('kfz release-candidate acceptance harness', () => {
     assert.ok(report.analyticsEventNames.includes('step_view'))
     assert.ok(report.analyticsEventNames.includes('funnel_abandoned'))
     assert.ok(report.analyticsEventNames.includes('submit_succeeded'))
+    assert.equal(report.steps.some((entry) => entry.id === 'leads' && entry.ok), true)
+    assert.equal(report.steps.some((entry) => entry.id === 'lead_status' && entry.ok), true)
+    assert.equal(report.steps.some((entry) => entry.id === 'inbox_compat' && entry.ok), true)
+    assert.equal(
+      report.steps.some((entry) => entry.id === 'analytics_dashboard_privacy' && entry.ok),
+      true,
+    )
     assert.equal(kfzReleaseCandidateReportLeaks(report).length, 0)
     assert.equal(JSON.stringify(report).includes(KFZ_RC_SYNTHETIC_FULL_NAME), false)
     assert.equal(JSON.stringify(report).includes(KFZ_RC_SYNTHETIC_PHONE), false)
@@ -122,6 +133,8 @@ describe('kfz release-candidate acceptance harness', () => {
       { path: 'src/app/api/inbound/kfz/route.ts', present: true },
       { path: 'src/app/app/inbox/page.tsx', present: true },
       { path: 'src/app/app/inbox/kfz-document/route.ts', present: true },
+      { path: 'src/app/app/leads/page.tsx', present: true },
+      { path: 'src/app/app/kfz-analytics/page.tsx', present: true },
       { path: 'src/app/api/inbound/kfz-analytics/route.ts', present: true },
     ])
     const landing = routes.find((route) => route.id === 'landing')
