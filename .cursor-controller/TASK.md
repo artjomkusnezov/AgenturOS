@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: cursor/agenturos-controller-task-eeba
 
 ## Title
@@ -40,3 +40,6 @@ One Cursor-created branch and PR based on cursor/agenturos-controller-task-eeba 
 
 ## Definition of done
 The Kfz chain is a reviewable release candidate: synthetic public intake reaches the existing persisted lead workflow, employees can find/work it through Leads without breaking Eingang/Vorgänge, analytics remain PII-free, and remaining production-only actions are explicitly documented rather than executed.
+
+CONTROLLER_AGENT_ID: bc-443a1aba-07b3-4735-a104-4858247e6818
+CONTROLLER_STARTED_AT: 2026-09-16T12:31:36Z
