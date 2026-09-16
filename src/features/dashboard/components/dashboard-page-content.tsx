@@ -19,6 +19,7 @@ import {
 } from '@/features/dashboard/lib/dashboard-tasks'
 import { presentDashboardKfzQueue } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import { listInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
+import { countOpenKfzLeads } from '@/features/leads/lib/kfz-lead-status'
 import { buildMemberNameMap } from '@/features/tasks/lib/resolve-task-member-name'
 import { createClient } from '@/lib/supabase/server'
 
@@ -94,6 +95,10 @@ export async function DashboardPageContent() {
     processedItems: inboxResult.processedItems,
     taskRelationsByItemId: inboxResult.taskRelationsByItemId,
   })
+  const openLeadsCount = countOpenKfzLeads([
+    ...inboxResult.unprocessedItems,
+    ...inboxResult.processedItems,
+  ])
 
   return (
     <DashboardWorkOverview
@@ -101,6 +106,7 @@ export async function DashboardPageContent() {
       unprocessedInboxItems={inboxResult.unprocessedItems}
       taskRelationsByItemId={inboxResult.taskRelationsByItemId}
       kfzQueueCounts={dashboardQueue.counts}
+      openLeadsCount={openLeadsCount}
       attentionItems={attentionItems}
       attentionCount={attentionCount}
       myTasks={myTasks}

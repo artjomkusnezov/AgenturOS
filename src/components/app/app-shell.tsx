@@ -23,6 +23,7 @@ type AppShellProps = {
   agencyMembers?: AgencyMember[]
   currentUserId?: string
   badgeCounts?: NavigationBadgeCounts
+  resolveHref?: (href: string) => string
 }
 
 export function AppShell({
@@ -32,6 +33,7 @@ export function AppShell({
   agencyMembers = [],
   currentUserId = '',
   badgeCounts,
+  resolveHref,
 }: AppShellProps) {
   const pathname = usePathname()
   const isAppWorkspace = pathname === '/app' || pathname.startsWith('/app/')
@@ -64,6 +66,7 @@ export function AppShell({
         className="hidden lg:flex"
         caseViews={caseViews}
         badgeCounts={badgeCounts}
+        resolveHref={resolveHref}
       />
 
       <MobileNavigation
@@ -73,6 +76,7 @@ export function AppShell({
         onOpenCapture={openCapture}
         caseViews={caseViews}
         badgeCounts={badgeCounts}
+        resolveHref={resolveHref}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

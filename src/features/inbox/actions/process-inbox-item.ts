@@ -24,6 +24,7 @@ export async function processInboxItemAction(
 
   revalidatePath('/app')
   revalidatePath('/app/inbox')
+  revalidatePath('/app/leads')
 
   return {
     success: true,

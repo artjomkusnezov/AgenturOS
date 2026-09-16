@@ -37,6 +37,7 @@ export type InboxItemMutationState = {
     | 'duplicate_dismissed'
     | 'related_marked'
     | 'related_removed'
+    | 'lead_status'
 }
 
 export type InboxItemInput = {
