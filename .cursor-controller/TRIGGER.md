@@ -1,5 +1,5 @@
 # Cursor Cloud Controller Trigger
 
 STATE: START_REQUESTED
-REQUESTED_AT: 2026-09-13T12:57:00Z
-REASON: PR #60 is a confirmed completion candidate with 422 passing tests across 131 suites, TypeScript, lint and build successful, plus local desktop/mobile proof for improving, declining, equal, suppressed and empty period comparisons and inspected privacy-safe CSV. Launch exactly one aggregate funnel-bottleneck task from cursor/agenturos-controller-task-2d45; duplicate guard remains authoritative. No merge, production mutation or secret access.
+REQUESTED_AT: 2026-09-16T12:30:00Z
+REASON: PR #65 is a confirmed completed Cursor result from cursor/agenturos-controller-task-eeba: 438 inbound tests pass, TypeScript/lint/build pass, and desktop/mobile browser evidence for Leads/KPI/status/document authorization. Launch exactly one bounded KFZ PRODUCTION-READINESS ACCEPTANCE + LEAD FLOW V1 run from that result branch. No merge/deploy/production mutation/main/master, secrets, Meta/WhatsApp API, auto-replies or paid services. Duplicate guard remains authoritative.
