@@ -1,21 +1,95 @@
 # Cursor Cloud Controller Task
 
-STATUS: FINISHED
-STARTING_REF: cursor/agenturos-controller-task-eeba
-RESULT_REF: cursor/agenturos-controller-task-9aa2
-RESULT_PR: 66
+STATUS: READY
+STARTING_REF: master
 
 ## Title
-AGENTUROS — KFZ PRODUCTION-READINESS ACCEPTANCE + LEAD FLOW V1
+AGENTUROS — KFZ PRODUCTION SMOKE + ADS HANDOFF V1
 
-## Result
-Completed as a reviewable release candidate in PR #66.
+## Priority
+P0. Finish the real Kfz launch path before any unrelated AgenturOS work.
 
-QA: npm run test:inbound 438/438 pass; npx tsc --noEmit pass; npm run lint pass; npm run build pass.
+## Context
+PR #65 and PR #66 have been merged to master and the Kfz production stack has been deployed. Previous release-candidate QA reported 438/438 inbound tests plus TypeScript, lint and build PASS. The remaining job is to prove the actual production customer-to-lead journey and prepare a factual ads handoff. Do not build unrelated features.
 
-Fresh browser evidence exists for public /kfz landing and honest no-env submit failure, Leads detail/status, Eingang compatibility, privacy-safe analytics, and ~390x844 Leads/dashboard/analytics. Production /kfz submit and authenticated /app paths cannot be claimed as production-proven because this run had no Supabase/intake environment.
+## Goal
+Verify the deployed Kfz funnel end-to-end with exactly one clearly synthetic submission, prove that it arrives and is usable in AgenturOS Leads/Eingang, verify document/privacy-safe analytics behavior, fix only bounded P0 launch blockers if found, and produce a concise launch evidence report.
 
-## Pipeline state
-No next Cloud coding task is launched from this controller because the remaining release proof is explicitly owner/deploy-only: merge/integration to master, production/preview environment values, checked-in migrations, deploy, and one synthetic production smoke. Those actions are outside the current autonomous safety authorization.
+## Required work
 
-No Meta/WhatsApp API, auto-replies, production mutation, secrets or unrelated AgenturOS work may be started as a substitute.
+### M1 — Production entry proof
+Open the actual public production /kfz URL in a fresh browser session.
+Verify desktop and approximately 390x844 mobile.
+Record the canonical public URL and confirm it is accessible without Vercel/GitHub authentication.
+Verify the six existing customer entry scenarios and that the questionnaire can be entered from each. Do not redesign marketing copy in this task.
+
+### M2 — Exactly one synthetic Kfz submission
+Submit exactly ONE clearly synthetic lead through the production /kfz UI.
+Use obviously non-real test identity/contact data and mark it as test wherever the form permits.
+Do not use real customer PII.
+Do not generate repeated submissions.
+Capture the user-visible success/failure state.
+
+### M3 — Lead arrival proof
+Using the existing authenticated app flow/environment available to the Cloud run, prove whether that exact synthetic submission appears in:
+- Eingang/inbox compatibility path;
+- Vorgänge → Leads;
+- Offene Leads dashboard KPI.
+Verify the same lead identity/source is not duplicated by the UI.
+
+### M4 — Lead usability
+Open the synthetic lead and verify the existing production fields that are present: Kfz questionnaire facts, contact facts, source/UTM where available, missing-data indicators, status lifecycle, and document metadata.
+Change status only if the existing test/smoke procedure requires it, then verify persistence after reload.
+Do not create a Vorgang automatically and do not add CRM features.
+
+### M5 — Documents + privacy
+If the synthetic submission path supports a harmless test document, upload at most one tiny non-sensitive test file and prove authorized access plus unauthenticated denial. If production policy/environment makes document upload unsafe or unavailable, do not force it; report NOT TESTED with the exact blocker.
+Verify analytics/telemetry used by the Kfz funnel remains privacy-safe: no name, email, phone, address, free-text, document filename/content, or raw questionnaire PII in analytics payloads/log evidence.
+
+### M6 — Ads handoff evidence
+Produce a short factual launch handoff containing:
+- canonical public /kfz URL;
+- production smoke result;
+- desktop/mobile evidence;
+- funnel steps proven;
+- exact remaining P0 blockers, if any;
+- whether the technical funnel is READY FOR EXTERNAL QA or BLOCKED.
+Do not create, configure or launch Meta Ads. No Meta API.
+
+## Repair rule
+If production smoke exposes a code-level P0 blocker, make ONE bounded repair attempt on the Cursor branch, add deterministic regression coverage, rerun relevant tests/lint/typecheck/build and browser proof. Do not mutate production data/schema beyond the single authorized synthetic lead. Do not deploy a repair; report that deployment is owner-authorized separately unless an existing automatic preview deployment is sufficient for proof.
+
+## Tests / quality
+Run the relevant Kfz/inbound tests plus:
+- npm run test:inbound
+- npx tsc --noEmit
+- npm run lint
+- npm run build
+Report exact results.
+
+## Browser proof
+Required:
+- public production /kfz desktop
+- public production /kfz ~390x844
+- exactly one synthetic submit result
+- authenticated Leads/Eingang evidence for that submission if environment permits
+- dashboard Offene Leads relation
+Do not call anything production-proven without this evidence.
+
+## Non-goals
+No unrelated AgenturOS work.
+No Meta/WhatsApp API.
+No auto-replies.
+No new CRM.
+No secrets exposure.
+No paid services.
+No destructive git.
+No force push.
+No manual main/master write or merge.
+No additional production submissions beyond the single synthetic smoke lead.
+
+## Deliverable
+One Cursor result branch/PR only if code/evidence artifacts require it, with exact QA results and browser evidence. If no code changes are required, provide the smoke evidence/report without manufacturing changes.
+
+## Definition of done
+We can state from fresh production evidence whether a real ad click can traverse /kfz → submit → Eingang/Leads → usable lead while privacy-safe analytics remains clean, and we have a canonical URL ready for external Grok QA/Meta campaign preparation.
