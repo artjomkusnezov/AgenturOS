@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 
 ## Title
@@ -93,3 +93,6 @@ One Cursor result branch/PR only if code/evidence artifacts require it, with exa
 
 ## Definition of done
 We can state from fresh production evidence whether a real ad click can traverse /kfz → submit → Eingang/Leads → usable lead while privacy-safe analytics remains clean, and we have a canonical URL ready for external Grok QA/Meta campaign preparation.
+
+CONTROLLER_AGENT_ID: bc-bfb064a2-79ad-4f19-919a-e8a46e0f5b2a
+CONTROLLER_STARTED_AT: 2026-09-16T20:10:40Z
