@@ -6,7 +6,10 @@ import {
 import { listCasesForWorkspaceViewFilters } from '@/features/cases/repositories/list-cases-for-workspace-view'
 import { computeNavigationBadgeCounts } from '@/features/navigation/lib/compute-navigation-badge-counts'
 import type { NavigationBadgeCounts } from '@/features/navigation/types/navigation-badges'
-import { countUnprocessedInboxItemsForCurrentUser } from '@/features/inbox/repositories/inbox-repository'
+import {
+  countOpenKfzLeadsForCurrentUser,
+  countUnprocessedInboxItemsForCurrentUser,
+} from '@/features/inbox/repositories/inbox-repository'
 
 type RepositoryError = {
   success: false
@@ -22,11 +25,13 @@ export async function getNavigationBadgeCountsForCurrentUser(
 ): Promise<NavigationBadgeCountsResult> {
   const [
     inboxCountResult,
+    openLeadsResult,
     openCasesResult,
     caseTypesResult,
     businessAreasResult,
   ] = await Promise.all([
     countUnprocessedInboxItemsForCurrentUser(),
+    countOpenKfzLeadsForCurrentUser(),
     listCasesForWorkspaceViewFilters({
       filters: {
         core_statuses: ['open', 'in_progress', 'waiting'],
@@ -63,6 +68,7 @@ export async function getNavigationBadgeCountsForCurrentUser(
     caseTypesById,
     businessAreaKeyById,
     currentUserId,
+    openLeadsCount: openLeadsResult.success ? openLeadsResult.count : 0,
   })
 
   return {

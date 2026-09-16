@@ -15,6 +15,15 @@ import {
 import type { NavigationBadgeCounts } from '@/features/navigation/types/navigation-badges'
 import { getTodayDateString } from '@/features/tasks/lib/task-status'
 
+export type ComputeNavigationBadgeCountsInput = {
+  openCases: CaseRecord[]
+  caseTypesById: Record<string, CaseTypeLookup>
+  businessAreaKeyById: Record<string, string>
+  currentUserId: string
+  today?: string
+  openLeadsCount?: number
+}
+
 function countOpenCasesByTypeKey(
   cases: CaseRecord[],
   caseTypesById: Record<string, CaseTypeLookup>,
@@ -71,13 +80,9 @@ function countOverdueAttentionCases(
   ).length
 }
 
-export function computeNavigationBadgeCounts(input: {
-  openCases: CaseRecord[]
-  caseTypesById: Record<string, CaseTypeLookup>
-  businessAreaKeyById: Record<string, string>
-  currentUserId: string
-  today?: string
-}): NavigationBadgeCounts {
+export function computeNavigationBadgeCounts(
+  input: ComputeNavigationBadgeCountsInput,
+): NavigationBadgeCounts {
   const today = input.today ?? getTodayDateString()
   const openTaskItems = buildOpenTaskItemsFromCases(
     input.openCases,
@@ -102,6 +107,7 @@ export function computeNavigationBadgeCounts(input: {
         input.businessAreaKeyById,
         'mortgage',
       ),
+      leads: Math.max(0, Math.floor(input.openLeadsCount ?? 0)),
     },
   }
 }

@@ -40,6 +40,7 @@ export async function convertInboxToClaimAction(
 
   revalidatePath('/app/inbox')
   revalidatePath('/app/cases')
+  revalidatePath('/app/leads')
 
   return {
     success: true,

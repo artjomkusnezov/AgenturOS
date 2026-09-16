@@ -36,6 +36,7 @@ import {
 } from '@/features/inbox/lib/inbox-manual-review-history'
 import { KFZ_INBOX_HREF_BASE, KFZ_WORK_QUEUE_PHASE_LABELS, type KfzWorkQueueFilter } from '@/features/inbox/lib/kfz-work-queue'
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
+import { buildKfzLeadHref } from '@/features/leads/lib/present-kfz-leads'
 import { formatInboxDateTime, isInboxItemUnprocessed } from '@/features/inbox/lib/inbox-status'
 import { resolveInboxAttributionLabel } from '@/features/inbox/lib/resolve-inbox-attribution'
 import type {
@@ -322,6 +323,17 @@ export function InboxDetailPanel({
                 onStatusChange={onStatusChange}
                 onLocalApply={onLocalApply}
               />
+            ) : null}
+
+            {kfzReview ? (
+              <p className={aosWorkspaceSectionClassName}>
+                <Link
+                  href={buildKfzLeadHref({ itemId: item.id })}
+                  className="text-sm font-medium text-blue-800 underline-offset-2 hover:underline"
+                >
+                  Dieselbe Anfrage unter Leads öffnen
+                </Link>
+              </p>
             ) : null}
 
             {kfzReview ? (
