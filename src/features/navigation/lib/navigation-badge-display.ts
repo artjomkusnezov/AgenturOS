@@ -48,6 +48,14 @@ export function getCaseViewNavBadge(
     }
   }
 
+  if (viewKey === 'leads') {
+    return {
+      count,
+      tone: 'blue',
+      label: count === 1 ? '1 offener Lead' : `${count} offene Leads`,
+    }
+  }
+
   return {
     count,
     tone: 'neutral',

@@ -217,6 +217,7 @@ describe('authenticated Kfz inbox / dashboard route', () => {
       const workspace = view.selectedWorkspace
       assert.ok(workspace)
       assert.equal(workspace.href, `/app/inbox?item=${item.id}`)
+      assert.equal(workspace.leadsHref, `/app/leads?item=${item.id}`)
       assert.equal(workspace.customerName, 'Max Mustermann')
       assert.equal(workspace.queuePhase, 'needs_review')
       assert.equal(workspace.queuePhaseLabel, KFZ_WORK_QUEUE_PHASE_LABELS.needs_review)

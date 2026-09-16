@@ -73,6 +73,7 @@ import {
 } from '@/features/inbox/lib/present-kfz-website-inbox'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
+import { buildKfzLeadHref } from '@/features/leads/lib/present-kfz-leads'
 
 export const AUTHENTICATED_INBOX_PATH = KFZ_INBOX_HREF_BASE
 export const AUTHENTICATED_DASHBOARD_PATH = '/app' as const
@@ -107,6 +108,7 @@ export type AuthenticatedKfzReviewWorkspace = {
   activeView: InboxItemView
   historyHref: string
   workHref: string
+  leadsHref: string
   sections: {
     facts: true
     missingInformation: true
@@ -237,6 +239,7 @@ export function presentAuthenticatedKfzReviewWorkspace(
     activeView: parseInboxItemView(options?.view),
     historyHref: history.historyHref,
     workHref: history.workHref,
+    leadsHref: buildKfzLeadHref({ itemId: item.id }),
     sections: {
       facts: true,
       missingInformation: true,

@@ -21,6 +21,12 @@ export const KFZ_RC_REQUIRED_ROUTES = [
     href: '/app/inbox/kfz-document',
     file: 'src/app/app/inbox/kfz-document/route.ts',
   },
+  { id: 'leads', href: '/app/leads', file: 'src/app/app/leads/page.tsx' },
+  {
+    id: 'analytics',
+    href: '/app/kfz-analytics',
+    file: 'src/app/app/kfz-analytics/page.tsx',
+  },
   {
     id: 'analytics_api',
     href: '/api/inbound/kfz-analytics',
@@ -54,10 +60,14 @@ export type KfzRcStepId =
   | 'submit_retry'
   | 'exact_once'
   | 'inbox'
+  | 'leads'
+  | 'lead_status'
+  | 'inbox_compat'
   | 'authorized_review'
   | 'anonymous_rejection'
   | 'cross_item_rejection'
   | 'analytics_metadata_only'
+  | 'analytics_dashboard_privacy'
   | 'public_supabase_keys'
 
 export type KfzRcStepResult = {
@@ -79,6 +89,10 @@ export type KfzRcAcceptanceReport = {
   inboxItemCount: number
   documentObjectCount: number
   exactOnce: boolean
+  leadOpenCount: number
+  leadStatusPersisted: boolean
+  createsVorgangAutomatically: false
+  inboxCompatible: boolean
   authorizedReviewStatus: 200 | 0
   anonymousReviewStatus: 401 | 0
   crossItemReviewStatus: 404 | 0

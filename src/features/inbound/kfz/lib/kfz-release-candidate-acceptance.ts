@@ -1,16 +1,17 @@
 /**
  * Test-only Kfz release-candidate acceptance harness.
  *
- * Walks /kfz → submit → exact-once retry → one inbox item → authorized
- * document review → anonymous/cross-item rejection. Uses generated synthetic
- * data and a tiny generated file. Never claims production readiness and never
- * writes customer data, answers, filenames, object keys or secret values into
- * the report or analytics.
+ * Walks /kfz → submit → exact-once retry → inbox + Leads → employee status
+ * → authorized document review → anonymous/cross-item rejection → privacy-safe
+ * analytics. Uses generated synthetic data and a tiny generated file. Never
+ * claims production readiness and never writes customer data, answers,
+ * filenames, object keys or secret values into the report or analytics.
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { presentAuthenticatedKfzInbox } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import { presentKfzWebsiteInboxItem } from '@/features/inbox/lib/present-kfz-website-inbox'
 import {
   applyKfzManualTriageCommand,
@@ -39,6 +40,8 @@ import {
 import {
   createMemoryKfzAnalyticsConsentStorage,
 } from '@/features/inbound/kfz/lib/kfz-analytics-consent'
+import { aggregateKfzAnalyticsDashboard } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
+import { buildKfzAnalyticsDecisionExport } from '@/features/inbound/kfz/lib/kfz-analytics-export'
 import { ingestKfzAnalyticsEvents } from '@/features/inbound/kfz/lib/kfz-analytics-ingest'
 import {
   assertNoKfzAnalyticsPii,
@@ -63,6 +66,12 @@ import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/han
 import { createMemoryKfzAnalyticsStore } from '@/features/inbound/kfz/repositories/kfz-analytics-store'
 import { createMemoryKfzDocumentStore } from '@/features/inbound/kfz/repositories/kfz-document-store'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
+import {
+  applyKfzLeadStatusCommand,
+  countOpenKfzLeads,
+  resolveKfzLeadStatus,
+} from '@/features/leads/lib/kfz-lead-status'
+import { presentKfzLeadsWorkspace } from '@/features/leads/lib/present-kfz-leads'
 import type { KfzInboundDocumentBytes } from '@/features/inbound/kfz/types/kfz-document-storage'
 import type { KfzAnalyticsRecord } from '@/features/inbound/kfz/types/kfz-analytics'
 import {
@@ -278,6 +287,10 @@ function emptyReport(routes: readonly KfzRcRoutePresence[]): KfzRcAcceptanceRepo
     inboxItemCount: 0,
     documentObjectCount: 0,
     exactOnce: false,
+    leadOpenCount: 0,
+    leadStatusPersisted: false,
+    createsVorgangAutomatically: false,
+    inboxCompatible: false,
     authorizedReviewStatus: 0,
     anonymousReviewStatus: 0,
     crossItemReviewStatus: 0,
@@ -361,6 +374,39 @@ function snapshotPublicSupabaseKeyModes(): KfzRcPublicSupabaseKeyModes {
     legacy: legacy.ok && legacy.keyName === NEXT_PUBLIC_SUPABASE_ANON_KEY_NAME,
     missing: !missing.ok && missing.missingNames.length > 0,
   }
+}
+
+function analyticsDashboardIsPrivacySafe(records: readonly KfzAnalyticsRecord[]): boolean {
+  if (records.length === 0) {
+    return false
+  }
+
+  const dashboard = aggregateKfzAnalyticsDashboard(records, {
+    periodId: '30d',
+    nowMs: Date.parse('2026-09-16T12:00:00.000Z'),
+  })
+  const exported = buildKfzAnalyticsDecisionExport(dashboard)
+  const blob = JSON.stringify({ dashboard, exported })
+
+  if (
+    blob.includes(KFZ_RC_SYNTHETIC_FULL_NAME) ||
+    blob.includes(KFZ_RC_SYNTHETIC_PHONE) ||
+    blob.includes(KFZ_RC_SYNTHETIC_EMAIL) ||
+    blob.includes(KFZ_RC_SYNTHETIC_FILENAME) ||
+    blob.includes('RC-Marke') ||
+    blob.includes('evil.example') ||
+    blob.includes('kfz/hidden/key') ||
+    /sessionId|objectKey|fullName|filename/.test(exported.csv)
+  ) {
+    return false
+  }
+
+  return (
+    dashboard.visits >= 0 &&
+    exported.csv.includes('zeitraum') &&
+    !exported.csv.includes('@') &&
+    kfzReleaseCandidateReportLeaks({ dashboard, exported }).length === 0
+  )
 }
 
 function analyticsIsMetadataOnly(records: readonly KfzAnalyticsRecord[]): boolean {
@@ -664,6 +710,7 @@ export async function runKfzReleaseCandidateAcceptance(input: {
 
     const analyticsRecords = await collectAnalyticsRecords()
     const analyticsOk = analyticsIsMetadataOnly(analyticsRecords)
+    const analyticsDashboardOk = analyticsDashboardIsPrivacySafe(analyticsRecords)
 
     const submitRetryOk =
       failed.started &&
@@ -688,9 +735,115 @@ export async function runKfzReleaseCandidateAcceptance(input: {
       started.ok &&
       hasKfzReviewStartedNote(started.next.content)
 
+    const questionnaireAnswers = fillKfzRcVisibleRequired('switch_car')
+    const questionnaireBuilt = buildKfzLandingPayload({
+      values: {
+        ...fixture.values,
+        inquiryReason: 'Wechsel ohne Unterlagen',
+        branchId: 'switch_car',
+        questionnaireAnswers,
+        vehicleMake: '',
+        vehicleModel: '',
+        vehicleYear: '',
+      },
+      submissionId: 'kfz-rc-accept-switch',
+      consentTimestamp: '2026-09-11T00:05:00.000Z',
+      attribution: { utmSource: 'google', utmCampaign: 'kfz-landing' },
+    })
+    const questionnaireSubmit =
+      questionnaireBuilt.ok && exactOnce
+        ? await handleKfzInboundHttpRequest(
+            new Request('http://localhost/api/inbound/kfz', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${RC_INTAKE_SECRET}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(questionnaireBuilt.payload),
+            }),
+            { store },
+          )
+        : { ok: false as const }
+
+    const leadsAfterSubmit = presentKfzLeadsWorkspace({
+      unprocessedItems: store.items.filter((item) => item.processed_at === null),
+      processedItems: store.items.filter((item) => item.processed_at !== null),
+      selectedItemId: inboxItem?.id ?? null,
+    })
+    const leadDetail = leadsAfterSubmit.selectedDetail
+    const leadsOk =
+      leadsAfterSubmit.usesPreviewFixtures === false &&
+      leadsAfterSubmit.hrefBasePath === '/app/leads' &&
+      leadsAfterSubmit.openCount === store.items.length &&
+      leadDetail?.createsVorgangAutomatically === false &&
+      leadDetail.documentPathAuthorized === true &&
+      leadDetail.status === 'new' &&
+      leadDetail.inboxHref.startsWith('/app/inbox?item=') &&
+      (leadDetail.documents[0]?.reviewHref?.startsWith('/app/inbox/kfz-document') ??
+        leadDetail.documents.length === 0) &&
+      questionnaireSubmit.ok === true
+
+    let statusWorking = inboxItem
+      ? { content: inboxItem.content, processed_at: inboxItem.processed_at }
+      : null
+    const contacted =
+      statusWorking &&
+      applyKfzLeadStatusCommand(statusWorking, 'contacted', '2026-09-11T00:10:00.000Z')
+    if (contacted && contacted.ok) {
+      statusWorking = contacted.next
+    }
+    const appointment =
+      statusWorking &&
+      applyKfzLeadStatusCommand(statusWorking, 'appointment', '2026-09-11T00:20:00.000Z')
+    if (appointment && appointment.ok) {
+      statusWorking = appointment.next
+    }
+    const won =
+      statusWorking && applyKfzLeadStatusCommand(statusWorking, 'won', '2026-09-11T00:30:00.000Z')
+    const statusItem =
+      inboxItem && won && won.ok
+        ? { ...inboxItem, content: won.next.content, processed_at: won.next.processed_at }
+        : null
+    const remainingItems = store.items.map((item) =>
+      statusItem && item.id === statusItem.id ? statusItem : item,
+    )
+    const leadsAfterStatus = presentKfzLeadsWorkspace({
+      unprocessedItems: remainingItems.filter((item) => item.processed_at === null),
+      processedItems: remainingItems.filter((item) => item.processed_at !== null),
+      selectedItemId: statusItem?.id ?? null,
+      status: 'won',
+    })
+    const leadStatusOk =
+      contacted?.ok === true &&
+      appointment?.ok === true &&
+      won?.ok === true &&
+      statusItem !== null &&
+      resolveKfzLeadStatus(statusItem) === 'won' &&
+      countOpenKfzLeads(remainingItems) === remainingItems.length - 1 &&
+      leadsAfterStatus.selectedDetail?.status === 'won' &&
+      leadsAfterStatus.selectedDetail.createsVorgangAutomatically === false &&
+      leadsAfterStatus.openCount === remainingItems.length - 1
+
+    const inboxAfterStatus = presentAuthenticatedKfzInbox({
+      unprocessedItems: remainingItems.filter((item) => item.processed_at === null),
+      processedItems: remainingItems.filter((item) => item.processed_at !== null),
+      selectedItemId: statusItem?.id ?? inboxItem?.id ?? null,
+    })
+    const inboxCompatOk =
+      inboxAfterStatus.usesPreviewFixtures === false &&
+      inboxAfterStatus.selectedWorkspace?.noExternalSideEffect === true &&
+      inboxAfterStatus.selectedWorkspace.manualStatusOnly === true &&
+      inboxAfterStatus.selectedWorkspace.leadsHref?.startsWith('/app/leads?item=') === true &&
+      inboxAfterStatus.kfzCount === remainingItems.length &&
+      remainingItems.every((item) => item.channel === 'website')
+
     report.inboxItemCount = store.items.length
     report.documentObjectCount = documents.objects.size
     report.exactOnce = exactOnce
+    report.leadOpenCount = leadsAfterStatus.openCount
+    report.leadStatusPersisted = leadStatusOk
+    report.createsVorgangAutomatically = false
+    report.inboxCompatible = inboxCompatOk
     report.authorizedReviewStatus = authorizedOk ? 200 : 0
     report.anonymousReviewStatus = !anonymous.ok && anonymous.status === 401 ? 401 : 0
     report.crossItemReviewStatus = !crossItem.ok && crossItem.status === 404 ? 404 : 0
@@ -704,6 +857,9 @@ export async function runKfzReleaseCandidateAcceptance(input: {
       step('submit_retry', submitRetryOk),
       step('exact_once', exactOnce),
       step('inbox', inboxOk),
+      step('leads', leadsOk),
+      step('lead_status', leadStatusOk),
+      step('inbox_compat', inboxCompatOk),
       step(
         'authorized_review',
         authorizedOk,
@@ -726,6 +882,7 @@ export async function runKfzReleaseCandidateAcceptance(input: {
         }),
       ),
       step('analytics_metadata_only', analyticsOk),
+      step('analytics_dashboard_privacy', analyticsDashboardOk),
       step(
         'public_supabase_keys',
         publicKeys.current && publicKeys.legacy && publicKeys.missing,

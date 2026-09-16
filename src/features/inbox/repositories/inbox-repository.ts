@@ -5,6 +5,7 @@ import { INBOX_SOURCE_MANUAL_TEXT, INBOX_SOURCE_UNIVERSAL_CAPTURE } from '@/feat
 import { partitionAndSortInboxItems } from '@/features/inbox/lib/sort-inbox-items'
 import { isValidInboxItemId } from '@/features/inbox/lib/validate-inbox-item'
 import type { InboxItem, InboxLinkedFile } from '@/features/inbox/types/inbox-item'
+import { countOpenKfzLeads } from '@/features/leads/lib/kfz-lead-status'
 
 type RepositoryError = {
   success: false
@@ -128,6 +129,32 @@ export async function countUnprocessedInboxItemsForCurrentUser(): Promise<InboxC
   return {
     success: true,
     count: count ?? 0,
+  }
+}
+
+export async function countOpenKfzLeadsForCurrentUser(): Promise<InboxCountResult> {
+  const agencyResult = await getCurrentUserAgency()
+
+  if (!agencyResult.success) {
+    return agencyResult
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('inbox_items')
+    .select('channel, source, inbound_metadata, title, content, processed_at')
+    .eq('agency_id', agencyResult.agency.id)
+
+  if (error) {
+    return {
+      success: false,
+      error: 'Die offenen Leads konnten nicht gezählt werden.',
+    }
+  }
+
+  return {
+    success: true,
+    count: countOpenKfzLeads(data ?? []),
   }
 }
 

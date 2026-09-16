@@ -16,6 +16,8 @@ import {
   LEADS_NAV_HREF,
   LEADS_NAV_ITEM,
 } from '@/config/app-navigation'
+import { getCaseViewNavBadge } from '@/features/navigation/lib/navigation-badge-display'
+import { computeNavigationBadgeCounts } from '@/features/navigation/lib/compute-navigation-badge-counts'
 import { buildKfzDocumentReviewHref } from '@/features/inbound/kfz/lib/kfz-document-storage'
 import { KFZ_DOCUMENT_REVIEW_PATH } from '@/features/inbound/kfz/types/kfz-document-storage'
 import type { InboxItem } from '@/features/inbox/types/inbox-item'
@@ -24,6 +26,7 @@ import {
   type KfzLandingAttribution,
   type KfzLandingFormValues,
 } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
+import { presentAuthenticatedKfzInbox } from '@/features/inbox/lib/present-authenticated-kfz-inbox'
 import { resetRateLimitBucketsForTests } from '@/features/inbound/kfz/lib/rate-limit-seam'
 import { handleKfzInboundHttpRequest } from '@/features/inbound/kfz/services/handle-kfz-inbound-http'
 import { createMemoryInboundIntakeStore } from '@/features/inbound/repositories/inbound-intake-store'
@@ -204,6 +207,14 @@ describe('leads workspace selection, count and status', () => {
       assert.ok(detail.facts.some((fact) => fact.id === 'vehicle' && fact.value.includes('VW')))
       assert.ok(detail.facts.some((fact) => fact.id === 'customer' && fact.value === 'Max Mustermann'))
       assert.match(detail.nextAction, /kein Vorgang|Nichts wird automatisch/)
+
+      const inbox = presentAuthenticatedKfzInbox({
+        unprocessedItems: [item, mail],
+        processedItems: [],
+        selectedItemId: item.id,
+      })
+      assert.equal(inbox.selectedWorkspace?.leadsHref, `/app/leads?item=${item.id}`)
+      assert.equal(inbox.kfzCount, 1)
     })
   })
 
@@ -333,5 +344,53 @@ describe('leads navigation and dashboard contract', () => {
     const navConfig = fs.readFileSync(path.join(srcRoot, 'config/app-navigation.ts'), 'utf8')
     assert.match(navConfig, /LEADS_NAV_HREF/)
     assert.doesNotMatch(navConfig, /\/dev\/leads/)
+
+    const badgeCounts = computeNavigationBadgeCounts({
+      openCases: [],
+      caseTypesById: {},
+      businessAreaKeyById: {},
+      currentUserId: ACTOR_ID,
+      openLeadsCount: 3,
+    })
+    assert.equal(badgeCounts.caseViewCounts.leads, 3)
+    const leadsBadge = getCaseViewNavBadge('leads', 'Leads', badgeCounts)
+    assert.equal(leadsBadge?.count, 3)
+    assert.equal(leadsBadge?.label, '3 offene Leads')
+    assert.equal(getCaseViewNavBadge('leads', 'Leads', {
+      inboxUnprocessed: 0,
+      casesAttention: 0,
+      casesAttentionOverdue: 0,
+      caseViewCounts: { leads: 1 },
+    })?.label, '1 offener Lead')
+
+    const badgeRepo = fs.readFileSync(
+      path.join(srcRoot, 'features/navigation/repositories/navigation-badges-repository.ts'),
+      'utf8',
+    )
+    assert.match(badgeRepo, /countOpenKfzLeadsForCurrentUser/)
+
+    const inboxDetail = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/components/inbox-detail-panel.tsx'),
+      'utf8',
+    )
+    assert.match(inboxDetail, /Dieselbe Anfrage unter Leads öffnen/)
+    assert.match(inboxDetail, /buildKfzLeadHref/)
+
+    const inboxWorkspace = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/lib/present-authenticated-kfz-inbox.ts'),
+      'utf8',
+    )
+    assert.match(inboxWorkspace, /leadsHref/)
+
+    const taskPromotion = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/actions/convert-inbox-to-task.ts'),
+      'utf8',
+    )
+    const claimPromotion = fs.readFileSync(
+      path.join(srcRoot, 'features/inbox/actions/convert-inbox-to-claim.ts'),
+      'utf8',
+    )
+    assert.match(taskPromotion, /revalidatePath\('\/app\/leads'\)/)
+    assert.match(claimPromotion, /revalidatePath\('\/app\/leads'\)/)
   })
 })

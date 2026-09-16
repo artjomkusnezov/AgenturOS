@@ -32,6 +32,7 @@ export async function convertInboxToTaskAction(
   revalidatePath('/app')
   revalidatePath('/app/inbox')
   revalidatePath('/app/tasks')
+  revalidatePath('/app/leads')
 
   return {
     success: true,
