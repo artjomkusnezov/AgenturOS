@@ -1,31 +1,30 @@
 # Cursor Cloud Controller Task
 
-STATUS: STARTED
+STATUS: READY
 STARTING_REF: master
 
 ## Title
-AGENTUROS — KFZ PRODUCTION SMOKE RETRY V1
+AGENTUROS — KFZ GROK P0 REPAIR: UPLOAD FLOW + SCENARIO STATE ISOLATION
 
 ## Priority
-P0. The prior production-smoke controller run is stale: it was marked STARTED at 2026-09-16T20:10:40Z but produced no linked Cursor result branch/PR/evidence. Retry the same launch proof once; do not build new features.
+P0 launch blocker. External production QA on 2026-09-17 found two concrete defects before any production submission was made. Repair only these defects; do not expand AgenturOS.
 
-## Context
-PR #65 and #66 are already merged and the Kfz production stack is deployed. Previous release-candidate QA: 438/438 inbound tests, TypeScript/lint/build PASS. The only remaining job is production evidence.
+## Source of truth
+PR #65 and #66 are merged in master. Kfz production stack exists. External Grok QA verified /kfz desktop/mobile and all six entry scenarios can be opened, but found the two P0 defects below. Grok made ZERO production submissions, so do not spend the single synthetic production smoke submission in this repair task.
 
-## Goal
-Verify the deployed Kfz funnel end-to-end with exactly ONE clearly synthetic submission, prove arrival and usability in Eingang/Leads/Offene Leads, verify document/privacy-safe analytics behavior, and report READY FOR EXTERNAL QA or BLOCKED.
+## P0 defects to reproduce and repair
+1. upload_documents path: choosing the existing "Unterlagen hochladen" entry does not expose the expected document-upload control and can proceed directly toward Kontakt. Restore/ensure the intended existing upload step/control is reachable and understandable in this path. Do not invent a new document system; use the existing private document plumbing from the Kfz stack.
+2. Scenario state isolation: switching/restarting from one entry scenario to another can retain answers belonging to the previous scenario (observed EVB → switch_car with EVB fields still present in summary). A newly selected scenario must start with only valid shared fields and must not submit stale scenario-specific answers from another flow.
 
 ## Required work
-1. Open canonical public production /kfz fresh on desktop and ~390x844; verify six existing entry scenarios and questionnaire entry.
-2. Submit exactly ONE synthetic Kfz lead through production UI using obviously non-real identity/contact data. No real customer PII and no repeated submissions.
-3. Prove that exact lead appears in Eingang compatibility path, Vorgänge → Leads, and Offene Leads KPI, without duplicate UI identity.
-4. Open it and verify existing questionnaire/contact/source/UTM/missing-data/status/document metadata. If status is changed for smoke, verify persistence after reload. Do not auto-create a Vorgang.
-5. If safe, upload at most one tiny non-sensitive test document and prove authorized access plus unauthenticated denial; otherwise report NOT TESTED and exact blocker.
-6. Verify Kfz analytics/telemetry evidence contains no name, email, phone, address, free text, document filename/content or raw questionnaire PII.
-7. Produce factual launch handoff: canonical URL, production smoke result, desktop/mobile evidence, proven path, blockers, READY FOR EXTERNAL QA or BLOCKED.
-
-## Repair rule
-If smoke exposes a code-level P0 blocker, make at most ONE bounded repair attempt on the Cursor branch with deterministic regression coverage and rerun quality checks. Do not deploy a repair in this task.
+1. Reproduce both defects locally/browser-first from current master before changing code and record exact repro.
+2. Implement the smallest bounded fixes using existing Kfz form/document architecture.
+3. Add deterministic regression coverage for both contracts:
+   - upload_documents exposes the existing upload capability before contact/submit and preserves safe document metadata behavior;
+   - changing/restarting scenarios clears incompatible scenario-specific state while preserving only explicitly shared safe state, with summary/payload free of stale answers.
+4. Fresh browser QA desktop and ~390x844 covering all six entry scenarios, especially upload_documents and EVB → switch_car plus reverse/another scenario switch. Verify no destructive horizontal overflow or dead end.
+5. Verify analytics behavior remains privacy-safe and no PII was added to telemetry.
+6. DO NOT submit any production lead in this task. Production E2E smoke is a separate follow-up after this repair is reviewed/deployed under existing owner authorization.
 
 ## Tests / quality
 Run and report exact results:
@@ -34,14 +33,13 @@ Run and report exact results:
 - npm run lint
 - npm run build
 
+Add focused regression tests for both P0 defects and report their exact names/results.
+
 ## Hard boundaries
-No unrelated AgenturOS work. No Meta/WhatsApp API. No auto-replies. No new CRM. No secrets exposure. No paid services. No destructive git. No force push. No manual main/master write or merge. No additional production submissions beyond the single synthetic smoke lead.
+No unrelated AgenturOS work. No Meta/WhatsApp API. No auto-replies. No new CRM. No redesign beyond what is necessary for these two defects. No secrets exposure. No paid services. No production data/DB mutation. No production submission. No deploy. No merge. No manual main/master write. No force push or destructive git.
 
 ## Deliverable
-One Cursor result branch/PR only if code/evidence artifacts require it. If no code change is needed, return the production smoke evidence without manufacturing changes.
+One Cursor result branch/PR containing only the two bounded P0 repairs, deterministic tests, exact quality results and desktop/mobile browser evidence.
 
 ## Definition of done
-Fresh evidence proves or disproves /kfz → submit → Eingang/Leads → usable lead and privacy-safe analytics, with exactly one synthetic production submission.
-
-CONTROLLER_AGENT_ID: bc-d4f515e4-fb9d-4b49-86e7-e66d806af463
-CONTROLLER_STARTED_AT: 2026-09-17T06:33:52Z
+Both Grok P0 defects are reproduced then demonstrably fixed: upload_documents has a usable existing upload path, and scenario switching cannot leak stale scenario-specific answers into summary/payload. All required checks pass and no production submission occurred.
