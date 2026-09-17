@@ -1,98 +1,44 @@
 # Cursor Cloud Controller Task
 
-STATUS: STARTED
+STATUS: READY
 STARTING_REF: master
 
 ## Title
-AGENTUROS — KFZ PRODUCTION SMOKE + ADS HANDOFF V1
+AGENTUROS — KFZ PRODUCTION SMOKE RETRY V1
 
 ## Priority
-P0. Finish the real Kfz launch path before any unrelated AgenturOS work.
+P0. The prior production-smoke controller run is stale: it was marked STARTED at 2026-09-16T20:10:40Z but produced no linked Cursor result branch/PR/evidence. Retry the same launch proof once; do not build new features.
 
 ## Context
-PR #65 and PR #66 have been merged to master and the Kfz production stack has been deployed. Previous release-candidate QA reported 438/438 inbound tests plus TypeScript, lint and build PASS. The remaining job is to prove the actual production customer-to-lead journey and prepare a factual ads handoff. Do not build unrelated features.
+PR #65 and #66 are already merged and the Kfz production stack is deployed. Previous release-candidate QA: 438/438 inbound tests, TypeScript/lint/build PASS. The only remaining job is production evidence.
 
 ## Goal
-Verify the deployed Kfz funnel end-to-end with exactly one clearly synthetic submission, prove that it arrives and is usable in AgenturOS Leads/Eingang, verify document/privacy-safe analytics behavior, fix only bounded P0 launch blockers if found, and produce a concise launch evidence report.
+Verify the deployed Kfz funnel end-to-end with exactly ONE clearly synthetic submission, prove arrival and usability in Eingang/Leads/Offene Leads, verify document/privacy-safe analytics behavior, and report READY FOR EXTERNAL QA or BLOCKED.
 
 ## Required work
-
-### M1 — Production entry proof
-Open the actual public production /kfz URL in a fresh browser session.
-Verify desktop and approximately 390x844 mobile.
-Record the canonical public URL and confirm it is accessible without Vercel/GitHub authentication.
-Verify the six existing customer entry scenarios and that the questionnaire can be entered from each. Do not redesign marketing copy in this task.
-
-### M2 — Exactly one synthetic Kfz submission
-Submit exactly ONE clearly synthetic lead through the production /kfz UI.
-Use obviously non-real test identity/contact data and mark it as test wherever the form permits.
-Do not use real customer PII.
-Do not generate repeated submissions.
-Capture the user-visible success/failure state.
-
-### M3 — Lead arrival proof
-Using the existing authenticated app flow/environment available to the Cloud run, prove whether that exact synthetic submission appears in:
-- Eingang/inbox compatibility path;
-- Vorgänge → Leads;
-- Offene Leads dashboard KPI.
-Verify the same lead identity/source is not duplicated by the UI.
-
-### M4 — Lead usability
-Open the synthetic lead and verify the existing production fields that are present: Kfz questionnaire facts, contact facts, source/UTM where available, missing-data indicators, status lifecycle, and document metadata.
-Change status only if the existing test/smoke procedure requires it, then verify persistence after reload.
-Do not create a Vorgang automatically and do not add CRM features.
-
-### M5 — Documents + privacy
-If the synthetic submission path supports a harmless test document, upload at most one tiny non-sensitive test file and prove authorized access plus unauthenticated denial. If production policy/environment makes document upload unsafe or unavailable, do not force it; report NOT TESTED with the exact blocker.
-Verify analytics/telemetry used by the Kfz funnel remains privacy-safe: no name, email, phone, address, free-text, document filename/content, or raw questionnaire PII in analytics payloads/log evidence.
-
-### M6 — Ads handoff evidence
-Produce a short factual launch handoff containing:
-- canonical public /kfz URL;
-- production smoke result;
-- desktop/mobile evidence;
-- funnel steps proven;
-- exact remaining P0 blockers, if any;
-- whether the technical funnel is READY FOR EXTERNAL QA or BLOCKED.
-Do not create, configure or launch Meta Ads. No Meta API.
+1. Open canonical public production /kfz fresh on desktop and ~390x844; verify six existing entry scenarios and questionnaire entry.
+2. Submit exactly ONE synthetic Kfz lead through production UI using obviously non-real identity/contact data. No real customer PII and no repeated submissions.
+3. Prove that exact lead appears in Eingang compatibility path, Vorgänge → Leads, and Offene Leads KPI, without duplicate UI identity.
+4. Open it and verify existing questionnaire/contact/source/UTM/missing-data/status/document metadata. If status is changed for smoke, verify persistence after reload. Do not auto-create a Vorgang.
+5. If safe, upload at most one tiny non-sensitive test document and prove authorized access plus unauthenticated denial; otherwise report NOT TESTED and exact blocker.
+6. Verify Kfz analytics/telemetry evidence contains no name, email, phone, address, free text, document filename/content or raw questionnaire PII.
+7. Produce factual launch handoff: canonical URL, production smoke result, desktop/mobile evidence, proven path, blockers, READY FOR EXTERNAL QA or BLOCKED.
 
 ## Repair rule
-If production smoke exposes a code-level P0 blocker, make ONE bounded repair attempt on the Cursor branch, add deterministic regression coverage, rerun relevant tests/lint/typecheck/build and browser proof. Do not mutate production data/schema beyond the single authorized synthetic lead. Do not deploy a repair; report that deployment is owner-authorized separately unless an existing automatic preview deployment is sufficient for proof.
+If smoke exposes a code-level P0 blocker, make at most ONE bounded repair attempt on the Cursor branch with deterministic regression coverage and rerun quality checks. Do not deploy a repair in this task.
 
 ## Tests / quality
-Run the relevant Kfz/inbound tests plus:
+Run and report exact results:
 - npm run test:inbound
 - npx tsc --noEmit
 - npm run lint
 - npm run build
-Report exact results.
 
-## Browser proof
-Required:
-- public production /kfz desktop
-- public production /kfz ~390x844
-- exactly one synthetic submit result
-- authenticated Leads/Eingang evidence for that submission if environment permits
-- dashboard Offene Leads relation
-Do not call anything production-proven without this evidence.
-
-## Non-goals
-No unrelated AgenturOS work.
-No Meta/WhatsApp API.
-No auto-replies.
-No new CRM.
-No secrets exposure.
-No paid services.
-No destructive git.
-No force push.
-No manual main/master write or merge.
-No additional production submissions beyond the single synthetic smoke lead.
+## Hard boundaries
+No unrelated AgenturOS work. No Meta/WhatsApp API. No auto-replies. No new CRM. No secrets exposure. No paid services. No destructive git. No force push. No manual main/master write or merge. No additional production submissions beyond the single synthetic smoke lead.
 
 ## Deliverable
-One Cursor result branch/PR only if code/evidence artifacts require it, with exact QA results and browser evidence. If no code changes are required, provide the smoke evidence/report without manufacturing changes.
+One Cursor result branch/PR only if code/evidence artifacts require it. If no code change is needed, return the production smoke evidence without manufacturing changes.
 
 ## Definition of done
-We can state from fresh production evidence whether a real ad click can traverse /kfz → submit → Eingang/Leads → usable lead while privacy-safe analytics remains clean, and we have a canonical URL ready for external Grok QA/Meta campaign preparation.
-
-CONTROLLER_AGENT_ID: bc-bfb064a2-79ad-4f19-919a-e8a46e0f5b2a
-CONTROLLER_STARTED_AT: 2026-09-16T20:10:40Z
+Fresh evidence proves or disproves /kfz → submit → Eingang/Leads → usable lead and privacy-safe analytics, with exactly one synthetic production submission.
