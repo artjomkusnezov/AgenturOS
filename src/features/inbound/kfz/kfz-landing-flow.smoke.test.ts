@@ -128,17 +128,17 @@ function withKfzEnv(run: () => Promise<void>): Promise<void> {
 }
 
 describe('kfz landing step navigation', () => {
-  it('advances the upload path branch → contact → documents and back', () => {
+  it('advances the upload path branch → documents → contact and back', () => {
     const screens = buildKfzLandingScreens('upload_documents', {})
     assert.deepEqual(
       screens.map((screen) => screen.id),
-      ['branch', 'contact', 'documents'],
+      ['branch', 'documents', 'contact'],
     )
-    assert.equal(nextKfzLandingScreenId(screens, 'branch'), 'contact')
-    assert.equal(nextKfzLandingScreenId(screens, 'contact'), 'documents')
-    assert.equal(nextKfzLandingScreenId(screens, 'documents'), null)
-    assert.equal(previousKfzLandingScreenId(screens, 'documents'), 'contact')
-    assert.equal(previousKfzLandingScreenId(screens, 'contact'), 'branch')
+    assert.equal(nextKfzLandingScreenId(screens, 'branch'), 'documents')
+    assert.equal(nextKfzLandingScreenId(screens, 'documents'), 'contact')
+    assert.equal(nextKfzLandingScreenId(screens, 'contact'), null)
+    assert.equal(previousKfzLandingScreenId(screens, 'contact'), 'documents')
+    assert.equal(previousKfzLandingScreenId(screens, 'documents'), 'branch')
     assert.equal(previousKfzLandingScreenId(screens, 'branch'), null)
 
     assert.equal(validateKfzLandingStep1({ inquiryReason: '' }).ok, false)

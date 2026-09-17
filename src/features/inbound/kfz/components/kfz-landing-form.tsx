@@ -64,6 +64,7 @@ import {
   KFZ_LANDING_CHANNEL_CHOICES,
 } from '@/features/inbound/kfz/lib/kfz-landing-steps'
 import {
+  applyKfzLandingBranchSelection,
   buildKfzLandingScreens,
   extractVehicleFactsFromAnswers,
   getKfzLandingBranch,
@@ -242,13 +243,10 @@ export function KfzLandingForm({
     if (!branch) {
       return
     }
-    const nextValues = {
-      ...values,
-      branchId: branch.id,
-      inquiryReason: branch.label,
-    }
+    const nextValues = applyKfzLandingBranchSelection(values, branch.id)
     setClientError(null)
     setValues(nextValues)
+    setScreenId(KFZ_SCREEN_BRANCH)
     persistDraft({ values: nextValues, screenId: KFZ_SCREEN_BRANCH })
     analytics.onBranchSelected(branch.id)
   }
@@ -621,7 +619,7 @@ export function KfzLandingForm({
 
       {screen?.kind === 'contact' || screen?.kind === 'documents' ? (
         <div className="space-y-4">
-          {screen.kind === 'documents' || isLastScreen ? (
+          {isLastScreen ? (
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3">
               <h3 className="text-sm font-semibold text-zinc-900">Kurz prüfen</h3>
               <dl className="mt-2 space-y-1.5 text-sm text-zinc-700">

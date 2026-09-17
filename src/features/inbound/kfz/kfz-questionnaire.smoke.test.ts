@@ -183,17 +183,18 @@ describe('kfz landing initial branches', () => {
     )
   })
 
-  it('keeps Unterlagen hochladen on the existing contact → documents path', () => {
+  it('keeps Unterlagen hochladen on the existing documents → contact path', () => {
     const screens = buildKfzLandingScreens('upload_documents', {})
     assert.deepEqual(
       screens.map((screen) => `${screen.id}:${screen.kind}`),
-      ['branch:branch', 'contact:contact', 'documents:documents'],
+      ['branch:branch', 'documents:documents', 'contact:contact'],
     )
     assert.equal(
       screens.some((screen) => screen.kind === 'questions'),
       false,
     )
     assert.equal(isKfzLandingSubmitScreen(screens[0], screens, 'upload_documents'), false)
+    assert.equal(isKfzLandingSubmitScreen(screens[1], screens, 'upload_documents'), false)
     assert.equal(isKfzLandingSubmitScreen(screens[2], screens, 'upload_documents'), true)
     const startOnly = buildKfzLandingScreens('', {})
     assert.equal(isKfzLandingSubmitScreen(startOnly[0], startOnly, ''), false)

@@ -165,13 +165,12 @@ export function canAdvanceKfzLandingScreen(
       if (!complete.ok) {
         return { ok: false, error: complete.error, code: complete.code }
       }
-      return validateKfzLandingConsent(input.inquiryProcessingConsent)
     }
-    return { ok: true }
+    return validateKfzLandingConsent(input.inquiryProcessingConsent)
   }
 
   if (screen.kind === 'documents') {
-    return validateKfzLandingConsent(input.inquiryProcessingConsent)
+    return { ok: true }
   }
 
   return { ok: true }
