@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 
 ## Title
@@ -43,3 +43,6 @@ One Cursor result branch/PR containing only the two bounded P0 repairs, determin
 
 ## Definition of done
 Both Grok P0 defects are reproduced then demonstrably fixed: upload_documents has a usable existing upload path, and scenario switching cannot leak stale scenario-specific answers into summary/payload. All required checks pass and no production submission occurred.
+
+CONTROLLER_AGENT_ID: bc-f1baa497-43b1-4543-99f3-2fa992f6f8eb
+CONTROLLER_STARTED_AT: 2026-09-17T20:28:27Z
