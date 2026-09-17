@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 
 ## Title
@@ -42,3 +42,6 @@ One Cursor result branch/PR only if code/evidence artifacts require it. If no co
 
 ## Definition of done
 Fresh evidence proves or disproves /kfz → submit → Eingang/Leads → usable lead and privacy-safe analytics, with exactly one synthetic production submission.
+
+CONTROLLER_AGENT_ID: bc-d4f515e4-fb9d-4b49-86e7-e66d806af463
+CONTROLLER_STARTED_AT: 2026-09-17T06:33:52Z
