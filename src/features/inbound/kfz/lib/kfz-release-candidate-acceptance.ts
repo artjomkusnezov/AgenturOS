@@ -461,7 +461,7 @@ function questionnaireWalkOk(): boolean {
       return false
     }
     if (branch.path === 'upload') {
-      if (screens.map((screen) => screen.kind).join(',') !== 'branch,contact,documents') {
+      if (screens.map((screen) => screen.kind).join(',') !== 'branch,documents,contact') {
         return false
       }
     } else {

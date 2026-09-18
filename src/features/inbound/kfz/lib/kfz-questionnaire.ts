@@ -154,6 +154,54 @@ export const KFZ_DEDUCTIBLE_PARTIAL_ID = 'deductible_partial' as const
 export const KFZ_DEDUCTIBLE_FULL_ID = 'deductible_full' as const
 export const KFZ_DEDUCTIBLE_COMBINATION_ID = 'deductible_combination' as const
 
+/**
+ * Vehicle, driver and coverage facts that may be kept when the user
+ * restarts into another entry scenario. Scenario-branded answers such as
+ * eVB purpose, intent and previous-insurance details are never shared.
+ */
+export const KFZ_SHARED_QUESTIONNAIRE_IDS = [
+  'registration_status',
+  'start_date',
+  'hsn',
+  'tsn',
+  'vehicle_make',
+  'vehicle_model',
+  'first_registration',
+  'current_mileage',
+  'usage',
+  'annual_mileage',
+  'parking',
+  'policyholder_dob',
+  'license_date',
+  'drivers',
+  'owner_is_policyholder',
+  'owner_relationship',
+  'financing',
+  'license_plate',
+  KFZ_SF_CLASS_HAFTPFLICHT_ID,
+  KFZ_SF_CLASS_VOLLKASKO_ID,
+  'sf_source',
+  'coverage',
+  KFZ_DEDUCTIBLE_PARTIAL_ID,
+  KFZ_DEDUCTIBLE_FULL_ID,
+  'partner_dob',
+  'partner_license_date',
+  'youngest_driver_dob',
+  'additional_drivers_note',
+] as const
+
+export const KFZ_SCENARIO_SPECIFIC_QUESTION_IDS = [
+  'intent',
+  'intent_other',
+  'evb_purpose',
+  'has_previous_kfz',
+  'previous_insurer',
+  'previous_policy_number',
+  'previous_contract_end',
+  'has_claims',
+  'claims_details',
+] as const
+
 export const KFZ_TEILKASKO_DEDUCTIBLE_OPTIONS: readonly KfzQuestionOption[] = [
   { id: '0', label: '0 €' },
   { id: '150', label: '150 €' },
@@ -779,15 +827,15 @@ export function buildKfzLandingScreens(
   if (branch.path === 'upload') {
     screens.push(
       {
-        id: KFZ_SCREEN_CONTACT,
-        title: 'Kontakt',
-        kind: 'contact',
-        questionIds: [],
-      },
-      {
         id: KFZ_SCREEN_DOCUMENTS,
         title: 'Unterlagen',
         kind: 'documents',
+        questionIds: [],
+      },
+      {
+        id: KFZ_SCREEN_CONTACT,
+        title: 'Kontakt',
+        kind: 'contact',
         questionIds: [],
       },
     )
@@ -1096,6 +1144,89 @@ export function extractVehicleFactsFromAnswers(answers: KfzQuestionnaireAnswers)
     make: isUnknownQuestionnaireAnswer(make) ? '' : make,
     model: isUnknownQuestionnaireAnswer(model) ? '' : model,
     year: yearMatch?.[1] ?? '',
+  }
+}
+
+const SHARED_QUESTIONNAIRE_ID_SET = new Set<string>(KFZ_SHARED_QUESTIONNAIRE_IDS)
+
+export function isolateKfzQuestionnaireAnswersForBranch(
+  nextBranchId: string,
+  answers: KfzQuestionnaireAnswers,
+): KfzQuestionnaireAnswers {
+  const branch = getKfzLandingBranch(nextBranchId)
+  if (!branch || branch.path !== 'questionnaire') {
+    return {}
+  }
+
+  const shared: KfzQuestionnaireAnswers = {}
+  for (const [id, value] of Object.entries(answers)) {
+    if (!SHARED_QUESTIONNAIRE_ID_SET.has(id)) {
+      continue
+    }
+    const trimmed = typeof value === 'string' ? value.trim() : ''
+    if (!trimmed) {
+      continue
+    }
+    shared[id] = trimmed
+  }
+
+  const visibleIds = new Set(
+    listVisibleKfzQuestions(branch.id, shared).map((question) => question.id),
+  )
+  const isolated: KfzQuestionnaireAnswers = {}
+  for (const [id, value] of Object.entries(shared)) {
+    if (visibleIds.has(id)) {
+      isolated[id] = value
+    }
+  }
+  return isolated
+}
+
+export type KfzLandingBranchSelectionValues = {
+  branchId?: string
+  inquiryReason: string
+  questionnaireAnswers?: KfzQuestionnaireAnswers
+  vehicleMake: string
+  vehicleModel: string
+  vehicleYear: string
+}
+
+/**
+ * Restarting or switching an entry scenario keeps only explicitly shared
+ * safe state. Contact identity is preserved by the caller; questionnaire
+ * answers that belong to another scenario are dropped.
+ */
+export function applyKfzLandingBranchSelection<T extends KfzLandingBranchSelectionValues>(
+  values: T,
+  nextBranchId: string,
+): T {
+  const branch = getKfzLandingBranch(nextBranchId)
+  if (!branch) {
+    return values
+  }
+
+  const currentBranchId = resolveKfzLandingBranchId(values.branchId, values.inquiryReason)
+  if (currentBranchId === branch.id) {
+    return {
+      ...values,
+      branchId: branch.id,
+      inquiryReason: branch.label,
+    }
+  }
+
+  const nextAnswers = isolateKfzQuestionnaireAnswersForBranch(
+    branch.id,
+    values.questionnaireAnswers ?? {},
+  )
+  const vehicle = extractVehicleFactsFromAnswers(nextAnswers)
+  return {
+    ...values,
+    branchId: branch.id,
+    inquiryReason: branch.label,
+    questionnaireAnswers: nextAnswers,
+    vehicleMake: vehicle.make,
+    vehicleModel: vehicle.model,
+    vehicleYear: vehicle.year,
   }
 }
 

@@ -207,7 +207,7 @@ describe('kfz local launch acceptance walk', () => {
         if (branch.path === 'upload') {
           assert.deepEqual(
             screens.map((screen) => screen.kind),
-            ['branch', 'contact', 'documents'],
+            ['branch', 'documents', 'contact'],
           )
         } else {
           assert.ok(screens.some((screen) => screen.kind === 'questions'))
@@ -216,8 +216,10 @@ describe('kfz local launch acceptance walk', () => {
       }
 
       const uploadScreens = buildKfzLandingScreens('upload_documents', {})
+      const contactScreen = uploadScreens.find((screen) => screen.kind === 'contact')
+      assert.ok(contactScreen)
       const emptyContact = canAdvanceKfzLandingScreen(
-        uploadScreens[1]!,
+        contactScreen,
         formValues('upload_documents', {}, { phone: '', email: '', preferredChannel: 'email' }),
       )
       assert.equal(emptyContact.ok, false)
