@@ -540,6 +540,7 @@ describe('kfz landing approved redesign content', () => {
     const form = readLandingSource('features/inbound/kfz/components/kfz-landing-form.tsx')
     assert.match(form, /branch\.highlighted/)
     assert.match(form, /Am häufigsten/)
+    assert.match(form, /Anderer Anlass\?/)
     assert.match(form, /Wechseln ist unser häufigster Check/)
     assert.match(form, /Wie dürfen wir uns melden\?/)
     assert.match(form, /Es wird keine WhatsApp-Nachricht gesendet/)

@@ -101,11 +101,26 @@ const labelClassName = 'block text-sm font-medium text-zinc-800'
 
 function RequiredMark() {
   return (
-    <span className="text-red-700" aria-hidden="true">
+    <span className="text-red-700">
       {' '}
       *
+      <span className="sr-only"> Pflichtfeld</span>
     </span>
   )
+}
+
+function OptionalMark() {
+  return <span className="font-normal text-zinc-500"> (optional)</span>
+}
+
+function branchOptionClassName(selected: boolean, highlighted: boolean): string {
+  if (selected) {
+    return 'border-[#0050aa] bg-[#eaf3ff] text-[#003781] ring-1 ring-[#0050aa]'
+  }
+  if (highlighted) {
+    return 'border-[#8eb6e5] bg-[#f5f9ff] text-[#003781] hover:border-[#0050aa]'
+  }
+  return 'border-zinc-200 bg-white text-zinc-900 hover:border-[#8eb6e5] hover:bg-[#f8fbff]'
 }
 
 function channelLabel(channel: KfzPreferredChannel): string {
@@ -545,7 +560,7 @@ export function KfzLandingForm({
       data-kfz-branch={branchId || ''}
     >
       <div aria-live="polite">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-800">
+        <p className="text-sm font-semibold text-[#003781]">
           {branchId
             ? `Schritt ${screenIndex + 1} von ${screens.length} · ${screen?.title ?? 'Start'}`
             : `Schritt 1 · ${screen?.title ?? 'Start'}`}
@@ -562,29 +577,23 @@ export function KfzLandingForm({
       </div>
 
       {screen?.kind === 'branch' ? (
-        <fieldset className="space-y-2">
+        <fieldset className="space-y-3">
           <legend className="text-base font-semibold text-zinc-900">
             Womit sollen wir starten?
             <RequiredMark />
           </legend>
           <p className="text-sm text-zinc-600">
-            Unterlagen hochladen bleibt der kurze Weg. Ohne Unterlagen führen wir Sie durch
-            die Angaben für die manuelle Prüfung. Wechseln ist unser häufigster Check.
+            Eine Entscheidung reicht für den Start. Wechseln ist unser häufigster Check.
           </p>
-          <div className="grid gap-2">
-            {KFZ_LANDING_BRANCHES.map((branch) => {
+          <div className="grid gap-3">
+            {KFZ_LANDING_BRANCHES.filter((branch) => branch.highlighted).map((branch) => {
               const selected = branchId === branch.id
               return (
                 <label
                   key={branch.id}
                   data-kfz-branch-option={branch.id}
-                  className={`relative flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-base font-medium transition ${
-                    selected
-                      ? 'border-[#0050aa] bg-[#eaf3ff] text-[#003781] ring-1 ring-[#0050aa]'
-                      : branch.highlighted
-                        ? 'border-[#8eb6e5] bg-[#f5f9ff] text-[#003781] hover:border-[#0050aa]'
-                        : 'border-zinc-200 bg-white text-zinc-900 hover:border-[#8eb6e5] hover:bg-[#f8fbff]'
-                  }`}
+                  data-kfz-branch-group="recommended"
+                  className={`relative flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-base font-semibold shadow-[0_8px_24px_rgba(0,55,129,.08)] transition ${branchOptionClassName(selected, true)}`}
                 >
                   <input
                     type="radio"
@@ -595,14 +604,43 @@ export function KfzLandingForm({
                     onChange={() => selectBranch(branch.id)}
                   />
                   <span>{branch.label}</span>
-                  {branch.highlighted ? (
-                    <span className="rounded-full bg-[#d7eaff] px-2.5 py-1 text-xs font-semibold text-[#0050aa]">
-                      Am häufigsten
-                    </span>
-                  ) : null}
+                  <span className="rounded-full bg-[#0050aa] px-2.5 py-1 text-xs font-semibold text-white">
+                    Am häufigsten
+                  </span>
                 </label>
               )
             })}
+            <details
+              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
+              open={Boolean(branchId && !getKfzLandingBranch(branchId)?.highlighted)}
+              data-kfz-branch-group="other"
+            >
+              <summary className="min-h-11 cursor-pointer list-none py-1.5 text-sm font-semibold text-[#003781]">
+                Anderer Anlass?
+              </summary>
+              <div className="mt-2 grid gap-2 pb-1">
+                {KFZ_LANDING_BRANCHES.filter((branch) => !branch.highlighted).map((branch) => {
+                  const selected = branchId === branch.id
+                  return (
+                    <label
+                      key={branch.id}
+                      data-kfz-branch-option={branch.id}
+                      className={`relative flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${branchOptionClassName(selected, false)}`}
+                    >
+                      <input
+                        type="radio"
+                        name="inquiryReason"
+                        className="sr-only"
+                        checked={selected}
+                        disabled={locked}
+                        onChange={() => selectBranch(branch.id)}
+                      />
+                      <span>{branch.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </details>
           </div>
         </fieldset>
       ) : null}
@@ -723,7 +761,11 @@ export function KfzLandingForm({
               <div>
                 <label className={labelClassName} htmlFor={`${formId}-phone`}>
                   Telefon
-                  {values.preferredChannel === 'whatsapp' ? <RequiredMark /> : null}
+                  {values.preferredChannel === 'whatsapp' ? (
+                    <RequiredMark />
+                  ) : (
+                    <OptionalMark />
+                  )}
                 </label>
                 <input
                   id={`${formId}-phone`}
@@ -743,6 +785,7 @@ export function KfzLandingForm({
               <div>
                 <label className={labelClassName} htmlFor={`${formId}-email`}>
                   E-Mail
+                  {values.preferredChannel === 'email' ? <RequiredMark /> : <OptionalMark />}
                 </label>
                 <input
                   id={`${formId}-email`}
@@ -899,57 +942,72 @@ export function KfzLandingForm({
         </div>
       )}
 
-      <p
-        className={`text-sm ${
-          submitStatus === 'failed'
-            ? 'font-medium text-red-800'
-            : submitStatus === 'sending'
-              ? 'font-medium text-blue-800'
-              : 'text-zinc-600'
-        }`}
-        aria-live="polite"
-        data-kfz-submit-label={submitStatus}
-      >
-        {submitStatusLabel}
-      </p>
+      {!isLastScreen ? (
+        <div className="h-16 sm:hidden" aria-hidden="true" data-kfz-sticky-spacer="true" />
+      ) : null}
 
-      <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-        {screenIndex > 0 ? (
-          <Button
-            type="button"
-            variant="secondary-lg"
-            disabled={locked}
-            onClick={goBack}
-            className="min-h-12 flex-1 sm:flex-none"
-          >
-            Zurück
-          </Button>
-        ) : null}
-        {!isLastScreen ? (
-          <Button
-            type="button"
-            variant="primary-lg"
-            disabled={locked}
-            onClick={goNext}
-            className="min-h-12 flex-1 sm:flex-none"
-          >
-            Weiter
-          </Button>
-        ) : (
-          <Button
-            type="submit"
-            variant="primary-lg"
-            disabled={locked}
-            aria-busy={phase === 'submitting' || isPending}
-            className="min-h-12 flex-1 sm:flex-none"
-          >
-            {phase === 'submitting' || isPending
-              ? submitStatusLabel
-              : phase === 'error'
-                ? 'Erneut senden'
-                : 'Unverbindliche Anfrage senden'}
-          </Button>
-        )}
+      {submitStatusLabel ? (
+        <p
+          className={`text-sm ${
+            submitStatus === 'failed'
+              ? 'font-medium text-red-800'
+              : submitStatus === 'sending'
+                ? 'font-medium text-blue-800'
+                : 'text-zinc-600'
+          }`}
+          aria-live="polite"
+          data-kfz-submit-label={submitStatus}
+        >
+          {submitStatusLabel}
+        </p>
+      ) : null}
+
+      <div
+        className={
+          isLastScreen
+            ? 'flex gap-2'
+            : 'sticky bottom-0 z-20 -mx-4 mt-2 border-t border-zinc-200 bg-white/95 px-4 pt-3 backdrop-blur pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:z-auto sm:mx-0 sm:mt-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0'
+        }
+        data-kfz-sticky-actions={isLastScreen ? 'final' : 'mobile'}
+      >
+        <div className={isLastScreen ? 'contents' : 'flex gap-2'}>
+          {screenIndex > 0 ? (
+            <Button
+              type="button"
+              variant="secondary-lg"
+              disabled={locked}
+              onClick={goBack}
+              className="min-h-12 flex-1 sm:flex-none"
+            >
+              Zurück
+            </Button>
+          ) : null}
+          {!isLastScreen ? (
+            <Button
+              type="button"
+              variant="primary-lg"
+              disabled={locked}
+              onClick={goNext}
+              className="min-h-12 flex-1 sm:flex-none"
+            >
+              Weiter
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              variant="primary-lg"
+              disabled={locked}
+              aria-busy={phase === 'submitting' || isPending}
+              className="min-h-12 flex-1 sm:flex-none"
+            >
+              {phase === 'submitting' || isPending
+                ? submitStatusLabel
+                : phase === 'error'
+                  ? 'Erneut senden'
+                  : 'Unverbindliche Anfrage senden'}
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   )
