@@ -178,8 +178,12 @@ describe('kfz landing initial branches', () => {
     assert.equal(KFZ_LANDING_BRANCHES[0]?.path, 'upload')
     assert.ok(KFZ_LANDING_BRANCHES.slice(1).every((branch) => branch.path === 'questionnaire'))
     assert.equal(
-      KFZ_LANDING_BRANCHES.find((branch) => branch.id === 'switch_car')?.highlighted,
+      KFZ_LANDING_BRANCHES.find((branch) => branch.id === 'upload_documents')?.highlighted,
       true,
+    )
+    assert.equal(
+      KFZ_LANDING_BRANCHES.find((branch) => branch.id === 'switch_car')?.highlighted,
+      false,
     )
   })
 

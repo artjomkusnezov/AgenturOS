@@ -1,9 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react'
 
 import { recordKfzAnalyticsPreviewAction } from '@/features/inbound/kfz/actions/kfz-analytics-preview'
-import { KfzAnalyticsConsentBanner } from '@/features/inbound/kfz/components/kfz-analytics-consent-banner'
 import { classifyKfzAnalyticsSubmitError } from '@/features/inbound/kfz/lib/kfz-analytics-aggregate'
 import {
   createMemoryKfzAnalyticsConsentStorage,
@@ -195,13 +194,6 @@ export function KfzLandingAnalyticsRoot({
     () => bindKfzAnalyticsPort(controller, flush),
     [controller, flush],
   )
-  const [consent, setConsentState] = useState(() => controller.getConsent())
-
-  useEffect(() => {
-    if (consent === 'granted') {
-      analytics.onLanding()
-    }
-  }, [analytics, consent])
 
   useEffect(() => {
     function onVisibility() {
@@ -226,18 +218,6 @@ export function KfzLandingAnalyticsRoot({
 
   return (
     <div className="space-y-4">
-      <KfzAnalyticsConsentBanner
-        consent={consent}
-        onGrant={() => {
-          const records = controller.setConsent('granted')
-          setConsentState('granted')
-          flush(records)
-        }}
-        onDecline={() => {
-          controller.setConsent('declined')
-          setConsentState('declined')
-        }}
-      />
       {children(analytics)}
     </div>
   )

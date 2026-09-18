@@ -68,13 +68,15 @@ import {
   buildKfzLandingScreens,
   extractVehicleFactsFromAnswers,
   getKfzLandingBranch,
+  isUploadDocumentsBranch,
   KFZ_LANDING_BRANCHES,
   KFZ_SCREEN_BRANCH,
+  KFZ_SCREEN_DOCUMENTS,
   listAnsweredKfzQuestions,
   nextKfzLandingScreenId,
   previousKfzLandingScreenId,
+  resolveInitialKfzLandingScreenId,
   resolveKfzLandingBranchId,
-  resolveKfzLandingScreenId,
   setKfzQuestionnaireAnswer,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import type {
@@ -152,6 +154,7 @@ export function KfzLandingForm({
   const [localDocumentNotice, setDocumentReselectNotice] = useState<string | null | undefined>(
     undefined,
   )
+  const [manualFallbackOpen, setManualFallbackOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const generatedId = useMemo(() => createKfzLandingSubmissionId(), [])
   const inFlightRef = useRef(false)
@@ -172,9 +175,10 @@ export function KfzLandingForm({
   const branchId = resolveKfzLandingBranchId(values.branchId, values.inquiryReason)
   const answers = values.questionnaireAnswers ?? {}
   const screens = buildKfzLandingScreens(branchId, answers)
-  const screenId = resolveKfzLandingScreenId(
+  const screenId = resolveInitialKfzLandingScreenId(
     screens,
-    localScreenId ?? restoredDraft?.screenId ?? KFZ_SCREEN_BRANCH,
+    localScreenId ?? restoredDraft?.screenId,
+    branchId,
   )
   const screen = screens.find((entry) => entry.id === screenId) ?? screens[0]
   const screenIndex = Math.max(
@@ -259,11 +263,22 @@ export function KfzLandingForm({
       return
     }
     const nextValues = applyKfzLandingBranchSelection(values, branch.id)
+    const nextScreenId = isUploadDocumentsBranch(branch.id)
+      ? KFZ_SCREEN_DOCUMENTS
+      : KFZ_SCREEN_BRANCH
     setClientError(null)
     setValues(nextValues)
-    setScreenId(KFZ_SCREEN_BRANCH)
-    persistDraft({ values: nextValues, screenId: KFZ_SCREEN_BRANCH })
+    setManualFallbackOpen(!isUploadDocumentsBranch(branch.id))
+    setScreenId(nextScreenId)
+    persistDraft({ values: nextValues, screenId: nextScreenId })
     analytics.onBranchSelected(branch.id)
+  }
+
+  function openManualFallback() {
+    setClientError(null)
+    setManualFallbackOpen(true)
+    setScreenId(KFZ_SCREEN_BRANCH)
+    persistDraft({ screenId: KFZ_SCREEN_BRANCH })
   }
 
   function updateAnswer(questionId: string, value: string) {
@@ -583,7 +598,8 @@ export function KfzLandingForm({
             <RequiredMark />
           </legend>
           <p className="text-sm text-zinc-600">
-            Eine Entscheidung reicht für den Start. Wechseln ist unser häufigster Check.
+            Fahrzeugschein und bei Bedarf die letzte Beitragsrechnung. Den Preis
+            bereiten wir persönlich vor.
           </p>
           <div className="grid gap-3">
             {KFZ_LANDING_BRANCHES.filter((branch) => branch.highlighted).map((branch) => {
@@ -603,20 +619,25 @@ export function KfzLandingForm({
                     disabled={locked}
                     onChange={() => selectBranch(branch.id)}
                   />
-                  <span>{branch.label}</span>
-                  <span className="rounded-full bg-[#0050aa] px-2.5 py-1 text-xs font-semibold text-white">
-                    Am häufigsten
+                  <span>
+                    {branch.label}
+                    <span className="mt-1 block text-sm font-normal text-zinc-600">
+                      Fahrzeugschein, bei Bedarf Beitragsrechnung
+                    </span>
                   </span>
                 </label>
               )
             })}
             <details
               className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
-              open={Boolean(branchId && !getKfzLandingBranch(branchId)?.highlighted)}
-              data-kfz-branch-group="other"
+              open={
+                manualFallbackOpen ||
+                Boolean(branchId && !getKfzLandingBranch(branchId)?.highlighted)
+              }
+              data-kfz-branch-group="fallback"
             >
               <summary className="min-h-11 cursor-pointer list-none py-1.5 text-sm font-semibold text-[#003781]">
-                Anderer Anlass?
+                Keine Unterlagen senden?
               </summary>
               <div className="mt-2 grid gap-2 pb-1">
                 {KFZ_LANDING_BRANCHES.filter((branch) => !branch.highlighted).map((branch) => {
@@ -866,6 +887,15 @@ export function KfzLandingForm({
                 onAddFiles={handleAddFiles}
                 onRemove={handleRemoveDocument}
               />
+              <button
+                type="button"
+                data-kfz-manual-fallback="true"
+                disabled={locked}
+                onClick={openManualFallback}
+                className="min-h-11 w-full text-left text-sm font-semibold text-[#003781] underline-offset-2 hover:underline disabled:opacity-50"
+              >
+                Keine Unterlagen senden — Angaben selbst machen
+              </button>
             </>
           ) : null}
 
