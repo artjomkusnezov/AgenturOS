@@ -1,85 +1,88 @@
 # Cursor Cloud Controller Task
 
-STATUS: STARTED
+STATUS: READY
 STARTING_REF: master
 
 ## Title
-AGENTUROS — KFZ FINAL CRO/UX POLISH + FULL SMOKE
+AGENTUROS — KFZ OWNER CORRECTION: UPLOAD-FIRST, NO MESSUNG
+
+## Owner correction — 2026-09-18
+This task supersedes the previous final CRO task where it conflicts. Do not invent any additional UX, CRO, product logic, analytics, fields, screens, or copy beyond the instructions below.
 
 ## Goal
-Ship the CURRENT /kfz for the first Meta test. This is one final small CRO/UX polish block after the completed production-readiness/P0 repair. Do not redesign or expand scope.
+Correct the CURRENT production /kfz before any production synthetic smoke or Meta launch.
 
-## Source of truth
-PR #67 is merged to master as 0b61cc1a56ce86c98087155177955c347b8708b8. Its P0 repair passed 443/443 inbound tests, TypeScript, lint, build and desktop/mobile local browser QA. Preserve the existing Kfz funnel/backend, Inbox/Leads, documents, attribution and privacy-safe analytics.
+The owner has manually inspected production and explicitly rejected the current behavior:
+1. Remove the user-facing optional "Nutzung dieser Seite messen?" / Messung consent feature from /kfz completely. Do not replace it with another analytics consent banner, modal, drawer, checkbox, or prompt.
+2. Make the existing document-upload route the easiest/shortest path. The intended customer behavior is: send Fahrzeugschein and, if available, current/last Kfz Beitragsrechnung; then the agency prepares the price personally.
+3. Manual questionnaire remains only as the fallback for customers who do NOT want to send the documents. Do not force customers with documents through HSN/TSN/Marke/Modell and the long questionnaire.
+4. Reuse the existing upload implementation and existing private document storage/auth. Do not design a new upload system.
+5. Preserve all six business scenarios and existing backend/Inbox/Leads contracts unless a minimal routing adjustment is required to make the existing upload-first path reachable and obvious.
 
-Meta message match: Lengerich / Römer / Kfz / persönlich geprüft; CTA "Kfz-Check starten". Journey should feel: Ad → Kfz-Check starten → one simple first decision → questionnaire.
+## Exact UX intent
+The shortest path must visibly offer the already-existing:
+- Fahrzeugschein upload/photo
+- Vorversicherung / letzte Beitragsrechnung upload/photo
 
-## Scope — maximum five CRO items
-1. FIRST STEP / CONSENT FRICTION
-Inspect current Mess-/Analytics-/Consent UI after Hero CTA. First useful action should be visible immediately on mobile. Keep all required privacy/compliance behavior. Prefer compact visual treatment. If moving consent would change privacy/analytics semantics, DO NOT move it; compact it only and document why.
+These uploads are optional individually; a customer may send what they have.
+A clear fallback must let the customer continue with manual data entry/questionnaire if they do not want to upload documents.
+Do not add new questions or require document hunting before the customer can submit the upload path.
 
-2. SIX SCENARIOS — VISUAL PRIORITY ONLY
-Keep all six scenarios and all routing/business logic. Make "Bestehendes Auto wechseln" the visually primary/default recommendation with badge "Am häufigsten". Keep all other scenarios fully accessible but visually secondary, e.g. under "Anderer Anlass?". Preserve deep links, attribution and analytics.
+## Remove Messung
+Remove the public /kfz measurement-consent UI and its associated optional analytics behavior from the customer journey. Do not weaken the inquiry-processing consent required to submit the insurance inquiry. Keep required legal/privacy handling for the actual inquiry.
+Do not expose PII in analytics/logging. If removing the measurement feature leaves dead analytics code used only by /kfz measurement, remove/disable it only as far as needed for a clean build; do not refactor unrelated AgenturOS analytics.
 
-3. REMOVE PREMATURE COMPLETION COPY
-Audit funnel for "Bereit zum Senden" or equivalent before actual final Contact/Submit. Before final submit use normal next-action copy ("Weiter" or existing context-specific equivalent). Only final action uses "Unverbindliche Anfrage senden" or the already-approved equivalent.
-
-4. MOBILE STICKY PRIMARY ACTION + PROGRESS
-On mobile questionnaire steps, if Weiter can fall below the viewport after answering, add a careful sticky-bottom primary action. It must not cover fields, safe area, keyboard, consent/legal text, or affect desktop. Keep progress clearly visible. Prefer "Schritt X von Y · Persönliche Prüfung" only when Y is truthful under branching; otherwise preserve the correct existing dynamic progress contract.
-
-5. GERMAN DATE + SMALL MICROCOPY
-Audit date inputs/placeholders. Use TT.MM.JJJJ where possible without breaking native input/accessibility; otherwise document why native behavior stays. Polish Weiter, Zurück, optional, Pflichtfeld, validation and final-submit German; remove developer-ish wording.
-
-## Preserve exactly
-- backend architecture and existing ~10-step questionnaire structure
-- Supabase contract/migrations unless strictly required (expect none)
-- AgenturOS outside Kfz
-- document upload/private authorization
-- Inbox/Leads integration
-- attribution/UTM/first-touch
-- privacy-safe analytics, PII-free
-- Römer/Lengerich hero image
+## Preserve
+- current Römer/Lengerich hero
 - Allianz branding
-- Artjom/Vera trust elements
-- Google review proof
-- all six Kfz scenarios as business logic
-- retry exact-once behavior
-No large hero redesign, new product/function, Meta/WhatsApp API, generic personal-brand redesign, FAQ-form expansion, 4-step replacement funnel, fear/gap copy, green/carrier-free redesign.
+- Artjom/Vera trust and review proof
+- existing private upload/storage authorization
+- Inbox/Leads persistence
+- UTM/first-touch data needed on the inquiry itself
+- retry/exact-once behavior
+- six Kfz scenario business logic
+- AgenturOS outside /kfz
+- no Meta/WhatsApp API
+- no redesign / no Kfz V2
 
-## Required verification
-Desktop and mobile (~390x844): /kfz hero → CTA → first viewport → scenarios → every scenario routing → questionnaire → validation → contact → consent → submit → success.
-Mobile specifically: first viewport after CTA, scenario selection, sticky Weiter if implemented, keyboard/scrolling/safe-area, progress, final consent/submit.
-Regression:
-- all six scenarios work
-- UTM/first-touch retained
-- documents still work
-- retry does not duplicate
-- successful submission creates exactly one usable Kfz inquiry
-- authenticated employee can see it in /app/inbox and Leads
-- private document authorization still works
-- analytics remains PII-free
+## Regression check from owner screenshots
+On the manual vehicle step, HSN/TSN/Hersteller/Modell may remain for the manual fallback. They must NOT be the default burden for a customer who chooses to send Fahrzeugschein/rechnung.
 
-Run and report exact results:
+## Required implementation evidence
+Use only controller/cursor-cloud-v1 and one Cursor result branch. Do not use .agent-loop or issue-driven Agent Task/Review.
+
+Run and report exact:
 - npm run test:inbound
 - npx tsc --noEmit
 - npm run lint
 - npm run build
-- relevant Kfz E2E/smoke
+- relevant Kfz browser/E2E smoke on desktop and mobile
 
-## Production sequencing
-Do not mix unknown production blockers into CRO. First record current master/readiness state. Implement only this CRO block on one Cursor result branch. After checks are green, provide browser evidence and a factual production-smoke handoff. Production deployment/synthetic smoke is authorized by Owner, but never expose secrets or real customer PII. Use unmistakably synthetic data and exactly one successful synthetic Kfz inquiry when performing the final production smoke. Do not create duplicate submissions.
+Browser proof must show:
+- /kfz has NO "Nutzung dieser Seite messen?", "Messung erlauben", or equivalent measurement-consent UI
+- existing upload-first path is obvious and reachable
+- Fahrzeugschein photo/file upload visible
+- Beitragsrechnung/Vorversicherung photo/file upload visible
+- manual questionnaire fallback reachable
+- upload path does not require HSN/TSN/Marke/Modell
+- six scenarios still route
+- submit/contact/inquiry-processing consent still work
+- no duplicate on retry
+- authenticated Inbox/Leads and private document auth contracts remain intact
+
+## Production sequence
+Do NOT ask Owner to perform a synthetic submission while this correction is pending.
+After tests + browser proof are green: merge to main/master, deploy production, verify live UI first. Only then perform exactly one unmistakably synthetic production Kfz submission if the available tooling can safely do the real public flow. Never fake it with direct DB inserts.
 
 ## Definition of done
-Each of the five CRO items is either implemented or explicitly documented as unsafe/unnecessary. Desktop/mobile smoke PASS. Submit → production persistence → authenticated AgenturOS Inbox/Leads PASS. No regression. Then STOP: do not invent another AgenturOS feature or further CRO research.
+Corrected production /kfz is upload-first for customers with documents, manual questionnaire is fallback, public Messung UI is gone, regression checks green. Then complete the previously authorized single production synthetic smoke if technically possible and STOP AgenturOS.
 
-Final report format exactly:
+Final report:
 KFZ STATUS: READY / BLOCKED
-CHANGED: short
-TESTED: short
-OWNER ACTION: only what Artjom truly must do manually
-NEXT: if READY "Launch Meta test"; if BLOCKED exactly one next blocker.
+CHANGED: factual only
+TESTED: exact results
+OWNER ACTION: only if truly necessary
+NEXT: if READY "Launch Meta test"; if BLOCKED exactly one blocker.
 
-Main principle: SHIP THE CURRENT /KFZ. No Kfz V2 before real Meta data.
-
-CONTROLLER_AGENT_ID: bc-9dd21d5a-19c0-4389-aadf-2a467be6942a
-CONTROLLER_STARTED_AT: 2026-09-18T05:20:03Z
+CONTROLLER_AGENT_ID:
+CONTROLLER_STARTED_AT:
