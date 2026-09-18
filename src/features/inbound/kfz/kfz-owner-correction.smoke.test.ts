@@ -103,8 +103,9 @@ describe('kfz owner correction: upload-first path', () => {
       ['fahrzeugschein', 'vorversicherung'],
     )
     const fields = readSrc('features/inbound/kfz/components/kfz-landing-document-fields.tsx')
-    assert.match(fields, /Fahrzeugschein/)
-    assert.match(fields, /Vorversicherung \/ letzte Beitragsrechnung/)
+    const groups = readSrc('features/inbound/kfz/lib/kfz-landing-documents.ts')
+    assert.match(groups, /Fahrzeugschein/)
+    assert.match(groups, /Vorversicherung \/ letzte Beitragsrechnung/)
     assert.match(fields, /Foto aufnehmen/)
     assert.match(fields, /Foto oder Datei wählen/)
     assert.match(fields, /ohne Upload absenden/)
