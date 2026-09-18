@@ -461,7 +461,16 @@ function questionnaireWalkOk(): boolean {
       return false
     }
     if (branch.path === 'upload') {
-      if (screens.map((screen) => screen.kind).join(',') !== 'branch,documents,contact') {
+      const shortPath = buildKfzLandingScreens(branch.id, answers, [
+        { group: 'fahrzeugschein' },
+      ])
+      if (shortPath.map((screen) => screen.kind).join(',') !== 'branch,documents,contact') {
+        return false
+      }
+      if (screens.map((screen) => screen.kind).join(',') === 'branch,documents,contact') {
+        return false
+      }
+      if (!screens.some((screen) => screen.kind === 'questions')) {
         return false
       }
     } else {

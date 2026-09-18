@@ -35,6 +35,7 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-landing-draft'
 import {
   addKfzLandingDocuments,
+  canUseKfzDocumentLedShortPath,
   removeKfzLandingDocument,
   type KfzLandingDocumentCandidate,
   type KfzLandingDocumentRejection,
@@ -77,6 +78,7 @@ import {
   previousKfzLandingScreenId,
   resolveInitialKfzLandingScreenId,
   resolveKfzLandingBranchId,
+  resolveKfzLandingQuestionBranchId,
   setKfzQuestionnaireAnswer,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import type {
@@ -174,7 +176,8 @@ export function KfzLandingForm({
   const values = localValues ?? restoredDraft?.values ?? INITIAL_VALUES
   const branchId = resolveKfzLandingBranchId(values.branchId, values.inquiryReason)
   const answers = values.questionnaireAnswers ?? {}
-  const screens = buildKfzLandingScreens(branchId, answers)
+  const screens = buildKfzLandingScreens(branchId, answers, documents)
+  const questionBranchId = resolveKfzLandingQuestionBranchId(branchId, documents)
   const screenId = resolveInitialKfzLandingScreenId(
     screens,
     localScreenId ?? restoredDraft?.screenId,
@@ -191,7 +194,9 @@ export function KfzLandingForm({
       ? restoredDraft?.documentReselectNotice ?? null
       : localDocumentNotice
   const submissionId = restoredDraft?.submissionId ?? generatedId
-  const answeredRecords = branchId ? listAnsweredKfzQuestions(branchId, answers) : []
+  const answeredRecords = questionBranchId
+    ? listAnsweredKfzQuestions(questionBranchId, answers)
+    : []
 
   useEffect(() => {
     if (clientError || serverError) {
@@ -309,6 +314,7 @@ export function KfzLandingForm({
       ...values,
       branchId,
       questionnaireAnswers: answers,
+      documents,
     })
     if (!check.ok) {
       setClientError(check.error)
@@ -443,6 +449,7 @@ export function KfzLandingForm({
       branchId,
       questionnaireAnswers: answers,
       inquiryProcessingConsent: values.inquiryProcessingConsent,
+      documents,
     })
     if (!check.ok) {
       setClientError(check.error)
@@ -573,6 +580,13 @@ export function KfzLandingForm({
       data-kfz-screen={screen?.id}
       data-kfz-path={getKfzLandingBranch(branchId)?.path ?? ''}
       data-kfz-branch={branchId || ''}
+      data-kfz-document-route={
+        isUploadDocumentsBranch(branchId)
+          ? canUseKfzDocumentLedShortPath(documents)
+            ? 'short'
+            : 'questionnaire'
+          : (getKfzLandingBranch(branchId)?.path ?? '')
+      }
     >
       <div aria-live="polite">
         <p className="text-sm font-semibold text-[#003781]">

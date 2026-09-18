@@ -202,7 +202,11 @@ describe('kfz local launch acceptance walk', () => {
         ],
       )
       for (const branch of KFZ_LANDING_BRANCHES) {
-        const screens = buildKfzLandingScreens(branch.id, {})
+        const screens = buildKfzLandingScreens(
+          branch.id,
+          {},
+          branch.path === 'upload' ? [{ group: 'fahrzeugschein' }] : [],
+        )
         assert.equal(screens[0]?.kind, 'branch')
         if (branch.path === 'upload') {
           assert.deepEqual(
@@ -215,7 +219,9 @@ describe('kfz local launch acceptance walk', () => {
         }
       }
 
-      const uploadScreens = buildKfzLandingScreens('upload_documents', {})
+      const uploadScreens = buildKfzLandingScreens('upload_documents', {}, [
+        { group: 'fahrzeugschein' },
+      ])
       const contactScreen = uploadScreens.find((screen) => screen.kind === 'contact')
       assert.ok(contactScreen)
       const emptyContact = canAdvanceKfzLandingScreen(

@@ -188,7 +188,9 @@ describe('kfz landing initial branches', () => {
   })
 
   it('keeps Unterlagen hochladen on the existing documents → contact path', () => {
-    const screens = buildKfzLandingScreens('upload_documents', {})
+    const screens = buildKfzLandingScreens('upload_documents', {}, [
+      { group: 'fahrzeugschein' },
+    ])
     assert.deepEqual(
       screens.map((screen) => `${screen.id}:${screen.kind}`),
       ['branch:branch', 'documents:documents', 'contact:contact'],

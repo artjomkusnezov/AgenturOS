@@ -124,8 +124,12 @@ describe('kfz CRO polish contract', () => {
       const screens = buildKfzLandingScreens(branch.id, {})
       assert.equal(screens[0]?.kind, 'branch')
       if (branch.path === 'upload') {
+        assert.equal(screens[1]?.kind, 'documents')
+        assert.ok(screens.some((screen) => screen.kind === 'questions'))
+        assert.ok(screens.at(-1)?.kind === 'contact')
+        const shortPath = buildKfzLandingScreens(branch.id, {}, [{ group: 'fahrzeugschein' }])
         assert.deepEqual(
-          screens.map((screen) => screen.kind),
+          shortPath.map((screen) => screen.kind),
           ['branch', 'documents', 'contact'],
         )
       } else {

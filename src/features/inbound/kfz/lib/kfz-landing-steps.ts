@@ -3,6 +3,7 @@ import {
   isKfzLandingBranchLabel,
   isQuestionnaireBranch,
   resolveKfzLandingBranchId,
+  resolveKfzLandingQuestionBranchId,
   validateKfzQuestionScreen,
   validateKfzQuestionnaireComplete,
   type KfzLandingScreen,
@@ -40,6 +41,7 @@ export type KfzLandingAdvanceInput = KfzLandingContactInput & {
   branchId?: string
   questionnaireAnswers?: KfzQuestionnaireAnswers
   inquiryProcessingConsent?: boolean
+  documents?: readonly { group?: string | null }[] | null
 }
 
 export function isUsableKfzLandingPhone(raw: string): boolean {
@@ -141,6 +143,7 @@ export function canAdvanceKfzLandingScreen(
   input: KfzLandingAdvanceInput,
 ): KfzLandingStepValidation {
   const branchId = resolveKfzLandingBranchId(input.branchId, input.inquiryReason)
+  const questionBranchId = resolveKfzLandingQuestionBranchId(branchId, input.documents)
   const answers = input.questionnaireAnswers ?? {}
 
   if (screen.kind === 'branch') {
@@ -148,7 +151,7 @@ export function canAdvanceKfzLandingScreen(
   }
 
   if (screen.kind === 'questions') {
-    const result = validateKfzQuestionScreen(screen, branchId, answers)
+    const result = validateKfzQuestionScreen(screen, questionBranchId, answers)
     if (!result.ok) {
       return { ok: false, error: result.error, code: result.code, fieldId: result.questionId }
     }
@@ -160,8 +163,8 @@ export function canAdvanceKfzLandingScreen(
     if (!contact.ok) {
       return contact
     }
-    if (isQuestionnaireBranch(branchId)) {
-      const complete = validateKfzQuestionnaireComplete(branchId, answers)
+    if (isQuestionnaireBranch(questionBranchId)) {
+      const complete = validateKfzQuestionnaireComplete(questionBranchId, answers)
       if (!complete.ok) {
         return { ok: false, error: complete.error, code: complete.code }
       }

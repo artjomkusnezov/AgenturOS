@@ -1354,6 +1354,7 @@ describe('kfz analytics quality guardrails', () => {
     assert.equal(isKfzAnalyticsForwardTransitionAllowed('documents', 'branch'), false)
     assert.equal(isKfzAnalyticsForwardTransitionAllowed('branch', 'documents'), true)
     assert.equal(isKfzAnalyticsForwardTransitionAllowed('documents', 'contact'), true)
+    assert.equal(isKfzAnalyticsForwardTransitionAllowed('documents', 'intent'), true)
     assert.equal(isKfzAnalyticsForwardTransitionAllowed('contact', 'intent'), false)
     assert.equal(isKfzAnalyticsForwardTransitionAllowed('branch', 'contact'), true)
     assert.equal(isKfzAnalyticsForwardTransitionAllowed('contact', 'documents'), true)
