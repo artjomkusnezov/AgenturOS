@@ -1,91 +1,81 @@
 # Cursor Cloud Controller Task
 
-STATUS: STARTED
+STATUS: READY
 STARTING_REF: master
 
 ## Title
-AGENTUROS — KFZ OWNER CORRECTION: UPLOAD-FIRST, NO MESSUNG
+AGENTUROS — KFZ FIX DOCUMENT ROUTING REGRESSION
 
-## Owner correction — 2026-09-18
-This task supersedes the previous final CRO task where it conflicts. Do not invent any additional UX, CRO, product logic, analytics, fields, screens, or copy beyond the instructions below.
+## Owner bug report — 2026-09-18
+Production screenshot proves a regression in the upload-first route:
+If the customer uploads ONLY "Vorversicherung / letzte Beitragsrechnung" and no Fahrzeugschein, clicking Weiter currently jumps directly to Schritt 3 von 3 · Kontakt. That is wrong because the vehicle itself is not identified.
 
-## Goal
-Correct the CURRENT production /kfz before any production synthetic smoke or Meta launch.
+Fix ONLY this routing regression. No new UX/product ideas.
 
-The owner has manually inspected production and explicitly rejected the current behavior:
-1. Remove the user-facing optional "Nutzung dieser Seite messen?" / Messung consent feature from /kfz completely. Do not replace it with another analytics consent banner, modal, drawer, checkbox, or prompt.
-2. Make the existing document-upload route the easiest/shortest path. The intended customer behavior is: send Fahrzeugschein and, if available, current/last Kfz Beitragsrechnung; then the agency prepares the price personally.
-3. Manual questionnaire remains only as the fallback for customers who do NOT want to send the documents. Do not force customers with documents through HSN/TSN/Marke/Modell and the long questionnaire.
-4. Reuse the existing upload implementation and existing private document storage/auth. Do not design a new upload system.
-5. Preserve all six business scenarios and existing backend/Inbox/Leads contracts unless a minimal routing adjustment is required to make the existing upload-first path reachable and obvious.
+## Required behavior
+There are two independent document slots:
+- Fahrzeugschein
+- Vorversicherung / letzte Beitragsrechnung
 
-## Exact UX intent
-The shortest path must visibly offer the already-existing:
-- Fahrzeugschein upload/photo
-- Vorversicherung / letzte Beitragsrechnung upload/photo
+Routing must follow these exact rules:
+1. Fahrzeugschein uploaded (with or without Beitragsrechnung) → the document-led short path may continue to Kontakt. Do NOT force manual HSN/TSN/Hersteller/Modell.
+2. Beitragsrechnung uploaded but NO Fahrzeugschein → MUST NOT skip vehicle data. Continue into the existing manual vehicle/questionnaire path so the vehicle is identified.
+3. Neither document uploaded → existing manual questionnaire path.
+4. Both uploaded → existing short document-led path.
+5. Do not require Beitragsrechnung. It remains optional.
+6. Do not require Fahrzeugschein generally; a customer may instead use the existing manual questionnaire.
 
-These uploads are optional individually; a customer may send what they have.
-A clear fallback must let the customer continue with manual data entry/questionnaire if they do not want to upload documents.
-Do not add new questions or require document hunting before the customer can submit the upload path.
-
-## Remove Messung
-Remove the public /kfz measurement-consent UI and its associated optional analytics behavior from the customer journey. Do not weaken the inquiry-processing consent required to submit the insurance inquiry. Keep required legal/privacy handling for the actual inquiry.
-Do not expose PII in analytics/logging. If removing the measurement feature leaves dead analytics code used only by /kfz measurement, remove/disable it only as far as needed for a clean build; do not refactor unrelated AgenturOS analytics.
-
-## Preserve
-- current Römer/Lengerich hero
-- Allianz branding
-- Artjom/Vera trust and review proof
-- existing private upload/storage authorization
+## Preserve exactly
+- current upload UI and private storage/auth
+- current manual questionnaire and its existing fields/logic
+- all six scenarios
+- current contact step
+- inquiry-processing consent
 - Inbox/Leads persistence
-- UTM/first-touch data needed on the inquiry itself
 - retry/exact-once behavior
-- six Kfz scenario business logic
-- AgenturOS outside /kfz
+- UTM/first-touch
+- NO public Messung/tracking consent UI
+- no new fields/screens/copy/redesign
+- no OCR
+- no Kfz V2
 - no Meta/WhatsApp API
-- no redesign / no Kfz V2
+- AgenturOS outside /kfz untouched
 
-## Regression check from owner screenshots
-On the manual vehicle step, HSN/TSN/Hersteller/Modell may remain for the manual fallback. They must NOT be the default burden for a customer who chooses to send Fahrzeugschein/rechnung.
+## Regression tests required
+Add/adjust tests for the 4 document combinations:
+A. no docs → manual path
+B. Fahrzeugschein only → short path/contact
+C. Beitragsrechnung only → manual vehicle/questionnaire path
+D. both docs → short path/contact
 
-## Required implementation evidence
-Use only controller/cursor-cloud-v1 and one Cursor result branch. Do not use .agent-loop or issue-driven Agent Task/Review.
+The tests must specifically prevent "invoice-only → contact" from returning.
 
-Run and report exact:
+## Browser proof required
+Desktop + mobile ~390x844:
+- select/upload only Beitragsrechnung, click Weiter, prove vehicle/manual questionnaire appears before Kontakt
+- select/upload only Fahrzeugschein, click Weiter, prove short path to Kontakt
+- both docs, short path
+- no docs/manual fallback
+- Messung UI remains absent
+
+## Verification
+Run exact:
 - npm run test:inbound
 - npx tsc --noEmit
 - npm run lint
 - npm run build
-- relevant Kfz browser/E2E smoke on desktop and mobile
 
-Browser proof must show:
-- /kfz has NO "Nutzung dieser Seite messen?", "Messung erlauben", or equivalent measurement-consent UI
-- existing upload-first path is obvious and reachable
-- Fahrzeugschein photo/file upload visible
-- Beitragsrechnung/Vorversicherung photo/file upload visible
-- manual questionnaire fallback reachable
-- upload path does not require HSN/TSN/Marke/Modell
-- six scenarios still route
-- submit/contact/inquiry-processing consent still work
-- no duplicate on retry
-- authenticated Inbox/Leads and private document auth contracts remain intact
+Do not perform production synthetic smoke until this fix is merged/deployed and live UI is verified.
 
-## Production sequence
-Do NOT ask Owner to perform a synthetic submission while this correction is pending.
-After tests + browser proof are green: merge to main/master, deploy production, verify live UI first. Only then perform exactly one unmistakably synthetic production Kfz submission if the available tooling can safely do the real public flow. Never fake it with direct DB inserts.
-
-## Definition of done
-Corrected production /kfz is upload-first for customers with documents, manual questionnaire is fallback, public Messung UI is gone, regression checks green. Then complete the previously authorized single production synthetic smoke if technically possible and STOP AgenturOS.
+After green evidence: merge/deploy under existing owner authorization, verify live behavior, then continue the already-authorized single unmistakably synthetic production smoke. STOP AgenturOS after READY/BLOCKED.
 
 Final report:
 KFZ STATUS: READY / BLOCKED
+BUG: invoice-only routing
 CHANGED: factual only
 TESTED: exact results
-OWNER ACTION: only if truly necessary
-NEXT: if READY "Launch Meta test"; if BLOCKED exactly one blocker.
+BROWSER: four document combinations desktop/mobile
+NEXT: if READY "Launch Meta test"; if BLOCKED exact blocker.
 
 CONTROLLER_AGENT_ID:
 CONTROLLER_STARTED_AT:
-
-CONTROLLER_AGENT_ID: bc-7fd37d3f-6ab4-47d9-85a3-3bcf774e2dba
-CONTROLLER_STARTED_AT: 2026-09-18T11:20:41Z
