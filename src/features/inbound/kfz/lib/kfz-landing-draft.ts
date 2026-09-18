@@ -11,6 +11,8 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import { KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL } from '@/features/inbound/kfz/lib/kfz-landing-steps'
 import {
+  getKfzLandingBranch,
+  KFZ_DEFAULT_LANDING_BRANCH_ID,
   KFZ_SCREEN_BRANCH,
   KFZ_SCREEN_CONTACT,
   KFZ_SCREEN_DOCUMENTS,
@@ -131,6 +133,7 @@ export function getSessionKfzLandingDraftStorage(): KfzLandingDraftStorage | nul
 }
 
 export function emptyKfzLandingDraftValues(): KfzLandingFormValues {
+  const defaultBranch = getKfzLandingBranch(KFZ_DEFAULT_LANDING_BRANCH_ID)
   return {
     fullName: '',
     postalCode: KFZ_LANDING_DEFAULT_POSTAL_CODE,
@@ -138,13 +141,13 @@ export function emptyKfzLandingDraftValues(): KfzLandingFormValues {
     phone: '',
     email: '',
     preferredChannel: KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
-    inquiryReason: '',
+    inquiryReason: defaultBranch?.label ?? 'Unterlagen hochladen',
     inquiryProcessingConsent: false,
     vehicleMake: '',
     vehicleModel: '',
     vehicleYear: '',
     contextNotes: '',
-    branchId: '',
+    branchId: KFZ_DEFAULT_LANDING_BRANCH_ID,
     questionnaireAnswers: {},
   }
 }

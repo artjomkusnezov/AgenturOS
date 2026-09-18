@@ -156,13 +156,14 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
                 Zur persönlichen Prüfung durch Artjom oder Vera
               </h2>
               <p className="mt-5 text-lg leading-relaxed text-[#4a5565]">
-                Wählen Sie zuerst, womit wir starten. Mit Unterlagen bleibt der kurze Weg.
-                Ohne Unterlagen fragen wir die Angaben für die manuelle Allianz-Prüfung.
+                Senden Sie Fahrzeugschein und bei Bedarf die letzte Beitragsrechnung.
+                Den Preis bereiten wir persönlich vor. Ohne Unterlagen können Sie die
+                Angaben selbst machen.
               </p>
               <ul className="mt-8 space-y-4 text-base text-[#263445]">
                 <CheckItem>Keine Online-Preisgarantie</CheckItem>
                 <CheckItem>Kein automatisches Tarifversprechen</CheckItem>
-                <CheckItem>Unterlagen erst, wenn sie wirklich helfen</CheckItem>
+                <CheckItem>Fahrzeugschein und Beitragsrechnung sind optional</CheckItem>
               </ul>
             </div>
             <div className="order-1 rounded-[1.75rem] border border-[#d7e0ea] bg-white p-5 shadow-[0_18px_55px_rgba(0,55,129,.09)] lg:order-2 sm:p-8">
@@ -255,9 +256,9 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
                 oder E-Mail.
               </Faq>
               <Faq question="Brauche ich sofort Unterlagen?">
-                Nein. Der Upload ist optional. Sie können auch ohne Dokumente die Angaben
-                für die manuelle Prüfung machen. Wir fragen gezielt nach, falls Fahrzeugschein
-                oder Beitragsrechnung später helfen.
+                Nein. Der Upload ist optional. Fahrzeugschein und bei Bedarf die letzte
+                Beitragsrechnung helfen uns, den Preis persönlich vorzubereiten. Ohne
+                Unterlagen können Sie die Angaben selbst machen.
               </Faq>
               <Faq question="Wie werden meine Daten verwendet?">
                 Ausschließlich zur Bearbeitung Ihrer Kfz-Anfrage und zur Kontaktaufnahme dazu.

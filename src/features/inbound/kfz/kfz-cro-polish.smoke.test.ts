@@ -23,23 +23,24 @@ function readSrc(relativeFromSrc: string): string {
 }
 
 describe('kfz CRO polish contract', () => {
-  it('keeps analytics consent before the form and only compacts it', () => {
-    const root = readSrc('features/inbound/kfz/components/kfz-landing-analytics-root.tsx')
-    const banner = readSrc('features/inbound/kfz/components/kfz-analytics-consent-banner.tsx')
-    const bannerIndex = root.indexOf('<KfzAnalyticsConsentBanner')
-    const childrenIndex = root.indexOf('{children(analytics)}')
-    assert.ok(bannerIndex >= 0 && childrenIndex > bannerIndex)
-    assert.match(banner, /Nutzung dieser Seite messen\?/)
-    assert.match(banner, /Ohne Zustimmung wird nichts gemessen/)
-    assert.match(banner, /grobe Herkunft/)
-    assert.match(banner, /Referrer-Kategorie/)
-    assert.match(banner, /data-kfz-analytics-consent-grant/)
-    assert.match(banner, /data-kfz-analytics-consent-decline/)
-    assert.match(banner, /Was wird gemessen\?/)
-    assert.doesNotMatch(banner, /document\.cookie|gtag\(|facebook\.net/)
+  it('keeps public /kfz free of measurement-consent UI', () => {
+    const publicJourney = [
+      'app/kfz/page.tsx',
+      'features/inbound/kfz/components/kfz-landing-with-analytics.tsx',
+      'features/inbound/kfz/components/kfz-landing-form.tsx',
+      'features/inbound/kfz/components/kfz-landing-shell.tsx',
+      'features/inbound/kfz/components/kfz-landing-analytics-root.tsx',
+    ]
+      .map(readSrc)
+      .join('\n')
+    assert.doesNotMatch(publicJourney, /Nutzung dieser Seite messen\?/)
+    assert.doesNotMatch(publicJourney, /Messung erlauben/)
+    assert.doesNotMatch(publicJourney, /Messung beenden/)
+    assert.doesNotMatch(publicJourney, /KfzAnalyticsConsentBanner/)
+    assert.doesNotMatch(publicJourney, /document\.cookie|gtag\(|facebook\.net/)
   })
 
-  it('makes switch_car the visual default without changing the six-branch contract', () => {
+  it('makes upload_documents the visual default without changing the six-branch contract', () => {
     assert.deepEqual(
       KFZ_LANDING_BRANCHES.map((branch) => branch.id),
       [
@@ -53,15 +54,17 @@ describe('kfz CRO polish contract', () => {
     )
     assert.equal(
       KFZ_LANDING_BRANCHES.find((branch) => branch.highlighted)?.id,
-      'switch_car',
+      'upload_documents',
     )
     assert.equal(KFZ_LANDING_BRANCHES.filter((branch) => branch.highlighted).length, 1)
 
     const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
     assert.match(form, /data-kfz-branch-group="recommended"/)
-    assert.match(form, /data-kfz-branch-group="other"/)
-    assert.match(form, /Anderer Anlass\?/)
-    assert.match(form, /Am häufigsten/)
+    assert.match(form, /data-kfz-branch-group="fallback"/)
+    assert.match(form, /Keine Unterlagen senden\?/)
+    assert.match(form, /data-kfz-manual-fallback/)
+    assert.doesNotMatch(form, /Am häufigsten/)
+    assert.doesNotMatch(form, /Anderer Anlass\?/)
     assert.match(form, /KFZ_LANDING_BRANCHES\.filter\(\(branch\) => branch\.highlighted\)/)
     assert.match(form, /KFZ_LANDING_BRANCHES\.filter\(\(branch\) => !branch\.highlighted\)/)
     assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
