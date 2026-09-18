@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 
 ## Title
@@ -80,3 +80,6 @@ OWNER ACTION: only what Artjom truly must do manually
 NEXT: if READY "Launch Meta test"; if BLOCKED exactly one next blocker.
 
 Main principle: SHIP THE CURRENT /KFZ. No Kfz V2 before real Meta data.
+
+CONTROLLER_AGENT_ID: bc-9dd21d5a-19c0-4389-aadf-2a467be6942a
+CONTROLLER_STARTED_AT: 2026-09-18T05:20:03Z
