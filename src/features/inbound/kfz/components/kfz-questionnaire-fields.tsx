@@ -24,11 +24,16 @@ type KfzQuestionnaireFieldsProps = {
 
 function RequiredMark() {
   return (
-    <span className="text-red-700" aria-hidden="true">
+    <span className="text-red-700">
       {' '}
       *
+      <span className="sr-only"> Pflichtfeld</span>
     </span>
   )
+}
+
+function OptionalMark() {
+  return <span className="font-normal text-zinc-500"> (optional)</span>
 }
 
 function UnknownButton({
@@ -89,7 +94,7 @@ function ChoiceOptions({
         onChange={(event) => onChange(event.target.value)}
         data-kfz-choice-presentation="dropdown"
       >
-        <option value="">{question.required ? 'Bitte wählen' : 'Keine Angabe'}</option>
+        <option value="">{question.required ? 'Bitte auswählen' : 'Keine Angabe'}</option>
         {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.label}
@@ -188,7 +193,7 @@ function QuestionField({
       <fieldset className="space-y-2" data-kfz-question={question.id}>
         <legend className="text-base font-semibold text-zinc-900">
           {question.prompt}
-          {question.required ? <RequiredMark /> : null}
+          {question.required ? <RequiredMark /> : <OptionalMark />}
         </legend>
         {question.hint ? <p className="text-sm text-zinc-600">{question.hint}</p> : null}
         <ChoiceOptions
@@ -207,19 +212,28 @@ function QuestionField({
     <div data-kfz-question={question.id}>
       <label className={labelClassName} htmlFor={inputId}>
         {question.prompt}
-        {question.required ? <RequiredMark /> : null}
+        {question.required ? <RequiredMark /> : <OptionalMark />}
       </label>
       {question.hint ? (
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">{question.hint}</p>
+      ) : null}
+      {question.kind === 'date' && !unknownSelected ? (
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+          Bitte im Format TT.MM.JJJJ wählen. Der Browser zeigt das Datum in der
+          Gerätesprache.
+        </p>
       ) : null}
       <input
         id={inputId}
         name={question.id}
         type={unknownSelected ? 'text' : inputType}
+        lang={question.kind === 'date' ? 'de' : undefined}
         inputMode={question.inputMode}
         disabled={disabled}
         maxLength={question.maxLength}
-        placeholder={question.placeholder}
+        placeholder={
+          question.kind === 'date' ? 'TT.MM.JJJJ' : question.placeholder
+        }
         className={fieldClassName}
         value={unknownSelected ? KFZ_ANSWER_UNKNOWN_LABEL : value}
         onChange={(event) => onChange(event.target.value)}

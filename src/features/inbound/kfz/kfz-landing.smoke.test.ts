@@ -262,7 +262,7 @@ describe('kfz landing duplicate-submit protection', () => {
     assert.equal(kfzLandingSubmitStatus('submitting'), 'sending')
     assert.equal(kfzLandingSubmitStatus('success'), 'received')
     assert.equal(kfzLandingSubmitStatus('error'), 'failed')
-    assert.equal(kfzLandingSubmitStatusLabel('idle'), 'Bereit zum Senden')
+    assert.equal(kfzLandingSubmitStatusLabel('idle'), '')
     assert.equal(kfzLandingSubmitStatusLabel('submitting'), 'Wird gesendet …')
     assert.equal(kfzLandingSubmitStatusLabel('success'), 'Anfrage ist angekommen.')
     assert.equal(

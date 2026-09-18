@@ -141,11 +141,11 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
 
         <section
           id="kfz-anfrage"
-          className="scroll-mt-6 bg-[#f3f6f9] px-5 py-16 sm:px-8 sm:py-24"
+          className="scroll-mt-3 bg-[#f3f6f9] px-5 py-8 sm:px-8 sm:py-24"
           aria-labelledby="kfz-form-heading"
         >
-          <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[.78fr_1.22fr] lg:gap-16">
-            <div className="lg:pt-6">
+          <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[.78fr_1.22fr] lg:gap-16 lg:gap-y-10">
+            <div className="order-2 lg:order-1 lg:pt-6">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#0050aa]">
                 Ihr Kfz-Check
               </p>
@@ -165,7 +165,7 @@ export function KfzLandingShell({ children }: KfzLandingShellProps) {
                 <CheckItem>Unterlagen erst, wenn sie wirklich helfen</CheckItem>
               </ul>
             </div>
-            <div className="rounded-[1.75rem] border border-[#d7e0ea] bg-white p-5 shadow-[0_18px_55px_rgba(0,55,129,.09)] sm:p-8">
+            <div className="order-1 rounded-[1.75rem] border border-[#d7e0ea] bg-white p-5 shadow-[0_18px_55px_rgba(0,55,129,.09)] lg:order-2 sm:p-8">
               {children}
             </div>
           </div>

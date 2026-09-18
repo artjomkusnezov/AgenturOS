@@ -271,6 +271,7 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
     prompt: 'Gewünschter Versicherungsbeginn',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   {
     id: 'hsn',
@@ -310,6 +311,7 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
     prompt: 'Datum der Erstzulassung',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   {
     id: 'current_mileage',
@@ -382,12 +384,14 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
     prompt: 'Geburtsdatum der Versicherungsnehmerin / des Versicherungsnehmers',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   {
     id: 'license_date',
     prompt: 'Führerscheindatum der Versicherungsnehmerin / des Versicherungsnehmers',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   choice(
     'drivers',
@@ -403,18 +407,21 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
     prompt: 'Geburtsdatum der Partnerin / des Partners',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   {
     id: 'partner_license_date',
     prompt: 'Führerscheindatum der Partnerin / des Partners',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   {
     id: 'youngest_driver_dob',
     prompt: 'Geburtsdatum der jüngsten regelmäßigen Fahrerin / des jüngsten Fahrers',
     kind: 'date',
     required: true,
+    placeholder: 'TT.MM.JJJJ',
   },
   {
     id: 'additional_drivers_note',
@@ -450,6 +457,7 @@ export const KFZ_QUESTIONS: readonly KfzQuestionDefinition[] = [
     prompt: 'Vertragsende oder gewünschter Wechseltermin',
     kind: 'date',
     required: false,
+    placeholder: 'TT.MM.JJJJ',
   },
   choice(
     KFZ_SF_CLASS_HAFTPFLICHT_ID,
@@ -916,7 +924,9 @@ export function validateKfzQuestionAnswer(
   if (question.required && !isFilledAnswer(value)) {
     return {
       ok: false,
-      error: `Bitte ${question.prompt} angeben.`,
+      error: question.required
+        ? 'Bitte diese Pflichtangabe ergänzen.'
+        : 'Bitte diese Angabe ergänzen.',
       code: 'missing_field',
       questionId: question.id,
     }
@@ -938,7 +948,7 @@ export function validateKfzQuestionAnswer(
   if (question.kind === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return {
       ok: false,
-      error: 'Bitte ein gültiges Datum angeben.',
+      error: 'Bitte ein gültiges Datum wählen.',
       code: 'invalid_field',
       questionId: question.id,
     }

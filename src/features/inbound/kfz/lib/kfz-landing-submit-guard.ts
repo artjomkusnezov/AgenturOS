@@ -9,7 +9,7 @@ export type KfzLandingSubmitPhase = 'idle' | 'submitting' | 'success' | 'error'
 export type KfzLandingSubmitStatus = 'ready' | 'sending' | 'received' | 'failed'
 
 export const KFZ_LANDING_SUBMIT_STATUS_LABELS = {
-  ready: 'Bereit zum Senden',
+  ready: '',
   sending: 'Wird gesendet …',
   received: 'Anfrage ist angekommen.',
   failed: 'Senden fehlgeschlagen. Sie können es erneut versuchen.',
