@@ -1,5 +1,5 @@
 # Cursor Cloud Controller Trigger
 
 STATE: START_REQUESTED
-REQUESTED_AT: 2026-09-17T20:27:00Z
-REASON: The previous KFZ PRODUCTION SMOKE RETRY bc-d4f515e4-fb9d-4b49-86e7-e66d806af463 produced no linked Cursor result branch/PR/commit evidence. External Grok production QA subsequently found two concrete P0 launch blockers while making ZERO production submissions: upload_documents does not expose the intended upload control, and scenario-specific answers can leak when switching flows (observed EVB → switch_car). Launch exactly one bounded repair from master for these two defects only. Require focused regressions, npm run test:inbound, tsc --noEmit, lint, build, desktop + ~390x844 browser proof. No production submission, deploy, merge, main/master write, Meta/WhatsApp API, unrelated AgenturOS work, secrets, paid services, force push or destructive git. Duplicate guard remains authoritative.
+REQUESTED_AT: 2026-09-18T05:20:00Z
+REASON: PR #67 P0 repair is merged to master and verified. Launch exactly one final bounded Kfz CRO/UX polish + full smoke task from master. Scope is only the five owner-specified CRO items in TASK.md, preserving the current funnel/backend/Inbox/documents/attribution/privacy-safe analytics. After this block, stop and report READY/BLOCKED; no Kfz V2 or unrelated AgenturOS work. Duplicate guard remains authoritative.
