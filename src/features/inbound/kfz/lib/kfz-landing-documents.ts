@@ -99,6 +99,23 @@ export function labelKfzUploadGroup(group: KfzUploadGroup | null | undefined): s
   return 'Dokument'
 }
 
+export function hasKfzFahrzeugscheinDocument(
+  documents: readonly { group?: string | null }[] | null | undefined,
+): boolean {
+  return (documents ?? []).some((document) => document.group === 'fahrzeugschein')
+}
+
+/**
+ * Document-led short path (documents → contact) is allowed only when the
+ * vehicle itself is identified by a Fahrzeugschein. Beitragsrechnung alone
+ * must not skip the existing manual vehicle/questionnaire path.
+ */
+export function canUseKfzDocumentLedShortPath(
+  documents: readonly { group?: string | null }[] | null | undefined,
+): boolean {
+  return hasKfzFahrzeugscheinDocument(documents)
+}
+
 export function isAllowedKfzLandingDocumentType(
   filename: string,
   mimeType: string,

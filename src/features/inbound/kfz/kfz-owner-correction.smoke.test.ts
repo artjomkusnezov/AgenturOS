@@ -10,7 +10,10 @@ import { describe, it } from 'node:test'
 
 import type { KfzLandingFormValues } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import { emptyKfzLandingDraftValues } from '@/features/inbound/kfz/lib/kfz-landing-draft'
-import { KFZ_LANDING_DOCUMENT_GROUPS } from '@/features/inbound/kfz/lib/kfz-landing-documents'
+import {
+  canUseKfzDocumentLedShortPath,
+  KFZ_LANDING_DOCUMENT_GROUPS,
+} from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
   canAdvanceKfzLandingScreen,
   isKfzLandingSubmitScreen,
@@ -20,8 +23,10 @@ import {
   buildKfzLandingScreens,
   isUploadDocumentsBranch,
   KFZ_DEFAULT_LANDING_BRANCH_ID,
+  KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID,
   KFZ_LANDING_BRANCHES,
   listVisibleKfzQuestions,
+  nextKfzLandingScreenId,
   resolveInitialKfzLandingScreenId,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 
@@ -90,11 +95,11 @@ describe('kfz owner correction: upload-first path', () => {
     assert.equal(resolveInitialKfzLandingScreenId(screens, null, empty.branchId), 'documents')
     assert.equal(resolveInitialKfzLandingScreenId(screens, 'contact', empty.branchId), 'contact')
     assert.equal(resolveInitialKfzLandingScreenId(screens, 'branch', empty.branchId), 'branch')
-    assert.deepEqual(
-      screens.map((screen) => screen.kind),
-      ['branch', 'documents', 'contact'],
-    )
-    assert.equal(screens.some((screen) => screen.kind === 'questions'), false)
+    assert.equal(screens[0]?.kind, 'branch')
+    assert.equal(screens[1]?.kind, 'documents')
+    assert.ok(screens.some((screen) => screen.kind === 'questions'))
+    assert.equal(screens.at(-1)?.kind, 'contact')
+    assert.notEqual(nextKfzLandingScreenId(screens, 'documents'), 'contact')
   })
 
   it('keeps Fahrzeugschein and Beitragsrechnung as optional existing uploads', () => {
@@ -127,23 +132,86 @@ describe('kfz owner correction: upload-first path', () => {
       )
     }
 
-    const screens = buildKfzLandingScreens('upload_documents', {})
+    const schein = [{ group: 'fahrzeugschein' as const }]
+    const screens = buildKfzLandingScreens('upload_documents', {}, schein)
     const documents = screens.find((screen) => screen.kind === 'documents')
     const contact = screens.find((screen) => screen.kind === 'contact')
     assert.ok(documents)
     assert.ok(contact)
-    assert.equal(canAdvanceKfzLandingScreen(documents, uploadValues()).ok, true)
+    assert.equal(
+      canAdvanceKfzLandingScreen(documents, { ...uploadValues(), documents: schein }).ok,
+      true,
+    )
     assert.equal(isKfzLandingSubmitScreen(documents, screens, 'upload_documents'), false)
     assert.equal(isKfzLandingSubmitScreen(contact, screens, 'upload_documents'), true)
 
     const blocked = canAdvanceKfzLandingScreen(
       contact,
-      uploadValues({ inquiryProcessingConsent: false }),
+      { ...uploadValues({ inquiryProcessingConsent: false }), documents: schein },
     )
     assert.equal(blocked.ok, false)
     if (!blocked.ok) {
       assert.equal(blocked.code, 'invalid_consent')
     }
+  })
+
+  it('routes the four document combinations and never sends invoice-only to contact', () => {
+    const none: Array<{ group: 'fahrzeugschein' | 'vorversicherung' }> = []
+    const scheinOnly = [{ group: 'fahrzeugschein' as const }]
+    const invoiceOnly = [{ group: 'vorversicherung' as const }]
+    const both = [
+      { group: 'fahrzeugschein' as const },
+      { group: 'vorversicherung' as const },
+    ]
+
+    assert.equal(canUseKfzDocumentLedShortPath(none), false)
+    assert.equal(canUseKfzDocumentLedShortPath(scheinOnly), true)
+    assert.equal(canUseKfzDocumentLedShortPath(invoiceOnly), false)
+    assert.equal(canUseKfzDocumentLedShortPath(both), true)
+
+    const noDocs = buildKfzLandingScreens('upload_documents', {}, none)
+    const schein = buildKfzLandingScreens('upload_documents', {}, scheinOnly)
+    const invoice = buildKfzLandingScreens('upload_documents', {}, invoiceOnly)
+    const bothDocs = buildKfzLandingScreens('upload_documents', {}, both)
+
+    assert.equal(nextKfzLandingScreenId(noDocs, 'documents'), 'intent')
+    assert.ok(noDocs.some((screen) => screen.id === 'vehicle'))
+    assert.notEqual(nextKfzLandingScreenId(noDocs, 'documents'), 'contact')
+
+    assert.deepEqual(
+      schein.map((screen) => screen.id),
+      ['branch', 'documents', 'contact'],
+    )
+    assert.equal(nextKfzLandingScreenId(schein, 'documents'), 'contact')
+    assert.equal(schein.some((screen) => screen.kind === 'questions'), false)
+
+    assert.equal(nextKfzLandingScreenId(invoice, 'documents'), 'intent')
+    assert.ok(invoice.some((screen) => screen.id === 'vehicle'))
+    assert.ok(invoice.some((screen) => screen.kind === 'questions'))
+    assert.notEqual(nextKfzLandingScreenId(invoice, 'documents'), 'contact')
+    assert.equal(
+      invoice.find((screen) => screen.kind === 'questions')?.id,
+      'intent',
+    )
+    assert.equal(invoice.at(-1)?.id, 'contact')
+
+    assert.deepEqual(
+      bothDocs.map((screen) => screen.id),
+      ['branch', 'documents', 'contact'],
+    )
+    assert.equal(nextKfzLandingScreenId(bothDocs, 'documents'), 'contact')
+
+    const invoiceAdvance = canAdvanceKfzLandingScreen(
+      invoice.find((screen) => screen.kind === 'documents')!,
+      { ...uploadValues(), documents: invoiceOnly },
+    )
+    assert.equal(invoiceAdvance.ok, true)
+    assert.notEqual(nextKfzLandingScreenId(invoice, 'documents'), 'contact')
+
+    const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
+    assert.match(form, /buildKfzLandingScreens\(branchId, answers, documents\)/)
+    assert.match(form, /data-kfz-document-route/)
+    assert.equal(KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID, 'no_documents')
   })
 
   it('keeps HSN/TSN only on the manual questionnaire fallback', () => {

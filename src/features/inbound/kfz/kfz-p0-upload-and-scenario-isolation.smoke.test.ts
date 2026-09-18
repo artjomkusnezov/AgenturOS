@@ -120,7 +120,9 @@ function evbSeed(): KfzQuestionnaireAnswers {
 
 describe('kfz P0 upload_documents path', () => {
   it('exposes the existing upload capability before contact and submit', () => {
-    const screens = buildKfzLandingScreens('upload_documents', {})
+    const screens = buildKfzLandingScreens('upload_documents', {}, [
+      { group: 'fahrzeugschein' },
+    ])
     assert.deepEqual(
       screens.map((screen) => `${screen.id}:${screen.kind}`),
       ['branch:branch', 'documents:documents', 'contact:contact'],
@@ -136,7 +138,10 @@ describe('kfz P0 upload_documents path', () => {
     assert.equal(isKfzLandingSubmitScreen(documents, screens, 'upload_documents'), false)
     assert.equal(isKfzLandingSubmitScreen(contact, screens, 'upload_documents'), true)
 
-    const withoutConsent = formValues('upload_documents', {}, { inquiryProcessingConsent: false })
+    const withoutConsent = {
+      ...formValues('upload_documents', {}, { inquiryProcessingConsent: false }),
+      documents: [{ group: 'fahrzeugschein' as const }],
+    }
     assert.equal(canAdvanceKfzLandingScreen(documents, withoutConsent).ok, true)
     const blockedSubmit = canAdvanceKfzLandingScreen(contact, withoutConsent)
     assert.equal(blockedSubmit.ok, false)

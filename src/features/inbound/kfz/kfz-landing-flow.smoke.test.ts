@@ -127,9 +127,11 @@ function withKfzEnv(run: () => Promise<void>): Promise<void> {
   })
 }
 
+const FAHRZEUGSCHEIN_ONLY = [{ group: 'fahrzeugschein' as const }]
+
 describe('kfz landing step navigation', () => {
   it('advances the upload path branch → documents → contact and back', () => {
-    const screens = buildKfzLandingScreens('upload_documents', {})
+    const screens = buildKfzLandingScreens('upload_documents', {}, FAHRZEUGSCHEIN_ONLY)
     assert.deepEqual(
       screens.map((screen) => screen.id),
       ['branch', 'documents', 'contact'],

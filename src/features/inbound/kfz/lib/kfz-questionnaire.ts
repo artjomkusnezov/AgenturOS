@@ -7,6 +7,8 @@
  * AgenturOS intake questions — not an official Allianz question order.
  */
 
+import { canUseKfzDocumentLedShortPath } from '@/features/inbound/kfz/lib/kfz-landing-documents'
+
 export const KFZ_ANSWER_UNKNOWN = 'unknown' as const
 export const KFZ_ANSWER_UNKNOWN_LABEL = 'Weiß ich nicht' as const
 
@@ -57,6 +59,7 @@ export const KFZ_LANDING_BRANCHES = [
 ] as const
 
 export const KFZ_DEFAULT_LANDING_BRANCH_ID = 'upload_documents' as const
+export const KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID = 'no_documents' as const
 
 export type KfzLandingBranchId = (typeof KFZ_LANDING_BRANCHES)[number]['id']
 export type KfzLandingPath = (typeof KFZ_LANDING_BRANCHES)[number]['path']
@@ -621,6 +624,16 @@ export function isUploadDocumentsBranch(
   return getKfzLandingBranch(branchId)?.id === 'upload_documents'
 }
 
+export function resolveKfzLandingQuestionBranchId(
+  branchId: string,
+  documents: readonly { group?: string | null }[] | null | undefined = null,
+): string {
+  if (isUploadDocumentsBranch(branchId) && !canUseKfzDocumentLedShortPath(documents)) {
+    return KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID
+  }
+  return branchId
+}
+
 export function isQuestionnaireBranch(branchId: string | null | undefined): boolean {
   return getKfzLandingBranch(branchId)?.path === 'questionnaire'
 }
@@ -816,9 +829,29 @@ export function visibleQuestionIdsOnScreen(
   return screen.questionIds.filter((id) => isKfzQuestionVisible(id, branchId, answers))
 }
 
+function appendKfzQuestionnaireScreens(
+  screens: KfzLandingScreen[],
+  branchId: string,
+  answers: KfzQuestionnaireAnswers,
+): void {
+  for (const screen of KFZ_QUESTION_SCREENS) {
+    const questionIds = visibleQuestionIdsOnScreen(screen, branchId, answers)
+    if (questionIds.length === 0) {
+      continue
+    }
+    screens.push({
+      id: screen.id,
+      title: screen.title,
+      kind: 'questions',
+      questionIds,
+    })
+  }
+}
+
 export function buildKfzLandingScreens(
   branchId: string,
   answers: KfzQuestionnaireAnswers,
+  documents: readonly { group?: string | null }[] | null | undefined = null,
 ): KfzLandingScreen[] {
   const branch = getKfzLandingBranch(branchId)
   const screens: KfzLandingScreen[] = [
@@ -835,36 +868,38 @@ export function buildKfzLandingScreens(
   }
 
   if (branch.path === 'upload') {
-    screens.push(
-      {
-        id: KFZ_SCREEN_DOCUMENTS,
-        title: 'Unterlagen',
-        kind: 'documents',
-        questionIds: [],
-      },
-      {
+    screens.push({
+      id: KFZ_SCREEN_DOCUMENTS,
+      title: 'Unterlagen',
+      kind: 'documents',
+      questionIds: [],
+    })
+
+    if (canUseKfzDocumentLedShortPath(documents)) {
+      screens.push({
         id: KFZ_SCREEN_CONTACT,
         title: 'Kontakt',
         kind: 'contact',
         questionIds: [],
-      },
+      })
+      return screens
+    }
+
+    appendKfzQuestionnaireScreens(
+      screens,
+      KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID,
+      answers,
     )
+    screens.push({
+      id: KFZ_SCREEN_CONTACT,
+      title: 'Kontakt',
+      kind: 'contact',
+      questionIds: [],
+    })
     return screens
   }
 
-  for (const screen of KFZ_QUESTION_SCREENS) {
-    const questionIds = visibleQuestionIdsOnScreen(screen, branch.id, answers)
-    if (questionIds.length === 0) {
-      continue
-    }
-    screens.push({
-      id: screen.id,
-      title: screen.title,
-      kind: 'questions',
-      questionIds,
-    })
-  }
-
+  appendKfzQuestionnaireScreens(screens, branch.id, answers)
   screens.push({
     id: KFZ_SCREEN_CONTACT,
     title: 'Kontakt',

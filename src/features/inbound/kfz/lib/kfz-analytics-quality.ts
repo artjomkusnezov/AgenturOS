@@ -54,8 +54,10 @@ function canonicalIndex(stepId: string): number {
  * Forward edges that can occur on at least one of the six Kfz paths.
  * Questionnaire screens may be skipped when they have no visible questions,
  * so later question screens and contact are allowed. On the upload path
- * documents is reached from branch, then contact. The older contact →
- * documents edge stays valid for historical sessions.
+ * documents is reached from branch, then contact when a Fahrzeugschein is
+ * present. Without Fahrzeugschein the existing questionnaire follows, so
+ * documents may continue to intent. The older contact → documents edge
+ * stays valid for historical sessions.
  */
 export function isKfzAnalyticsForwardTransitionAllowed(
   fromStepId: string,
@@ -68,7 +70,12 @@ export function isKfzAnalyticsForwardTransitionAllowed(
     return false
   }
   if (fromStepId === 'documents') {
-    return toStepId === 'contact'
+    return (
+      toStepId === 'contact' ||
+      toStepId === 'intent' ||
+      toStepId === 'registration' ||
+      toStepId === 'vehicle'
+    )
   }
   if (toStepId === 'documents') {
     return fromStepId === 'contact' || fromStepId === 'branch'
