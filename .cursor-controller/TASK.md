@@ -1,62 +1,57 @@
 # Cursor Cloud Controller Task
 
-STATUS: STARTED
+STATUS: READY
 STARTING_REF: master
 
 ## Title
-AGENTUROS — KFZ FIX DOCUMENT ROUTING REGRESSION
+AGENTUROS — KFZ RESTORE SCENARIO SELECTION AS STEP 1
 
-## Owner bug report — 2026-09-18
-Production screenshot proves a regression in the upload-first route:
-If the customer uploads ONLY "Vorversicherung / letzte Beitragsrechnung" and no Fahrzeugschein, clicking Weiter currently jumps directly to Schritt 3 von 3 · Kontakt. That is wrong because the vehicle itself is not identified.
+## Owner correction — 2026-09-20
+The current production flow is wrong at the very first step.
 
-Fix ONLY this routing regression. No new UX/product ideas.
+Schritt 1 MUST be the existing six-scenario selection (e.g. "Bestehendes Auto wechseln", neues Auto, etc.). "Bestehendes Auto wechseln" may be visually highlighted / marked "Am häufigsten", but it MUST NOT be preselected in a way that skips the choice. The customer must make a scenario choice.
 
-## Required behavior
-There are two independent document slots:
-- Fahrzeugschein
-- Vorversicherung / letzte Beitragsrechnung
+The current "Schritt 1 von 11 · Start" screen that immediately asks "Womit sollen wir starten?" with "Unterlagen hochladen" / "Keine Unterlagen senden?" must NOT replace the scenario selection.
 
-Routing must follow these exact rules:
-1. Fahrzeugschein uploaded (with or without Beitragsrechnung) → the document-led short path may continue to Kontakt. Do NOT force manual HSN/TSN/Hersteller/Modell.
-2. Beitragsrechnung uploaded but NO Fahrzeugschein → MUST NOT skip vehicle data. Continue into the existing manual vehicle/questionnaire path so the vehicle is identified.
-3. Neither document uploaded → existing manual questionnaire path.
-4. Both uploaded → existing short document-led path.
-5. Do not require Beitragsrechnung. It remains optional.
-6. Do not require Fahrzeugschein generally; a customer may instead use the existing manual questionnaire.
+## Exact required flow
+1. Public /kfz entry → Schritt 1 = existing six scenario choices.
+2. Preserve all six existing scenarios and their existing scenario semantics.
+3. "Bestehendes Auto wechseln" may have visual priority / "Am häufigsten", but customer still explicitly selects a scenario.
+4. AFTER scenario selection, continue into the existing document/manual-data choice where appropriate.
+5. Preserve the approved document routing:
+   - Fahrzeugschein uploaded (with or without Beitragsrechnung) → short document-led path may continue to Kontakt.
+   - Beitragsrechnung only → MUST continue through existing manual vehicle/questionnaire path before Kontakt.
+   - no documents → existing manual questionnaire path.
+   - both documents → short document-led path.
+   - Beitragsrechnung optional; Fahrzeugschein not globally required.
+6. Do not lose the selected scenario when switching into upload/manual path or submitting the lead.
 
 ## Preserve exactly
-- current upload UI and private storage/auth
-- current manual questionnaire and its existing fields/logic
-- all six scenarios
-- current contact step
-- inquiry-processing consent
+- existing six scenario cards/copy/logic; restore/reuse, do not redesign them
+- current upload UI/private storage/auth
+- existing manual questionnaire/fields/logic
+- current contact step and inquiry-processing consent
 - Inbox/Leads persistence
-- retry/exact-once behavior
+- retry/exact-once
 - UTM/first-touch
-- NO public Messung/tracking consent UI
-- no new fields/screens/copy/redesign
-- no OCR
-- no Kfz V2
-- no Meta/WhatsApp API
+- NO Messung/tracking consent UI
+- Römer/Lengerich hero, Allianz branding, Artjom/Vera trust, reviews
+- no new fields/screens/product ideas
+- no OCR, Kfz V2, Meta/WhatsApp API
 - AgenturOS outside /kfz untouched
 
-## Regression tests required
-Add/adjust tests for the 4 document combinations:
-A. no docs → manual path
-B. Fahrzeugschein only → short path/contact
-C. Beitragsrechnung only → manual vehicle/questionnaire path
-D. both docs → short path/contact
-
-The tests must specifically prevent "invoice-only → contact" from returning.
-
-## Browser proof required
-Desktop + mobile ~390x844:
-- select/upload only Beitragsrechnung, click Weiter, prove vehicle/manual questionnaire appears before Kontakt
-- select/upload only Fahrzeugschein, click Weiter, prove short path to Kontakt
-- both docs, short path
-- no docs/manual fallback
-- Messung UI remains absent
+## Regression proof required
+Browser desktop + mobile ~390x844:
+A. fresh /kfz → first questionnaire step visibly shows all six scenario choices
+B. no scenario is silently chosen; user explicitly chooses one
+C. "Bestehendes Auto wechseln" can remain visually prioritized / "Am häufigsten"
+D. after scenario choice, upload/manual choice is reachable
+E. invoice-only → manual vehicle/questionnaire before Kontakt
+F. Fahrzeugschein-only → short path
+G. both docs → short path
+H. no docs → manual path
+I. selected scenario persists through submission payload / lead
+J. Messung absent
 
 ## Verification
 Run exact:
@@ -65,20 +60,18 @@ Run exact:
 - npm run lint
 - npm run build
 
-Do not perform production synthetic smoke until this fix is merged/deployed and live UI is verified.
+Fix only this proven first-step regression and any directly necessary wiring/tests. Do not perform unrelated CRO/polish.
 
-After green evidence: merge/deploy under existing owner authorization, verify live behavior, then continue the already-authorized single unmistakably synthetic production smoke. STOP AgenturOS after READY/BLOCKED.
+After green evidence: merge/deploy under existing owner authorization, verify live /kfz. Then continue the already-authorized EXACTLY ONE synthetic production smoke if it has not already been performed. Verify persistence → authenticated Inbox/Leads → private document auth where safe → PII-free analytics. Then STOP AgenturOS.
 
 Final report:
 KFZ STATUS: READY / BLOCKED
-BUG: invoice-only routing
-CHANGED: factual only
+FIRST STEP: six scenarios proof
+DOCUMENT ROUTING: four combinations proof
 TESTED: exact results
-BROWSER: four document combinations desktop/mobile
+BROWSER: desktop/mobile evidence
+PRODUCTION: deploy + synthetic smoke status
 NEXT: if READY "Launch Meta test"; if BLOCKED exact blocker.
 
 CONTROLLER_AGENT_ID:
 CONTROLLER_STARTED_AT:
-
-CONTROLLER_AGENT_ID: bc-48926346-a68d-413c-8550-598b9f84dc7e
-CONTROLLER_STARTED_AT: 2026-09-18T22:36:55Z
