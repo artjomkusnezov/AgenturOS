@@ -24,7 +24,7 @@ export const KFZ_LANDING_BRANCHES = [
     id: 'upload_documents',
     label: 'Unterlagen hochladen',
     path: 'upload',
-    highlighted: true,
+    highlighted: false,
   },
   {
     id: 'no_documents',
@@ -48,7 +48,7 @@ export const KFZ_LANDING_BRANCHES = [
     id: 'switch_car',
     label: 'Bestehendes Auto wechseln',
     path: 'questionnaire',
-    highlighted: false,
+    highlighted: true,
   },
   {
     id: 'evb',
@@ -57,8 +57,6 @@ export const KFZ_LANDING_BRANCHES = [
     highlighted: false,
   },
 ] as const
-
-export const KFZ_DEFAULT_LANDING_BRANCH_ID = 'upload_documents' as const
 export const KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID = 'no_documents' as const
 
 export type KfzLandingBranchId = (typeof KFZ_LANDING_BRANCHES)[number]['id']
@@ -923,17 +921,7 @@ export function resolveKfzLandingScreenId(
 export function resolveInitialKfzLandingScreenId(
   screens: readonly KfzLandingScreen[],
   storedScreenId: string | null | undefined,
-  branchId: string,
 ): string {
-  if (storedScreenId && screens.some((screen) => screen.id === storedScreenId)) {
-    return storedScreenId
-  }
-  if (isUploadDocumentsBranch(branchId)) {
-    const documents = screens.find((screen) => screen.id === KFZ_SCREEN_DOCUMENTS)
-    if (documents) {
-      return documents.id
-    }
-  }
   return resolveKfzLandingScreenId(screens, storedScreenId)
 }
 

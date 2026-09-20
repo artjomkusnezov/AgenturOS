@@ -40,7 +40,7 @@ describe('kfz CRO polish contract', () => {
     assert.doesNotMatch(publicJourney, /document\.cookie|gtag\(|facebook\.net/)
   })
 
-  it('makes upload_documents the visual default without changing the six-branch contract', () => {
+  it('shows all six scenario cards with visual priority only on switch_car', () => {
     assert.deepEqual(
       KFZ_LANDING_BRANCHES.map((branch) => branch.id),
       [
@@ -54,20 +54,19 @@ describe('kfz CRO polish contract', () => {
     )
     assert.equal(
       KFZ_LANDING_BRANCHES.find((branch) => branch.highlighted)?.id,
-      'upload_documents',
+      'switch_car',
     )
     assert.equal(KFZ_LANDING_BRANCHES.filter((branch) => branch.highlighted).length, 1)
 
     const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
-    assert.match(form, /data-kfz-branch-group="recommended"/)
-    assert.match(form, /data-kfz-branch-group="fallback"/)
-    assert.match(form, /Keine Unterlagen senden\?/)
-    assert.match(form, /data-kfz-manual-fallback/)
-    assert.doesNotMatch(form, /Am häufigsten/)
-    assert.doesNotMatch(form, /Anderer Anlass\?/)
-    assert.match(form, /KFZ_LANDING_BRANCHES\.filter\(\(branch\) => branch\.highlighted\)/)
-    assert.match(form, /KFZ_LANDING_BRANCHES\.filter\(\(branch\) => !branch\.highlighted\)/)
+    assert.match(form, /KFZ_LANDING_BRANCHES\.map\(\(branch\) => \{/)
     assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
+    assert.match(form, /Am häufigsten/)
+    assert.match(form, /data-kfz-manual-fallback/)
+    assert.doesNotMatch(form, /Anderer Anlass\?/)
+    assert.doesNotMatch(form, /Keine Unterlagen senden\?/)
+    assert.doesNotMatch(form, /data-kfz-branch-group="recommended"/)
+    assert.doesNotMatch(form, /data-kfz-branch-group="fallback"/)
   })
 
   it('does not show send-ready copy before the final submit action', () => {

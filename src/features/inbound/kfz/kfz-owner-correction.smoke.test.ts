@@ -1,6 +1,7 @@
 /**
- * Owner correction 2026-09-18: public /kfz is upload-first, no Messung UI.
- * Manual questionnaire remains fallback. Inquiry-processing consent stays required.
+ * Owner corrections:
+ * 2026-09-20 — Schritt 1 is the existing six-scenario selection, not upload-first.
+ * 2026-09-18 — no public Messung UI; document routing and inquiry-processing consent stay.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -8,7 +9,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, it } from 'node:test'
 
-import type { KfzLandingFormValues } from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
+import {
+  buildKfzLandingPayload,
+  type KfzLandingFormValues,
+} from '@/features/inbound/kfz/lib/build-kfz-landing-payload'
 import { emptyKfzLandingDraftValues } from '@/features/inbound/kfz/lib/kfz-landing-draft'
 import {
   canUseKfzDocumentLedShortPath,
@@ -21,8 +25,8 @@ import {
 } from '@/features/inbound/kfz/lib/kfz-landing-steps'
 import {
   buildKfzLandingScreens,
+  applyKfzLandingBranchSelection,
   isUploadDocumentsBranch,
-  KFZ_DEFAULT_LANDING_BRANCH_ID,
   KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID,
   KFZ_LANDING_BRANCHES,
   listVisibleKfzQuestions,
@@ -83,23 +87,94 @@ describe('kfz owner correction: no public Messung UI', () => {
   })
 })
 
-describe('kfz owner correction: upload-first path', () => {
-  it('defaults a fresh landing to the existing upload documents screen', () => {
+describe('kfz owner correction: six-scenario first step', () => {
+  it('starts a fresh landing on the six scenario cards with no silent choice', () => {
     const empty = emptyKfzLandingDraftValues()
-    assert.equal(empty.branchId, KFZ_DEFAULT_LANDING_BRANCH_ID)
-    assert.equal(empty.inquiryReason, 'Unterlagen hochladen')
-    assert.equal(isUploadDocumentsBranch(empty.branchId), true)
+    assert.equal(empty.branchId, '')
+    assert.equal(empty.inquiryReason, '')
+    assert.equal(isUploadDocumentsBranch(empty.branchId), false)
     assert.equal(empty.inquiryProcessingConsent, false)
 
     const screens = buildKfzLandingScreens(empty.branchId, {})
-    assert.equal(resolveInitialKfzLandingScreenId(screens, null, empty.branchId), 'documents')
-    assert.equal(resolveInitialKfzLandingScreenId(screens, 'contact', empty.branchId), 'contact')
-    assert.equal(resolveInitialKfzLandingScreenId(screens, 'branch', empty.branchId), 'branch')
+    assert.deepEqual(
+      screens.map((screen) => screen.id),
+      ['branch'],
+    )
+    assert.equal(resolveInitialKfzLandingScreenId(screens, null), 'branch')
     assert.equal(screens[0]?.kind, 'branch')
-    assert.equal(screens[1]?.kind, 'documents')
-    assert.ok(screens.some((screen) => screen.kind === 'questions'))
-    assert.equal(screens.at(-1)?.kind, 'contact')
-    assert.notEqual(nextKfzLandingScreenId(screens, 'documents'), 'contact')
+    assert.equal(screens.some((screen) => screen.kind === 'documents'), false)
+
+    const uploadScreens = buildKfzLandingScreens('upload_documents', {})
+    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, null), 'branch')
+    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, 'documents'), 'documents')
+    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, 'contact'), 'contact')
+
+    const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
+    assert.match(form, /KFZ_LANDING_BRANCHES\.map\(\(branch\) => \{/)
+    assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
+    assert.match(form, /\{branch\.label\}/)
+    assert.match(form, /Am häufigsten/)
+    assert.doesNotMatch(form, /Keine Unterlagen senden\?/)
+    assert.deepEqual(
+      KFZ_LANDING_BRANCHES.map((branch) => branch.label),
+      [
+        'Unterlagen hochladen',
+        'Keine Unterlagen vorhanden',
+        'Erstes Auto versichern',
+        'Weiteres Auto versichern',
+        'Bestehendes Auto wechseln',
+        'eVB für Zulassung',
+      ],
+    )
+    assert.equal(
+      KFZ_LANDING_BRANCHES.find((branch) => branch.highlighted)?.id,
+      'switch_car',
+    )
+    assert.equal(canAdvanceKfzLandingScreen(screens[0]!, empty).ok, false)
+  })
+
+  it('keeps the chosen scenario when continuing into upload or manual paths', () => {
+    const empty = emptyKfzLandingDraftValues()
+    const switched = applyKfzLandingBranchSelection(empty, 'switch_car')
+    assert.equal(switched.branchId, 'switch_car')
+    assert.equal(switched.inquiryReason, 'Bestehendes Auto wechseln')
+
+    const uploaded = applyKfzLandingBranchSelection(
+      { ...uploadValues(), branchId: '', inquiryReason: '' },
+      'upload_documents',
+    )
+    assert.equal(uploaded.branchId, 'upload_documents')
+    assert.equal(uploaded.inquiryReason, 'Unterlagen hochladen')
+    const uploadScreens = buildKfzLandingScreens(uploaded.branchId, {}, [
+      { group: 'fahrzeugschein' },
+    ])
+    assert.equal(nextKfzLandingScreenId(uploadScreens, 'branch'), 'documents')
+    const built = buildKfzLandingPayload({
+      values: uploaded,
+      submissionId: 'owner-correction-scenario-upload',
+      consentTimestamp: '2026-09-20T08:00:00.000Z',
+      documents: [
+        {
+          id: 'schein-1',
+          group: 'fahrzeugschein',
+          filename: 'schein.jpg',
+          mimeType: 'image/jpeg',
+          sizeBytes: 1200,
+        },
+      ],
+    })
+    assert.equal(built.ok, true)
+    if (built.ok) {
+      assert.equal(built.payload.inquiryReason, 'Unterlagen hochladen')
+      assert.equal(built.payload.questionnaire?.branchId, 'upload_documents')
+    }
+
+    const manual = applyKfzLandingBranchSelection(empty, 'no_documents')
+    assert.equal(manual.branchId, 'no_documents')
+    assert.equal(manual.inquiryReason, 'Keine Unterlagen vorhanden')
+    const manualScreens = buildKfzLandingScreens(manual.branchId, {})
+    assert.equal(nextKfzLandingScreenId(manualScreens, 'branch'), 'intent')
+    assert.ok(manualScreens.some((screen) => screen.kind === 'questions'))
   })
 
   it('keeps Fahrzeugschein and Beitragsrechnung as optional existing uploads', () => {
@@ -226,17 +301,14 @@ describe('kfz owner correction: upload-first path', () => {
 
     assert.deepEqual(
       KFZ_LANDING_BRANCHES.filter((branch) => !branch.highlighted).map((branch) => branch.id),
-      ['no_documents', 'first_car', 'additional_car', 'switch_car', 'evb'],
+      ['upload_documents', 'no_documents', 'first_car', 'additional_car', 'evb'],
     )
     for (const branch of KFZ_LANDING_BRANCHES.filter((entry) => entry.path === 'questionnaire')) {
       const screens = buildKfzLandingScreens(branch.id, {})
       assert.equal(screens[0]?.kind, 'branch')
       assert.ok(screens.some((screen) => screen.kind === 'questions'))
       assert.equal(screens.at(-1)?.kind, 'contact')
-      assert.equal(
-        resolveInitialKfzLandingScreenId(screens, null, branch.id),
-        'branch',
-      )
+      assert.equal(resolveInitialKfzLandingScreenId(screens, null), 'branch')
     }
   })
 })
