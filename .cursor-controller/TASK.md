@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 
 ## Title
@@ -75,3 +75,6 @@ NEXT: if READY "Launch Meta test"; if BLOCKED exact blocker.
 
 CONTROLLER_AGENT_ID:
 CONTROLLER_STARTED_AT:
+
+CONTROLLER_AGENT_ID: bc-2a07aeaf-f3e7-4f4b-9264-10cdc4aafab4
+CONTROLLER_STARTED_AT: 2026-09-20T06:21:30Z
