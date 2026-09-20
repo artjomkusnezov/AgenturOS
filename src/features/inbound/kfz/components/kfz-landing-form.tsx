@@ -179,7 +179,6 @@ export function KfzLandingForm({
   const screenId = resolveInitialKfzLandingScreenId(
     screens,
     localScreenId ?? restoredDraft?.screenId,
-    branchId,
   )
   const screen = screens.find((entry) => entry.id === screenId) ?? screens[0]
   const screenIndex = Math.max(

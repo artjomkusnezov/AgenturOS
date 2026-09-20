@@ -921,7 +921,6 @@ export function resolveKfzLandingScreenId(
 export function resolveInitialKfzLandingScreenId(
   screens: readonly KfzLandingScreen[],
   storedScreenId: string | null | undefined,
-  _branchId?: string,
 ): string {
   return resolveKfzLandingScreenId(screens, storedScreenId)
 }

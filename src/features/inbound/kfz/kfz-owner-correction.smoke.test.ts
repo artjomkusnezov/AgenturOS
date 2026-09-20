@@ -100,32 +100,32 @@ describe('kfz owner correction: six-scenario first step', () => {
       screens.map((screen) => screen.id),
       ['branch'],
     )
-    assert.equal(resolveInitialKfzLandingScreenId(screens, null, empty.branchId), 'branch')
+    assert.equal(resolveInitialKfzLandingScreenId(screens, null), 'branch')
     assert.equal(screens[0]?.kind, 'branch')
     assert.equal(screens.some((screen) => screen.kind === 'documents'), false)
 
     const uploadScreens = buildKfzLandingScreens('upload_documents', {})
-    assert.equal(
-      resolveInitialKfzLandingScreenId(uploadScreens, null, 'upload_documents'),
-      'branch',
-    )
-    assert.equal(
-      resolveInitialKfzLandingScreenId(uploadScreens, 'documents', 'upload_documents'),
-      'documents',
-    )
-    assert.equal(
-      resolveInitialKfzLandingScreenId(uploadScreens, 'contact', 'upload_documents'),
-      'contact',
-    )
+    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, null), 'branch')
+    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, 'documents'), 'documents')
+    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, 'contact'), 'contact')
 
     const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
-    for (const branch of KFZ_LANDING_BRANCHES) {
-      assert.match(form, new RegExp(`data-kfz-branch-option=\\{branch\\.id\\}`))
-      assert.match(form, new RegExp(branch.label.replace(/[()]/g, '\\$&')))
-    }
     assert.match(form, /KFZ_LANDING_BRANCHES\.map\(\(branch\) => \{/)
+    assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
+    assert.match(form, /\{branch\.label\}/)
     assert.match(form, /Am häufigsten/)
     assert.doesNotMatch(form, /Keine Unterlagen senden\?/)
+    assert.deepEqual(
+      KFZ_LANDING_BRANCHES.map((branch) => branch.label),
+      [
+        'Unterlagen hochladen',
+        'Keine Unterlagen vorhanden',
+        'Erstes Auto versichern',
+        'Weiteres Auto versichern',
+        'Bestehendes Auto wechseln',
+        'eVB für Zulassung',
+      ],
+    )
     assert.equal(
       KFZ_LANDING_BRANCHES.find((branch) => branch.highlighted)?.id,
       'switch_car',
@@ -308,10 +308,7 @@ describe('kfz owner correction: six-scenario first step', () => {
       assert.equal(screens[0]?.kind, 'branch')
       assert.ok(screens.some((screen) => screen.kind === 'questions'))
       assert.equal(screens.at(-1)?.kind, 'contact')
-      assert.equal(
-        resolveInitialKfzLandingScreenId(screens, null, branch.id),
-        'branch',
-      )
+      assert.equal(resolveInitialKfzLandingScreenId(screens, null), 'branch')
     }
   })
 })
