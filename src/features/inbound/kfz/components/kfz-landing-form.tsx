@@ -72,7 +72,6 @@ import {
   isUploadDocumentsBranch,
   KFZ_LANDING_BRANCHES,
   KFZ_SCREEN_BRANCH,
-  KFZ_SCREEN_DOCUMENTS,
   listAnsweredKfzQuestions,
   nextKfzLandingScreenId,
   previousKfzLandingScreenId,
@@ -156,7 +155,6 @@ export function KfzLandingForm({
   const [localDocumentNotice, setDocumentReselectNotice] = useState<string | null | undefined>(
     undefined,
   )
-  const [manualFallbackOpen, setManualFallbackOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const generatedId = useMemo(() => createKfzLandingSubmissionId(), [])
   const inFlightRef = useRef(false)
@@ -268,20 +266,15 @@ export function KfzLandingForm({
       return
     }
     const nextValues = applyKfzLandingBranchSelection(values, branch.id)
-    const nextScreenId = isUploadDocumentsBranch(branch.id)
-      ? KFZ_SCREEN_DOCUMENTS
-      : KFZ_SCREEN_BRANCH
     setClientError(null)
     setValues(nextValues)
-    setManualFallbackOpen(!isUploadDocumentsBranch(branch.id))
-    setScreenId(nextScreenId)
-    persistDraft({ values: nextValues, screenId: nextScreenId })
+    setScreenId(KFZ_SCREEN_BRANCH)
+    persistDraft({ values: nextValues, screenId: KFZ_SCREEN_BRANCH })
     analytics.onBranchSelected(branch.id)
   }
 
   function openManualFallback() {
     setClientError(null)
-    setManualFallbackOpen(true)
     setScreenId(KFZ_SCREEN_BRANCH)
     persistDraft({ screenId: KFZ_SCREEN_BRANCH })
   }
@@ -612,18 +605,17 @@ export function KfzLandingForm({
             <RequiredMark />
           </legend>
           <p className="text-sm text-zinc-600">
-            Fahrzeugschein und bei Bedarf die letzte Beitragsrechnung. Den Preis
-            bereiten wir persönlich vor.
+            Unterlagen hochladen bleibt der kurze Weg. Ohne Unterlagen führen wir Sie durch
+            die Angaben für die manuelle Prüfung. Wechseln ist unser häufigster Check.
           </p>
-          <div className="grid gap-3">
-            {KFZ_LANDING_BRANCHES.filter((branch) => branch.highlighted).map((branch) => {
+          <div className="grid gap-2">
+            {KFZ_LANDING_BRANCHES.map((branch) => {
               const selected = branchId === branch.id
               return (
                 <label
                   key={branch.id}
                   data-kfz-branch-option={branch.id}
-                  data-kfz-branch-group="recommended"
-                  className={`relative flex min-h-16 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-base font-semibold shadow-[0_8px_24px_rgba(0,55,129,.08)] transition ${branchOptionClassName(selected, true)}`}
+                  className={`relative flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-base font-medium transition ${branchOptionClassName(selected, branch.highlighted)}`}
                 >
                   <input
                     type="radio"
@@ -633,49 +625,15 @@ export function KfzLandingForm({
                     disabled={locked}
                     onChange={() => selectBranch(branch.id)}
                   />
-                  <span>
-                    {branch.label}
-                    <span className="mt-1 block text-sm font-normal text-zinc-600">
-                      Fahrzeugschein, bei Bedarf Beitragsrechnung
+                  <span>{branch.label}</span>
+                  {branch.highlighted ? (
+                    <span className="rounded-full bg-[#d7eaff] px-2.5 py-1 text-xs font-semibold text-[#0050aa]">
+                      Am häufigsten
                     </span>
-                  </span>
+                  ) : null}
                 </label>
               )
             })}
-            <details
-              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2"
-              open={
-                manualFallbackOpen ||
-                Boolean(branchId && !getKfzLandingBranch(branchId)?.highlighted)
-              }
-              data-kfz-branch-group="fallback"
-            >
-              <summary className="min-h-11 cursor-pointer list-none py-1.5 text-sm font-semibold text-[#003781]">
-                Keine Unterlagen senden?
-              </summary>
-              <div className="mt-2 grid gap-2 pb-1">
-                {KFZ_LANDING_BRANCHES.filter((branch) => !branch.highlighted).map((branch) => {
-                  const selected = branchId === branch.id
-                  return (
-                    <label
-                      key={branch.id}
-                      data-kfz-branch-option={branch.id}
-                      className={`relative flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${branchOptionClassName(selected, false)}`}
-                    >
-                      <input
-                        type="radio"
-                        name="inquiryReason"
-                        className="sr-only"
-                        checked={selected}
-                        disabled={locked}
-                        onChange={() => selectBranch(branch.id)}
-                      />
-                      <span>{branch.label}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            </details>
           </div>
         </fieldset>
       ) : null}
