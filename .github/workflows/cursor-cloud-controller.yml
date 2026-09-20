@@ -1,4 +1,4 @@
-name: Cursor Cloud Controller v2
+name: Cursor Cloud Controller v3
 
 on:
   workflow_dispatch:
@@ -12,6 +12,8 @@ on:
     branches:
       - "controller/cursor-cloud-v1"
     paths:
+      - ".cursor-controller/TASK.md"
+      - ".cursor-controller/queue/**"
       - ".cursor-controller/TRIGGER.md"
 
 permissions:
@@ -42,40 +44,102 @@ jobs:
           test -n "${CURSOR_API_KEY:-}" || { echo "REFUSED: CURSOR_API_KEY is unavailable"; exit 2; }
           test -f .cursor-controller/TASK.md || { echo "REFUSED: TASK.md is missing"; exit 3; }
 
-      - name: Check active agent and select next READY task
+      - name: Monitor current run and select one READY task
         id: select
         shell: bash
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
           set -euo pipefail
-          MAX_CHECKS=1
-          CHECK_DELAY=30
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            MAX_CHECKS=30
-          fi
-          for ATTEMPT in $(seq 1 "$MAX_CHECKS"); do
-            RESPONSE=$(curl --silent --show-error --fail --url 'https://api.cursor.com/v1/agents?limit=100' --user "${CURSOR_API_KEY}:")
-            ACTIVE_ID=""
-            ACTIVE_IDS=$(printf '%s' "$RESPONSE" | jq -r '.items[]? | select(.status == "ACTIVE") | .id')
-            for ID in $ACTIVE_IDS; do
-              DETAIL=$(curl --silent --show-error --fail --url "https://api.cursor.com/v1/agents/${ID}" --user "${CURSOR_API_KEY}:")
-              if printf '%s' "$DETAIL" | jq -e '.repos[]? | select(.url == "https://github.com/artjomkusnezov/AgenturOS")' >/dev/null; then
-                ACTIVE_ID="$ID"
-                break
-              fi
-            done
-            if [ -z "$ACTIVE_ID" ]; then
+
+          commit_state () {
+            local file="$1"
+            local message="$2"
+            git config user.name "cursor-cloud-controller"
+            git config user.email "actions@users.noreply.github.com"
+            git add "$file"
+            if ! git diff --cached --quiet; then
+              git commit -m "$message"
+              git push origin HEAD:controller/cursor-cloud-v1
+            fi
+          }
+
+          # Execution truth is Cursor RUN status, never agent.status == ACTIVE.
+          # A STARTED item with a stored RUN_ID is monitored directly.
+          STARTED_FILE=""
+          for CANDIDATE in .cursor-controller/TASK.md $(find .cursor-controller/queue -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort); do
+            if grep -Eq '^STATUS:[[:space:]]+STARTED[[:space:]]*$' "$CANDIDATE"; then
+              STARTED_FILE="$CANDIDATE"
               break
             fi
-            if [ "$ATTEMPT" -eq "$MAX_CHECKS" ]; then
-              echo "active=true" >> "$GITHUB_OUTPUT"
-              echo "ACTIVE: ${ACTIVE_ID}; no second agent will be launched." >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          if [ -n "$STARTED_FILE" ]; then
+            AGENT_ID=$(sed -nE 's/^CONTROLLER_AGENT_ID:[[:space:]]*(.+)$/\1/p' "$STARTED_FILE" | tail -n 1)
+            RUN_ID=$(sed -nE 's/^CONTROLLER_RUN_ID:[[:space:]]*(.+)$/\1/p' "$STARTED_FILE" | tail -n 1)
+
+            if [ -z "$AGENT_ID" ] || [ -z "$RUN_ID" ]; then
+              echo "BLOCKED: legacy STARTED item has no stored agent/run pair: $STARTED_FILE" >> "$GITHUB_STEP_SUMMARY"
+              echo "blocked=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            echo "Cursor agent ${ACTIVE_ID} is still finishing; check ${ATTEMPT}/${MAX_CHECKS}. Waiting ${CHECK_DELAY}s."
-            sleep "$CHECK_DELAY"
-          done
+
+            RUN=$(curl --silent --show-error --fail-with-body               --url "https://api.cursor.com/v1/agents/${AGENT_ID}/runs/${RUN_ID}"               --user "${CURSOR_API_KEY}:")
+            RUN_STATUS=$(printf '%s' "$RUN" | jq -r '.status // .run.status // empty')
+            echo "Cursor run ${RUN_ID}: ${RUN_STATUS}" >> "$GITHUB_STEP_SUMMARY"
+
+            case "$RUN_STATUS" in
+              FINISHED)
+                sed -i -E 's/^STATUS:[[:space:]]+STARTED[[:space:]]*$/STATUS: AGENT_FINISHED/' "$STARTED_FILE"
+                {
+                  echo "CONTROLLER_RUN_FINISHED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "CONTROLLER_RUN_RESULT: FINISHED"
+                } >> "$STARTED_FILE"
+                commit_state "$STARTED_FILE" "controller: run finished for $(basename "$STARTED_FILE")"
+                echo "blocked=true" >> "$GITHUB_OUTPUT"
+                echo "AGENT_FINISHED: validate PR/browser/tests before merge or next task." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+                ;;
+              ERROR|CANCELLED|EXPIRED)
+                RETRIES=$(sed -nE 's/^CONTROLLER_RETRY_COUNT:[[:space:]]*([0-9]+)$/\1/p' "$STARTED_FILE" | tail -n 1)
+                RETRIES=${RETRIES:-0}
+                if [ "$RETRIES" -lt 1 ]; then
+                  NEXT=$((RETRIES + 1))
+                  sed -i -E 's/^STATUS:[[:space:]]+STARTED[[:space:]]*$/STATUS: READY/' "$STARTED_FILE"
+                  {
+                    echo "CONTROLLER_RETRY_COUNT: $NEXT"
+                    echo "CONTROLLER_PREVIOUS_RUN_RESULT: $RUN_STATUS"
+                  } >> "$STARTED_FILE"
+                  commit_state "$STARTED_FILE" "controller: retry failed run for $(basename "$STARTED_FILE")"
+                  echo "Run $RUN_STATUS; one automatic retry armed." >> "$GITHUB_STEP_SUMMARY"
+                else
+                  sed -i -E 's/^STATUS:[[:space:]]+STARTED[[:space:]]*$/STATUS: BLOCKED/' "$STARTED_FILE"
+                  echo "CONTROLLER_RUN_RESULT: $RUN_STATUS" >> "$STARTED_FILE"
+                  commit_state "$STARTED_FILE" "controller: block repeatedly failed run for $(basename "$STARTED_FILE")"
+                  echo "blocked=true" >> "$GITHUB_OUTPUT"
+                  echo "BLOCKED after one retry: $RUN_STATUS." >> "$GITHUB_STEP_SUMMARY"
+                  exit 0
+                fi
+                ;;
+              CREATING|RUNNING)
+                echo "blocked=true" >> "$GITHUB_OUTPUT"
+                echo "REAL RUNNING: no duplicate launch." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+                ;;
+              *)
+                echo "blocked=true" >> "$GITHUB_OUTPUT"
+                echo "BLOCKED: unknown Cursor run status '$RUN_STATUS'; no duplicate launch." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+                ;;
+            esac
+          fi
+
+          # AGENT_FINISHED/BLOCKED require validation/owner/watchdog action.
+          if grep -RqsE '^STATUS:[[:space:]]+(AGENT_FINISHED|BLOCKED)[[:space:]]*$' .cursor-controller/TASK.md .cursor-controller/queue 2>/dev/null; then
+            echo "blocked=true" >> "$GITHUB_OUTPUT"
+            echo "WAITING FOR VALIDATION: no next task will launch." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
           TASK_FILE=""
           for CANDIDATE in .cursor-controller/TASK.md $(find .cursor-controller/queue -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort); do
@@ -85,18 +149,18 @@ jobs:
             fi
           done
           if [ -z "$TASK_FILE" ]; then
-            echo "active=false" >> "$GITHUB_OUTPUT"
+            echo "blocked=false" >> "$GITHUB_OUTPUT"
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "IDLE: no READY task in the controller queue." >> "$GITHUB_STEP_SUMMARY"
+            echo "IDLE: no READY task." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          echo "active=false" >> "$GITHUB_OUTPUT"
+          echo "blocked=false" >> "$GITHUB_OUTPUT"
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "task_file=$TASK_FILE" >> "$GITHUB_OUTPUT"
 
-      - name: Start exactly one Cursor Cloud Agent
+      - name: Start exactly one Cursor Cloud Run
         id: launch
-        if: steps.select.outputs.active != 'true' && steps.select.outputs.ready == 'true'
+        if: steps.select.outputs.blocked != 'true' && steps.select.outputs.ready == 'true'
         shell: bash
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -110,32 +174,39 @@ jobs:
             STARTING_REF=$(git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/remotes/origin/cursor/ | head -n 1 | sed 's#^origin/##')
           fi
           test -n "$STARTING_REF" || { echo "REFUSED: no STARTING_REF"; exit 5; }
-          SAFETY='\n\nController safety: Work only on the new Cursor-created branch. Never write main, merge, deploy, change production data, inspect/expose secrets, rewrite history, force-push, reset/clean user work, or self-assign another task. Read AGENTS.md first. Preserve provider-neutral intake and mandatory human review. Never contact customers or activate Meta/WhatsApp. Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build once.'
-          PAYLOAD=$(jq -n --arg prompt "${TASK}${SAFETY}" --arg starting_ref "$STARTING_REF" '{name:"AgenturOS Controller Task",prompt:{text:$prompt},repos:[{url:"https://github.com/artjomkusnezov/AgenturOS",startingRef:$starting_ref}],workOnCurrentBranch:false,autoCreatePR:true,skipReviewerRequest:true,mode:"agent"}')
-          RESPONSE=$(curl --silent --show-error --fail-with-body --request POST --url 'https://api.cursor.com/v1/agents' --user "${CURSOR_API_KEY}:" --header 'Content-Type: application/json' --data "$PAYLOAD")
+          SAFETY='\n\nController safety: Work only on the new Cursor-created branch. Never write master, merge, deploy, change production data, inspect/expose secrets, rewrite history, force-push, reset/clean user work, or self-assign another task. Read AGENTS.md first. Preserve provider-neutral intake and mandatory human review. Never contact customers or activate Meta/WhatsApp. Do not invent CRO/product work. Run npm run test:inbound, npx tsc --noEmit, npm run lint and npm run build once.'
+          PAYLOAD=$(jq -n --arg prompt "${TASK}${SAFETY}" --arg starting_ref "$STARTING_REF"             '{name:"AgenturOS Controller Task",prompt:{text:$prompt},repos:[{url:"https://github.com/artjomkusnezov/AgenturOS",startingRef:$starting_ref}],workOnCurrentBranch:false,autoCreatePR:true,skipReviewerRequest:true,mode:"agent"}')
+          RESPONSE=$(curl --silent --show-error --fail-with-body --request POST             --url 'https://api.cursor.com/v1/agents' --user "${CURSOR_API_KEY}:"             --header 'Content-Type: application/json' --data "$PAYLOAD")
           AGENT_ID=$(printf '%s' "$RESPONSE" | jq -r '.agent.id')
           RUN_ID=$(printf '%s' "$RESPONSE" | jq -r '.run.id')
           RUN_STATUS=$(printf '%s' "$RESPONSE" | jq -r '.run.status')
           test -n "$AGENT_ID" && test "$AGENT_ID" != "null"
+          test -n "$RUN_ID" && test "$RUN_ID" != "null"
           echo "agent_id=$AGENT_ID" >> "$GITHUB_OUTPUT"
-          echo "Launched $AGENT_ID / $RUN_ID / $RUN_STATUS from $STARTING_REF using $TASK_FILE." >> "$GITHUB_STEP_SUMMARY"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "run_status=$RUN_STATUS" >> "$GITHUB_OUTPUT"
+          echo "Launched agent $AGENT_ID / run $RUN_ID / $RUN_STATUS from $STARTING_REF." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Mark queue item STARTED
+      - name: Persist exact execution identity
         if: steps.launch.outputs.agent_id != ''
         shell: bash
         env:
           TASK_FILE: ${{ steps.select.outputs.task_file }}
           AGENT_ID: ${{ steps.launch.outputs.agent_id }}
+          RUN_ID: ${{ steps.launch.outputs.run_id }}
+          RUN_STATUS: ${{ steps.launch.outputs.run_status }}
         run: |
           set -euo pipefail
           sed -i -E 's/^STATUS:[[:space:]]+READY[[:space:]]*$/STATUS: STARTED/' "$TASK_FILE"
           {
             echo
             echo "CONTROLLER_AGENT_ID: $AGENT_ID"
+            echo "CONTROLLER_RUN_ID: $RUN_ID"
+            echo "CONTROLLER_RUN_STATUS_AT_LAUNCH: $RUN_STATUS"
             echo "CONTROLLER_STARTED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } >> "$TASK_FILE"
           git config user.name "cursor-cloud-controller"
           git config user.email "actions@users.noreply.github.com"
           git add "$TASK_FILE"
-          git commit -m "controller: claim $(basename "$TASK_FILE") for $AGENT_ID"
+          git commit -m "controller: claim $(basename "$TASK_FILE") run $RUN_ID"
           git push origin HEAD:controller/cursor-cloud-v1
