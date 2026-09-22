@@ -1,6 +1,6 @@
 # Cursor Cloud Controller Task
 
-STATUS: READY
+STATUS: STARTED
 STARTING_REF: master
 TRIGGER_NONCE: 2026-09-22T21:trigger-agenturos-kfz-p0
 
@@ -47,3 +47,8 @@ After READY: STOP AgenturOS. Next owner action is Launch Meta test. Do not inven
 
 ## Controller
 Use only controller/cursor-cloud-v1. Never .agent-loop or issue-driven Agent Task/Review. Work only on Cursor-created cursor/* branch.
+
+CONTROLLER_AGENT_ID: bc-c371f849-f7c3-4b19-a995-498996fa4ecf
+CONTROLLER_RUN_ID: run-677e8bde-5a38-420b-b683-ac52adeae2ce
+CONTROLLER_RUN_STATUS_AT_LAUNCH: RUNNING
+CONTROLLER_STARTED_AT: 2026-09-22T19:26:48Z
