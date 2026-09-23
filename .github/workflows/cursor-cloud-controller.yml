@@ -3,7 +3,7 @@ name: GitHub-Centric Cursor Runner v1
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "*/10 * * * *"
 
 permissions:
   contents: write
@@ -62,7 +62,6 @@ jobs:
             status=$(field "$current" STATUS)
             agent=$(field "$current" CONTROLLER_AGENT_ID || true)
             run=$(field "$current" CONTROLLER_RUN_ID || true)
-
             if [ "$status" = "STARTED" ] || [ "$status" = "RUNNING" ]; then
               test -n "$agent" -a -n "$run" || { set_status "$current" BLOCKED; echo "BLOCK_REASON: missing agentId/runId" >> "$current"; commit_state "runner: block task without execution identity"; exit 0; }
               r=$(curl -fsS -u "${CURSOR_API_KEY}:" "https://api.cursor.com/v1/agents/${agent}/runs/${run}")
@@ -99,12 +98,7 @@ jobs:
                   set_status "$current" FINISHED
                   pr=$(printf '%s' "$r" | jq -r '[.git.branches[]?.prUrl // empty] | first // empty')
                   branch=$(printf '%s' "$r" | jq -r '[.git.branches[]?.branch // empty] | first // empty')
-                  {
-                    echo "CONTROLLER_RUN_RESULT: FINISHED"
-                    echo "CONTROLLER_FINISHED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                    [ -n "$branch" ] && echo "CONTROLLER_RESULT_BRANCH: $branch"
-                    [ -n "$pr" ] && echo "CONTROLLER_PR_URL: $pr"
-                  } >> "$current"
+                  { echo "CONTROLLER_RUN_RESULT: FINISHED"; echo "CONTROLLER_FINISHED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; [ -n "$branch" ] && echo "CONTROLLER_RESULT_BRANCH: $branch"; [ -n "$pr" ] && echo "CONTROLLER_PR_URL: $pr"; } >> "$current"
                   commit_state "runner: Cursor run finished"
                   ;;
                 ERROR|CANCELLED|EXPIRED)
@@ -122,30 +116,15 @@ jobs:
                   fi
                   current=""
                   ;;
-                *)
-                  set_status "$current" BLOCKED
-                  echo "BLOCK_REASON: unknown Cursor run status $rs" >> "$current"
-                  commit_state "runner: block unknown Cursor status"
-                  exit 0
-                  ;;
+                *) set_status "$current" BLOCKED; echo "BLOCK_REASON: unknown Cursor run status $rs" >> "$current"; commit_state "runner: block unknown Cursor status"; exit 0;;
               esac
             fi
-
             if [ "$status" = "FINISHED" ] || grep -Eq '^STATUS:[[:space:]]+FINISHED' "$current"; then
               pr=$(field "$current" CONTROLLER_PR_URL || true)
-              if [ -z "$pr" ]; then
-                set_status "$current" BLOCKED
-                echo "BLOCK_REASON: FINISHED without PR delivery" >> "$current"
-                commit_state "runner: block finished run without PR"
-                exit 0
-              fi
+              if [ -z "$pr" ]; then set_status "$current" BLOCKED; echo "BLOCK_REASON: FINISHED without PR delivery" >> "$current"; commit_state "runner: block finished run without PR"; exit 0; fi
               number=${pr##*/}
               state=$(gh pr view "$number" --repo "$REPO" --json state --jq '.state')
-              if [ "$state" = "MERGED" ]; then
-                set_status "$current" DONE
-                echo "CONTROLLER_MERGED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$current"
-                commit_state "runner: mark merged task done"
-                current=""
+              if [ "$state" = "MERGED" ]; then set_status "$current" DONE; echo "CONTROLLER_MERGED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$current"; commit_state "runner: mark merged task done"; current=""
               elif [ "$state" = "OPEN" ]; then
                 checks=$(gh pr view "$number" --repo "$REPO" --json statusCheckRollup)
                 pending=$(printf '%s' "$checks" | jq '[.statusCheckRollup[]? | select((.status // "") != "COMPLETED")] | length')
@@ -153,55 +132,25 @@ jobs:
                 total=$(printf '%s' "$checks" | jq '[.statusCheckRollup[]?] | length')
                 echo "PR #$number checks total=$total pending=$pending failed=$failed" >> "$GITHUB_STEP_SUMMARY"
                 if [ "$pending" -gt 0 ]; then exit 0; fi
-                if [ "$failed" -gt 0 ]; then
-                  set_status "$current" BLOCKED
-                  echo "BLOCK_REASON: PR checks failed" >> "$current"
-                  commit_state "runner: block task on failed checks"
-                  exit 0
-                fi
+                if [ "$failed" -gt 0 ]; then set_status "$current" BLOCKED; echo "BLOCK_REASON: PR checks failed" >> "$current"; commit_state "runner: block task on failed checks"; exit 0; fi
                 gh pr merge "$number" --repo "$REPO" --merge --delete-branch=false
-                set_status "$current" DONE
-                echo "CONTROLLER_MERGED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$current"
-                commit_state "runner: merge green PR and mark done"
-                current=""
-              else
-                set_status "$current" BLOCKED
-                echo "BLOCK_REASON: PR state $state" >> "$current"
-                commit_state "runner: block unexpected PR state"
-                exit 0
-              fi
+                set_status "$current" DONE; echo "CONTROLLER_MERGED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$current"; commit_state "runner: merge green PR and mark done"; current=""
+              else set_status "$current" BLOCKED; echo "BLOCK_REASON: PR state $state" >> "$current"; commit_state "runner: block unexpected PR state"; exit 0; fi
             fi
           fi
 
-          if grep -RqsE '^STATUS:[[:space:]]+(BLOCKED|OWNER_DECISION)[[:space:]]*$' .cursor-controller/TASK.md .cursor-controller/queue 2>/dev/null; then
-            echo "Queue stopped by BLOCKED/OWNER_DECISION." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
+          if grep -RqsE '^STATUS:[[:space:]]+(BLOCKED|OWNER_DECISION)[[:space:]]*$' .cursor-controller/TASK.md .cursor-controller/queue 2>/dev/null; then echo "Queue stopped by BLOCKED/OWNER_DECISION." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
           next=""
-          for f in .cursor-controller/TASK.md $(find .cursor-controller/queue -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort); do
-            [ -f "$f" ] || continue
-            if grep -Eq '^STATUS:[[:space:]]+READY[[:space:]]*$' "$f"; then next="$f"; break; fi
-          done
+          for f in .cursor-controller/TASK.md $(find .cursor-controller/queue -maxdepth 1 -type f -name '*.md' 2>/dev/null | sort); do [ -f "$f" ] || continue; if grep -Eq '^STATUS:[[:space:]]+READY[[:space:]]*$' "$f"; then next="$f"; break; fi; done
           [ -n "$next" ] || { echo "No READY task." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
-
-          start=$(field "$next" STARTING_REF || true)
-          [ "$start" = "AUTO_LATEST_CURSOR" ] && start="$DEFAULT_BRANCH"
-          [ -n "$start" ] || start="$DEFAULT_BRANCH"
+          start=$(field "$next" STARTING_REF || true); [ "$start" = "AUTO_LATEST_CURSOR" ] && start="$DEFAULT_BRANCH"; [ -n "$start" ] || start="$DEFAULT_BRANCH"
           prompt=$(cat "$next")
           safety=$'\n\nRunner contract: this is exactly one Master Plan item. Implement only this item. Run its required tests/lint/build. Push a focused cursor/* branch and open exactly one PR. Do not create follow-up QA/polish/audit tasks. Do not merge your own PR. Do not deploy production unless this task explicitly says owner authorized it. Never force-push, rewrite history, expose secrets, contact customers, or change unrelated product rules.'
           payload=$(jq -n --arg prompt "${prompt}${safety}" --arg repo "https://github.com/${REPO}" --arg ref "$start" '{prompt:{text:$prompt},repos:[{url:$repo,startingRef:$ref}],autoCreatePR:true,mode:"agent"}')
           resp=$(curl -fsS -u "${CURSOR_API_KEY}:" -H 'Content-Type: application/json' -d "$payload" https://api.cursor.com/v1/agents)
-          agent=$(printf '%s' "$resp" | jq -r '.agent.id')
-          run=$(printf '%s' "$resp" | jq -r '.run.id')
-          rs=$(printf '%s' "$resp" | jq -r '.run.status')
+          agent=$(printf '%s' "$resp" | jq -r '.agent.id'); run=$(printf '%s' "$resp" | jq -r '.run.id'); rs=$(printf '%s' "$resp" | jq -r '.run.status')
           test -n "$agent" -a "$agent" != null -a -n "$run" -a "$run" != null
           set_status "$next" RUNNING
-          {
-            echo "CONTROLLER_AGENT_ID: $agent"
-            echo "CONTROLLER_RUN_ID: $run"
-            echo "CONTROLLER_RUN_STATUS_AT_LAUNCH: $rs"
-            echo "CONTROLLER_CLAIMED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          } >> "$next"
+          { echo "CONTROLLER_AGENT_ID: $agent"; echo "CONTROLLER_RUN_ID: $run"; echo "CONTROLLER_RUN_STATUS_AT_LAUNCH: $rs"; echo "CONTROLLER_CLAIMED_AT: $(date -u +%Y-%m-%dT%H:%M:%SZ)"; } >> "$next"
           commit_state "runner: claim one READY task"
           echo "Started $agent / $run from $start" >> "$GITHUB_STEP_SUMMARY"
