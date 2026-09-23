@@ -1,4 +1,4 @@
-STATUS: STARTED
+STATUS: BLOCKED
 STARTING_REF: AUTO_LATEST_CURSOR
 
 # AGENTUROS — Kfz hero asset replacement only
@@ -29,3 +29,4 @@ If the Cursor agent cannot access the owner-provided PNG bytes from the ChatGPT 
 
 CONTROLLER_AGENT_ID: bc-f5b1d49a-cb0a-4c53-a019-c184e30c9dec
 CONTROLLER_STARTED_AT: 2026-09-22T22:13:03Z
+BLOCK_REASON: missing agentId/runId
