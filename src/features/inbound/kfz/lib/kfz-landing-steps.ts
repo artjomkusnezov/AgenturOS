@@ -42,6 +42,7 @@ export type KfzLandingAdvanceInput = KfzLandingContactInput & {
   questionnaireAnswers?: KfzQuestionnaireAnswers
   inquiryProcessingConsent?: boolean
   documents?: readonly { group?: string | null }[] | null
+  documentChoice?: 'upload' | 'manual' | ''
 }
 
 export function isUsableKfzLandingPhone(raw: string): boolean {
@@ -143,11 +144,26 @@ export function canAdvanceKfzLandingScreen(
   input: KfzLandingAdvanceInput,
 ): KfzLandingStepValidation {
   const branchId = resolveKfzLandingBranchId(input.branchId, input.inquiryReason)
-  const questionBranchId = resolveKfzLandingQuestionBranchId(branchId, input.documents)
+  const questionBranchId = resolveKfzLandingQuestionBranchId(
+    branchId,
+    input.documents,
+    input.documentChoice,
+  )
   const answers = input.questionnaireAnswers ?? {}
 
   if (screen.kind === 'branch') {
     return validateKfzLandingBranch(input)
+  }
+
+  if (screen.kind === 'documentChoice') {
+    if (input.documentChoice !== 'upload' && input.documentChoice !== 'manual') {
+      return {
+        ok: false,
+        error: 'Bitte wählen Sie, ob Unterlagen vorhanden sind.',
+        code: 'missing_request_type',
+      }
+    }
+    return { ok: true }
   }
 
   if (screen.kind === 'questions') {
@@ -184,7 +200,12 @@ export function isKfzLandingSubmitScreen(
   screens: readonly KfzLandingScreen[],
   branchId: string,
 ): boolean {
-  if (!branchId || !screen || screen.kind === 'branch') {
+  if (
+    !branchId ||
+    !screen ||
+    screen.kind === 'branch' ||
+    screen.kind === 'documentChoice'
+  ) {
     return false
   }
   return screens[screens.length - 1]?.id === screen.id

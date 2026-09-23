@@ -34,6 +34,7 @@ import {
   KFZ_DEDUCTIBLE_FULL_ID,
   KFZ_DEDUCTIBLE_PARTIAL_ID,
   KFZ_LANDING_BRANCHES,
+  listKfzLandingStep1Branches,
   KFZ_QUESTIONNAIRE_BOUNDARIES,
   KFZ_QUESTIONS,
   KFZ_SF_CLASS_HAFTPFLICHT_ID,
@@ -163,7 +164,7 @@ function withKfzEnv(run: () => Promise<void>): Promise<void> {
 }
 
 describe('kfz landing initial branches', () => {
-  it('exposes the six starting choices in the required order', () => {
+  it('keeps the six routable branches and starts the public funnel on four intents', () => {
     assert.deepEqual(
       KFZ_LANDING_BRANCHES.map((branch) => branch.label),
       [
@@ -185,6 +186,16 @@ describe('kfz landing initial branches', () => {
       KFZ_LANDING_BRANCHES.find((branch) => branch.id === 'switch_car')?.highlighted,
       true,
     )
+    assert.deepEqual(
+      listKfzLandingStep1Branches().map((branch) => branch.id),
+      ['switch_car', 'first_car', 'additional_car', 'evb'],
+    )
+    const publicStart = buildKfzLandingScreens('switch_car', {}, null, '')
+    assert.deepEqual(
+      publicStart.map((screen) => screen.kind),
+      ['branch', 'documentChoice'],
+    )
+    assert.equal(isKfzLandingSubmitScreen(publicStart[1], publicStart, 'switch_car'), false)
   })
 
   it('keeps Unterlagen hochladen on the existing documents → contact path', () => {

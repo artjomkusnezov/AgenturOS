@@ -1,6 +1,8 @@
 /**
  * Owner corrections:
- * 2026-09-20 — Schritt 1 is the existing six-scenario selection, not upload-first.
+ * 2026-09-23 — Schritt 1 is the four customer intents, Wechsel preselected.
+ *   Unterlagen hochladen / Keine Unterlagen are Schritt 2 only.
+ * 2026-09-20 — Schritt 1 is scenario selection, not upload-first.
  * 2026-09-18 — no public Messung UI; document routing and inquiry-processing consent stay.
  */
 import assert from 'node:assert/strict'
@@ -29,6 +31,8 @@ import {
   isUploadDocumentsBranch,
   KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID,
   KFZ_LANDING_BRANCHES,
+  KFZ_LANDING_DOCUMENT_CHOICES,
+  listKfzLandingStep1Branches,
   listVisibleKfzQuestions,
   nextKfzLandingScreenId,
   resolveInitialKfzLandingScreenId,
@@ -87,50 +91,65 @@ describe('kfz owner correction: no public Messung UI', () => {
   })
 })
 
-describe('kfz owner correction: six-scenario first step', () => {
-  it('starts a fresh landing on the six scenario cards with no silent choice', () => {
+describe('kfz owner correction: intent first, documents second', () => {
+  it('preselects Wechsel and keeps document choices off Schritt 1', () => {
     const empty = emptyKfzLandingDraftValues()
-    assert.equal(empty.branchId, '')
-    assert.equal(empty.inquiryReason, '')
+    assert.equal(empty.branchId, 'switch_car')
+    assert.equal(empty.inquiryReason, 'Bestehendes Auto wechseln')
+    assert.equal(empty.documentChoice, '')
     assert.equal(isUploadDocumentsBranch(empty.branchId), false)
     assert.equal(empty.inquiryProcessingConsent, false)
 
-    const screens = buildKfzLandingScreens(empty.branchId, {})
+    const screens = buildKfzLandingScreens(empty.branchId, {}, null, '')
     assert.deepEqual(
       screens.map((screen) => screen.id),
-      ['branch'],
+      ['branch', 'documents-choice'],
     )
     assert.equal(resolveInitialKfzLandingScreenId(screens, null), 'branch')
     assert.equal(screens[0]?.kind, 'branch')
+    assert.equal(screens[1]?.kind, 'documentChoice')
     assert.equal(screens.some((screen) => screen.kind === 'documents'), false)
+    assert.equal(canAdvanceKfzLandingScreen(screens[0]!, empty).ok, true)
+    const blockedDocuments = canAdvanceKfzLandingScreen(screens[1]!, empty)
+    assert.equal(blockedDocuments.ok, false)
+    if (!blockedDocuments.ok) {
+      assert.equal(blockedDocuments.code, 'missing_request_type')
+    }
 
-    const uploadScreens = buildKfzLandingScreens('upload_documents', {})
-    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, null), 'branch')
-    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, 'documents'), 'documents')
-    assert.equal(resolveInitialKfzLandingScreenId(uploadScreens, 'contact'), 'contact')
-
-    const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
-    assert.match(form, /KFZ_LANDING_BRANCHES\.map\(\(branch\) => \{/)
-    assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
-    assert.match(form, /\{branch\.label\}/)
-    assert.match(form, /Am häufigsten/)
-    assert.doesNotMatch(form, /Keine Unterlagen senden\?/)
+    const step1 = listKfzLandingStep1Branches()
     assert.deepEqual(
-      KFZ_LANDING_BRANCHES.map((branch) => branch.label),
+      step1.map((branch) => branch.label),
       [
-        'Unterlagen hochladen',
-        'Keine Unterlagen vorhanden',
+        'Bestehendes Auto wechseln',
         'Erstes Auto versichern',
         'Weiteres Auto versichern',
-        'Bestehendes Auto wechseln',
         'eVB für Zulassung',
       ],
     )
+    assert.equal(step1[0]?.id, 'switch_car')
+    assert.equal(step1[0]?.highlighted, true)
+    assert.deepEqual(
+      step1.filter((branch) => branch.highlighted).map((branch) => branch.id),
+      ['switch_car'],
+    )
+    assert.deepEqual(
+      KFZ_LANDING_DOCUMENT_CHOICES.map((choice) => choice.label),
+      ['Unterlagen hochladen', 'Keine Unterlagen vorhanden'],
+    )
+    assert.equal(step1.length, 4)
+
+    const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
+    assert.match(form, /listKfzLandingStep1Branches\(\)\.map\(\(branch\) => \{/)
+    assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
+    assert.match(form, /data-kfz-document-choice=\{choice\.id\}/)
+    assert.match(form, /\{branch\.label\}/)
+    assert.match(form, /Am häufigsten/)
+    assert.doesNotMatch(form, /Keine Unterlagen senden\?/)
+    assert.doesNotMatch(form, /Unterlagen hochladen bleibt der kurze Weg/)
     assert.equal(
       KFZ_LANDING_BRANCHES.find((branch) => branch.highlighted)?.id,
       'switch_car',
     )
-    assert.equal(canAdvanceKfzLandingScreen(screens[0]!, empty).ok, false)
   })
 
   it('keeps the chosen scenario when continuing into upload or manual paths', () => {
@@ -169,12 +188,61 @@ describe('kfz owner correction: six-scenario first step', () => {
       assert.equal(built.payload.questionnaire?.branchId, 'upload_documents')
     }
 
-    const manual = applyKfzLandingBranchSelection(empty, 'no_documents')
-    assert.equal(manual.branchId, 'no_documents')
-    assert.equal(manual.inquiryReason, 'Keine Unterlagen vorhanden')
-    const manualScreens = buildKfzLandingScreens(manual.branchId, {})
-    assert.equal(nextKfzLandingScreenId(manualScreens, 'branch'), 'intent')
+    const manualScreens = buildKfzLandingScreens('switch_car', {}, null, 'manual')
+    assert.equal(nextKfzLandingScreenId(manualScreens, 'branch'), 'documents-choice')
+    assert.equal(nextKfzLandingScreenId(manualScreens, 'documents-choice'), 'registration')
+    assert.equal(manualScreens.some((screen) => screen.id === 'intent'), false)
     assert.ok(manualScreens.some((screen) => screen.kind === 'questions'))
+
+    const uploadChoice = buildKfzLandingScreens('switch_car', {}, null, 'upload')
+    assert.equal(nextKfzLandingScreenId(uploadChoice, 'documents-choice'), 'documents')
+    assert.notEqual(nextKfzLandingScreenId(uploadChoice, 'documents'), 'contact')
+    const scheinRoute = buildKfzLandingScreens(
+      'switch_car',
+      {},
+      [{ group: 'fahrzeugschein' }],
+      'upload',
+    )
+    assert.deepEqual(
+      scheinRoute.map((screen) => screen.id),
+      ['branch', 'documents-choice', 'documents', 'contact'],
+    )
+    const invoiceRoute = buildKfzLandingScreens(
+      'switch_car',
+      {},
+      [{ group: 'vorversicherung' }],
+      'upload',
+    )
+    assert.equal(nextKfzLandingScreenId(invoiceRoute, 'documents'), 'registration')
+    assert.notEqual(nextKfzLandingScreenId(invoiceRoute, 'documents'), 'contact')
+
+    const shortBuilt = buildKfzLandingPayload({
+      values: {
+        ...empty,
+        fullName: 'QA TEST',
+        phone: '+491701234567',
+        inquiryProcessingConsent: true,
+        documentChoice: 'upload',
+      },
+      submissionId: 'owner-correction-intent-upload',
+      consentTimestamp: '2026-09-23T12:00:00.000Z',
+      documents: [
+        {
+          id: 'schein-2',
+          group: 'fahrzeugschein',
+          filename: 'QA-TEST.png',
+          mimeType: 'image/png',
+          sizeBytes: 70,
+        },
+      ],
+    })
+    assert.equal(shortBuilt.ok, true)
+    if (shortBuilt.ok) {
+      assert.equal(shortBuilt.payload.inquiryReason, 'Bestehendes Auto wechseln')
+      assert.equal(shortBuilt.payload.questionnaire?.branchId, 'switch_car')
+      assert.equal(shortBuilt.payload.questionnaire?.path, 'upload')
+      assert.deepEqual(shortBuilt.payload.questionnaire?.answers, [])
+    }
   })
 
   it('keeps Fahrzeugschein and Beitragsrechnung as optional existing uploads', () => {
@@ -284,7 +352,7 @@ describe('kfz owner correction: six-scenario first step', () => {
     assert.notEqual(nextKfzLandingScreenId(invoice, 'documents'), 'contact')
 
     const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
-    assert.match(form, /buildKfzLandingScreens\(branchId, answers, documents\)/)
+    assert.match(form, /buildKfzLandingScreens\(branchId, answers, documents, documentChoice\)/)
     assert.match(form, /data-kfz-document-route/)
     assert.equal(KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID, 'no_documents')
   })
@@ -302,6 +370,10 @@ describe('kfz owner correction: six-scenario first step', () => {
     assert.deepEqual(
       KFZ_LANDING_BRANCHES.filter((branch) => !branch.highlighted).map((branch) => branch.id),
       ['upload_documents', 'no_documents', 'first_car', 'additional_car', 'evb'],
+    )
+    assert.deepEqual(
+      listKfzLandingStep1Branches().map((branch) => branch.id),
+      ['switch_car', 'first_car', 'additional_car', 'evb'],
     )
     for (const branch of KFZ_LANDING_BRANCHES.filter((entry) => entry.path === 'questionnaire')) {
       const screens = buildKfzLandingScreens(branch.id, {})

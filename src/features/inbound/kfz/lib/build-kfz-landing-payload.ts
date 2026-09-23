@@ -3,6 +3,7 @@ import {
   KFZ_LANDING_SOURCE,
 } from '@/features/inbound/kfz/lib/kfz-landing-constants'
 import {
+  canUseKfzDocumentLedShortPath,
   toPublicKfzUploadMeta,
   type KfzLandingDocumentCandidate,
 } from '@/features/inbound/kfz/lib/kfz-landing-documents'
@@ -16,6 +17,7 @@ import {
   listAnsweredKfzQuestions,
   listKfzQuestionnaireMissingFacts,
   resolveKfzLandingBranchId,
+  resolveKfzLandingQuestionBranchId,
   validateKfzQuestionnaireComplete,
   type KfzQuestionnaireAnswers,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
@@ -43,6 +45,8 @@ export type KfzLandingFormValues = {
   contextNotes: string
   branchId?: string
   questionnaireAnswers?: KfzQuestionnaireAnswers
+  /** Public Schritt 2. Absent on older callers, which keep the branch path. */
+  documentChoice?: 'upload' | 'manual' | ''
 }
 
 export type KfzLandingAttribution = {
@@ -115,6 +119,15 @@ export function buildKfzLandingPayload(
   const inquiryReason = input.values.inquiryReason.trim()
   const branchId = resolveKfzLandingBranchId(input.values.branchId, inquiryReason)
   const answers = input.values.questionnaireAnswers ?? {}
+  const documentChoice = input.values.documentChoice
+  const shortUpload =
+    documentChoice === 'upload' &&
+    canUseKfzDocumentLedShortPath(input.documents)
+  const questionBranchId = resolveKfzLandingQuestionBranchId(
+    branchId,
+    input.documents,
+    documentChoice,
+  )
 
   if (!fullName) {
     return { ok: false, error: 'Bitte geben Sie Ihren Namen an.', code: 'missing_field' }
@@ -133,8 +146,10 @@ export function buildKfzLandingPayload(
     }
   }
 
-  if (isQuestionnaireBranch(branchId)) {
-    const complete = validateKfzQuestionnaireComplete(branchId, answers)
+  const useIntentRoute = documentChoice === 'upload' || documentChoice === 'manual'
+  const completeBranchId = useIntentRoute ? questionBranchId : branchId
+  if (!shortUpload && isQuestionnaireBranch(completeBranchId)) {
+    const complete = validateKfzQuestionnaireComplete(completeBranchId, answers)
     if (!complete.ok) {
       return {
         ok: false,
@@ -178,11 +193,18 @@ export function buildKfzLandingPayload(
   const attr = input.attribution ?? {}
   const vehicleFromAnswers = extractVehicleFactsFromAnswers(answers)
   const branch = getKfzLandingBranch(branchId)
-  const answered = branch ? listAnsweredKfzQuestions(branch.id, answers) : []
-  const missingFacts = branch ? listKfzQuestionnaireMissingFacts(branch.id, answers) : []
+  const notesBranch = shortUpload
+    ? null
+    : useIntentRoute
+      ? getKfzLandingBranch(questionBranchId)
+      : branch
+  const answered = notesBranch ? listAnsweredKfzQuestions(notesBranch.id, answers) : []
+  const missingFacts = notesBranch
+    ? listKfzQuestionnaireMissingFacts(notesBranch.id, answers)
+    : []
   const questionnaireNotes =
-    branch && branch.path === 'questionnaire'
-      ? formatKfzQuestionnaireNotes(branch.label, answered, missingFacts)
+    notesBranch && notesBranch.path === 'questionnaire'
+      ? formatKfzQuestionnaireNotes(notesBranch.label, answered, missingFacts)
       : ''
   const contextNotes =
     emptyToNull(input.values.contextNotes) ??
@@ -194,7 +216,7 @@ export function buildKfzLandingPayload(
     ? buildPublicQuestionnaire({
         branchId: branch.id,
         branchLabel: branch.label,
-        path: branch.path,
+        path: shortUpload ? 'upload' : branch.path,
         answers: answered,
         missingFacts,
       })

@@ -57,6 +57,48 @@ export const KFZ_LANDING_BRANCHES = [
     highlighted: false,
   },
 ] as const
+
+/**
+ * Public Schritt 1. Document entry points stay in the catalog, but they are
+ * not offered until the customer has chosen an intent.
+ */
+export const KFZ_LANDING_STEP1_BRANCH_IDS = [
+  'switch_car',
+  'first_car',
+  'additional_car',
+  'evb',
+] as const
+
+export type KfzLandingCustomerIntentId = (typeof KFZ_LANDING_STEP1_BRANCH_IDS)[number]
+
+export type KfzLandingDocumentChoice = 'upload' | 'manual'
+
+export const KFZ_LANDING_DOCUMENT_CHOICES = [
+  { id: 'upload', label: 'Unterlagen hochladen' },
+  { id: 'manual', label: 'Keine Unterlagen vorhanden' },
+] as const satisfies ReadonlyArray<{
+  id: KfzLandingDocumentChoice
+  label: string
+}>
+
+export function isKfzLandingCustomerIntentBranch(
+  branchId: string | null | undefined,
+): branchId is KfzLandingCustomerIntentId {
+  return (KFZ_LANDING_STEP1_BRANCH_IDS as readonly string[]).includes(branchId ?? '')
+}
+
+export function listKfzLandingStep1Branches(): Array<
+  Omit<(typeof KFZ_LANDING_BRANCHES)[number], 'id'> & { id: KfzLandingCustomerIntentId }
+> {
+  return KFZ_LANDING_STEP1_BRANCH_IDS.map((id) => {
+    const branch = KFZ_LANDING_BRANCHES.find((entry) => entry.id === id)
+    if (!branch) {
+      throw new Error(`Missing Kfz step-1 branch ${id}`)
+    }
+    return { ...branch, id }
+  })
+}
+
 export const KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID = 'no_documents' as const
 
 export type KfzLandingBranchId = (typeof KFZ_LANDING_BRANCHES)[number]['id']
@@ -97,7 +139,12 @@ export type KfzQuestionScreenDefinition = {
   questionIds: readonly string[]
 }
 
-export type KfzLandingScreenKind = 'branch' | 'questions' | 'contact' | 'documents'
+export type KfzLandingScreenKind =
+  | 'branch'
+  | 'documentChoice'
+  | 'questions'
+  | 'contact'
+  | 'documents'
 
 export type KfzLandingScreen = {
   id: string
@@ -109,6 +156,7 @@ export type KfzLandingScreen = {
 export type KfzQuestionnaireAnswers = Record<string, string>
 
 export const KFZ_SCREEN_BRANCH = 'branch' as const
+export const KFZ_SCREEN_DOCUMENT_CHOICE = 'documents-choice' as const
 export const KFZ_SCREEN_CONTACT = 'contact' as const
 export const KFZ_SCREEN_DOCUMENTS = 'documents' as const
 
@@ -625,7 +673,21 @@ export function isUploadDocumentsBranch(
 export function resolveKfzLandingQuestionBranchId(
   branchId: string,
   documents: readonly { group?: string | null }[] | null | undefined = null,
+  documentChoice?: KfzLandingDocumentChoice | '' | null,
 ): string {
+  if (
+    documentChoice === 'upload' &&
+    isKfzLandingCustomerIntentBranch(branchId) &&
+    canUseKfzDocumentLedShortPath(documents)
+  ) {
+    return 'upload_documents'
+  }
+  if (
+    (documentChoice === 'upload' || documentChoice === 'manual') &&
+    isKfzLandingCustomerIntentBranch(branchId)
+  ) {
+    return branchId
+  }
   if (isUploadDocumentsBranch(branchId) && !canUseKfzDocumentLedShortPath(documents)) {
     return KFZ_DOCUMENT_FALLBACK_QUESTION_BRANCH_ID
   }
@@ -846,20 +908,86 @@ function appendKfzQuestionnaireScreens(
   }
 }
 
+function kfzBranchScreen(): KfzLandingScreen {
+  return {
+    id: KFZ_SCREEN_BRANCH,
+    title: 'Start',
+    kind: 'branch',
+    questionIds: [],
+  }
+}
+
+function kfzDocumentChoiceScreen(): KfzLandingScreen {
+  return {
+    id: KFZ_SCREEN_DOCUMENT_CHOICE,
+    title: 'Unterlagen',
+    kind: 'documentChoice',
+    questionIds: [],
+  }
+}
+
+function kfzContactScreen(): KfzLandingScreen {
+  return {
+    id: KFZ_SCREEN_CONTACT,
+    title: 'Kontakt',
+    kind: 'contact',
+    questionIds: [],
+  }
+}
+
+function appendIntentDocumentRoute(
+  screens: KfzLandingScreen[],
+  branchId: string,
+  answers: KfzQuestionnaireAnswers,
+  documents: readonly { group?: string | null }[] | null | undefined,
+  documentChoice: KfzLandingDocumentChoice,
+): void {
+  if (documentChoice === 'upload') {
+    screens.push({
+      id: KFZ_SCREEN_DOCUMENTS,
+      title: 'Unterlagen',
+      kind: 'documents',
+      questionIds: [],
+    })
+    if (canUseKfzDocumentLedShortPath(documents)) {
+      screens.push(kfzContactScreen())
+      return
+    }
+    appendKfzQuestionnaireScreens(screens, branchId, answers)
+    screens.push(kfzContactScreen())
+    return
+  }
+
+  appendKfzQuestionnaireScreens(screens, branchId, answers)
+  screens.push(kfzContactScreen())
+}
+
 export function buildKfzLandingScreens(
   branchId: string,
   answers: KfzQuestionnaireAnswers,
   documents: readonly { group?: string | null }[] | null | undefined = null,
+  documentChoice?: KfzLandingDocumentChoice | '' | null,
 ): KfzLandingScreen[] {
   const branch = getKfzLandingBranch(branchId)
-  const screens: KfzLandingScreen[] = [
-    {
-      id: KFZ_SCREEN_BRANCH,
-      title: 'Start',
-      kind: 'branch',
-      questionIds: [],
-    },
-  ]
+  const screens: KfzLandingScreen[] = [kfzBranchScreen()]
+
+  if (
+    branch &&
+    documentChoice != null &&
+    isKfzLandingCustomerIntentBranch(branch.id)
+  ) {
+    screens.push(kfzDocumentChoiceScreen())
+    if (documentChoice === 'upload' || documentChoice === 'manual') {
+      appendIntentDocumentRoute(
+        screens,
+        branch.id,
+        answers,
+        documents,
+        documentChoice,
+      )
+    }
+    return screens
+  }
 
   if (!branch) {
     return screens
