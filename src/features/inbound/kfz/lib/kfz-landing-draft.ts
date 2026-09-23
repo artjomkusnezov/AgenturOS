@@ -14,6 +14,7 @@ import {
   KFZ_SCREEN_BRANCH,
   KFZ_SCREEN_CONTACT,
   KFZ_SCREEN_DOCUMENTS,
+  listKfzLandingStep1Branches,
   mapLegacyKfzLandingReason,
   resolveKfzLandingBranchId,
   type KfzQuestionnaireAnswers,
@@ -131,6 +132,7 @@ export function getSessionKfzLandingDraftStorage(): KfzLandingDraftStorage | nul
 }
 
 export function emptyKfzLandingDraftValues(): KfzLandingFormValues {
+  const intent = listKfzLandingStep1Branches()[0]
   return {
     fullName: '',
     postalCode: KFZ_LANDING_DEFAULT_POSTAL_CODE,
@@ -138,13 +140,14 @@ export function emptyKfzLandingDraftValues(): KfzLandingFormValues {
     phone: '',
     email: '',
     preferredChannel: KFZ_LANDING_DEFAULT_PREFERRED_CHANNEL,
-    inquiryReason: '',
+    inquiryReason: intent?.label ?? '',
     inquiryProcessingConsent: false,
     vehicleMake: '',
     vehicleModel: '',
     vehicleYear: '',
     contextNotes: '',
-    branchId: '',
+    branchId: intent?.id ?? '',
+    documentChoice: '',
     questionnaireAnswers: {},
   }
 }
@@ -191,6 +194,10 @@ export function buildKfzLandingDraftSnapshot(input: {
       vehicleYear: input.values.vehicleYear,
       contextNotes: input.values.contextNotes,
       branchId,
+      documentChoice:
+        input.values.documentChoice === 'upload' || input.values.documentChoice === 'manual'
+          ? input.values.documentChoice
+          : '',
       questionnaireAnswers: { ...(input.values.questionnaireAnswers ?? {}) },
     },
     hadDocuments: input.hadDocuments === true,
@@ -236,6 +243,11 @@ export function parseKfzLandingDraftSnapshot(
   const branchId =
     resolveKfzLandingBranchId(readString(source.values.branchId), inquiryReason) ||
     mapLegacyKfzLandingReason(inquiryReason)
+  const documentChoiceRaw = readString(source.values.documentChoice)
+  const documentChoice =
+    documentChoiceRaw === 'upload' || documentChoiceRaw === 'manual'
+      ? documentChoiceRaw
+      : ''
 
   const step =
     source.version === 1 && LEGACY_STEPS.has(source.step as number)
@@ -261,6 +273,7 @@ export function parseKfzLandingDraftSnapshot(
       vehicleYear: readString(source.values.vehicleYear),
       contextNotes: readString(source.values.contextNotes),
       branchId,
+      documentChoice,
       questionnaireAnswers: readQuestionnaireAnswers(source.values.questionnaireAnswers),
     },
   }

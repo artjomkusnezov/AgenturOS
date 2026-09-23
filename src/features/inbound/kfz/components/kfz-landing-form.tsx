@@ -69,16 +69,19 @@ import {
   buildKfzLandingScreens,
   extractVehicleFactsFromAnswers,
   getKfzLandingBranch,
-  isUploadDocumentsBranch,
-  KFZ_LANDING_BRANCHES,
+  KFZ_LANDING_DOCUMENT_CHOICES,
   KFZ_SCREEN_BRANCH,
+  KFZ_SCREEN_DOCUMENT_CHOICE,
   listAnsweredKfzQuestions,
+  listKfzLandingStep1Branches,
   nextKfzLandingScreenId,
   previousKfzLandingScreenId,
   resolveInitialKfzLandingScreenId,
   resolveKfzLandingBranchId,
   resolveKfzLandingQuestionBranchId,
   setKfzQuestionnaireAnswer,
+  type KfzLandingCustomerIntentId,
+  type KfzLandingDocumentChoice,
 } from '@/features/inbound/kfz/lib/kfz-questionnaire'
 import type {
   KfzPreferredChannel,
@@ -174,8 +177,13 @@ export function KfzLandingForm({
   const values = localValues ?? restoredDraft?.values ?? INITIAL_VALUES
   const branchId = resolveKfzLandingBranchId(values.branchId, values.inquiryReason)
   const answers = values.questionnaireAnswers ?? {}
-  const screens = buildKfzLandingScreens(branchId, answers, documents)
-  const questionBranchId = resolveKfzLandingQuestionBranchId(branchId, documents)
+  const documentChoice = values.documentChoice ?? ''
+  const screens = buildKfzLandingScreens(branchId, answers, documents, documentChoice)
+  const questionBranchId = resolveKfzLandingQuestionBranchId(
+    branchId,
+    documents,
+    documentChoice,
+  )
   const screenId = resolveInitialKfzLandingScreenId(
     screens,
     localScreenId ?? restoredDraft?.screenId,
@@ -259,7 +267,7 @@ export function KfzLandingForm({
     persistDraft({ values: nextValues })
   }
 
-  function selectBranch(nextBranchId: (typeof KFZ_LANDING_BRANCHES)[number]['id']) {
+  function selectBranch(nextBranchId: KfzLandingCustomerIntentId) {
     const branch = getKfzLandingBranch(nextBranchId)
     if (!branch) {
       return
@@ -272,10 +280,36 @@ export function KfzLandingForm({
     analytics.onBranchSelected(branch.id)
   }
 
-  function openManualFallback() {
+  function selectDocumentChoice(nextChoice: KfzLandingDocumentChoice) {
+    const nextValues = { ...values, documentChoice: nextChoice }
     setClientError(null)
-    setScreenId(KFZ_SCREEN_BRANCH)
-    persistDraft({ screenId: KFZ_SCREEN_BRANCH })
+    setValues(nextValues)
+    if (nextChoice === 'manual') {
+      setDocuments([])
+    }
+    setScreenId(KFZ_SCREEN_DOCUMENT_CHOICE)
+    persistDraft({
+      values: nextValues,
+      screenId: KFZ_SCREEN_DOCUMENT_CHOICE,
+      documents: nextChoice === 'manual' ? [] : documents,
+    })
+  }
+
+  function openManualFallback() {
+    const nextValues = { ...values, documentChoice: 'manual' as const }
+    const nextScreens = buildKfzLandingScreens(branchId, answers, [], 'manual')
+    const nextScreenId =
+      nextKfzLandingScreenId(nextScreens, KFZ_SCREEN_DOCUMENT_CHOICE) ??
+      KFZ_SCREEN_DOCUMENT_CHOICE
+    setClientError(null)
+    setValues(nextValues)
+    setDocuments([])
+    setScreenId(nextScreenId)
+    persistDraft({
+      values: nextValues,
+      screenId: nextScreenId,
+      documents: [],
+    })
   }
 
   function updateAnswer(questionId: string, value: string) {
@@ -573,11 +607,13 @@ export function KfzLandingForm({
       data-kfz-path={getKfzLandingBranch(branchId)?.path ?? ''}
       data-kfz-branch={branchId || ''}
       data-kfz-document-route={
-        isUploadDocumentsBranch(branchId)
+        documentChoice === 'upload'
           ? canUseKfzDocumentLedShortPath(documents)
             ? 'short'
             : 'questionnaire'
-          : (getKfzLandingBranch(branchId)?.path ?? '')
+          : documentChoice === 'manual'
+            ? 'questionnaire'
+            : ''
       }
     >
       <div aria-live="polite">
@@ -604,11 +640,10 @@ export function KfzLandingForm({
             <RequiredMark />
           </legend>
           <p className="text-sm text-zinc-600">
-            Unterlagen hochladen bleibt der kurze Weg. Ohne Unterlagen führen wir Sie durch
-            die Angaben für die manuelle Prüfung. Wechseln ist unser häufigster Check.
+            Wechseln ist unser häufigster Check.
           </p>
           <div className="grid gap-2">
-            {KFZ_LANDING_BRANCHES.map((branch) => {
+            {listKfzLandingStep1Branches().map((branch) => {
               const selected = branchId === branch.id
               return (
                 <label
@@ -630,6 +665,37 @@ export function KfzLandingForm({
                       Am häufigsten
                     </span>
                   ) : null}
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      ) : null}
+
+      {screen?.kind === 'documentChoice' ? (
+        <fieldset className="space-y-3">
+          <legend className="text-base font-semibold text-zinc-900">
+            Unterlagen
+            <RequiredMark />
+          </legend>
+          <div className="grid gap-2">
+            {KFZ_LANDING_DOCUMENT_CHOICES.map((choice) => {
+              const selected = documentChoice === choice.id
+              return (
+                <label
+                  key={choice.id}
+                  data-kfz-document-choice={choice.id}
+                  className={`relative flex min-h-14 cursor-pointer items-center rounded-2xl border px-4 py-3 text-base font-medium transition ${branchOptionClassName(selected, false)}`}
+                >
+                  <input
+                    type="radio"
+                    name="documentChoice"
+                    className="sr-only"
+                    checked={selected}
+                    disabled={locked}
+                    onChange={() => selectDocumentChoice(choice.id)}
+                  />
+                  <span>{choice.label}</span>
                 </label>
               )
             })}

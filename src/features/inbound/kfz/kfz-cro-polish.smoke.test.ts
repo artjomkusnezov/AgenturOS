@@ -40,7 +40,7 @@ describe('kfz CRO polish contract', () => {
     assert.doesNotMatch(publicJourney, /document\.cookie|gtag\(|facebook\.net/)
   })
 
-  it('shows all six scenario cards with visual priority only on switch_car', () => {
+  it('shows four intent cards on Schritt 1 with Wechsel preselected visually', () => {
     assert.deepEqual(
       KFZ_LANDING_BRANCHES.map((branch) => branch.id),
       [
@@ -59,8 +59,9 @@ describe('kfz CRO polish contract', () => {
     assert.equal(KFZ_LANDING_BRANCHES.filter((branch) => branch.highlighted).length, 1)
 
     const form = readSrc('features/inbound/kfz/components/kfz-landing-form.tsx')
-    assert.match(form, /KFZ_LANDING_BRANCHES\.map\(\(branch\) => \{/)
+    assert.match(form, /listKfzLandingStep1Branches\(\)\.map\(\(branch\) => \{/)
     assert.match(form, /data-kfz-branch-option=\{branch\.id\}/)
+    assert.match(form, /data-kfz-document-choice=\{choice\.id\}/)
     assert.match(form, /Am häufigsten/)
     assert.match(form, /data-kfz-manual-fallback/)
     assert.doesNotMatch(form, /Anderer Anlass\?/)
