@@ -41,6 +41,12 @@ import {
   type KfzLandingDocumentRejection,
 } from '@/features/inbound/kfz/lib/kfz-landing-documents'
 import {
+  kfzLandingFilesFitTransport,
+  KFZ_LANDING_TRANSPORT_TOO_LARGE_REASON,
+  prepareKfzLandingFileForTransport,
+  remainingKfzLandingTransportBudget,
+} from '@/features/inbound/kfz/lib/kfz-landing-upload-transport'
+import {
   KFZ_LANDING_CONFIRMATION_BODY,
   KFZ_LANDING_CONFIRMATION_TITLE,
   KFZ_LANDING_CONTACT_EMAIL,
@@ -164,6 +170,8 @@ export function KfzLandingForm({
   const errorRef = useRef<HTMLDivElement>(null)
   const previewUrlsRef = useRef<Record<string, string>>({})
   const filesByIdRef = useRef<Record<string, File>>({})
+  const documentsRef = useRef<KfzLandingDocumentCandidate[]>([])
+  const addFilesQueueRef = useRef(Promise.resolve())
   const storage = draftStorage ?? getSessionKfzLandingDraftStorage()
   const draftController = useMemo(
     () => createKfzLandingDraftController(storage),
@@ -285,6 +293,8 @@ export function KfzLandingForm({
     setClientError(null)
     setValues(nextValues)
     if (nextChoice === 'manual') {
+      documentsRef.current = []
+      filesByIdRef.current = {}
       setDocuments([])
     }
     setScreenId(KFZ_SCREEN_DOCUMENT_CHOICE)
@@ -303,6 +313,8 @@ export function KfzLandingForm({
       KFZ_SCREEN_DOCUMENT_CHOICE
     setClientError(null)
     setValues(nextValues)
+    documentsRef.current = []
+    filesByIdRef.current = {}
     setDocuments([])
     setScreenId(nextScreenId)
     persistDraft({
@@ -368,21 +380,51 @@ export function KfzLandingForm({
     }
   }
 
-  function handleAddFiles(group: KfzUploadGroup, fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) {
-      return
+  function currentTransportBytes(): number {
+    return Object.values(filesByIdRef.current).reduce((sum, file) => sum + file.size, 0)
+  }
+
+  async function acceptTransportFiles(
+    group: KfzUploadGroup,
+    originals: readonly File[],
+  ): Promise<void> {
+    const prepared: Array<{
+      group: KfzUploadGroup
+      filename: string
+      mimeType: string
+      sizeBytes: number
+      file: File
+    }> = []
+    const transportRejected: KfzLandingDocumentRejection[] = []
+    let usedBytes = currentTransportBytes()
+
+    for (const original of originals) {
+      const fitted = await prepareKfzLandingFileForTransport(
+        original,
+        remainingKfzLandingTransportBudget(usedBytes),
+      )
+      if (!fitted.ok) {
+        transportRejected.push({
+          filename: original.name,
+          reason: fitted.reason,
+          code: fitted.code,
+        })
+        continue
+      }
+      usedBytes += fitted.file.size
+      prepared.push({
+        group,
+        filename: fitted.file.name,
+        mimeType: fitted.file.type,
+        sizeBytes: fitted.file.size,
+        file: fitted.file,
+      })
     }
 
-    const incoming = Array.from(fileList).map((file) => ({
-      group,
-      filename: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
-      file,
-    }))
-
+    const incoming = prepared
+    const previousDocuments = documentsRef.current
     const added = addKfzLandingDocuments(
-      documents,
+      previousDocuments,
       incoming.map((entry) => ({
         group: entry.group,
         filename: entry.filename,
@@ -390,14 +432,15 @@ export function KfzLandingForm({
         sizeBytes: entry.sizeBytes,
       })),
     )
+    documentsRef.current = added.documents
     setDocuments(added.documents)
-    setRejections(added.rejected)
+    setRejections([...transportRejected, ...added.rejected])
     setDocumentReselectNotice(null)
     persistDraft({ documents: added.documents, notice: null })
 
     const acceptedNames = new Set(
       added.documents
-        .filter((doc) => !documents.some((current) => current.id === doc.id))
+        .filter((doc) => !previousDocuments.some((current) => current.id === doc.id))
         .map((doc) => `${doc.group}:${doc.filename}:${doc.sizeBytes}`),
     )
 
@@ -425,7 +468,7 @@ export function KfzLandingForm({
       return next
     })
 
-    const beforeIds = new Set(documents.map((doc) => doc.id))
+    const beforeIds = new Set(previousDocuments.map((doc) => doc.id))
     for (const doc of added.documents) {
       if (beforeIds.has(doc.id) || filesByIdRef.current[doc.id]) {
         continue
@@ -442,6 +485,18 @@ export function KfzLandingForm({
     }
   }
 
+  function handleAddFiles(group: KfzUploadGroup, fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return
+    }
+    const originals = Array.from(fileList)
+    addFilesQueueRef.current = addFilesQueueRef.current
+      .then(() => acceptTransportFiles(group, originals))
+      .catch(() => {
+        setClientError(KFZ_LANDING_TRANSPORT_TOO_LARGE_REASON)
+      })
+  }
+
   function handleRemoveDocument(id: string) {
     const url = previewUrlsRef.current[id]
     if (url) {
@@ -449,7 +504,8 @@ export function KfzLandingForm({
       delete previewUrlsRef.current[id]
     }
     delete filesByIdRef.current[id]
-    const nextDocuments = removeKfzLandingDocument(documents, id)
+    const nextDocuments = removeKfzLandingDocument(documentsRef.current, id)
+    documentsRef.current = nextDocuments
     setDocuments(nextDocuments)
     setPreviews((current) => {
       const next = { ...current }
@@ -502,6 +558,11 @@ export function KfzLandingForm({
       return
     }
 
+    if (!kfzLandingFilesFitTransport(prepared.files)) {
+      setClientError(KFZ_LANDING_TRANSPORT_TOO_LARGE_REASON)
+      return
+    }
+
     persistDraft()
     inFlightRef.current = true
     setPhase('submitting')
@@ -534,6 +595,7 @@ export function KfzLandingForm({
           setPhase('success')
           setServerError(null)
           setValues(emptyKfzLandingDraftValues())
+          documentsRef.current = []
           setDocuments([])
           setPreviews({})
           filesByIdRef.current = {}
